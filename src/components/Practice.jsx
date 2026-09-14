@@ -43,9 +43,6 @@ export default function Practice({ ctx, cat }) {
     : scope === "due" ? "what is due"
     : scope === "weak" ? "what you have missed"
     : ((C.sections.find(x => x.id === scope) || {}).title || "one section");
-  const summary = source === "drills" && bank.has
-    ? `Drawn from ${drawing}, mixed across the course.`
-    : `Drawn from ${drawing}, across ${over}.`;
 
   const quizPool = () => {
     const pool = idx.QALL.filter(q => {
@@ -95,11 +92,10 @@ export default function Practice({ ctx, cat }) {
         <button class="dbtn primary" id="p-start" onClick={start}>
           Start {n || "every"} question{n === 1 ? "" : "s"} →
         </button>
-        <span class="pgo-w">{summary}</span>
       </div>
 
       <details class="pcfg">
-        <summary><i class="caret" aria-hidden="true" />Change what's drawn</summary>
+        <summary><i class="caret" aria-hidden="true" />Change questions</summary>
         <div class="pcfg-row">
           {bank.has && (
             <label>Draw from{" "}

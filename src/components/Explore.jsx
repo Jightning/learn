@@ -87,10 +87,6 @@ export default function Explore({ ctx, seed }) {
   return (
     <div class="explore">
       <h1>Explore</h1>
-      <p class="lede">
-        Search and filter everything this course holds, down to the individual
-        rule, table or definition, not just the page it sits on.
-      </p>
 
       <div class="xbar">
         <input class="xq" type="search" value={q} placeholder="Search, or leave empty and filter…"

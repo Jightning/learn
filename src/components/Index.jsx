@@ -77,13 +77,8 @@ export default function IndexPage({ ctx }) {
       {/* No eyebrow. The breadcrumb and the rail both say "Index" already, and
           a third label above a heading that describes the page is a label
           telling you what you are looking at while you look at it. */}
-      <h1>Everything this course names</h1>
-      <p class="lede">
-        Two ways in, neither of them position. Ideas are what the course reuses
-        often enough to be worth holding; kinds are the sets it sorts its
-        material into. The rail on the left is where things are; this is what
-        they are.
-      </p>
+      <h1>Index</h1>
+
 
       {keys.length > 0 && (
         <Band title="Concepts" count={keys.length} one="concept" many="concepts">
