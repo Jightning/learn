@@ -8,7 +8,7 @@
    that is hiding something and on neither edge when nothing is. The base
    colour is unchanged, which is what keeps the contrast sweep reading the same
    ground it always did. */
-.figure{container-type:inline-size;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);border-radius:9px;
+.figure{container-type:inline-size;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);border-radius:3px;
   background-color:var(--surface);padding:15px 16px;overflow-x:auto;
   background-image:
     linear-gradient(to right, var(--surface) 60%, transparent),
@@ -96,7 +96,7 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
      kind already makes rather than shrink to unreadable. */
   .fx-flow.is-row .fx-step{
     flex:1 1 0;min-width:10.5rem;padding:.6rem .7rem;
-    border:1px solid var(--rule);border-radius:8px;background:var(--surface);
+    border:1px solid var(--rule);border-radius:3px;background:var(--surface);
   }
   .fx-flow.is-row .fx-step::before{display:none}
   .fx-flow.is-row .fx-step+.fx-step::after{
@@ -126,7 +126,7 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
 .fx-gcell.g2{background:color-mix(in srgb,var(--dc) 15%,var(--surface));border-color:var(--dc)}
 .fx-gi{position:absolute;top:2px;left:4px;font-size:var(--fs-micro);color:var(--ink-2);font-weight:400}
 .fx-gl{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px}
-.fx-gl span{font-family:var(--mono);font-size:var(--fs-meta);padding:3px 9px;border-radius:4px;
+.fx-gl span{font-family:var(--mono);font-size:var(--fs-meta);padding:3px 9px;border-radius:3px;
   border:1px solid var(--rule);color:var(--ink-2)}
 .fx-gl .l0{border-color:var(--hi);color:var(--hi-ink)}
 .fx-gl .l1{border-color:var(--lo);color:var(--lo-ink)}

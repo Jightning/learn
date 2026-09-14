@@ -40,12 +40,6 @@ export function modelBands(rows) {
   }).filter(b => b.n > 0);
 }
 
-/** how often the reader declined to state a reason before revealing (T32) */
-export function skipRate(rows) {
-  const asked = rows.filter(r => r.why);
-  const skipped = asked.filter(r => r.why === "skipped").length;
-  return { asked: asked.length, skipped, rate: asked.length ? skipped / asked.length : 0 };
-}
 
 /* Outside help, counted rather than forbidden. Students using an unrestricted
  * assistant during practice felt better and examined worse; what they lacked

@@ -114,15 +114,3 @@ export function catView(C, CAT, key) {
            note: d.note || "", groups, siblings, count: rows.length,
            drills: CAT.drillsOf(key) };
 }
-
-/**
- * Everything in a category, as reading rows — "just read all of it", which is
- * the lookup case a category exists for. Honours depth so a category can be
- * skimmed at `notes` and opened where it is not recognised.
- */
-export function catRows(rows, depth) {
-  return rows.map(r => ({
-    ...r,
-    at: r.block ? present(r.block, depth === "full" ? "notes" : depth) : null
-  }));
-}

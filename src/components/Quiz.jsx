@@ -93,7 +93,7 @@ function Question({ item, ctx, showWhere, forceOpen }) {
   /* Mastery is a shape as well as a fill, and the title names the state:
      colour never carries meaning on its own. */
   const mastery = got == null ? ["u", "not attempted"]
-                : got ? ["g", "answered correctly"] : ["m", "missed — due for review"];
+                : got ? ["g", "answered correctly"] : ["m", "missed, due for review"];
 
   return (
     <div class={"q" + (shown ? " open" : "")} data-qid={item.id}>
@@ -126,7 +126,7 @@ function Question({ item, ctx, showWhere, forceOpen }) {
        * rather than a control, and the grade row below states what happened. */}
       {state.on && !shown && (
         <div class="qask">
-          <span class="qask-l">Before you look — how sure are you?</span>
+          <span class="qask-l">Before you look: how sure are you?</span>
           <span class="qconf">
             <button class={"cbtn" + (conf === 1 ? " sel" : "")} data-conf="1" data-qid={item.id}
                     title="Predict you know this" onClick={() => predict(true)}>Sure</button>
@@ -200,9 +200,9 @@ export default function Quiz({ sub, num, ctx, expandAll, depth = "full" }) {
         <span class="quiz-line-n">{items.length}</span>
         <span class="quiz-line-t">
           {items.length === 1 ? "question" : "questions"}
-          {st && st.total ? ` · ${st.got}/${st.total} mastered` : ""}
+          {st && st.total ? `, ${st.got}/${st.total} mastered` : ""}
         </span>
-        <span class="quiz-line-x">{items.map(i => i.q.type).join(" · ")}</span>
+        <span class="quiz-line-x">{items.map(i => i.q.type).join(", ")}</span>
       </button>
     );
 
@@ -213,7 +213,7 @@ export default function Quiz({ sub, num, ctx, expandAll, depth = "full" }) {
         {st && (
           <span class="qstat">
             {st.got}/{st.total} mastered
-            {st.over > 0 && <> · <b class="warn">{st.over} overconfident</b></>}
+            {st.over > 0 && <><i class="sep" aria-hidden="true" /><b class="warn">{st.over} overconfident</b></>}
           </span>
         )}
       </div>
@@ -224,8 +224,8 @@ export default function Quiz({ sub, num, ctx, expandAll, depth = "full" }) {
         <p class="quiz-note">
           One question per distinct type this subsection can be examined on.{" "}
           {state.on
-            ? "Predict before revealing — the gap between prediction and outcome is the useful signal."
-            : "No type repeats — learn all of these and the surface is covered."}
+            ? "Predict before revealing. The gap between prediction and outcome is the useful signal."
+            : "No type repeats, so learning all of these covers the surface."}
         </p>
       )}
       {items.map(i => <Question key={i.id} item={i} ctx={ctx} forceOpen={expandAll} />)}

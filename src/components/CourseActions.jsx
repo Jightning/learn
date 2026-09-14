@@ -1,22 +1,25 @@
 /* The page actions that are not navigation and not the review queue.
  *
- * They are defined once and mounted twice: in the toolbar, where they sit on a
- * wide screen, and in the navigation drawer, where they sit on a narrow one.
- * CSS shows exactly one of the two, so only one is ever in the accessibility
- * tree — the same "render both forms, let the breakpoint pick" shape the lane
- * selector already uses.
+ * Defined once and mounted twice, but no longer as two copies of the same row
+ * behind a breakpoint: the toolbar mounts them only in the library, where
+ * there is no sidebar to hold them, and the sidebar mounts them under Reading
+ * options everywhere else. So the two mounts now differ in what they carry —
+ * the library has nothing to reveal and no depth to reset a zoom against —
+ * which is what `cls` and the optional props are for.
  *
- * Why they move at all: on a phone six equal-weight chips wrap onto two rows
- * and cost a fifth of the viewport for the whole session. Reading needs the
- * material, navigation and search; a theme is set once, so it goes one tap
- * deeper rather than staying permanently in the way.
+ * Why they left the toolbar at all: a sticky bar is on screen for the whole
+ * session and sits directly above the prose. Reading needs the material, the
+ * mode and search. A theme is set once and a zoom almost never, so they go one
+ * disclosure deeper rather than staying permanently in the way.
  *
  * `Reset` used to be here, a destructive and unrecoverable action one
  * thumb-width from `Search`. Moving it one tap deeper was never the fix: it is
  * the only control on the site that can lose work, and what it erases — the
  * answer log — is displayed and exported on the calibration page. It now sits
- * there, under the row that offers to export the thing first. */
-export default function CourseActions({ inCourse, expanded, onExpand }) {
+ * there, under the row that offers to export the thing first.
+ */
+export default function CourseActions({ inCourse, expanded, onExpand,
+                                        zoom = 1, onZoomReset, cls = "tbtn" }) {
   const toggleTheme = () => {
     const el = document.documentElement;
     let cur = el.getAttribute("data-theme");
@@ -31,13 +34,21 @@ export default function CourseActions({ inCourse, expanded, onExpand }) {
           different act from never having opened, and the reader who opened one
           block to check something can never get their view back. */}
       {inCourse && (
-        <button class="tbtn" onClick={onExpand}
+        <button class={cls} onClick={onExpand}
                 title={expanded ? "Put the page back the way this depth had it"
                                 : "Open every block and reveal every answer"}>
           {expanded ? "Close all" : "Reveal all"}
         </button>
       )}
-      <button class="tbtn" onClick={toggleTheme} aria-label="Toggle colour theme">Theme</button>
+      <button class={cls} onClick={toggleTheme} aria-label="Toggle colour theme">Theme</button>
+      {/* Only once it is off its default, so it reports a state the reader set
+          rather than adding a permanent control to a panel of them. */}
+      {zoom !== 1 && onZoomReset && (
+        <button class={cls + " zoomchip"} onClick={onZoomReset}
+                title="Reset content zoom  (ctrl 0)" aria-label="Reset content zoom">
+          {Math.round(zoom * 100)}%
+        </button>
+      )}
     </>
   );
 }

@@ -17,7 +17,7 @@
 .now{
   display:flex;align-items:center;gap:20px;
   border:1px solid var(--rule);border-left:3px solid var(--hi);
-  border-radius:6px;background:var(--surface);
+  border-radius:3px;background:var(--surface);
   padding:17px 20px;text-decoration:none;color:inherit;
   /* The primary action answers when the pointer is on it. A 1px lift and the
      button filling, nothing more: this is the one control on the page that
@@ -39,7 +39,7 @@
 .now-w{font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-3);line-height:1.45}
 .now-go{
   font-family:var(--ui);font-size:var(--fs-small);font-weight:500;
-  border:1px solid var(--ink);border-radius:5px;padding:9px 16px;
+  border:1px solid var(--ink);border-radius:3px;padding:9px 16px;
   white-space:nowrap;color:var(--ink);flex:none;
   transition:background-color .16s ease,color .16s ease;
 }
@@ -53,7 +53,7 @@
 .also-i{
   display:inline-flex;align-items:baseline;gap:7px;
   font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-2);
-  text-decoration:none;border:1px solid var(--rule);border-radius:5px;
+  text-decoration:none;border:1px solid var(--rule);border-radius:3px;
   padding:7px 12px;background:var(--surface);
 }
 .also-i:hover{border-color:var(--hi);color:var(--hi-ink)}

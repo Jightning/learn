@@ -24,7 +24,7 @@ export default function WhyField({ cid, itemId, prompt, onCommit }) {
       {prior && prior.text && (
         <div class="why-prior">
           <span class="why-pl">last time you said</span>
-          “{prior.text}” — {ago(prior.ts)}{prior.correct === false ? ", wrong" : prior.correct ? ", right" : ""}
+          “{prior.text}”, {ago(prior.ts)}{prior.correct === false ? ", wrong" : prior.correct ? ", right" : ""}
           {prior.conf === "sure" ? ", confident" : ""}
         </div>
       )}

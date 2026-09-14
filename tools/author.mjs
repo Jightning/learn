@@ -36,6 +36,10 @@ const est = s => Math.round(s.length / 4);   /* chars/4: an estimate, not a coun
 
 const CC = loadSpec(join(ROOT, "docs/create_course.md"));
 const MT = loadSpec(join(ROOT, "docs/material_truth.md"));
+/* Prose craft moved out of create_course.md §13 into its own file. The phases
+   that write prose still need it, so it is sliced like the other two rather
+   than inlined back — `wr:` on a phase names the headings it wants. */
+const WR = loadSpec(join(ROOT, "docs/writing.md"));
 
 /* ---------------------------------------------------------------- reader --
  * Who the course is for. Every phase sends §1, and §1 in the docs is a blank
@@ -78,7 +82,8 @@ const PHASES = [
   /* 13* rides along because this is the phase that writes prose. Without it the
      voice rules are a document nothing reads at the moment they apply. */
   { n: 4, key: "spine", what: "spine blocks",
-    cc: ["0", "1*", "6", "6.1", "6.2", "6.4", "6.6", "5a", "10*", "13*"],
+    cc: ["0", "1*", "6", "6.1", "6.2", "6.4", "6.6", "5a", "10*"],
+    wr: ["1*", "2*", "3*", "4*", "4a*", "5*", "6*"],
     mt: ["2*", "3*", "5*", "10*"],
     pick: d => d.subs.map(u => ({ ...sub(4, u), written: u.blocks > 0 })) },
 
@@ -92,7 +97,8 @@ const PHASES = [
       .map(c => ({ id: `6:${c.key}`, target: `drills/${c.key}.yaml`, written: c.drills > 0 })) },
 
   { n: 7, key: "tiers", what: "depth and apply blocks",
-    cc: ["0", "1*", "6.3", "13*", "14"], mt: ["7*"],
+    cc: ["0", "1*", "6.3", "14"],
+    wr: ["1*", "2*", "3*", "4*", "4a*", "5*", "6*"], mt: ["7*"],
     pick: d => d.subs.map(u => ({ ...sub(7, u),
       written: u.tiers.size > 1, needs: !u.blocks })) },
 
@@ -146,6 +152,8 @@ function prefix(phase, reader) {
     "",
     CC.pick(phase.cc),
     "",
+    phase.wr ? WR.pick(phase.wr) : "",
+    phase.wr ? "" : null,
     "# The reader (§1, filled in)",
     "",
     "```yaml",
@@ -155,7 +163,7 @@ function prefix(phase, reader) {
     "# Evidence",
     "",
     MT.pick(phase.mt)
-  ].join("\n");
+  ].filter(x => x !== null).join("\n");
 }
 
 function body(phase, unit, d, courseDir) {
@@ -205,7 +213,8 @@ const pending = PHASES.flatMap(p => unitsOf(p, d, led, false).map(u => ({ ...u, 
 
 if (cmd === "plan") {
   const full = est(readFileSync(join(ROOT, "docs/create_course.md"), "utf8")) +
-               est(readFileSync(join(ROOT, "docs/material_truth.md"), "utf8"));
+               est(readFileSync(join(ROOT, "docs/material_truth.md"), "utf8")) +
+               est(readFileSync(join(ROOT, "docs/writing.md"), "utf8"));
   console.log(`courses/${id} — ${d.sections.length} sections, ${d.subs.length} subsections, ` +
               `${d.concepts.length} concepts` + (fresh ? "   [full build]" : "   [remaining]") + "\n");
   console.log("phase                units   prefix   body   per-unit   phase total");

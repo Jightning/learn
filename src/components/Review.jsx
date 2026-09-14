@@ -8,19 +8,40 @@ import { peek } from "../lib/place.js";
 
 const SESSION = 20;   /* about ten minutes */
 
-/* The on-the-go surface: one column, one question, no navigation to get lost
- * in. It is cross-course because the scheduler is — a reader with four courses
- * gets one queue, not four — and it is the place the file:// property pays off,
- * because daily review has to survive a train.
+/* Review, at one of two scopes.
+ *
+ * The scheduler is cross-course, so for a long time this was too: one queue
+ * over every installed course, on a route of its own (`#/review`) that drew
+ * its own full-bleed frame with no sidebar and a Close button to get out of.
+ * That made it the only page on the site that was not a page — a modal wearing
+ * a URL — and once the queue became a row in the navigation like every other
+ * destination, being a modal was the last thing left that said otherwise.
+ *
+ * So it is an ordinary view now, and it comes at two scopes rather than one,
+ * because the scope should match the frame it is drawn in:
+ *
+ *   `#/<cid>/review`  this course only, inside that course's shell
+ *   `#/review`        every course, on the library, which has no course either
+ *
+ * A course's sidebar drilling another course's material was the mismatch; the
+ * split removes it without giving up the cross-course queue, which is still
+ * what the dashboard offers. `buildQueue` and `counts` read a list of books
+ * and nothing else, so a scope is a narrower list — the same trick mixed
+ * practice and a category page already use.
+ *
+ * There is no way out of here except the ways out every other page has: the
+ * rail, the breadcrumb, the back button.
  */
-export default function Review({ onClose }) {
-  /* Only the courses that actually owe something. The index carries the drill
-     keys, and whether a concept is due is local state, so the set is decided
-     before a single course is fetched — the queue never pulls a library. */
+export default function Review({ only = null }) {
+  /* Only the courses that actually owe something, narrowed to the scope. The
+     index carries the drill keys and whether a concept is due is local state,
+     so the set is decided before a single course is fetched — the queue never
+     pulls a library. */
   const wanted = useMemo(() => ORDER.filter(cid => {
+    if (only && cid !== only) return false;
     const keys = (INDEX[cid] || {}).drillKeys || [];
     return keys.length && counts(cid, keys).due > 0;
-  }), []);
+  }), [only]);
 
   const [books, setBooks] = useState(null);
   const [queue, setQueue] = useState([]);
@@ -28,6 +49,7 @@ export default function Review({ onClose }) {
 
   useEffect(() => {
     let live = true;
+    setBooks(null); setQueue([]); setI(0);
     getAll(wanted).then(pairs => {
       if (!live) return;
       const bs = pairs
@@ -40,11 +62,12 @@ export default function Review({ onClose }) {
   }, [wanted]);
 
   const again = () => { setQueue(buildQueue(books || [], { limit: SESSION })); setI(0); };
+  const scope = only ? (INDEX[only] || {}).code || only : "all courses";
 
   if (books === null && wanted.length) {
     return (
-      <div class="review done">
-        <ReviewBar i={0} n={0} onClose={onClose} />
+      <div class="review">
+        <ReviewBar i={0} n={0} scope={scope} />
         <h1>Loading...</h1>
       </div>
     );
@@ -59,27 +82,26 @@ export default function Review({ onClose }) {
      * being early. Nothing due is a *good* state and it is also the only state
      * in which reading ahead is unambiguously the right thing to do.
      *
-     * The course offered is the one the reader was last in, from the stored
-     * place, falling back to the first on the shelf. It is a link rather than a
-     * computed recommendation because the Desk is where that judgement lives —
-     * this only has to not be a wall. */
-    const p = peek();
+     * At course scope the course to offer is obvious. Globally it is the one
+     * the reader was last in, from the stored place, falling back to the first
+     * on the shelf. A link rather than a computed recommendation, because the
+     * Desk is where that judgement lives — this only has to not be a wall. */
+    const p = only ? null : peek();
     const lastCid = p && (p.hash.match(/^#\/([^/]+)/) || [])[1];
-    const backTo = (lastCid && INDEX[lastCid] ? lastCid : null) || ORDER[0] || null;
+    const backTo = only || (lastCid && INDEX[lastCid] ? lastCid : null) || ORDER[0] || null;
     const backC = backTo ? INDEX[backTo] : null;
 
     return (
-      <div class="review done">
-        <ReviewBar i={queue.length} n={queue.length} onClose={onClose} />
+      <div class="review">
+        <ReviewBar i={queue.length} n={queue.length} scope={scope} />
         <h1>{queue.length ? "Session complete." : "Nothing is due."}</h1>
         <p class="lede">
           {queue.length
             ? "Come back tomorrow, a concept recalled once in each of three spaced sessions outlasts one recalled three times today."
-            : "You are ahead of the schedule. Concepts arrive here when an interval comes due, or when you miss a question you were confident about."}
+            : only
+              ? "You are ahead of this course's schedule. Concepts arrive here when an interval comes due, or when you miss a question you were confident about."
+              : "You are ahead of the schedule. Concepts arrive here when an interval comes due, or when you miss a question you were confident about."}
         </p>
-        {/* Only the forward action. Close lives in the bar above, where it sits
-            during the session too, so repeating it here put two identical
-            controls on a screen short enough to show both at once. */}
         <div class="review-nav">
           {queue.length > 0 && (
             <button class="dbtn" id="rv-again" onClick={again}>Another set</button>
@@ -97,24 +119,26 @@ export default function Review({ onClose }) {
   const row = queue[i];
   return (
     <div class="review">
-      <ReviewBar i={i} n={queue.length} onClose={onClose} />
+      <ReviewBar i={i} n={queue.length} scope={scope} />
       <DrillRun row={row} at={i} onNext={() => setI(i + 1)} />
     </div>
   );
 }
 
 /* Progress is dots and a count. Dots alone are shape and colour carrying
-   meaning with no words, which is what T26 forbids. */
-function ReviewBar({ i, n, onClose }) {
+   meaning with no words, which is what T26 forbids. The scope is named because
+   the same bar now serves one course and all of them, and a count of twelve
+   means a different thing in each. */
+function ReviewBar({ i, n, scope }) {
   return (
     <div class="review-bar">
       <span class="review-t">Review</span>
+      <span class="review-scope">{scope}</span>
       <span class="review-dots" aria-hidden="true">
         {Array.from({ length: Math.min(n, 12) }, (_, k) =>
           <i key={k} class={k < i ? "on" : ""} />)}
       </span>
       <span class="review-n">{Math.min(i + 1, n)} of {n}</span>
-      <button class="tbtn" onClick={onClose} aria-label="Leave review">Close</button>
     </div>
   );
 }

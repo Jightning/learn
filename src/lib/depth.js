@@ -25,7 +25,7 @@ import { getItem, setItem, removeItem } from "./store.js";
 export const DEPTHS = [
   { id: "full",  label: "Full",  hint: "every word" },
   { id: "notes", label: "Notes", hint: "claims only" },
-  { id: "index", label: "Index", hint: "names only" }
+  { id: "index", label: "Names", hint: "names only" }
 ];
 
 export const DEPTH_IDS = DEPTHS.map(d => d.id);

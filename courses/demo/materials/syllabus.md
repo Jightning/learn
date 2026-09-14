@@ -1,4 +1,4 @@
-# Syllabus — DEMO 001
+# Syllabus: DEMO 001
 
 Not an institutional course. The sequence is ordered by who needs it: the first
 section is everything a reader must know to use the site, and the rest is why it

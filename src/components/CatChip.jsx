@@ -22,7 +22,7 @@
 export function monogram(name, short) {
   if (short) return String(short).slice(0, 3).toUpperCase();
   const words = String(name || "").split(/[^A-Za-z0-9]+/).filter(Boolean);
-  if (!words.length) return "··";
+  if (!words.length) return "?";
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
 }

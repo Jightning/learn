@@ -33,7 +33,7 @@ const definedTerms = (C, keys) => keys
    that is the one exclusion the reading path itself already enforces. */
 const blockText = sub => (sub.blocks || [])
   .filter(b => b.h || b.term)
-  .map(b => clip([b.label, b.term, strip(b.h)].filter(Boolean).join(" — "), BLOCK_MAX))
+  .map(b => clip([b.label, b.term, strip(b.h)].filter(Boolean).join(", "), BLOCK_MAX))
   .join("\n");
 
 const courseOf = C => ({
@@ -42,7 +42,7 @@ const courseOf = C => ({
 });
 
 export function pageContext(C, cid, idx, rest, section) {
-  const code = C.code ? C.code + " — " : "";
+  const code = C.code ? C.code + ": " : "";
 
   if (rest && rest.startsWith("c/")) {
     const k = rest.slice(2), d = (C.concepts || {})[k];
@@ -59,7 +59,7 @@ export function pageContext(C, cid, idx, rest, section) {
   if (section) {
     const keys = mentioned(section);
     return {
-      title: `${code} · Section ${section.num} ${section.title}`,
+      title: `${code}: Section ${section.num} ${section.title}`,
       description: clip(term(section.blurb), 180),
       jsonld: {
         "@context": "https://schema.org",

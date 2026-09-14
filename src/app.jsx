@@ -24,8 +24,9 @@ import ReturnPill from "./components/ReturnPill.jsx";
 import Library from "./components/Library.jsx";
 import Desk from "./components/Desk.jsx";
 import Section from "./components/Section.jsx";
-import { ConceptHub, ConceptDetail } from "./components/Concepts.jsx";
-import { CatHub, CatDetail } from "./components/Categories.jsx";
+import { ConceptDetail } from "./components/Concepts.jsx";
+import { CatDetail } from "./components/Categories.jsx";
+import IndexPage from "./components/Index.jsx";
 import Explore from "./components/Explore.jsx";
 import Practice from "./components/Practice.jsx";
 import Primer from "./components/Primer.jsx";
@@ -33,6 +34,7 @@ import DepMap from "./components/DepMap.jsx";
 import SearchOverlay from "./components/SearchOverlay.jsx";
 import PageContext from "./components/PageContext.jsx";
 import Review from "./components/Review.jsx";
+import Speaker, { useSpeaker } from "./components/Speaker.jsx";
 import Calibration from "./components/Calibration.jsx";
 import CloudPanel from "./components/CloudPanel.jsx";
 
@@ -126,6 +128,11 @@ export default function App() {
     .map(c => ({ cid: c, C: INDEX[c], drills: { keys: (INDEX[c] || {}).drillKeys || [] } }))
     .filter(b => b.drills.keys.length), []);
   const due = books.length ? dueCount(books) : null;
+  /* The same count narrowed to the open course, for the row in its own rail.
+     A row that goes to this course's review must not report another course's
+     backlog; `dueCount` takes a book list, so the scope is a filter. */
+  const mine = books.filter(b => b.cid === cid);
+  const dueHere = mine.length ? dueCount(mine) : null;
 
   /* Rows arriving from another device rewrite this course's schedule, so the
      open course is refolded rather than merely repainted — a repaint would show
@@ -276,7 +283,12 @@ export default function App() {
       if (e.key === "/" && !typing) { e.preventDefault(); if (course) setSearchOpen(true); return; }
       if (e.key === "\\" && !typing && !e.metaKey && !e.ctrlKey) { toggleTuck(); return; }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === "r" && due != null) { location.hash = "#/review"; return; }
+      /* Whichever review the reader is standing next to: this course's inside
+         a course, the cross-course one anywhere else. */
+      if (e.key === "r" && due != null) {
+        location.hash = course && dueHere != null ? `#/${cid}/review` : "#/review";
+        return;
+      }
       if (course && "123".includes(e.key)) { onLane(LANES[+e.key - 1].id); return; }
       /* `d` rather than a fourth number: 1-3 belong to the lane, and depth is
          usually stepped one way along rather than jumped to. */
@@ -288,7 +300,14 @@ export default function App() {
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [course, section, cid, zoom, due, depth]);
+  }, [course, section, cid, zoom, due, dueHere, depth]);
+
+  /* Reading the page aloud. Keyed on the route *and* on the two axes and the
+     reveal state, because the cue list is a snapshot of the rendered column:
+     if the page changes shape underneath it, the queue describes something
+     that is no longer there, so the session ends rather than reading text the
+     reader can no longer see. */
+  const speech = useSpeaker(contentRef, `${hash}|${lane}|${depth}|${expandAll}`);
 
   /* Links inside injected course HTML cannot carry component handlers, so the
      content container intercepts them — this is the only delegation left. */
@@ -314,20 +333,21 @@ export default function App() {
     }
   };
 
-  const crumb = !course
+  const crumb = inReview ? "<b>Review</b>"
+    : !course
     ? "<b>Courses</b>"
-    : !rest ? `<b>${course.code}</b>  ·  contents`
-    : rest === "concepts" ? "<b>Core concepts</b>"
+    : !rest ? `<b>${course.code}</b>  ›  contents`
+    : rest === "index" || rest === "concepts" || rest === "cat" ? "<b>Index</b>"
+    : rest === "review" ? "<b>Review</b>"
     : rest === "practice" || rest.startsWith("practice/") ? "<b>Mixed practice</b>"
     : rest === "explore" || rest.startsWith("explore/") ? "<b>Explore</b>"
-    : rest === "cat" ? "<b>Categories</b>"
     : rest.startsWith("cat/")
-      ? `<b>Categories</b>  ›  ${((course.cats || {})[rest.slice(4)] || {}).name || rest.slice(4)}`
+      ? `<b>Index</b>  ›  ${((course.cats || {})[rest.slice(4)] || {}).name || rest.slice(4)}`
     : rest === "calibration" ? "<b>Calibration</b>"
     : rest === "map" || rest.startsWith("map/") ? "<b>Dependency map</b>"
     : rest.startsWith("primer/") ? "<b>Before you start</b>"
     : rest.startsWith("c/")
-      ? `<b>Core concepts</b>  ›  ${((course.concepts || {})[rest.slice(2)] || {}).term || ""}`
+      ? `<b>Index</b>  ›  ${((course.concepts || {})[rest.slice(2)] || {}).term || ""}`
       : section
         /* `reading`, not `subId`: the crumb answers "where am I", and the
            route answers "what did I click". They agree for one screen. The
@@ -338,22 +358,32 @@ export default function App() {
         : "";
 
   let view = null;
-  if (!course) view = cid
+  /* The cross-course queue, on the dashboard's own frame. `#/review` reserves
+     the id, so `course` is null here and the shell is already `solo` — which
+     is the library's frame, and the library is what a cross-course page
+     belongs to. It used to draw a full-bleed frame of its own with a Close
+     button; see components/Review.jsx. */
+  if (inReview) view = <Review />;
+  else if (!course) view = cid
     ? <Library courses={INDEX} order={ORDER} loading={!loadError} error={loadError}
                onChange={() => forceRender(n => n + 1)} />
     : <Library courses={INDEX} order={ORDER} onChange={() => forceRender(n => n + 1)} />;
   else if (!rest) view = <Desk ctx={ctx} />;
-  else if (rest === "concepts") view = <ConceptHub ctx={ctx} />;
+  /* One page, three routes. `index` is the canonical one; `concepts` and `cat`
+     are what every link and bookmark written before the two hubs were merged
+     still says, and a dead route is a worse answer than the page they meant. */
+  else if (rest === "index" || rest === "concepts" || rest === "cat")
+    view = <IndexPage ctx={ctx} />;
   else if (rest === "practice") view = <Practice ctx={ctx} />;
   else if (rest.startsWith("practice/"))
     view = <Practice ctx={ctx} cat={rest.slice(9)} />;
-  else if (rest === "cat") view = <CatHub ctx={ctx} />;
   else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} drills={drills} />;
   else if (rest === "explore") view = <Explore ctx={ctx} seed={null} />;
   else if (rest.startsWith("explore/tag/"))
     view = <Explore ctx={ctx} seed={{ tag: decodeURIComponent(rest.slice(12)) }} />;
   else if (rest.startsWith("explore/cat/"))
     view = <Explore ctx={ctx} seed={{ cat: decodeURIComponent(rest.slice(12)) }} />;
+  else if (rest === "review") view = <Review only={cid} />;
   else if (rest === "calibration") view = <Calibration ctx={ctx} onReset={onReset} />;
   else if (rest === "map" || rest.startsWith("map/"))
     view = <DepMap ctx={ctx} focus={rest.slice(4)}
@@ -379,9 +409,6 @@ export default function App() {
     el.focus({ preventScroll: false });
   };
 
-  if (inReview)
-    return <Review onClose={() => history.back()} />;
-
   if (inSetup)
     return (
       <div class="shell solo bare">
@@ -406,20 +433,24 @@ export default function App() {
                    open={menuOpen} onNavigate={() => setMenuOpen(false)}
                    onTuck={toggleTuck}
                    lane={lane} onLane={onLane} depth={depth} onDepth={onDepth}
+                   due={dueHere} zoom={zoom} onZoomReset={() => setZoom(1)}
+                   speech={speech}
                    actions={{ expanded: expandAll,
                               onExpand: () => setExpandAll(v => !v) }} />
         )}
         <main>
-          <Topbar crumb={crumb} inCourse={!!course}
+          <Topbar crumb={crumb} inCourse={!!course} home={!!course || inReview}
                   reading={!!section} lane={lane} depth={depth} onMode={onMode}
                   zoom={zoom} onZoomReset={() => setZoom(1)}
                   onSearch={() => setSearchOpen(true)}
-                  onExpand={() => setExpandAll(v => !v)} expanded={expandAll}
                   onMenu={() => setMenuOpen(v => !v)}
                   due={due} onReview={() => (location.hash = "#/review")} />
           <div class="wrap" id="content" ref={contentRef} onClick={onContentClick}>
             <div class="viewport" key={hash}>{view}</div>
           </div>
+          {/* Outside `.wrap`, which carries the content zoom: the bar is chrome
+              and magnifying the material should not magnify its controls. */}
+          <Speaker s={speech} />
         </main>
       </div>
 

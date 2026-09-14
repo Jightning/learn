@@ -18,26 +18,28 @@ blocks:
   - t: list
     source: docs/architecture.md §4
     core: |-
-      Six navigation surfaces, each answering a different question.
+      Five navigation surfaces, each answering a different question.
     h: |-
       The rest of the navigation, in one list:
     items:
-      - <b>Core concepts</b> — every reused idea, where it is defined, and everywhere it appears
-      - <b>Categories</b> — every <i>kind</i> of thing the course sorts its material into, and what each one is not
-      - <b>The dependency map</b> — which section needs which, with your mastery drawn onto the nodes
-      - <b>Search</b> (<code>/</code>) — across the whole course, arrow keys to pick
-      - <b>Explore</b> — the same index with filters on it, down to the individual rule or table
+      # Quoted for the same reason as the list in §1.1: the colon would
+      # otherwise make this line a mapping rather than a string.
+      - '<b>The index</b>, in two bands: <i>ideas</i>, every reused concept with everywhere it appears, and <i>kinds</i>, every category the course sorts its material into with what each one is not'
+      - <b>The dependency map</b>, which section needs which, with your mastery drawn onto the nodes
+      - <b>Search</b> (<code>/</code>), across the whole course, arrow keys to pick
+      - <b>Explore</b>, the same index with filters on it, down to the individual rule or table
       - <b>The sidebar</b> (<code>\</code> hides it) and <code>[</code> <code>]</code> to page between sections
 
   - t: def
     source: docs/material_truth.md M35
     term: Category
-    label: The index that is not the table of contents
+    label: The half of the index that is not a list of ideas
     cat: navigation-surfaces
     core: |-
       A <b>category</b> is a set of things that are the same <i>kind</i> of thing, wherever in the course they happen to sit.
     h: |-
-      <p>A section groups by position and a <c k="non-redundancy">concept</c> groups by mention; neither answers “what are all the X?”. A category does, and it carries a <b>boundary</b> — what falls outside it, and which neighbouring category those things belong to instead. That boundary is usually the thing you were actually trying to learn.</p>
+      <p>A section groups by position and a <c k="non-redundancy">concept</c> groups by mention; neither answers “what are all the X?”. A category does, and it carries a <b>boundary</b>: what falls outside it, and which neighbouring category those things belong to instead. That boundary is usually the thing you were actually trying to learn.</p>
+      <p>Ideas and kinds share the index page because they are the two halves of one question. An idea is a thing you have to hold; a kind is a shelf you can find things on. Neither is a place in the course.</p>
 
   - t: key
     source: docs/architecture.md §3f
@@ -86,9 +88,9 @@ quiz:
   - type: Tell two indexes apart
     concept: non-redundancy
     q: |-
-      You remember reading a table of something, but not which section it was in. Core concepts or Categories — which one is built to answer that, and why is the other one not?
+      You remember reading a table of something, but not which section it was in. The index has two bands, Ideas and Kinds. Which one is built to answer that, and why is the other one not?
     a: |-
-      Categories. A category groups things by what kind they are regardless of where they sit, so it does not need you to remember the position. Core concepts is an index of <em>mentions</em>: it answers "where else is this idea talked about", which still starts from knowing which idea you want.
+      Kinds. A category groups things by what kind they are regardless of where they sit, so it does not need you to remember the position. Ideas is an index of <em>mentions</em>: it answers "where else is this idea talked about", which still starts from knowing which idea you want.
     why: |-
       <p>"Search" is the tempting answer and it works only if you can recall a word that was actually in the table. The point of a category is that it is reachable when the thing you have retained is the <em>kind</em> rather than the wording or the place.</p>
     why_prompt: Which of the two indexes needs you to already know where you read it?

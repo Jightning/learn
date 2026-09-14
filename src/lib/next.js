@@ -113,8 +113,8 @@ export function nextUp({ C, cid, idx, state, drills, place = null, now = Date.no
     if (!done || done.got < done.total || frac < 0.95) {
       out.push({
         kind: "resume", href: `#/${cid}/${sub.id}`,
-        title: `${num} · ${sub.title}`,
-        why: `You stopped part way in · about ${minutesLeft(sub, frac)} min left`,
+        title: `${num}  ${sub.title}`,
+        why: `You stopped part way in, about ${minutesLeft(sub, frac)} min left`,
         count: null
       });
     }
@@ -174,7 +174,7 @@ export function nextUp({ C, cid, idx, state, drills, place = null, now = Date.no
          it. After that the count is all the row needs, because they already
          know how the course is shaped. */
       why: fresh
-        ? `${parts} ${parts === 1 ? "part" : "parts"} · the course assumes nothing before this`
+        ? `${parts} ${parts === 1 ? "part" : "parts"}, and the course assumes nothing before this`
         : `${parts} ${parts === 1 ? "part" : "parts"}`
     });
   }
@@ -193,7 +193,7 @@ export function nextUp({ C, cid, idx, state, drills, place = null, now = Date.no
        where practice is the right recommendation rather than a distraction. */
     out.push({
       kind: "practice", href: H("practice"), count: null,
-      title: "Nothing is due — practise anyway",
+      title: "Nothing is due, practise anyway",
       why: "You are ahead of the schedule. Mixed practice is what keeps you there."
     });
   }

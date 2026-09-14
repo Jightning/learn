@@ -3,7 +3,7 @@ import { renderBlock, isApart } from "../blocks/index.js";
 import { INTERACTIVE } from "../blocks/interactive.js";
 import { decorate, refsOf, buildsOn } from "../lib/refs.js";
 import { runsOf } from "../lib/tiers.js";
-import { present, shapeOf, topicsOf, leadList } from "../lib/gist.js";
+import { present, topicsOf, leadList } from "../lib/gist.js";
 import { blockId } from "../lib/index.js";
 import { MarginRefs, UsedLater, RefChip } from "./MarginNote.jsx";
 import Quiz from "./Quiz.jsx";
@@ -325,21 +325,6 @@ const nameOfHead = b => b.term || b.label || "";
    page can wear is a literal the stylesheet lint can find. */
 const depthClass = d => (d === "index" ? " depth-index" : d === "notes" ? " depth-notes" : "");
 
-/* What a depth is holding back, in words and on the row it holds it back from.
- * A reader who cannot see how much is closed cannot tell an outline from a
- * short section, and a provided outline raises recall without raising
- * comprehension — so saying what it costs is part of offering it. */
-function DepthNote({ section, depth }) {
-  if (depth === "full") return null;
-  const { named, closed } = shapeOf(section, depth);
-  return (
-    <p class="depth-note">
-      {named} {named === 1 ? "item" : "items"}, {closed} closed.
-      {" "}Open any one in place, or press <b>d</b> for the whole text.
-    </p>
-  );
-}
-
 export default function Section({ section, ctx, expandAll, lane, onLane, depth, onDepth, openBlock }) {
   const { C, cid, idx } = ctx;
   const H = r => `#/${cid}/${r}`;
@@ -363,7 +348,6 @@ export default function Section({ section, ctx, expandAll, lane, onLane, depth, 
             you have here, not back in the course nav */}
         <a class="sec-where" href={H(`map/${section.id}`)}>Where this sits →</a>
       </div>
-      <DepthNote section={section} depth={depth} />
       {/* The panel names the section's terms, which is exactly what a closed
           depth already puts on the page as its topic headings. Showing both is
           the same list twice, so it yields to the material. */}

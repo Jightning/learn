@@ -1,17 +1,8 @@
-/* 80-concepts — Concept hub and concept entries. */
+/* 80-concepts — A concept entry. The hub is now 78-index.css. */
 
 .chub{padding:var(--view-top) 0 0}
 .chub h1{font-family:var(--display);font-size:2.15rem;font-weight:600;letter-spacing:-.02em;margin:0 0 12px}
 .chub .lede{color:var(--ink-2);margin:0 0 30px;max-width:var(--measure)}
-.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px}
-.ccard{
-  display:block;border:1px solid var(--rule);border-radius:10px;background:var(--surface);
-  padding:16px 17px;text-decoration:none;color:inherit;
-}
-.ccard:hover{border-color:var(--hi)}
-.ccard h3{font-family:var(--display);font-size:1.06rem;font-weight:600;margin:0 0 7px;letter-spacing:-.012em}
-.ccard .uses{font-family:var(--mono);font-size:var(--fs-meta);color:var(--hi-ink)}
-.ccard .where{color:var(--ink-3);font-size:var(--fs-small);margin-top:7px;line-height:1.5}
 .cdet{padding:var(--view-top) 0 0;max-width:70ch}
 .cdet .eyebrow{margin-bottom:10px}
 .cdet h1{font-family:var(--display);font-size:2.0rem;font-weight:600;letter-spacing:-.02em;margin:0 0 18px}
@@ -31,8 +22,8 @@
 .appears a,.toc a.tocrow{min-width:0}
 .appears .at,.toc .tt2{overflow-wrap:anywhere}
 
-/* Grouped by the section that first needs the concept, so the hub reads in
-   course order rather than as one ranked list. The gap belongs *between*
+/* A category page groups its members by the section they sit in, so it reads
+   in course order rather than as one flat list. The gap belongs *between*
    groups; on the last one it is 44px of nothing on top of the page's own
    bottom gutter, which on a phone is most of a thumb's worth of scrolling
    past the end of the material. */

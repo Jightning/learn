@@ -1,0 +1,93 @@
+/* 57-dropdown — A facet button and the menu behind it. */
+
+.dd{position:relative;display:inline-block}
+
+/* At rest a facet is its own name; once set it is its name and its value, and
+   the value is the part in ink. A control that showed only the value would be
+   unreadable as a row (four words, no axes); one that showed only the name
+   would hide the state it exists to report. */
+.dd-b{
+  display:inline-flex;align-items:center;gap:.4rem;
+  font-family:var(--ui);font-size:var(--fs-meta);
+  border:1px solid var(--rule);background:var(--surface);color:var(--ink-3);
+  border-radius:3px;padding:5px 9px;cursor:pointer;max-width:20rem;
+}
+.dd-b:hover,.dd.is-open>.dd-b{border-color:var(--hi);color:var(--hi-ink)}
+.dd-b.set{border-color:var(--hi)}
+.dd-l{flex:none}
+.dd-v{
+  color:var(--hi-ink);font-weight:500;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* Down at rest, up while open, so the button reports the menu's state and not
+   only its own value. The shared .caret points right, hence the offset. */
+.dd-c{margin-right:0;margin-left:.1rem;opacity:.7;transform:rotate(90deg)}
+.dd.is-open .dd-c{transform:rotate(-90deg)}
+
+/* `max-height` is set inline from the room measured on open (Dropdown.jsx);
+   the 60vh here is only the value before that runs. */
+.dd-menu{
+  position:absolute;z-index:40;top:calc(100% + 4px);left:0;
+  min-width:12rem;max-width:26rem;max-height:60vh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+  /* The one shadow on the page, and it is here because this is the one thing
+     that genuinely floats above the document rather than sitting in it. */
+  box-shadow:0 8px 24px rgba(8,11,16,.14);
+  padding:3px;
+}
+.dd-menu.wide{min-width:20rem}
+/* Opened upward, where there was no room below. The read-aloud bar is docked
+   at the foot of the screen, so this is the normal case there, not the edge. */
+.dd-menu.is-up{top:auto;bottom:calc(100% + 4px)}
+
+.dd-i{
+  display:grid;
+  grid-template-columns:auto auto 1fr auto;
+  grid-template-areas:"mark lead text n" ".  .   sub  sub";
+  align-items:center;gap:0 .5rem;width:100%;
+  font:inherit;font-family:var(--ui);font-size:var(--fs-meta);
+  text-align:left;background:none;border:0;color:var(--ink-2);
+  padding:6px 8px;border-radius:3px;cursor:pointer;
+}
+.dd-i:hover{background:var(--surface-2);color:var(--ink)}
+.dd-i.sel{color:var(--hi-ink)}
+/* Shape carries the cardinality: a ring for "one of these", a box for "any of
+   these". Colour agrees with the shape rather than being the only signal. */
+.dd-mark{
+  grid-area:mark;width:11px;height:11px;flex:none;border-radius:50%;
+  border:1.5px solid var(--rule-2);box-shadow:inset 0 0 0 1px var(--rule);
+}
+.dd-mark.box{border-radius:2px}
+.dd-i.sel .dd-mark{background:var(--hi);border-color:var(--hi);box-shadow:none}
+.dd-i .cchip-m{grid-area:lead}
+.dd-t{grid-area:text;min-width:0;overflow-wrap:anywhere}
+.dd-n{
+  grid-area:n;font-family:var(--mono);font-size:var(--fs-micro);
+  color:var(--ink-3);font-variant-numeric:tabular-nums;
+}
+/* A category's boundary is the reason it exists, so it is in the menu rather
+   than one page behind it: choosing between five categories you cannot tell
+   apart is the problem the boundary was written to solve. Clamped, because a
+   boundary runs to three sentences and a menu row must not. */
+/* A note at the foot of a menu, about the menu rather than about a row in it. */
+.dd-foot{
+  font-size:var(--fs-micro);color:var(--ink-3);line-height:1.45;
+  margin:.3rem 0 .1rem;padding:.4rem .5rem 0;border-top:1px solid var(--rule-2);
+}
+
+.dd-sub{
+  grid-area:sub;font-size:var(--fs-micro);color:var(--ink-3);line-height:1.4;
+  margin-top:2px;display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;line-clamp:2;overflow:hidden;
+}
+
+/* On a phone a menu anchored to its own button runs off the right edge: the
+   third facet starts two thirds of the way across a 390px row, and the widest
+   menu is 20rem. So below the reading breakpoint the menus anchor to the facet
+   row instead and span it, which is the only width guaranteed to fit. */
+@media (max-width:52em){
+  .xfacets .dd{position:static}
+  .xfacets .dd-menu,.xfacets .dd-menu.wide{
+    left:0;right:0;min-width:0;max-width:none;
+  }
+}

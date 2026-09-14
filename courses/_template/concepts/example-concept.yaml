@@ -8,8 +8,8 @@ src: Defined in §1.1
 
 # In the review set: this concept is meant to survive the semester, so it owes
 # drills/example-concept.yaml. Promotion to a concept and scheduling for
-# retention are separate decisions — drop this line and the concept keeps its
-# card, its hub entry and its margin cards, and simply never comes up in review.
+# retention are separate decisions. Drop this line and the concept keeps its
+# entry in the index and its margin cards, and simply never comes up in review.
 review: true
 
 # Only where readers genuinely mix the two up. Mixed practice pays on

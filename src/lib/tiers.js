@@ -26,7 +26,7 @@ const NOUN = { depth: n => `${n} in depth`, apply: n => `${n} more application${
 export function stubLabel(items) {
   const n = {};
   for (const it of items) n[tierOf(it.b)] = (n[tierOf(it.b)] || 0) + 1;
-  return ["depth", "apply"].filter(t => n[t]).map(t => NOUN[t](n[t])).join(" · ");
+  return ["depth", "apply"].filter(t => n[t]).map(t => NOUN[t](n[t])).join(", ");
 }
 
 /** blocks, grouped into runs the lane either shows or collapses into one stub */

@@ -17,10 +17,10 @@ blocks:
 
   - t: table
     cat: block-kinds
-    cap: "plain table — no mono, no colouring"
+    cap: "plain table: no mono, no colouring"
     head: [block type, boxed, feeds the primer]
     rows:
-      - ["def", "yes", "yes — via its term"]
+      - ["def", "yes", "yes, via its term"]
       - ["key", "yes", "no"]
       - ["note", "ruled, not boxed", "no"]
 
@@ -28,7 +28,7 @@ blocks:
     cat: block-kinds
     mono: true
     split: 2
-    cap: "mono table — centred cells, course valueStyles applied, a rule after column 2"
+    cap: "mono table: centred cells, course valueStyles applied, a rule after column 2"
     head: [feature, in spine, in depth, in apply]
     rows:
       - [definition, yes, "no", "no"]
@@ -40,7 +40,7 @@ blocks:
     cat: block-kinds
     tier: depth
     map: {req: v-y, opt: v-a, gen: v-n}
-    cap: "map table — a value-to-class map declared on the block itself"
+    cap: "map table: a value-to-class map declared on the block itself"
     head: [material file, status]
     rows:
       - ["expectations.md", req]

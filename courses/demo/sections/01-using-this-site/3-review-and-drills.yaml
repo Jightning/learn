@@ -3,7 +3,7 @@ blocks:
   - t: p
     source: docs/architecture.md §3c
     h: |-
-      Quizzes ask whether you can produce an answer today. Review asks whether you still can in six weeks, and it is the half of the site that decides what you see rather than waiting for you to choose. The <b>Review</b> button in the toolbar carries the count of what is due across every course you have installed, and <code>r</code> opens it.
+      Quizzes ask whether you can produce an answer today. Review asks whether you still can in six weeks, and it is the half of the site that decides what you see rather than waiting for you to choose. The <b>Review</b> row in the sidebar carries the count of what is due across every course you have installed, and <code>r</code> opens it.
 
   - t: def
     cat: retrieval-surfaces
@@ -22,7 +22,7 @@ blocks:
     core: |-
       Two doors let a concept into the review schedule, and reading is neither of them.
     h: |-
-      <p>Either you open a concept from <b>Core concepts</b> and press <b>Drill this</b>, or you miss a quiz question you were <c k="confidence">confident</c> about and the seam enrols it for the next day. An untouched course therefore has nothing due, and that is the system working, not an empty page.</p>
+      <p>Either you open a concept from the <b>index</b> and press <b>Drill this</b>, or you miss a quiz question you were <c k="confidence">confident</c> about and the seam enrols it for the next day. An untouched course therefore has nothing due, and that is the system working, not an empty page.</p>
 
   - t: table
     # A three-way comparison is already the compact form: it puts the surfaces
@@ -41,7 +41,7 @@ blocks:
     source: docs/architecture.md §3c
     label: Nothing due does not mean nothing to do
     core: |-
-      An empty review queue means no concept has reached its next scheduled date — usually because none have been enrolled yet.
+      An empty review queue means no concept has reached its next scheduled date, usually because none have been enrolled yet.
     h: |-
       <p>Mixed practice is available at any time and draws from the quiz pool, so "nothing is due" is never a reason to close the tab.</p>
 

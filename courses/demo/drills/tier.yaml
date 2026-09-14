@@ -52,5 +52,5 @@ items:
       - |-
         One run renders as one stub, with a text count of what it holds.
     why: |-
-      <p>The stub's count is the signal: "3 in depth · 2 more applications". You know what you skipped.</p>
+      <p>The stub's count is the signal: "3 in depth, 2 more applications". You know what you skipped.</p>
     verified: 2026-09-02

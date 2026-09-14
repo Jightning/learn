@@ -23,7 +23,7 @@
 .pager{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:var(--view-top) 0 0;
   border-top:1px solid var(--rule);padding-top:20px}
 .pager a{
-  display:block;padding:13px 15px;border:1px solid var(--rule);border-radius:9px;
+  display:block;padding:13px 15px;border:1px solid var(--rule);border-radius:3px;
   text-decoration:none;color:inherit;background:var(--surface);
 }
 .pager a:hover{border-color:var(--hi)}
@@ -35,14 +35,14 @@
 .dash{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:24px 0 0}
 .dash-go{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 6px}
 .dstat{display:inline-flex;align-items:baseline;gap:6px;border:1px solid var(--rule);
-  border-radius:8px;padding:7px 12px;font-size:var(--fs-small);color:var(--ink-3);background:var(--surface)}
+  border-radius:3px;padding:7px 12px;font-size:var(--fs-small);color:var(--ink-3);background:var(--surface)}
 .dstat b{font-family:var(--mono);font-size:1.05rem;color:var(--ink);font-weight:700}
 .dstat.warn b{color:var(--dc-ink)}
 /* A button label is read, not matched by shape. This is the shared button on
    the Desk, the review screens, practice and calibration — the last place mono
    was doing chrome duty. */
 .dbtn{font-family:var(--ui);font-size:var(--fs-small);text-decoration:none;
-  border:1px solid var(--rule);border-radius:5px;padding:8px 14px;color:var(--ink-2);
+  border:1px solid var(--rule);border-radius:3px;padding:8px 14px;color:var(--ink-2);
   background:var(--surface);cursor:pointer}
 .dbtn:hover{border-color:var(--hi);color:var(--hi-ink)}
 

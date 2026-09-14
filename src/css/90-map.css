@@ -5,7 +5,7 @@
 .fx-node:hover .fx-n{stroke-width:2.6}
 .maplist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
 .maplist a{text-decoration:none;color:var(--ink-2);font-size:var(--fs-small);padding:6px 9px;
-  border-radius:6px;border:1px solid transparent;overflow-wrap:anywhere}
+  border-radius:3px;border:1px solid transparent;overflow-wrap:anywhere}
 .maplist a:hover{border-color:var(--rule);color:var(--ink)}
 .maplist b{font-family:var(--mono);color:var(--hi-ink);margin-right:7px}
 

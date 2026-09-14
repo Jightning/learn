@@ -153,9 +153,9 @@ for (const id of ids) {
   if (over.length) failed++;
 
   console.log(`${over.length ? "FAIL" : "ok  "} ${id.padEnd(10)} ` +
-    rows.map(r => `${pct(r.frac)} of ${r.of} ${r.k}`).join(" · "));
+    rows.map(r => `${pct(r.frac)} of ${r.of} ${r.k}`).join(", "));
   for (const r of over)
-    console.log(`       ✗ ${pct(r.frac)} ${r.label} — this course declares a ceiling of ${pct(r.max)}`);
+    console.log(`       ✗ ${pct(r.frac)} ${r.label}, against a declared ceiling of ${pct(r.max)}`);
   for (const key of details)
     console.log(`       ! drills/${key}: a key block states a value and no item cues it back (M33)`);
 }

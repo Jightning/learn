@@ -181,7 +181,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
                 <div class="lops">
                   <button class="lop lmore" aria-expanded={ops === id}
                           aria-label={`Manage ${c.title || id}`}
-                          onClick={() => setOps(v => (v === id ? null : id))}>···</button>
+                          onClick={() => setOps(v => (v === id ? null : id))}>…</button>
                   {ops === id && (
                     <>
                       {ownIt && (

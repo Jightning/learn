@@ -2,7 +2,7 @@ code: DEMO 001
 title: The Study-Site System
 tagline: |-
   Start here. §1 is everything you need to read, answer, and review a course; the rest is why it works that way, and every block, figure, and loop the engine can render.
-meta: This repository · self-referential
+meta: This repository, self-referential
 
 theme:
   hue: 265
@@ -26,7 +26,7 @@ audit:
   # This course has been through a claims pass, so it declares what it reached
   # and can never regress past it. `unclaimed: 0` means every def, key and trap
   # states its claim in a field of its own; `repeat` is the fraction taking the
-  # `gist:` escape, which is one block out of 34 — the trap in §1.4, whose prose
+  # `gist:` escape, which is one block out of 34: the trap in §1.4, whose prose
   # has to withhold its correction to work at all.
   unclaimed: 0
   repeat: 0.04
@@ -49,7 +49,7 @@ styles: |
   .metric-v{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--hi-ink)}
   .metric-l{font-size:.8rem;color:var(--ink-2)}
 
-# Syntax highlighting for `code` blocks — pure configuration, no renderer.
+# Syntax highlighting for `code` blocks: pure configuration, no renderer.
 syntax:
   comment: "#"
   keywords: [tier, spine, depth, apply, concept, review, quiz, drill]

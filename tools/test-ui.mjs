@@ -31,6 +31,10 @@ page.on("console", m => { if (m.type() === "error") errs.push("CONSOLE: " + m.te
 
 const R = [];
 const ck = (n, ok, x = "") => R.push({ n, ok, x });
+/* Scoped assertions that allow "absent" need one place that proves the thing
+   is ever present, or a feature that stopped rendering everywhere would pass
+   every per-course check in the sweep. */
+let sawQueueRow = false;
 const go = async (h = "") => { await page.goto(URL + h); await page.waitForTimeout(450); };
 const shot = async name => { if (SHOTS) await page.screenshot({ path: join(shotDir, name + ".png") }); };
 
@@ -556,9 +560,15 @@ for (const cid of ids) {
       offscreen: shown.filter(b => b.getBoundingClientRect().right > window.innerWidth + 1).length,
       barH: Math.round(bar.getBoundingClientRect().height),
       rows: new Set(shown.map(b => Math.round(mid(b)))).size,
-      /* what moved into the drawer has to still exist there */
-      drawer: document.querySelectorAll(".side-actions .tbtn").length,
-      drawerShown: getComputedStyle(document.querySelector(".side-actions")).display !== "none"
+      /* What the toolbar sheds has to still exist. It is in the sidebar now,
+         under Reading options, at every width rather than only below this
+         breakpoint — so this counts the panel's contents rather than asking
+         whether a mobile-only band is showing. */
+      shed: document.querySelectorAll(".axes-acts .lane-b").length,
+      queue: [...document.querySelectorAll(".navtop .rv-row")].map(a => ({
+        href: a.getAttribute("href"),
+        count: (a.querySelector(".rv-n") || {}).textContent || null
+      }))
     };
   });
   ck(P("no horizontal overflow at 390px"), !narrow.overflow);
@@ -568,8 +578,18 @@ for (const cid of ids) {
      rows, before the secondary controls moved into the drawer. */
   ck(P("toolbar is one row on a phone"), narrow.rows === 1, narrow.rows + " rows");
   ck(P("toolbar costs under a sixth of a phone screen"), narrow.barH < 800 / 6, narrow.barH + "px");
-  ck(P("the controls it sheds are in the drawer"), narrow.drawerShown && narrow.drawer >= 2,
-     narrow.drawer + " in drawer");
+  ck(P("the controls it sheds are in the sidebar"), narrow.shed >= 2,
+     narrow.shed + " under Reading options");
+  /* The row is scoped to this course, so a course with no drill bank of its
+     own has none — which is most of them, and asserting one unconditionally
+     asserted that every course runs a review schedule. What has to hold is
+     that there is never more than one, and that the one there is points at
+     this course and carries its count. */
+  ck(P("at most one review row, and it is this course's"),
+     narrow.queue.length <= 1
+     && narrow.queue.every(r => r.href === `#/${cid}/review` && /^\d+$/.test((r.count || "").trim())),
+     JSON.stringify(narrow.queue));
+  if (narrow.queue.length) sawQueueRow = true;
 
   /* WCAG 2.5.8 is 24px; 44px is the platform guidance. Inline links inside a
      sentence are exempt and excluded. Measured by hit-testing rather than by
@@ -1061,8 +1081,6 @@ for (const cid of ids) {
     }
     ck(P("no row is prefixed with the engine's word for its block type"),
        await page.locator(".nrow .gkind").count() === 0);
-    ck(P("notes depth says how much it is holding back"),
-       /closed/.test(await page.locator(".depth-note").first().innerText()));
 
     /* T42: no depth removes a block. Every block still has its row in the
        document, whether open or closed. */
@@ -1134,10 +1152,18 @@ for (const cid of ids) {
        close, and the depth's own view has to come back — including any block
        the reader had opened by hand underneath it. */
     await setDepth("notes"); await page.waitForTimeout(300);
-    const reveal = () => page.evaluate(() =>
-      [...document.querySelectorAll(".tbtn")].find(b => /Reveal all/i.test(b.textContent))?.click());
-    const closeAll = () => page.evaluate(() =>
-      [...document.querySelectorAll(".tbtn")].find(b => /Close all/i.test(b.textContent))?.click());
+    /* Both moved out of the toolbar and into the sidebar's Reading options,
+       which is a <details>. Opened first, because a control a reader cannot
+       reach is not a control — clicking it through the DOM would pass this
+       test with the disclosure permanently shut. */
+    await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+    const act = re => page.evaluate(r =>
+      [...document.querySelectorAll(".axes-acts .lane-b")]
+        .find(b => new RegExp(r, "i").test(b.textContent))?.click(), re);
+    const reveal = () => act("Reveal all");
+    const closeAll = () => act("Close all");
+    ck(P("the reading panel carries the controls the toolbar shed"),
+       await page.locator(".axes-acts .lane-b").count() >= 2);
 
     /* "Close all" returns the page to what the *depth* defines, which is not
        necessarily what was on screen a moment ago: a tier stub the reader had
@@ -1149,7 +1175,8 @@ for (const cid of ids) {
     ck(P("reveal all opens every closed block"), await page.locator(".nrow").count() === 0);
     ck(P("the reveal control renames itself to its reverse"),
        await page.evaluate(() =>
-         !!([...document.querySelectorAll(".tbtn")].find(b => /Close all/i.test(b.textContent)))));
+         !!([...document.querySelectorAll(".axes-acts .lane-b")]
+             .find(b => /Close all/i.test(b.textContent)))));
     await closeAll(); await page.waitForTimeout(350);
     const settled = await page.locator(".nrow").count();
     ck(P("close all returns to the depth, not to the full text"), settled > 0, `${settled} rows`);
@@ -1164,16 +1191,18 @@ for (const cid of ids) {
     ck(P("full depth closes nothing"), await page.locator(".nrow, .quiz-line").count() === 0);
   }
 
-  /* categories: membership, a boundary, and the sibling it is defined against */
-  if (await page.evaluate(() => true)) {
-    await go(`#/${cid}/cat`);
-    const cards = await page.locator(".catcard").count();
+  /* categories: membership, a boundary, and the sibling it is defined against.
+     The hub is the Kinds band of the index; the detail page is its own. */
+  {
+    await go(`#/${cid}/index`);
+    const kinds = page.locator('.ix-row[href*="/cat/"]');
+    const cards = await kinds.count();
     if (cards) {
-      ck(P("the category hub lists its categories"), cards > 0, `${cards}`);
-      /* Navigated rather than clicked: the toolbar is sticky, and a card that
+      ck(P("the index lists the course's kinds"), cards > 0, `${cards}`);
+      /* Navigated rather than clicked: the toolbar is sticky, and a row that
          scrolls under it intercepts the pointer. The link's own href is what
          is being tested anyway. */
-      const href = await page.locator(".catcard").first().getAttribute("href");
+      const href = await kinds.first().getAttribute("href");
       await go(href); await page.waitForTimeout(350);
       ck(P("a category page states its boundary"),
          (await page.locator(".cbound-lg").first().innerText()).trim().length > 20);
@@ -1188,18 +1217,70 @@ for (const cid of ids) {
 
   /* explore: the faceted surface, which the overlay deliberately is not */
   {
+    /* What this course actually declares, read off the index rather than off
+       Explore: asking Explore whether it offers a Category facet and then
+       asserting that it offers one is not a test. */
+    await go(`#/${cid}/index`);
+    const declared = await page.evaluate(() => ({
+      cats: !!document.querySelector('.ix-row[href*="/cat/"]'),
+      tags: !!document.querySelector(".tagrow .gtag")
+    }));
     await go(`#/${cid}/explore`);
     ck(P("explore opens with no query"), await page.locator(".xq").count() === 1);
-    const catBtns = await page.locator(".xfacet .lane-b").count();
-    ck(P("explore offers facets"), catBtns >= 3, `${catBtns} facet buttons`);
-    /* Browsing with no query is the whole point: a category is a request. */
-    await page.evaluate(() => document.querySelector(".xfacet .lane-b").click());
-    await page.waitForTimeout(350);
+    /* A facet per axis the course actually has. Kind and Show are structural
+       and always present; Category and Tag are declared, and a course with no
+       taxonomy must show neither rather than an empty menu. Counting buttons
+       would pass on the wrong two, so the labels are what is read. */
+    const facets = await page.evaluate(() =>
+      [...document.querySelectorAll(".xfacets .dd-b .dd-l")].map(e => e.textContent));
+    ck(P("explore offers a facet for every axis the course has"),
+       facets.includes("Kind") && facets.includes("Show")
+       && facets.includes("Category") === declared.cats
+       && facets.includes("Tag") === declared.tags,
+       facets.join(", "));
+
+    /* Kind, not whichever facet happens to sit second: it is the one axis every
+       course has, and picking a value on it is what makes the page faceted.
+       Pointing this at nth(1) passed on the demo and quietly chose `Show` on
+       every course with no taxonomy, which filters nothing. */
+    const kindBtn = page.locator(".xfacets .dd", { has: page.locator('.dd-l:text-is("Kind")') })
+                        .locator(".dd-b");
+    await kindBtn.click(); await page.waitForTimeout(200);
+    const opened = await page.locator(".dd-menu .dd-i").count();
+    ck(P("a facet opens onto its values"), opened > 1, `${opened} values`);
+    /* Kind takes several values at once, so it deliberately does *not* close
+       on a pick: a reader ticking two kinds should not have to reopen it. */
+    await page.locator(".dd-menu .dd-i").nth(1).click();
+    await page.waitForTimeout(250);
+    ck(P("a multi-value facet stays open after a pick"),
+       await page.locator(".dd-menu").count() === 1);
+    await page.keyboard.press("Escape"); await page.waitForTimeout(200);
+    ck(P("escape closes a facet"), await page.locator(".dd-menu").count() === 0);
+
+    /* Browsing with no query is the whole point: a facet is a request. */
     const rows = await page.locator(".xrow").count();
     ck(P("a facet alone returns results, with no query typed"), rows > 0, `${rows} rows`);
     await page.locator(".xq").fill("the"); await page.waitForTimeout(400);
     ck(P("a query narrows rather than replaces the facet"),
        await page.locator(".xrow").count() <= rows + 1);
+
+    /* A single-value facet is the other half of the contract, and only a course
+       that declares categories can be asked about it. */
+    if (declared.cats) {
+      await page.locator(".xq").fill(""); await page.waitForTimeout(250);
+      await page.locator(".xfacets .dd", { has: page.locator('.dd-l:text-is("Category")') })
+                .locator(".dd-b").click();
+      await page.waitForTimeout(200);
+      await page.locator(".dd-menu .dd-i").nth(1).click();
+      await page.waitForTimeout(250);
+      ck(P("a single-value facet closes on a pick"),
+         await page.locator(".dd-menu").count() === 0);
+      /* Its own button, not the first one on the row: Kind is still set from
+         the step above, so reading .dd-v.first() would pass on Kind's value. */
+      ck(P("and reports the value it is set to on its own button"),
+         (await page.locator(".xfacets .dd", { has: page.locator('.dd-l:text-is("Category")') })
+                    .locator(".dd-v").innerText()).trim().length > 0);
+    }
   }
 
   /* A block is addressable, and the address is what a block-grain search hit
@@ -1337,6 +1418,12 @@ for (const cid of ids) {
       return { r: (Math.max(a, b2) + 0.05) / (Math.min(a, b2) + 0.05),
                weight: parseInt(cs.fontWeight) || 400 };
     });
+    /* Theme left the toolbar for the sidebar's Reading options, which is a
+       <details>; opened first so this drives the control a reader has. */
+    const toggleTheme = async () => {
+      await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+      await page.locator(".axes-acts .lane-b", { hasText: "Theme" }).click();
+    };
     const lit = await measure();
     if (lit) {
       ck(P("a marked word clears AA on the accent tint"), lit.r >= 4.5,
@@ -1344,7 +1431,7 @@ for (const cid of ids) {
       /* T26: the tint is not the only thing saying "matched". */
       ck(P("and is not marked by colour alone"), lit.weight >= 600, "weight " + lit.weight);
       await page.keyboard.press("Escape");
-      await page.locator(".topbar .tbtn", { hasText: "Theme" }).click();
+      await toggleTheme();
       await page.waitForTimeout(250);
       await page.keyboard.press("/"); await page.waitForTimeout(200);
       await page.locator("#s-input").fill("the"); await page.waitForTimeout(300);
@@ -1352,7 +1439,7 @@ for (const cid of ids) {
       if (dark) ck(P("and clears it in the other theme too"), dark.r >= 4.5,
                    dark.r.toFixed(2) + ":1");
       await page.keyboard.press("Escape");
-      await page.locator(".topbar .tbtn", { hasText: "Theme" }).click();
+      await toggleTheme();
       await page.waitForTimeout(250);
       await page.keyboard.press("/"); await page.waitForTimeout(200);
     }
@@ -1360,14 +1447,49 @@ for (const cid of ids) {
   await shot(cid + "-search");
   await page.keyboard.press("Escape");
 
-  /* Past a threshold the hub groups by where a concept is first needed; below
-     it, grouping would produce a page of one-card groups. Assert the rule. */
-  await go(`#/${cid}/concepts`);
-  const nCards = await page.locator(".ccard").count();
-  if (nCards) {
-    const heads = await page.locator(".cgroup .cghead").count();
-    ck(P("concept hub groups only when large"), nCards >= 8 ? heads > 0 : heads === 0,
-       `${nCards} concepts, ${heads} groups`);
+  /* One index, two bands. The two hubs it replaced were adjacent rows in the
+     rail opening onto identical card grids; what has to hold now is that both
+     kinds of entry are on one page and that each band says which it is. */
+  await go(`#/${cid}/index`);
+  const ix = await page.evaluate(() => {
+    /* Read by what a band *contains*, never by what its heading says. A
+       concept entry is `/c/<key>` and a category is `/cat/<key>`, and those
+       are routes rather than wording, so renaming a band cannot quietly turn
+       this assertion off. The band head is "<title><span class=ix-n>count</
+       span>", so its first child node is the title on its own. */
+    const band = b => ({
+      title: (b.querySelector(".ix-h")?.firstChild?.textContent || "").trim(),
+      counted: !!b.querySelector(".ix-n"),
+      concepts: b.querySelectorAll('.ix-row[href*="/c/"]').length,
+      cats: b.querySelectorAll('.ix-row[href*="/cat/"]').length
+    });
+    return {
+      heads: [...document.querySelectorAll(".ix-band")].map(band),
+      ideas: [...document.querySelectorAll('.ix-row[href*="/c/"] .ix-name')].map(e => e.textContent),
+      kinds: document.querySelectorAll('.ix-row[href*="/cat/"]').length
+    };
+  });
+  if (ix.ideas.length || ix.kinds) {
+    /* A band per kind of entry the course *has*. Most courses declare concepts
+       and no categories, so asserting two bands unconditionally asserts that
+       every course runs a taxonomy, which nothing requires it to. */
+    ck(P("the index bands every kind of entry the course declares"),
+       ix.heads.filter(h => h.concepts).length === (ix.ideas.length ? 1 : 0)
+       && ix.heads.filter(h => h.cats).length === (ix.kinds ? 1 : 0),
+       ix.heads.map(h => `${h.title || "?"}[${h.concepts}c/${h.cats}k]`).join(" ") || "no bands");
+    ck(P("every band names what it holds and counts it"),
+       ix.heads.length > 0 && ix.heads.every(h => h.title && h.counted));
+    /* Alphabetical, because position is what an index is reached for when it
+       has failed you, and the rail already carries course order. */
+    ck(P("ideas are in alphabetical order"),
+       ix.ideas.every((n, i) => !i || ix.ideas[i - 1].localeCompare(n) <= 0),
+       ix.ideas.slice(0, 6).join(" | "));
+  }
+  /* The routes the two hubs used still land on it rather than on nothing. */
+  for (const old of ["concepts", "cat"]) {
+    await go(`#/${cid}/${old}`);
+    ck(P(`the old /${old} route still reaches the index`),
+       await page.locator(".ix-band").count() > 0);
   }
 
   /* map + practice */
@@ -1395,10 +1517,10 @@ for (const cid of ids) {
      await page.locator(`.fx-node.is-here[data-node="${last}"]`).count() === 1);
   /* the drill bank: a concept enters Loop B on contact, never before, and the
      concept page is one of the three places contact can happen */
-  await go(`#/${cid}/concepts`);
+  await go(`#/${cid}/index`);
   const banked = await page.evaluate(() => {
-    const card = [...document.querySelectorAll(".ccard")].find(c => c.querySelector(".cphase"));
-    return card ? card.getAttribute("href") : null;
+    const row = [...document.querySelectorAll(".ix-row")].find(c => c.querySelector(".ix-badge"));
+    return row ? row.getAttribute("href") : null;
   });
   if (banked) {
     await go(banked);
@@ -1606,7 +1728,7 @@ for (const cid of ids) {
     await page.locator(".note-area").first().fill("**check** note `persistence`");
     await page.locator(".note-area").first().blur();       /* commit before leaving */
     await page.waitForTimeout(500);
-    await go(`#/${cid}/concepts`);
+    await go(`#/${cid}/index`);
     await go(`#/${cid}/${secIds[0]}`);
 
     /* Shown by default, and read as Markdown rather than as raw asterisks. */
@@ -1628,7 +1750,7 @@ for (const cid of ids) {
     /* Folding is per note and is remembered. */
     await page.locator(".note-fold").first().click(); await page.waitForTimeout(250);
     ck(P("folding hides the note body"), await page.locator(".note-body").count() === 0);
-    await go(`#/${cid}/concepts`);
+    await go(`#/${cid}/index`);
     await go(`#/${cid}/${secIds[0]}`);
     ck(P("a folded note stays folded"),
        await page.locator(".mnote.is-n.is-shut").count() === 1 &&
@@ -1651,7 +1773,7 @@ for (const cid of ids) {
     await page.waitForTimeout(400);
     ck(P("a block takes a second note"), await page.locator(".note-one").count() === 2,
        (await page.locator(".note-one").count()) + " shown");
-    await go(`#/${cid}/concepts`);
+    await go(`#/${cid}/index`);
     await go(`#/${cid}/${secIds[0]}`);
     ck(P("both notes survive"), await page.locator(".note-one").count() === 2);
 
@@ -1673,7 +1795,9 @@ for (const cid of ids) {
   /* dark theme actually repaints */
   await go(`#/${cid}/${secIds[0]}`);
   const before = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  await page.locator(".topbar .tbtn", { hasText: "Theme" }).click(); await page.waitForTimeout(300);
+  await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+  await page.locator(".axes-acts .lane-b", { hasText: "Theme" }).click();
+  await page.waitForTimeout(300);
   const after = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   ck(P("theme toggle repaints"), before !== after, `${before} -> ${after}`);
   await shot(cid + "-dark");
@@ -1845,16 +1969,32 @@ for (const cid of ids) {
   }
 }
 
-/* The review route: cross-course, and deliberately without the reading chrome.
-   It renders whether or not anything is due — an empty queue is a state, and
-   the reader has to be able to see that it is empty. */
+/* Review, at both scopes.
+ *
+ * It used to be one cross-course route that drew its own full-bleed frame with
+ * no sidebar and a Close button, which made it the only page on the site that
+ * was really a modal. It is an ordinary page now, at the scope that matches the
+ * frame it is drawn in: a course's queue inside that course's shell, the
+ * cross-course queue on the library, which has no course either. Both render
+ * whether or not anything is due — an empty queue is a state, and the reader
+ * has to be able to see that it is empty. */
 {
   await go("#/review");
   const has = await page.locator(".review").count() === 1;
-  ck("review route renders", has);
+  ck("the cross-course review renders", has);
   if (has) {
-    ck("review drops the sidebar", await page.locator(".sidebar").count() === 0);
-    ck("review drops the margin rail", await page.locator(".bside").count() === 0);
+    /* Every page's way out, and no way out of its own. A Close button was the
+       last thing claiming this was a modal. */
+    ck("review has no close button of its own",
+       await page.evaluate(() => ![...document.querySelectorAll(".review button, .review a")]
+         .some(b => /close/i.test(b.textContent || ""))));
+    ck("review is framed by the toolbar like every other page",
+       await page.locator(".topbar").count() === 1);
+    ck("and the breadcrumb is the way back",
+       /Review/.test(await page.locator(".crumb").innerText()));
+    ck("it names which queue it is",
+       /all courses/i.test(await page.locator(".review-scope").innerText()),
+       await page.locator(".review-scope").innerText());
     ck("review states its progress in words", await page.locator(".review-n, .review h1").count() >= 1);
     await shot("review");
     await page.setViewportSize({ width: 390, height: 780 });
@@ -1863,6 +2003,170 @@ for (const cid of ids) {
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     ck("review does not scroll sideways on a phone", overflow <= 1, overflow + "px");
     await page.setViewportSize({ width: 1440, height: 900 });
+  }
+
+  /* Somewhere in the sweep a course does have a drill bank, and its rail must
+     have shown the row. Without this the per-course check above would pass on
+     a build where the row never rendered at all. */
+  ck("the review queue reaches the rail of a course that has one", sawQueueRow);
+
+  /* The course-scoped one. This is the half that needed the reframing: a rail
+     belongs to one course, and a row in it that drilled every other course was
+     the reason the page wanted a frame of its own. */
+  await go(`#/${ids[0]}/review`);
+  ck("a course has a review of its own", await page.locator(".review").count() === 1);
+  ck("and it keeps that course's sidebar", await page.locator(".sidebar").count() === 1);
+  ck("and names the course as its scope",
+     (await page.locator(".review-scope").innerText()).trim().length > 0,
+     await page.locator(".review-scope").innerText());
+  ck("the rail marks the row you are standing on",
+     await page.locator(".navtop a.rv-row.cur").count() === 1);
+}
+
+/* Reading a page aloud.
+ *
+ * The engine's state machine is driven against a fake in tools/test-speech.mjs,
+ * because CI has no audio device and no platform voice. What is left to assert
+ * here is the wiring the fake cannot see: that the control is reachable, that
+ * pressing it turns the rendered column into cues, that the bar appears only
+ * while a session does, and that the page says which line is being spoken. */
+{
+  /* secIds belongs to the per-course sweep above; this block runs once, so it
+     asks the rail for a section rather than borrowing a name out of scope. */
+  await go(`#/${ids[0]}`);
+  const firstSec = await page.evaluate(() => {
+    const a = document.querySelector(".rail .sec-btn");
+    return a ? (a.getAttribute("href") || "").split("/").pop() : null;
+  });
+  await go(`#/${ids[0]}/${firstSec}`);
+  const engine = await page.evaluate(() => typeof speechSynthesis !== "undefined");
+  if (!engine) ck("no speech engine in this browser, wiring not asserted", true);
+  else {
+    ck("no bar before a session", await page.locator(".spk").count() === 0);
+    /* Under Reading options with the other two axes. It has to be a real press
+       and not a call: iOS and Chrome only let speech begin inside a user
+       gesture, so a test that started the session any other way would pass
+       against a build no reader could use. */
+    await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+    const go1 = page.locator(".spk-go");
+    ck("Listen sits with the other reading controls", await go1.count() === 1);
+    await go1.click();
+    await page.waitForTimeout(700);
+
+    ck("a session docks a bar", await page.locator(".spk").count() === 1);
+    ck("the bar carries a speed control",
+       await page.locator(".spk-set .dd-b").count() >= 1);
+    /* The queue is the rendered column, so it must have found the prose. */
+    const total = await page.locator(".spk-n").innerText();
+    ck("the page became a queue", /\d+ of \d+/.test(total) && !/ of 0$/.test(total), total);
+    ck("the line being spoken is marked",
+       await page.locator(".is-speaking").count() === 1);
+
+    /* Nothing hidden may be queued: a closed depth leaves the block in the
+       document, and reading text the reader cannot see is the one way this
+       feature can lie about the page. */
+    ck("nothing hidden is marked",
+       await page.evaluate(() => {
+         const el = document.querySelector(".is-speaking");
+         return !!el && (el.checkVisibility ? el.checkVisibility() : el.offsetParent !== null);
+       }));
+
+    /* The bar names the place in the page's own words, and those words are
+       assembled from a heading whose number and title are separate elements
+       with no whitespace between them. Read with textContent they fuse into
+       "1.3Review and drills". */
+    const bar = await page.locator(".spk").innerText();
+    ck("nothing in the bar reads as a fused number and word",
+       !/\d[A-Za-z]/.test(bar), JSON.stringify(bar.slice(0, 80)));
+
+    /* A caption is the only part of a figure, a table or an image that
+       linearises into speech, and the three render it as three different
+       elements — `.fcap`, `<caption>`, `<figcaption>`. Knowing only the first
+       left tables and images silent. Stepped through rather than waited for,
+       because the assertion is about the queue, not about timing. */
+    /* Captions are the only part of a figure, a table or an image that
+       linearises into speech, and the three render it as three different
+       elements — `.fcap`, `<caption>`, `<figcaption>`. Knowing only the first
+       left tables and images silent.
+     *
+     * Asserted by removing them rather than by hunting for one in the queue:
+       the queue is built from what is *displayed*, so hiding every caption must
+       make it shorter. That tests the rule in both directions at once and does
+       not depend on where in a long section a caption happens to fall. */
+    const queueSize = async () => {
+      await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+      await page.locator(".spk-go").click();
+      await page.waitForTimeout(600);
+      const t = await page.locator(".spk-n").innerText();
+      await page.locator(".spk-x").click();
+      await page.waitForTimeout(200);
+      return Number((t.split(" of ")[1] || "0").trim());
+    };
+    await page.locator(".spk-x").click();
+    await page.waitForTimeout(250);
+    const capsOnPage = await page.evaluate(() =>
+      document.querySelectorAll(".sub .bmain .fcap, .sub .bmain caption, .sub .bmain figcaption").length);
+    if (capsOnPage) {
+      const withCaps = await queueSize();
+      await page.evaluate(() => {
+        const st = document.createElement("style");
+        st.id = "no-caps";
+        /* `!important`: the figure stylesheet reaches these with a more
+           specific selector, and a bare rule here silently loses to it. */
+        st.textContent = ".fcap,caption,figcaption{display:none !important}";
+        document.head.appendChild(st);
+      });
+      const without = await queueSize();
+      ck("captions are read aloud", without < withCaps, `${withCaps} chunks -> ${without}`);
+      await page.evaluate(() => document.getElementById("no-caps")?.remove());
+    }
+    await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+    await page.locator(".spk-go").click();
+    await page.waitForTimeout(650);
+
+    ck("the control says how to stop",
+       /stop/i.test(await page.locator(".spk-go").innerText()),
+       await page.locator(".spk-go").innerText());
+    await page.locator(".spk-x").click();
+    await page.waitForTimeout(300);
+
+    /* Listening starts where the reader is. Reading from the top is right on a
+       page just opened and wrong every other time: someone who scrolled to the
+       middle and pressed Listen meant the middle. */
+    const first = await page.evaluate(() => {
+      const c = document.querySelector(".sub .bmain p");
+      return c ? c.textContent.trim().slice(0, 30) : null;
+    });
+    await page.evaluate(() => {
+      const subs = [...document.querySelectorAll(".sub")];
+      (subs[subs.length - 1] || subs[0]).scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(400);
+    /* Dispatched rather than clicked. Playwright scrolls a target into view
+       before clicking it, and the target is in the rail — so a real click here
+       would undo the scroll position this assertion is entirely about. The
+       gesture path is already covered by the session started above. */
+    await page.evaluate(() => {
+      document.querySelector(".axes")?.setAttribute("open", "");
+      document.querySelector(".spk-go")?.click();
+    });
+    await page.waitForTimeout(700);
+    const started = await page.evaluate(() => {
+      const el = document.querySelector(".is-speaking");
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      const bar = document.querySelector(".topbar");
+      return { text: el.textContent.trim().slice(0, 30),
+               onScreen: r.bottom > (bar ? bar.getBoundingClientRect().bottom : 0) && r.top < innerHeight };
+    });
+    ck("scrolled down, it starts at what is on screen",
+       !!started && started.onScreen, JSON.stringify(started));
+    ck("and not back at the top of the page",
+       !!started && started.text !== first, JSON.stringify({ started: started && started.text, first }));
+    await page.locator(".spk-x").click();
+    await page.waitForTimeout(300);
+    ck("stopping takes the bar away", await page.locator(".spk").count() === 0);
+    ck("and unmarks the page", await page.locator(".is-speaking").count() === 0);
   }
 }
 

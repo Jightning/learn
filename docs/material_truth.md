@@ -113,7 +113,7 @@ silently degrades. This is mechanically checkable and should be checked.
 
 M8 is a structural requirement, not an effect-size claim. Pre-training itself
 measured g = 0.28 and not significant against no pre-training. The `def` block
-earns its place by feeding the primer, the concept hub and the "Before you
+earns its place by feeding the primer, the index and the "Before you
 start" panel, and the primer's *prequestioning* behaviour is the stronger and
 separate mechanism (M29).
 

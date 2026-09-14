@@ -2,7 +2,7 @@
 code: XX 00000
 title: Course Title
 tagline: One sentence describing what this course covers and in what order.
-meta: Institution · Textbook
+meta: Institution, Textbook
 
 # Accent rotation in degrees (0-359). Rotates the whole palette at once;
 # lightness stays fixed, so contrast holds. `npm run new` fills this in with
@@ -12,8 +12,8 @@ theme:
   hue: 0
 
 # Learner state: spaced review, mastery, confidence tracking (localStorage).
-# Set enabled:false for a purely stateless reference site — which also gives up
-# the review loop, so only do it for a stateless reference.
+# Set enabled:false for a purely stateless reference site. That also gives up
+# the review loop, so only do it where a reference is all you want.
 state:
   enabled: true
 

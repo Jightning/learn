@@ -1,4 +1,4 @@
-import { MODES, modeOf, nearestMode, modeById } from "../lib/mode.js";
+import { MODES, modeOf, nearestMode } from "../lib/mode.js";
 
 /* What the reader is here to do, in the toolbar where a setting belongs.
  *
@@ -8,9 +8,9 @@ import { MODES, modeOf, nearestMode, modeById } from "../lib/mode.js";
  * keys, and reachable from the sidebar for anyone who wants them.
  *
  * When the axes have been moved to a pair that is not a preset, the switch says
- * so — "Review · edited" — rather than showing the nearest intent as though it
- * were exact. The alternative is a control that lies about the state of the
- * page the reader is looking at.
+ * so, with a dot against the mode it is nearest to, rather than showing that
+ * intent as though it were exact. The alternative is a control that lies about
+ * the state of the page the reader is looking at.
  */
 export default function ModeSwitch({ lane, depth, onMode }) {
   const exact = modeOf(lane, depth);
@@ -20,15 +20,15 @@ export default function ModeSwitch({ lane, depth, onMode }) {
   return (
     <div class="modesw" role="group" aria-label="Reading mode">
       {/* Below the drawer breakpoint the three become one that cycles, named by
-          the mode it is in. Three fixed labels plus Menu, Review and Search do
-          not fit a 390px bar, and the mode matters more on a phone than on a
-          desktop, so it stays in the bar rather than moving into the drawer.
+          the mode it is in. Three fixed labels plus Menu and Search do not fit
+          a 390px bar, and the mode matters more on a phone than on a desktop,
+          so it stays in the bar rather than moving into the drawer.
           Both forms render and the stylesheet picks, so neither has to ask the
           viewport a question in JavaScript. */}
       <button class="modesw-b modesw-cycle" aria-label={`Reading mode: ${MODES[i].label}`}
               title={MODES[i].hint}
               onClick={() => onMode(MODES[(i + 1) % MODES.length])}>
-        {MODES[i].label}{!exact && <span class="modesw-e">·</span>}
+        {MODES[i].label}{!exact && <i class="modesw-e" aria-hidden="true" />}
       </button>
       {MODES.map(m => {
         const on = m.id === shown;
@@ -37,12 +37,11 @@ export default function ModeSwitch({ lane, depth, onMode }) {
                   aria-pressed={on} title={m.hint}
                   onClick={() => onMode(m)}>
             {m.label}
-            {on && !exact && <span class="modesw-e" title="the axes have been changed by hand">·</span>}
+            {on && !exact && <i class="modesw-e" aria-hidden="true"
+                                title="the axes have been changed by hand" />}
           </button>
         );
       })}
     </div>
   );
 }
-
-export { modeById };

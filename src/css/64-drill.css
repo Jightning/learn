@@ -10,14 +10,14 @@
   color:var(--ink-3);margin-bottom:5px}
 .why-in{
   display:block;width:100%;font:inherit;font-size:.86rem;
-  border:1px solid var(--rule);border-radius:6px;padding:7px 9px;
+  border:1px solid var(--rule);border-radius:3px;padding:7px 9px;
   background:var(--surface-2);color:var(--ink);resize:vertical;
 }
 .why-in:focus{outline:2px solid var(--hi);outline-offset:1px}
 /* The reader's own words are learner content, so they never wear the styling
    the material wears. */
 .why-prior{
-  margin-top:8px;border-left:2px solid var(--dc);border-radius:0 6px 6px 0;
+  margin-top:8px;border-left:2px solid var(--dc);border-radius:0 3px 3px 0;
   background:color-mix(in srgb,var(--dc) 7%,transparent);
   padding:7px 10px;font-size:var(--fs-small);color:var(--ink-2);
 }
@@ -25,7 +25,7 @@
   text-transform:uppercase;color:var(--dc-ink);margin-bottom:2px}
 .why-nav{display:flex;gap:7px;margin-top:9px}
 
-.drill{border:1px solid var(--rule);border-radius:8px;background:var(--surface);padding:13px 15px}
+.drill{border:1px solid var(--rule);border-radius:3px;background:var(--surface);padding:13px 15px}
 .drill-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:.6rem;
   font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3)}
 .drill-c{color:var(--hi-ink);letter-spacing:.06em;text-transform:uppercase}
@@ -38,7 +38,11 @@
 .drill-steps{margin:8px 0;padding-left:1.3rem;font-size:.85rem}
 .drill-steps li{margin-bottom:4px}
 .drill-src{margin-top:12px;font-size:.82rem}
-.drill-src summary{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3);cursor:pointer}
+.drill-src summary{
+  font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3);cursor:pointer;
+  list-style:none;display:inline-flex;align-items:center;
+}
+.drill-src summary::-webkit-details-marker{display:none}
 .drill-src[open] summary{color:var(--hi-ink);margin-bottom:8px}
 
 /* A recruited drill is the correction, not a second question: it says so. */

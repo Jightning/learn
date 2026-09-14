@@ -1,4 +1,4 @@
-title: Charts — plot, bar, scatter
+title: "Charts: plot, bar, scatter"
 blocks:
   - t: p
     source: docs/create_course.md §11.1
@@ -18,7 +18,7 @@ blocks:
     cat: figure-kinds
     id: decay
     kind: plot
-    cap: "plot — one function series and one measured series (dashed), with explicit ranges and a legend"
+    cap: "plot: one function series and one measured series (dashed), with explicit ranges and a legend"
     spec:
       xlabel: "reviews"
       ylabel: "recall R"
@@ -32,7 +32,7 @@ blocks:
   - t: figure
     cat: figure-kinds
     kind: bar
-    cap: "bar — effect sizes, one bar accented, baseline at 0"
+    cap: "bar: effect sizes, one bar accented, baseline at 0"
     spec:
       ylabel: "Hedges g"
       baseline: 0
@@ -48,7 +48,7 @@ blocks:
     cat: figure-kinds
     tier: depth
     kind: scatter
-    cap: "scatter — two series with least-squares trend lines"
+    cap: "scatter: two series with least-squares trend lines"
     spec:
       xlabel: "items practised"
       ylabel: "retained at 6 weeks"

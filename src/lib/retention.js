@@ -86,7 +86,7 @@ export function answer(cid, key, opts) {
   return c;
 }
 
-/** "new" · "learning" · "criterion" · "durable" — named in text, never by colour */
+/** "new", "learning", "criterion", "durable": named in text, never by colour */
 export function phase(c) {
   if (!c || !c.reps) return "new";
   if (c.items.length < CRITERION) return "learning";
@@ -97,8 +97,8 @@ export function phase(c) {
 export function label(c) {
   switch (phase(c)) {
     case "new": return "not started";
-    case "learning": return `learning · ${c.items.length} of ${CRITERION} items`;
-    case "criterion": return `at criterion · ${c.relearnDays.length} of ${RELEARN} relearn sessions`;
+    case "learning": return `learning, ${c.items.length} of ${CRITERION} items`;
+    case "criterion": return `at criterion, ${c.relearnDays.length} of ${RELEARN} relearn sessions`;
     default: return "durable";
   }
 }

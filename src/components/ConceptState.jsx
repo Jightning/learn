@@ -33,7 +33,7 @@ export default function ConceptState({ ctx, k }) {
         <p class="cstate-near">
           Confused with{" "}
           {near.map((x, i) => (
-            <span key={x}>{i ? " · " : ""}<a href={`#/${cid}/c/${x}`}>{C.concepts[x].term}</a></span>
+            <span key={x}>{i ? ", " : ""}<a href={`#/${cid}/c/${x}`}>{C.concepts[x].term}</a></span>
           ))}
         </p>
       )}
@@ -41,7 +41,7 @@ export default function ConceptState({ ctx, k }) {
       {item
         ? <Drill cid={cid} C={C} item={item} onDone={() => setItem(null)} />
         : <button class="dbtn" id="c-drill" onClick={start}>
-            Drill this  ·  {items.length} item{items.length === 1 ? "" : "s"} →
+            Drill this<i class="sep" aria-hidden="true" />{items.length} item{items.length === 1 ? "" : "s"} →
           </button>}
 
       {reasons.length > 0 && (
@@ -52,8 +52,8 @@ export default function ConceptState({ ctx, k }) {
               <li key={r.ts}>
                 <q>{r.text}</q>
                 <span class="creason-m">
-                  {ago(r.ts)}{r.correct === false ? " · wrong" : r.correct ? " · right" : ""}
-                  {r.conf === "sure" ? " · confident" : ""}
+                  {ago(r.ts)}{r.correct === false ? ", wrong" : r.correct ? ", right" : ""}
+                  {r.conf === "sure" ? ", confident" : ""}
                 </span>
               </li>
             ))}

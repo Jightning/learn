@@ -102,10 +102,15 @@
   --surface-2:#F4F6F3;
   /* A ground *below* the page, where --surface and --surface-2 are both above
      it. The reading column already spends the raised direction on blocks, so a
-     surface that has to read as a different kind of thing — a question rather
-     than a passage — has nowhere to go but down. One token because two themes
-     have to agree on it and a hand-mixed colour in each would drift. */
-  --sunk:#E3E7E3;
+     surface that has to read as a different kind of thing (a question rather
+     than a passage) has nowhere to go but down. One token because two themes
+     have to agree on it and a hand-mixed colour in each would drift.
+
+     Shallow on purpose in light: at #E3E7E3 the step down was nine units off
+     the ground and a page of questions read as a grey panel laid over the
+     paper rather than as a recess in it. The rule around the card is what
+     draws the edge; the ground only has to say which side of it you are on. */
+  --sunk:#E9ECE8;
   --ink:#161A18;
   --ink-2:#414843;
   --ink-3:#666E68;   /* carries small text; verified by audit-color.mjs */
@@ -118,7 +123,7 @@
    angle (--hue) and keep every contrast ratio: lightness and chroma are fixed
    per token, only hue moves. The four base hues reproduce the original
    hand-picked palette at --hue:0.
-        hi = logic 1 · lo = logic 0 · dc = don't care X · hz = high-Z
+        hi = logic 1, lo = logic 0, dc = don't care X, hz = high-Z
         wn = warning, the one accent whose job is not a course's identity
 
    `wn` is warm because a warning that is not warm does no semantic work — the
@@ -203,17 +208,44 @@
   --hn-wash:oklch(27% .030 258);
 }
 
+/* Dark neutrals. Warm, and much closer to grey than the light set is.
+ *
+ * They used to be the light theme's green bias inverted, and it did not
+ * survive the inversion. Measured in OKLCH the four light grounds average
+ * C = 0.005; the four dark ones averaged C = 0.013, two and a half times as
+ * much. Nothing intended that — the light set is careful about the bias
+ * precisely so it cannot tint a course accent, and the dark set quietly spent
+ * the budget twice over.
+ *
+ * The gap is worse than the ratio makes it sound, because colourfulness is not
+ * constant with surround: the same chroma reads stronger against a dark ground
+ * than a light one (the Hunt effect). So an *equal*-chroma dark theme would
+ * already look greener than the light theme it matched, and this one was not
+ * equal. The page read as olive.
+ *
+ * The fix keeps every token's lightness to the digit — contrast ratios are
+ * untouched, and audit-color.mjs still reports zero pairs below AA in all
+ * three theme states — and moves only chroma and hue: C down to the light
+ * theme's 0.005, hue from 137° (green) to 75° (a warm yellow-grey). Warm
+ * rather than merely neutral because a dark theme is read in a dark room, and
+ * a dead-neutral dark reads as an unlit panel where a warm one reads as a dim
+ * one.
+ *
+ * Light stays green. The bias belongs to paper, and this is not paper.
+ * Accents are not touched: --hi/--lo/--dc/--hz rotate with the course, --wn is
+ * the warning and --hn is the reader's own hand, and none of the three is a
+ * ground. */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --ground:#12150F; --surface:#1A1E19; --surface-2:#212621; --sunk:#0C0F0A;
-    --ink:#E7EAE4; --ink-2:#AFB6AE; --ink-3:#8A928B;
-    --rule:#2F352F; --rule-2:#262C26;
+    --ground:#151411; --surface:#1E1C1A; --surface-2:#262422; --sunk:#0F0E0C;
+    --ink:#EAE8E6; --ink-2:#B6B3B0; --ink-3:#918F8C;
+    --rule:#353330; --rule-2:#2C2A27;
   }
 }
 :root[data-theme="dark"]{
-  --ground:#12150F; --surface:#1A1E19; --surface-2:#212621; --sunk:#0C0F0A;
-  --ink:#E7EAE4; --ink-2:#AFB6AE; --ink-3:#8A928B;
-  --rule:#2F352F; --rule-2:#262C26;
+  --ground:#151411; --surface:#1E1C1A; --surface-2:#262422; --sunk:#0F0E0C;
+  --ink:#EAE8E6; --ink-2:#B6B3B0; --ink-3:#918F8C;
+  --rule:#353330; --rule-2:#2C2A27;
 }
 
 /* ------------------------------------------------------------------- reset */
@@ -237,3 +269,45 @@ a.xr{
   padding-bottom:.5px;
 }
 a.xr:hover,a.xr.hot{border-bottom-color:var(--lo);background:color-mix(in srgb,var(--lo) 9%,transparent)}
+
+/* ------------------------------------------------- the disclosure caret
+ * One primitive, because three <details> summaries drew their own and all
+ * three drew it the same wrong way.
+ *
+ * They used a "›" glyph in a 1em box and turned it 90°. A glyph's ink is not
+ * centred in its box — it sits above the baseline in a line box that runs from
+ * ascender to descender, and its advance is narrower than the em — so the
+ * rotation pivot was several pixels off the mark the eye tracks, and the caret
+ * swung through an arc instead of turning in place.
+ *
+ * This is a triangle clipped out of a square, with its vertices chosen so the
+ * centroid lands exactly on the box centre: two at x=32 and one at x=86 gives
+ * (32+32+86)/3 = 50, and (10+90+50)/3 = 50. Pivot and visual centre coincide,
+ * so the only thing that changes is the angle. */
+.caret{
+  display:inline-block;flex:none;
+  width:.58em;height:.58em;margin-right:.42em;
+  background:currentColor;
+  clip-path:polygon(32% 10%,32% 90%,86% 50%);
+  transition:transform .15s ease;
+}
+[open]>summary>.caret,summary.is-open>.caret{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){ .caret{transition:none} }
+
+/* ------------------------------------------------------- the separator
+ * Two pieces of metadata on one line, divided by a drawn rule rather than by a
+ * typed character.
+ *
+ * The site used "·" for this in about twenty places. It is a glyph doing a
+ * rule's job: it sits on the text baseline rather than centred on the line, it
+ * inherits the ink of whatever it divides so it competes with both halves at
+ * the same weight, and its advance width is whatever the face gives it, which
+ * differs between the three faces here. A hairline is centred, quieter than
+ * either side, and the same width everywhere.
+ *
+ * Lists of names are not this. Three subsection titles divided by rules read
+ * as a table with no header; they take commas, because they are a list. */
+.sep{
+  display:inline-block;width:1px;height:.82em;flex:none;
+  background:var(--rule);vertical-align:-.06em;margin:0 .55em;
+}

@@ -15,13 +15,20 @@
  * So the axes keep working and a preset layer sits over them. Three intents,
  * named for the reading they support rather than for the mechanism:
  *
- *   Study    the first pass — everything open, worked instances included
- *   Review   claims and structure, development closed — the week before an exam
- *   Index    names only — the lookup surface
+ *   Study    the first pass, everything open, worked instances included
+ *   Review   claims and structure, development closed: the week before an exam
+ *   Names    the lookup surface, entries and nothing under them
  *
- * The third is "Index" rather than "Find": the site already has a Find, it is
- * bound to `/`, and it answers a different question. A mode is a resolution the
- * whole section is drawn at; search takes you somewhere.
+ * The third was called "Index" and is not any more. The course now has an
+ * *index*, a page of every idea and kind it declares, and one word naming both
+ * a page you navigate to and a resolution the page you are on is drawn at is
+ * one word too few. "Names" is also what the depth axis underneath it and the
+ * Explore facet beside it already called this setting, so the rename makes
+ * three surfaces agree rather than making a fourth name up.
+ *
+ * It is not "Find" either: the site already has a Find, it is bound to `/`, and
+ * it answers a different question. A mode is a resolution the whole section is
+ * drawn at; search takes you somewhere.
  *
  * Nothing is removed. Every intent is a (lane, depth) pair the reader could
  * already have set by hand, `1` `2` `3` and `d` still move the axes directly,
@@ -38,16 +45,12 @@
 
 export const MODES = [
   { id: "study",  label: "Study",  lane: "apply", depth: "full",
-    hint: "The full text — a first pass" },
+    hint: "The full text, for a first pass" },
   { id: "review", label: "Review", lane: "apply", depth: "notes",
     hint: "Claims and structure, development closed" },
-  { id: "index",  label: "Index",  lane: "spine", depth: "index",
-    hint: "Names only — the lookup surface" }
+  { id: "names",  label: "Names",  lane: "spine", depth: "index",
+    hint: "Names only, the lookup surface" }
 ];
-
-export const MODE_IDS = MODES.map(m => m.id);
-
-export const modeById = id => MODES.find(m => m.id === id) || MODES[0];
 
 /** The intent this (lane, depth) pair *is*, or null when it is neither. */
 export function modeOf(lane, depth) {

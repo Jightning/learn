@@ -7,7 +7,7 @@ c,.cref{
 c:hover,.cref:hover{color:var(--hi-ink)}
 .card{
   position:absolute;z-index:80;max-width:396px;background:var(--surface);
-  border:1px solid var(--rule);border-radius:9px;padding:14px 16px;
+  border:1px solid var(--rule);border-radius:6px;padding:14px 16px;
   box-shadow:0 10px 34px rgba(10,14,22,.17);font-size:.86rem;line-height:1.58;
   display:none;
 }
@@ -20,7 +20,7 @@ c:hover,.cref:hover{color:var(--hi-ink)}
 .card .src{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3);
   margin-top:9px;display:block;border-top:1px solid var(--rule-2);padding-top:8px}
 .refby{margin:18px 0 0;padding:11px 14px;border:1px dashed var(--rule);
-  border-radius:8px;background:var(--surface-2);font-size:.82rem}
+  border-radius:3px;background:var(--surface-2);font-size:.82rem}
 .refby .rl{font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.12em;
   text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:6px}
 .refby a{margin-right:12px;white-space:nowrap}
@@ -78,7 +78,7 @@ c:hover,.cref:hover{color:var(--hi-ink)}
 .brow:has(>.bmain>div>p)+.brow:has(.trap),
 .brow:has(>.bmain>div>p)+.brow:has(.note){--row-gap:var(--sp-1)}
 .mnote{
-  border:1px solid var(--rule);border-left:2px solid var(--lo);border-radius:8px;
+  border:1px solid var(--rule);border-left:2px solid var(--lo);border-radius:3px;
   background:var(--surface);padding:11px 13px;font-size:var(--fs-small);line-height:1.5;
   transition:border-color .13s ease,box-shadow .13s ease;
 }
@@ -101,7 +101,7 @@ c:hover,.cref:hover{color:var(--hi-ink)}
 .mn-chips{display:flex;flex-wrap:wrap;gap:5px}
 .mn-chip{
   font-family:var(--mono);font-size:var(--fs-micro);color:var(--lo-ink);text-decoration:none;
-  border:1px solid var(--rule);border-radius:4px;padding:1px 6px;
+  border:1px solid var(--rule);border-radius:3px;padding:1px 6px;
 }
 .mn-chip:hover{border-color:var(--lo)}
 c.hot,.cref.hot{background:color-mix(in srgb,var(--hi) 13%,transparent);color:var(--hi-ink)}

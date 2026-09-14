@@ -9,7 +9,7 @@ review:
     material is where it is; the tier split, because it decides how much of a
     page you read; and confidence, because it is what turns an answer into a
     diagnosis. The two-loop design and retrieval practice are explained but not
-    scheduled — knowing they exist is enough, and drilling them would spend
+    scheduled. Knowing they exist is enough, and drilling them would spend
     three items each on something no reader acts on directly.
 
     Six questions name one of those two unscheduled concepts, so they resolve
@@ -25,7 +25,7 @@ review:
 how the site works, and exercise every feature the engine offers so that nothing
 ships unrendered.
 
-§1 is the first job and stands alone — a reader who stops after it can use every
+§1 is the first job and stands alone: a reader who stops after it can use every
 part of the site. §2 and §3 are why it behaves that way, for someone deciding
 whether to trust it or to write a course of their own. §4 and §5 are the
 catalogue: every figure kind, every block type, every source badge, rendered
@@ -52,7 +52,7 @@ without a deadline to aim at. This one leaves the array empty to show that path.
 
 ## Skip / bridge / teach
 
-Not meaningful in the usual sense — there is no prior course to bridge from.
+Not meaningful in the usual sense, because there is no prior course to bridge from.
 The sections are ordered by who needs them: §1 using the site, §2 the two rules
 it is built on, §3 the research behind the two loops and the tiers, §4 the nine
 figure kinds, §5 the remaining blocks and the edge-case displays.

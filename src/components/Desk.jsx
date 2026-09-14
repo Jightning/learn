@@ -104,7 +104,7 @@ export default function Desk({ ctx }) {
                   <span class="srow-bar"><i style={`width:${pct}%`} /></span>
                 )}
                 <span class="srow-s">
-                  {s.subs.map((u, i) => `${s.num}.${i + 1} ${u.title}`).join(" · ")}
+                  {s.subs.map((u, i) => `${s.num}.${i + 1} ${u.title}`).join(", ")}
                 </span>
               </a>
             </li>
@@ -116,10 +116,10 @@ export default function Desk({ ctx }) {
           reader who wants the map goes looking for the map. */}
       <div class="tools">
         <a href={H("practice")}>Mixed practice</a>
-        <a href={H("concepts")}>Core concepts</a>
+        <a href={H("index")}>Index</a>
         <a href={H("map")}>Dependency map</a>
         <a href={H("calibration")}>
-          Calibration{b && b.seen ? ` · ${b.durable}/${b.total} durable` : ""}
+          Calibration{b && b.seen ? ` (${b.durable}/${b.total} durable)` : ""}
         </a>
       </div>
     </div>

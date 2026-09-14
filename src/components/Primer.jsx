@@ -39,7 +39,7 @@ export default function Primer({ section, ctx }) {
       <p class="lede">
         The {terms.length} terms this section works with{asks.length
           ? `, then ${asks.length} question${asks.length === 1 ? "" : "s"} about how they interact`
-          : ""}. Try to recall each one before showing it — a failed attempt still
+          : ""}. Try to recall each one before showing it. A failed attempt still
         primes the reading.
       </p>
 

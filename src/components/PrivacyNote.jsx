@@ -23,7 +23,7 @@ export default function PrivacyNote() {
     <p class="lede cal-priv">
       This device backs up to your own account once a day. Your answer log and
       your courses are encrypted in this browser first, with a key derived from
-      your secret — so they can be stored there but not read there. What the
+      your secret, so they can be stored there but not read there. What the
       backup can see is the shape of it: which device wrote a row, when, and how
       big it was. Schedules are recomputed from the log rather than sent.
     </p>

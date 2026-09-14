@@ -73,7 +73,7 @@ export default function Practice({ ctx, cat }) {
       <h1>Mixed practice</h1>
       {catName && (
         <p class="lede">
-          Scoped to <a href={`#/${cid}/cat/${cat}`}>{catName}</a> — {catKeys.length}{" "}
+          Scoped to <a href={`#/${cid}/cat/${cat}`}>{catName}</a>: {catKeys.length}{" "}
           {catKeys.length === 1 ? "concept" : "concepts"} in this category carry a drill bank.
         </p>
       )}
@@ -99,7 +99,7 @@ export default function Practice({ ctx, cat }) {
       </div>
 
       <details class="pcfg">
-        <summary>Change what's drawn</summary>
+        <summary><i class="caret" aria-hidden="true" />Change what's drawn</summary>
         <div class="pcfg-row">
           {bank.has && (
             <label>Draw from{" "}
@@ -147,10 +147,10 @@ function Run({ run, setRun, ctx, onAgain }) {
     ? (
       <p class="pempty">
         Nothing is due. A concept enters the review schedule two ways: you open
-        its entry from <a href={`#/${cid}/concepts`}>Core concepts</a> and press
+        its entry from the <a href={`#/${cid}/index`}>index</a> and press
         <b>Drill this</b>, or a quiz question you were confident about turns out
         wrong, which queues it for the next day. Until one of those happens
-        there is nothing to recall — <b>Question types</b> under <b>Draw from</b>
+        there is nothing to recall. <b>Question types</b> under <b>Draw from</b>
         is the pool that is ready now.
       </p>
     )

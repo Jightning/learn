@@ -2,27 +2,27 @@ title: Getting started
 blocks:
   # One block may precede the def, and only one: a concrete anchor in terms the
   # reader already holds, or an `attempt` they cannot yet solve. The def must
-  # then retire it — generalise the anchor and name it a special case, or refer
+  # then retire it: generalise the anchor and name it a special case, or refer
   # back to what the attempt tried. An anchor the def never retires leaves the
   # reader holding an instance where they need a schema, which is the sequence
   # that performed worst in the research this shape comes from.
   - t: p
     h: |-
-      Plain prose. Write HTML directly — no escaping is needed inside a literal
+      Plain prose. Write HTML directly. No escaping is needed inside a literal
       block, so quotes and apostrophes appear exactly as typed.
 
   # `spine` is the default and the whole course: depth and apply may lean on it,
-  # never the other way round. Write `tier:` only where it is not spine — an
+  # never the other way round. Write `tier:` only where it is not spine: an
   # absent tier *is* the declaration, and repeating the default on every block
   # is noise in a file you will re-read many times.
-  # Each callout labels itself — "Definition", "Key rule", "Common mistake",
+  # Each callout labels itself: "Definition", "Key rule", "Common mistake",
   # "Worked example", "Note". Write `label:` only to override one, never to
   # repeat it.
   # `core:` is the block's own opening claim, kept in its own field so that
   # `notes` depth can show it and close everything under it. It is NOT a
   # summary: `h:` below holds only what develops the claim, so the sentence
   # appears exactly once and nothing can drift. Write the claim so it stands
-  # alone — a reader meeting it cold in week six gets only this line.
+  # alone, because a reader meeting it cold in week six gets only this line.
   - t: def
     term: A definition
     source: Textbook ch.1.2
@@ -44,16 +44,16 @@ blocks:
     source: unverified
     cat: block-kinds
     core: The one thing to remember, stated in a sentence that stands alone.
-    h: <p>And then whatever makes it usable — where it comes from, when it
-      applies, what it rules out.</p>
+    h: <p>And then whatever makes it usable, which is where it comes from,
+      when it applies, and what it rules out.</p>
 
-  # One or two per subsection. Five traps is zero traps — signaling is a
+  # One or two per subsection. Five traps is zero traps, because signaling is a
   # contrast effect and it degrades with density. For a procedural subsection
   # at least one names the specific slip: which sign, which index, which order.
   # "Be careful" is not a trap, it is a mood.
   # `gist:` is the other form, and a block declares one or the other, never
   # both. It is a summary ABOUT the block and renders only at `notes` depth,
-  # leaving `h:` whole — which is what a trap needs, because a trap works by
+  # leaving `h:` whole, which is what a trap needs: a trap works by
   # letting the reader believe the wrong thing first. Leading with the
   # correction would defuse it. Every `gist:` is a second copy on purpose, so
   # the fraction is measured and ceilinged in `course.yaml`.
@@ -61,7 +61,7 @@ blocks:
     source: generated
     cat: block-kinds
     gist: The tempting wrong answer is X; it is really Y.
-    h: <p>The error people actually make, stated the way they would state it —
+    h: <p>The error people actually make, stated the way they would state it,
       and only then why it is wrong.</p>
 
   - t: ex
@@ -100,7 +100,7 @@ blocks:
     h: <p>An aside that is genuinely optional.</p>
 
   # `apply` instantiates a concept the spine already states. It never
-  # re-explains — if it restates the definition, the fix is a link. One or two
+  # re-explains. If it restates the definition, the fix is a link. One or two
   # per concept across the whole course.
   - t: figure
     tier: apply
@@ -121,7 +121,7 @@ blocks:
 
 quiz:
   # One question per distinct question type; the validator rejects duplicates.
-  # The target is coverage of the question surface, not volume — repetition for
+  # The target is coverage of the question surface, not volume. Repetition for
   # fluency belongs in drills/. Test two labels for distinctness by asking
   # whether a reader could answer one and fail the other.
   - type: Recall

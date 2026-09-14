@@ -49,7 +49,7 @@ function refuse(files) {
   }
   if (total > MAX_BYTES) return `that course is ${kb(total)}; the limit is ${kb(MAX_BYTES)}`;
   if (!paths.some(p => /^course\.(ya?ml|json)$/.test(p)))
-    return "no course.yaml at the top level — is this a course folder?";
+    return "no course.yaml at the top level. Is this a course folder?";
   return null;
 }
 
@@ -65,7 +65,7 @@ export default function CourseIO({ onChange }) {
        folders reporting "could not tell what this course is called" says
        nothing about which one to go and look at. */
     if (!id) throw new Error(
-      `${label}: could not tell what this course is called — pick the course ` +
+      `${label}: could not tell what this course is called. Pick the course ` +
       `folder itself (the one holding course.yaml), not the files inside it`);
     const bad = refuse(files);
     if (bad) throw new Error(bad);
@@ -87,7 +87,7 @@ export default function CourseIO({ onChange }) {
     setMsg({
       ok: failed.length === 0,
       text: [ok.length ? `Installed ${ok.join(", ")}.` : "",
-             failed.length ? `${failed.length} failed — ${failed[0]}` +
+             failed.length ? `${failed.length} failed: ${failed[0]}` +
                (failed.length > 1 ? ` (and ${failed.length - 1} more; see the console)` : "") : ""]
         .filter(Boolean).join(" ")
     });

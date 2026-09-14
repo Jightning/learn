@@ -21,7 +21,7 @@
  * So the quiz takes the recessed ground rather than the paper one. Blocks sit
  * on paper above the page; a question sits below it, which is the one
  * figure/ground relationship the reading column does not already use. */
-.q{border:1px solid var(--rule);border-radius:6px;background:var(--sunk);
+.q{border:1px solid var(--rule);border-radius:3px;background:var(--sunk);
   margin-bottom:var(--sp-2);overflow:hidden}
 .q:last-child{margin-bottom:0}
 .q.open{border-color:color-mix(in srgb,var(--hi) 42%,var(--rule))}
@@ -57,7 +57,7 @@
 .qtype{
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.02em;
   color:var(--hi-ink);border:1px solid color-mix(in srgb,var(--hi) 40%,transparent);
-  padding:2px 7px;border-radius:4px;
+  padding:2px 7px;border-radius:3px;
   white-space:normal;overflow-wrap:anywhere;max-width:100%;
 }
 .qtext{font-size:.90rem;display:block;min-width:0;overflow-wrap:anywhere}
@@ -93,7 +93,7 @@
    control on the site — sixty of them on a section. */
 .cbtn,.gbtn{font-family:var(--ui);font-size:var(--fs-meta);font-weight:450;
   border:1px solid var(--rule);background:var(--surface);color:var(--ink-3);
-  border-radius:5px;padding:4px 10px;cursor:pointer}
+  border-radius:3px;padding:4px 10px;cursor:pointer}
 .cbtn:hover,.gbtn:hover{border-color:var(--hi);color:var(--hi-ink)}
 .cbtn.sel{border-color:var(--lo);color:var(--lo-ink);background:color-mix(in srgb,var(--lo) 10%,transparent)}
 .gbtn.ok.sel{border-color:var(--hi);color:var(--hi-ink);background:color-mix(in srgb,var(--hi) 12%,transparent)}

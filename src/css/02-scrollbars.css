@@ -6,7 +6,7 @@
 *::-webkit-scrollbar{width:9px;height:9px}
 *::-webkit-scrollbar-track{background:transparent}
 *::-webkit-scrollbar-thumb{
-  background:var(--rule);border-radius:6px;
+  background:var(--rule);border-radius:3px;
   border:2px solid transparent;background-clip:content-box;
 }
 *::-webkit-scrollbar-thumb:hover{background:var(--ink-3);background-clip:content-box}

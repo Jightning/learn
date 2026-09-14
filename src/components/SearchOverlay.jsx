@@ -66,7 +66,7 @@ export default function SearchOverlay({ ctx, open, onClose }) {
           {!q.trim() && <p class="shint">Type to search every definition, example, and question.</p>}
           {q.trim() && res.length === 0 && <p class="shint">No match for “{q.trim()}”.</p>}
           {q.trim() && res.length > 0 &&
-            <p class="shint skeys">↑ ↓ to choose · enter to open</p>}
+            <p class="shint skeys">↑ ↓ to choose, enter to open</p>}
           {res.map((r, i) => (
             <a class={"sres" + (i === Math.min(sel, res.length - 1) ? " on" : "")}
                id={"s-hit-" + i} role="option"

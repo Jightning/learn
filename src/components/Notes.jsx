@@ -192,7 +192,7 @@ export function NoteCard({ n, label = "Note" }) {
       <button class="mn-k note-fold" type="button" onClick={n.toggle}
               aria-expanded={n.fold ? "false" : "true"}>
         <span class="note-caret" aria-hidden="true" />
-        {label}{n.list.length > 1 ? ` · ${n.list.length}` : ""}
+        {label}{n.list.length > 1 ? ` (${n.list.length})` : ""}
       </button>
       {!n.fold && n.list.map((t, i) => <Note key={i} n={n} i={i} text={t} />)}
     </div>

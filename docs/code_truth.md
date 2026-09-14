@@ -324,7 +324,7 @@ the components are called frees working memory for the reasoning.
 pre-training.)
 
 The `def` block is kept because it is structurally load-bearing for the primer,
-the concept hub and the "Before you start" panel, not because it is a large
+the index and the "Before you start" panel, not because it is a large
 effect on its own. The primer's *prequestioning* behaviour is a separate and
 stronger mechanism, and it is covered by T15 and by M29.
 
@@ -442,7 +442,7 @@ measurement, which is the condition T24 exists to prevent.
 registered component driven by data. A new course is a folder of data files.
 
 **T20. Derived data is never hand-maintained.** Cross-references, prerequisite
-lists, "used later in", the concept hub's usage lists, the dependency map, the
+lists, "used later in", the index's usage lists, the dependency map, the
 search index, `materials/problems.md` and `materials/checklist.md` are all
 computed from the content or from learner state. A hand-kept index drifts; a
 derived one cannot.

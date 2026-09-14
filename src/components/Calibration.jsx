@@ -37,7 +37,7 @@ export default function Calibration({ ctx, onReset }) {
       /* Imported rows can predate any checkpoint, so every course refolds. */
       for (const id of new Set(all().map(x => x.course))) if (id) invalidate(id);
       setNote(r.merged ? `Merged ${r.merged} new answer(s). Reload to see them.`
-                       : "Nothing new — those answers are already here.");
+                       : "Nothing new: those answers are already here.");
     } catch (err) { setNote(err.message); }
   };
 
@@ -58,14 +58,14 @@ export default function Calibration({ ctx, onReset }) {
        * anything to say, the page says that instead of saying it in zeros. */}
       {rows.length === 0 ? (
         <p class="cal-lede">
-          Nothing to calibrate yet. Answer a few questions — predicting before you
+          Nothing to calibrate yet. Answer a few questions. Predicting before you
           reveal is what this page measures.
         </p>
       ) : (
         <p class="cal-lede">
           {missed > 0
             ? <>You were <b class="cal-miss">sure and wrong {missed} time{missed === 1 ? "" : "s"}</b> out
-              of {rows.length} answered. Those are the ones worth going back to — a confident
+              of {rows.length} answered. Those are the ones worth going back to: a confident
               miss is the only error you cannot feel.</>
             : <>{rows.length} answered, and nothing you were sure about turned out
               wrong. Your confidence is tracking your accuracy.</>}
@@ -124,7 +124,7 @@ export default function Calibration({ ctx, onReset }) {
         <div class="cal-danger">
           <button class="dbtn danger" onClick={onReset}>Clear this course's history</button>
           <span class="cal-cap">
-            Erases every answer and review interval for {ctx.C.code}. Export first — this
+            Erases every answer and review interval for {ctx.C.code}. Export first, because this
             cannot be undone.
           </span>
         </div>

@@ -6,7 +6,8 @@ import { renderBlock } from "../blocks/index.js";
 import { monogram } from "./CatChip.jsx";
 import { dueCount } from "../lib/queue.js";
 
-/* The category hub and one category's page.
+/* One category's page. The hub that used to sit above it is now the Kinds band
+ * of the index (components/Index.jsx), which also says why.
  *
  * A category page is a case comparison. Its members are laid out together
  * rather than met one at a time across the course, which is the condition the
@@ -17,60 +18,6 @@ import { dueCount } from "../lib/queue.js";
  * ones, so a category that declares no sibling gets no comparison strip rather
  * than an arbitrary one.
  */
-
-export function CatHub({ ctx }) {
-  const { cid, idx } = ctx;
-  const CAT = idx.CAT;
-  const keys = Object.keys(CAT.cats);
-
-  if (!keys.length) return (
-    <div class="chub">
-      <h1>Categories</h1>
-      <p class="lede">This course declares none yet. A category groups things by
-        what kind they are, wherever they sit in the material.</p>
-    </div>
-  );
-
-  /* Ranked by size: a category with two members is a label with ambition, and
-     the ones that organise the course are the ones with a population. */
-  const rows = keys
-    .map(k => ({ k, d: CAT.cats[k], n: (CAT.members[k] || []).length }))
-    .sort((a, b) => b.n - a.n);
-
-  return (
-    <div class="chub cathub">
-      <h1>Categories</h1>
-      <p class="lede">
-        {keys.length} {keys.length === 1 ? "kind" : "kinds"} of thing this course
-        sorts its material into. A category is not a section — its members sit
-        wherever they were needed.
-      </p>
-      <div class="cgrid">
-        {rows.map(({ k, d, n }) => (
-          <a class="ccard catcard" href={`#/${cid}/cat/${k}`} key={k}>
-            <span class="cchip-m big" aria-hidden="true">{monogram(d.name || k, d.short)}</span>
-            <h3>{d.name || k}</h3>
-            <span class="uses">{n} {n === 1 ? "item" : "items"}</span>
-            {d.boundary && <p class="cbound">{d.boundary}</p>}
-          </a>
-        ))}
-      </div>
-      {CAT.tags.length > 0 && (
-        <div class="tagcloud">
-          <h2 class="cghead">Tags</h2>
-          <p class="lede">Secondary memberships. A thing can carry many.</p>
-          <div class="tagrow">
-            {CAT.tags.map(t => (
-              <a class="gtag" key={t} href={`#/${cid}/explore/tag/${encodeURIComponent(t)}`}>
-                #{t}<span class="tagn">{CAT.tagIndex[t].length}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /** one member, at the depth the reader has chosen for this page */
 function Member({ r, ctx, depth }) {

@@ -132,7 +132,7 @@ const mine = run({
 });
 check("a place in this course leads", mine[0].kind === "resume", JSON.stringify(mine[0]));
 check("resume names the subsection by its number",
-      mine[0].title.startsWith("2.1 ·"), mine[0].title);
+      /^2\.1\s/.test(mine[0].title), mine[0].title);
 check("resume estimates what is left", /\d+ min left/.test(mine[0].why), mine[0].why);
 
 /* ---- every item is actionable ------------------------------------------- */

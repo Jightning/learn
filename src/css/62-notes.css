@@ -48,7 +48,7 @@
 /* No hover to reveal it on a touch device, so it rests a little higher there.
    Still page texture rather than furniture: 32 of these are on screen. */
 @media (hover:none){ .note-grip{opacity:.3} }
-.note-pull:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:4px}
+.note-pull:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:3px}
 .note-pull:hover .note-grip,
 .note-pull:active .note-grip{background:var(--dc);opacity:.7;width:30px}
 /* A block that already carries notes: the grip adds another rather than the
@@ -110,7 +110,7 @@
 
 .note-area{
   width:100%;font:inherit;font-size:var(--fs-small);line-height:1.5;color:var(--ink);
-  background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;
   padding:7px 9px;resize:vertical;
 }
 .note-area:focus{outline:2px solid var(--dc);outline-offset:1px}

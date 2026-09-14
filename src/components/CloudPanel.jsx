@@ -38,11 +38,11 @@ export default function CloudPanel({ setup = false, onChange }) {
   const report = r => {
     setBusy(false);
     setLast(lastSync());
-    if (!r) { setMsg("Nothing to do — already up to date today."); return; }
+    if (!r) { setMsg("Nothing to do: already up to date today."); return; }
     if (!r.ok) {
       setMsg(r.unauthorized
         ? "That secret was refused. Check it matches SYNC_SECRET on the deployment."
-        : `Could not reach the backup — ${r.error}.`);
+        : `Could not reach the backup: ${r.error}.`);
       return;
     }
     setBin(r.bin || []);
@@ -50,7 +50,7 @@ export default function CloudPanel({ setup = false, onChange }) {
     if (r.uploaded.length) parts.push(`backed up ${r.uploaded.length} course(s)`);
     if (r.installed.length) parts.push(`installed ${r.installed.length}`);
     if (r.removed.length) parts.push(`removed ${r.removed.length}`);
-    setMsg(parts.join(" · ") + ".");
+    setMsg(parts.join(", ") + ".");
     refresh();
     onChange && onChange();
   };
@@ -109,7 +109,7 @@ export default function CloudPanel({ setup = false, onChange }) {
           {busy ? "Working..." : on ? "Back up now" : "Connect and back up"}
         </button>
         {on && <button class="dbtn ghost" id="cloud-forget" onClick={forget} disabled={busy}>Forget secret</button>}
-        <span class="cal-cap">last backup {ago(last)} · this device: {deviceId()}</span>
+        <span class="cal-cap">last backup {ago(last)}<i class="sep" aria-hidden="true" />this device: {deviceId()}</span>
         {msg && <span class="sync-msg">{msg}</span>}
       </div>
 

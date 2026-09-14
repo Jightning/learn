@@ -2,6 +2,6 @@ name: Reference tables
 short: RT
 boundary: |-
   Tables a reader looks things up in rather than reads through. Not worked
-  examples laid out as tables, and not truth tables built to be derived —
-  those are exercises wearing a table's shape.
+  examples laid out as tables, and not truth tables built to be derived,
+  which are exercises wearing a table's shape.
 siblings: [block-kinds]

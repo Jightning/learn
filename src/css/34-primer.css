@@ -8,7 +8,7 @@
 .primer .lede{color:var(--ink-2);margin:0 0 26px}
 
 .primer-card{
-  border:1px solid var(--rule);border-radius:12px;background:var(--surface);
+  border:1px solid var(--rule);border-radius:3px;background:var(--surface);
   padding:30px 28px;margin-top:22px;
 }
 .primer-meta{
@@ -23,7 +23,7 @@
 .dbtn.ghost:hover{border-style:solid}
 
 .primer-done{
-  border:1px solid var(--rule);border-radius:12px;background:var(--surface-2);
+  border:1px solid var(--rule);border-radius:3px;background:var(--surface-2);
   padding:26px 28px;margin-top:22px;
 }
 .primer-done h3{margin:0 0 6px;font-size:1.1rem}
@@ -39,14 +39,14 @@
 .preq-q{font-size:1.05rem;font-weight:600;line-height:1.5;margin:0 0 14px}
 .preq-in{
   display:block;width:100%;font:inherit;font-size:.86rem;
-  border:1px solid var(--rule);border-radius:6px;padding:7px 9px;
+  border:1px solid var(--rule);border-radius:3px;padding:7px 9px;
   background:var(--surface-2);color:var(--ink);resize:vertical;
 }
 .preq-in:focus{outline:2px solid var(--hi);outline-offset:1px}
 /* The reader's own words are learner content, so they never wear the styling
    the material wears — the rule `.why-prior` states in 64-drill.css. */
 .preq-mine{
-  margin:14px 0 0;border-left:2px solid var(--dc);border-radius:0 6px 6px 0;
+  margin:14px 0 0;border-left:2px solid var(--dc);border-radius:0 3px 3px 0;
   background:color-mix(in srgb,var(--dc) 7%,transparent);
   padding:7px 10px;font-size:var(--fs-small);color:var(--ink-2);
 }

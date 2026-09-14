@@ -2,7 +2,7 @@ name: Reading controls
 short: RC
 boundary: |-
   The controls that change how much of a page is rendered without changing
-  where you are in the course — the tier lane, the reading depth, the content
+  where you are in the course: the tier lane, the reading depth, the content
   zoom, the sidebar tuck. Not the controls that move you somewhere else
   (search, the map, the sidebar rail), and not the surfaces that ask you a
   question.

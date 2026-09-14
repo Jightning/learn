@@ -17,7 +17,7 @@ items:
   - format: multiple-choice
     stem: |-
       Which single outcome enrols a concept into spaced review on its own?
-      (a) any wrong answer · (b) a wrong answer marked high confidence · (c) a correct answer marked low confidence · (d) reading the subsection
+      (a) any wrong answer, (b) a wrong answer marked high confidence, (c) a correct answer marked low confidence, (d) reading the subsection
     answer: (b) missing something you had just predicted you would get right.
     steps:
       - "Reading enrols nothing; a hesitant miss is already known to the reader."

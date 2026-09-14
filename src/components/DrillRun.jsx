@@ -11,7 +11,7 @@ export default function DrillRun({ row, at, onNext }) {
       <Drill key={row.item.id + at} cid={row.cid} C={row.C} item={row.item}
              cluster={row.cluster} onDone={onNext} />
       <details class="drill-src">
-        <summary>Show the concept</summary>
+        <summary><i class="caret" aria-hidden="true" />Show the concept</summary>
         <div class="body" dangerouslySetInnerHTML={{
           __html: decorate((row.C.concepts[row.key] || {}).body || "", row.cid, {}) }} />
         <a class="mn-go" href={`#/${row.cid}/c/${row.key}`}>Full entry →</a>

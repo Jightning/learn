@@ -36,9 +36,11 @@ blocks:
       Four places a course can take you, all from the sidebar.
     items:
       - the <b>sections</b> themselves, in order
-      - <b>core concepts</b> — the ideas the course reuses, each with its own entry
-      - <b>mixed practice</b> — questions drawn across the whole course
-      - the <b>dependency map</b> — which section needs which
+      # Quoted, all three: an unquoted ": " makes YAML read the line as a
+      # mapping and the reader gets [object Object]. See create_course §13.4a.
+      - 'the <b>index</b>: every idea the course reuses and every kind of thing it sorts material into'
+      - '<b>mixed practice</b>: questions drawn across the whole course'
+      - 'the <b>dependency map</b>: which section needs which'
 
   - t: p
     tier: depth

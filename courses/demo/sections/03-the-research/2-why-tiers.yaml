@@ -92,7 +92,7 @@ quiz:
     q: |-
       A subsection has 4 spine blocks, 2 depth, 1 apply. In the "Spine" lane, what does the reader see where the depth and apply blocks were?
     a: |-
-      One stub reading "2 in depth · 1 more application".
+      One stub reading "2 in depth, 1 more application".
     why: |-
       <p>Collapsed runs become a single stub whose count is text, so the reader knows exactly what was skipped rather than meeting an invisible gap. Expanding it restores the blocks in place.</p>
     why_prompt: Why is the count shown as words rather than just hidden?

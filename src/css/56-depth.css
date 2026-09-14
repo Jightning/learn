@@ -13,11 +13,6 @@
 .lanes .lane,.lanes .depth{margin:0}
 .depth{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
 
-.depth-note{
-  font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.02em;
-  color:var(--ink-3);margin:0 0 var(--sp-2);
-}
-.depth-note b{color:var(--ink-2);font-weight:600}
 
 /* ------------------------------------------------------------------- notes */
 /* Notes are a grouped outline, not a list of header-and-paragraph rows.
@@ -258,7 +253,7 @@
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.03em;
   border:1px solid color-mix(in srgb,var(--hi) 30%,transparent);
   background:color-mix(in srgb,var(--hi) 9%,transparent);
-  color:var(--hi-ink);border-radius:4px;padding:1px 5px 1px 2px;
+  color:var(--hi-ink);border-radius:3px;padding:1px 5px 1px 2px;
   text-decoration:none;
 }
 .cchip:hover{border-color:var(--hi);background:color-mix(in srgb,var(--hi) 16%,transparent)}
@@ -274,7 +269,7 @@
   padding:1px 3px;flex:none;
 }
 .cchip-m.big{
-  font-size:var(--fs-small);padding:3px 6px;border-radius:4px;
+  font-size:var(--fs-small);padding:3px 6px;border-radius:3px;
   margin-right:.5rem;vertical-align:middle;
 }
 .cchip-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11rem}
@@ -284,17 +279,12 @@
   display:inline-flex;align-items:center;gap:.25rem;
   font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.03em;
   color:var(--ink-3);text-decoration:none;
-  border:1px solid var(--rule);border-radius:4px;padding:1px 5px;
+  border:1px solid var(--rule);border-radius:3px;padding:1px 5px;
 }
 .gtag:hover{color:var(--hi-ink);border-color:var(--hi)}
 .tagn{color:var(--ink-3);opacity:.75}
 
 /* ---------------------------------------------------------- category pages */
-.catcard{display:block}
-.catcard .cbound{
-  font-size:var(--fs-small);color:var(--ink-3);margin:.4rem 0 0;line-height:1.45;
-}
-.cathub .tagcloud{margin-top:var(--sp-4)}
 .tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-1)}
 
 .catdet h1{display:flex;align-items:center;flex-wrap:wrap}
@@ -309,11 +299,13 @@
 .csib{
   display:flex;flex-direction:column;gap:.2rem;flex:1 1 13rem;
   border:1px solid var(--rule);border-left:2px solid var(--wn);
-  border-radius:5px;padding:.5rem .65rem;text-decoration:none;color:inherit;
+  border-radius:3px;padding:.5rem .65rem;text-decoration:none;color:inherit;
 }
 .csib:hover{border-color:var(--wn)}
 .csib b{font-family:var(--mono);font-size:var(--fs-small)}
 .csib span{font-size:var(--fs-small);color:var(--ink-3);line-height:1.45}
+/* The sibling's population, under its boundary. Mono, because it is a count. */
+.csib .uses{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3)}
 
 .catbar{
   display:flex;align-items:center;gap:.5rem 1rem;flex-wrap:wrap;
@@ -343,19 +335,24 @@
 .xbar{display:flex;gap:.5rem;align-items:center;margin:var(--sp-2) 0}
 .xq{
   flex:1 1 auto;min-width:0;font:inherit;font-size:.95rem;
-  border:1px solid var(--rule);border-radius:6px;padding:.5rem .7rem;
+  border:1px solid var(--rule);border-radius:3px;padding:.5rem .7rem;
   background:var(--surface);color:var(--ink);
 }
 .xq:focus{outline:2px solid var(--hi);outline-offset:1px}
 
-.xfacets{display:flex;flex-direction:column;gap:.5rem;margin-bottom:var(--sp-2)}
-.xfacet{display:flex;align-items:flex-start;gap:.55rem;flex-wrap:wrap}
-.xfacet .lane-l{padding-top:.3rem;flex:none;width:4.6rem}
-.xwrap{flex-wrap:wrap;max-width:100%}
-.xfacet .lane-b{display:inline-flex;align-items:center;gap:.3rem}
+/* One row of facets, each closed to its own name. What was here before was
+   four labelled rows holding every value of every axis at once; Dropdown.jsx
+   says why that stopped working. */
+.xfacets{
+  display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .5rem;
+  margin-bottom:var(--sp-2);
+  /* The narrow-width anchor for the facet menus; see 57-dropdown.css. */
+  position:relative;
+}
+.xfacets .xcount{margin:0 0 0 auto}
 
 .xcat{
-  border:1px solid var(--rule);border-left:2px solid var(--hi);border-radius:5px;
+  border:1px solid var(--rule);border-left:2px solid var(--hi);border-radius:3px;
   padding:.6rem .8rem;margin:var(--sp-2) 0;
 }
 .xcat h2{font-family:var(--display);font-size:1.02rem;font-weight:600;margin:0 0 .25rem}
@@ -380,8 +377,7 @@
 @media (max-width:52em){
   .gkind{width:2.5rem}
   .glead,.gmeta,.depth-index .gmeta{margin-left:0}
-  .xfacet{flex-direction:column;gap:.3rem}
-  .xfacet .lane-l{width:auto;padding-top:0}
+  .xfacets .xcount{margin-left:0;flex:1 1 100%}
   .catpractice{margin-left:0}
 }
 

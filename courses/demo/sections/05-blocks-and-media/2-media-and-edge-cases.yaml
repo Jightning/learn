@@ -16,7 +16,7 @@ blocks:
   - t: image
     src: assets/gallery.svg
     alt: Three horizontal bars of decreasing length labelled spine, depth, and apply
-    cap: "image — embedded SVG, with a caption, credit, and fixed width"
+    cap: "image: embedded SVG, with a caption, credit, and fixed width"
     credit: this repository, courses/demo/assets/
     width: 300
 

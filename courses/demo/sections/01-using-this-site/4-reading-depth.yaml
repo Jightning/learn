@@ -32,7 +32,7 @@ blocks:
     core: |-
       A block's <b>depth</b> says how much of that block is open, and the <b>Show</b> control closes prose without removing anything.
     h: |-
-      <p><b>Full</b> is the block entire. <b>Notes</b> is its claim with the development closed. <b>Index</b> is its name with the claim closed too. Every closed block opens where it stands, so a depth is the same course at a lower resolution rather than a shorter course. Press <b>d</b> to step through them.</p>
+      <p><b>Full</b> is the block entire. <b>Notes</b> is its claim with the development closed. <b>Names</b> is its name with the claim closed too. Every closed block opens where it stands, so a depth is the same course at a lower resolution rather than a shorter course. Press <b>d</b> to step through them.</p>
 
   - t: key
     source: docs/architecture.md §3h
@@ -44,7 +44,7 @@ blocks:
       <p>Counted across this project's own courses, <b>Spine</b> hides 26% of the demo, 20% of the differential-equations course and <b>0.8%</b> of one written almost entirely in spine blocks. Since nothing examinable may sit in <code>depth</code>, no amount of re-authoring changes that. An overview had to come from somewhere else.</p>
 
   # `notes: open` keeps this table whole when the rest of the page closes. A
-  # two-by-four matrix is already the compact form — it puts the two controls
+  # two-by-four matrix is already the compact form: it puts the two controls
   # side by side, which is the one thing a list of claims cannot do, and it is
   # the form the note-format research credits above an outline.
   - t: table
@@ -56,8 +56,8 @@ blocks:
     head: [control, keys, acts on, settings]
     split: 2
     rows:
-      - [Read, "1 2 3", whole blocks, "Spine · Spine + Apply · All"]
-      - [Show, "d", prose inside a block, "Full · Notes · Index"]
+      - [Read, "1 2 3", whole blocks, "Spine, Spine + Apply, All"]
+      - [Show, "d", prose inside a block, "Full, Notes, Names"]
 
   - t: trap
     source: docs/code_truth.md T42
@@ -71,7 +71,7 @@ blocks:
   - t: p
     source: docs/architecture.md §3d
     h: |-
-      Neither control hides anything silently. A collapsed tier leaves one line saying what it holds — "2 in depth · 1 more application" — and a closed block leaves its name and, at <b>Notes</b>, its claim. Clicking either brings the prose back in place, so a skipped passage stays visible as a skipped passage rather than as a hole you never knew about.
+      Neither control hides anything silently. A collapsed tier leaves one line saying what it holds ("2 in depth, 1 more application"), and a closed block leaves its name and, at <b>Notes</b>, its claim. Clicking either brings the prose back in place, so a skipped passage stays visible as a skipped passage rather than as a hole you never knew about.
 
   - t: note
     tier: depth
@@ -91,7 +91,7 @@ blocks:
     h: |-
       <ol>
         <li>A paragraph derives a result you are expected to be able to <em>use</em> but never to reproduce.</li>
-        <li>The result is examinable, so the statement of it is spine — the <b>Read</b> control never removes it.</li>
+        <li>The result is examinable, so the statement of it is spine: the <b>Read</b> control never removes it.</li>
         <li>The derivation is not, so it is depth. A reader in the Spine lane loses nothing they could be tested on.</li>
         <li>Independently of all that, the statement's own claim is its first sentence, so at <b>Notes</b> the block shows that sentence and closes the rest.</li>
       </ol>
@@ -102,7 +102,7 @@ quiz:
     q: |-
       A subsection has 4 spine blocks, 2 depth and 1 apply. You switch to the Spine lane. What is on the page where the other three were?
     a: |-
-      One line reading "2 in depth · 1 more application", which expands them again in place.
+      One line reading "2 in depth, 1 more application", which expands them again in place.
     why: |-
       <p>The count is written out as text on purpose. A silent collapse would leave the reader unable to tell a short subsection from a filtered one.</p>
     why_prompt: What would go wrong if the collapsed blocks left nothing behind?
@@ -122,7 +122,7 @@ quiz:
   - type: Separate the two axes
     concept: tier
     q: |-
-      A course is written entirely in spine blocks — no depth, no apply. Which control still shortens the page, and by roughly how much?
+      A course is written entirely in spine blocks, with no depth and no apply. Which control still shortens the page, and by roughly how much?
     a: |-
       The Read control does nothing at all, because there is nothing outside the spine to remove. Show still works, and takes the page to about a fifth of its words at Notes, because it closes prose inside blocks rather than removing blocks.
     why: |-

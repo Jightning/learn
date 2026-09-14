@@ -1,4 +1,4 @@
-title: Diagrams — graph, flow, timing
+title: "Diagrams: graph, flow, timing"
 blocks:
   - t: p
     source: docs/create_course.md §11.1
@@ -18,7 +18,7 @@ blocks:
     cat: figure-kinds
     id: loop-machine
     kind: graph
-    cap: "graph, circle layout — a concept's retention state, with one node ringed as \"here\""
+    cap: "graph, circle layout: a concept's retention state, with one node ringed as \"here\""
     spec:
       layout: circle
       nodes:
@@ -37,7 +37,7 @@ blocks:
     cat: figure-kinds
     tier: depth
     kind: graph
-    cap: "graph, layered layout — ten nodes, so it keeps an intrinsic width and the figure frame scrolls rather than shrinking; long labels wrap and the node grows to fit them"
+    cap: "graph, layered layout: ten nodes, so it keeps an intrinsic width and the figure frame scrolls rather than shrinking; long labels wrap and the node grows to fit them"
     spec:
       layout: layered
       nodes:
@@ -68,7 +68,7 @@ blocks:
   - t: figure
     cat: figure-kinds
     kind: flow
-    cap: "flow, row direction — the authoring procedure, each step with a note"
+    cap: "flow, row direction: the authoring procedure, each step with a note"
     spec:
       dir: row
       steps:
@@ -82,7 +82,7 @@ blocks:
     cat: figure-kinds
     tier: depth
     kind: flow
-    cap: "flow, column direction — the same phases stacked"
+    cap: "flow, column direction: the same phases stacked"
     spec:
       dir: col
       steps:
@@ -93,7 +93,7 @@ blocks:
   - t: figure
     cat: figure-kinds
     kind: timing
-    cap: "timing — a clock, an enable, and the gated output"
+    cap: "timing: a clock, an enable, and the gated output"
     spec:
       unit: 24
       signals:

@@ -4,6 +4,7 @@ import { present } from "../lib/gist.js";
 import { decorate } from "../lib/refs.js";
 import { renderBlock } from "../blocks/index.js";
 import CatChip, { monogram } from "./CatChip.jsx";
+import Dropdown, { Item } from "./Dropdown.jsx";
 
 /* Explore — search with the facets the overlay deliberately does not have.
  *
@@ -33,6 +34,12 @@ const KINDS = [
   { id: "concept", label: "Concepts" }
 ];
 
+const SHOW = [
+  { id: "index", label: "Names",      hint: "the entry alone" },
+  { id: "notes", label: "Claims",     hint: "what each one asserts" },
+  { id: "full",  label: "Everything", hint: "the whole block" }
+];
+
 export default function Explore({ ctx, seed }) {
   const { C, cid, idx } = ctx;
   const CAT = idx.CAT;
@@ -59,7 +66,7 @@ export default function Explore({ ctx, seed }) {
     };
   }, [kinds, cat, tag]);
 
-  const faceted = cat || tag || kinds.length;
+  const faceted = !!(cat || tag || kinds.length);
 
   /* Searching ranks; browsing lists. Both respect the same facets, so the
      controls do not change meaning when the query box empties. */
@@ -81,7 +88,7 @@ export default function Explore({ ctx, seed }) {
     <div class="explore">
       <h1>Explore</h1>
       <p class="lede">
-        Search and filter everything this course holds — down to the individual
+        Search and filter everything this course holds, down to the individual
         rule, table or definition, not just the page it sits on.
       </p>
 
@@ -97,62 +104,70 @@ export default function Explore({ ctx, seed }) {
       </div>
 
       <div class="xfacets">
-        <div class="xfacet">
-          <span class="lane-l">Kind</span>
-          <span class="lane-set">
-            {KINDS.map(k => (
-              <button key={k.id} class={"lane-b" + (kinds.includes(k.id) ? " sel" : "")}
-                      aria-pressed={kinds.includes(k.id)}
-                      onClick={() => toggleKind(k.id)}>{k.label}</button>
-            ))}
-          </span>
-        </div>
+        <Dropdown label="Kind"
+                  value={kinds.length === 0 ? "" : kinds.length === 1
+                    ? KINDS.find(k => k.id === kinds[0]).label
+                    : `${kinds.length} kinds`}>
+          {() => (
+            <>
+              <Item sel={!kinds.length} text="Anything" onPick={() => setKinds([])} />
+              {KINDS.map(k => (
+                <Item key={k.id} multi sel={kinds.includes(k.id)} text={k.label}
+                      onPick={() => toggleKind(k.id)} />
+              ))}
+            </>
+          )}
+        </Dropdown>
 
         {catKeys.length > 0 && (
-          <div class="xfacet">
-            <span class="lane-l">Category</span>
-            <span class="lane-set xwrap">
-              {catKeys.map(k => (
-                <button key={k} class={"lane-b" + (cat === k ? " sel" : "")}
-                        aria-pressed={cat === k}
-                        onClick={() => setCat(cat === k ? "" : k)}>
-                  <span class="cchip-m" aria-hidden="true">
-                    {monogram(CAT.cats[k].name || k, CAT.cats[k].short)}
-                  </span>
-                  {CAT.cats[k].name || k}
-                  <span class="tagn">{(CAT.members[k] || []).length}</span>
-                </button>
-              ))}
-            </span>
-          </div>
+          <Dropdown label="Category" wide
+                    value={cat ? (CAT.cats[cat].name || cat) : ""}>
+            {close => (
+              <>
+                <Item sel={!cat} text="Any category"
+                      onPick={() => { setCat(""); close(); }} />
+                {catKeys.map(k => (
+                  <Item key={k} sel={cat === k}
+                        lead={<span class="cchip-m" aria-hidden="true">
+                          {monogram(CAT.cats[k].name || k, CAT.cats[k].short)}</span>}
+                        text={CAT.cats[k].name || k}
+                        sub={CAT.cats[k].boundary}
+                        n={(CAT.members[k] || []).length}
+                        onPick={() => { setCat(cat === k ? "" : k); close(); }} />
+                ))}
+              </>
+            )}
+          </Dropdown>
         )}
 
         {CAT.tags.length > 0 && (
-          <div class="xfacet">
-            <span class="lane-l">Tag</span>
-            <span class="lane-set xwrap">
-              {CAT.tags.map(t => (
-                <button key={t} class={"lane-b" + (tag === t ? " sel" : "")}
-                        aria-pressed={tag === t}
-                        onClick={() => setTag(tag === t ? "" : t)}>
-                  #{t}<span class="tagn">{CAT.tagIndex[t].length}</span>
-                </button>
-              ))}
-            </span>
-          </div>
+          <Dropdown label="Tag" value={tag ? "#" + tag : ""}>
+            {close => (
+              <>
+                <Item sel={!tag} text="Any tag" onPick={() => { setTag(""); close(); }} />
+                {CAT.tags.map(t => (
+                  <Item key={t} sel={tag === t} text={"#" + t} n={CAT.tagIndex[t].length}
+                        onPick={() => { setTag(tag === t ? "" : t); close(); }} />
+                ))}
+              </>
+            )}
+          </Dropdown>
         )}
 
-        <div class="xfacet">
-          <span class="lane-l">Show</span>
-          <span class="lane-set">
-            {["index", "notes", "full"].map(d => (
-              <button key={d} class={"lane-b" + (d === depth ? " sel" : "")}
-                      aria-pressed={d === depth} onClick={() => setDepth(d)}>
-                {d === "index" ? "Names" : d === "notes" ? "Claims" : "Everything"}
-              </button>
-            ))}
-          </span>
-        </div>
+        {/* Always carries a value, because there is no such thing as showing
+            no amount of a result. */}
+        <Dropdown label="Show" value={SHOW.find(d => d.id === depth).label}>
+          {close => SHOW.map(d => (
+            <Item key={d.id} sel={d.id === depth} text={d.label} sub={d.hint}
+                  onPick={() => { setDepth(d.id); close(); }} />
+          ))}
+        </Dropdown>
+
+        <p class="xcount">
+          {res.length
+            ? `${res.length}${res.length === 200 ? "+" : ""} ${res.length === 1 ? "result" : "results"}`
+            : q.trim() || faceted ? "Nothing matches." : "Type a query, or pick a facet."}
+        </p>
       </div>
 
       {active && (
@@ -162,12 +177,6 @@ export default function Explore({ ctx, seed }) {
           <a class="dbtn ghost" href={`#/${cid}/cat/${cat}`}>Open the category page →</a>
         </div>
       )}
-
-      <p class="xcount">
-        {res.length
-          ? `${res.length}${res.length === 200 ? "+" : ""} ${res.length === 1 ? "result" : "results"}`
-          : q.trim() || faceted ? "Nothing matches." : "Type a query, or pick a facet."}
-      </p>
 
       <div class="xres">
         {res.map(r => <Row key={r.e.id} r={r} ctx={ctx} depth={depth} />)}

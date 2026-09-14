@@ -23,13 +23,13 @@ npm run shots                        # render every page to .shots/ and look at 
 
 ## 0. Operating rules
 
-**0.1 What a finished course must do.** A reader who holds the prerequisites in
-§1 and nothing else, having read the spine and cleared the drill bank, can
-(a) state every idea in the course, (b) apply it to a problem they have never
-seen, (c) say why each rule holds and where it stops holding, and (d) construct
-something the course never showed them: a case the rules do not settle, or a
-claim about the material with an argument behind it. (d) is the one that gets
-dropped, and it is what separates a course from a reference.
+**0.1 What a finished course must do.** A reader holding the §1 prerequisites
+and nothing else, having read the spine and cleared the drill bank, can (a)
+state every idea, (b) apply it to a problem they have never seen, (c) say why
+each rule holds and where it stops, and (d) construct something the course never
+showed them: a case the rules do not settle, or a claim with an argument behind
+it. (d) is the one that gets dropped, and it separates a course from a
+reference.
 
 **0.2 The three rules everything serves.**
 
@@ -39,11 +39,10 @@ dropped, and it is what separates a course from a reference.
 | **Closure** | Nothing is used that is not either a declared prerequisite or defined earlier in this course. | [M2] |
 | **Derivability** | Every rule is reached, not asserted. A reader can see where it comes from. | §6.2, §6.3 |
 
-Non-redundancy and closure pull against each other, and the reference system is
-how they coexist: you can be complete without repeating, because the reader can
-always reach the definition. Non-redundancy governs *explanation*, not
-*practice*. A second application is not a second copy, which is why the drill
-bank exists.
+Non-redundancy and closure pull against each other; the reference system is how
+they coexist, since the reader can always reach the definition. Non-redundancy
+governs *explanation*, not *practice* — a second application is not a second
+copy, which is why the drill bank exists.
 
 **0.3 Follow §3's phases in order.** Depth is a function of the reader, so a
 section written before the calibration exists is calibrated to nobody.
@@ -66,7 +65,7 @@ cannot be gated by anything, and you are the only check on it.
 
 **0.8 Your default voice is wrong for this.** Left alone you write balanced,
 hedged, encyclopedic prose that covers a topic. That is a document. §14 lists
-the shapes that produces; §13 is the sentence itself, which is where a reader
+the shapes that produces; writing.md is the sentence itself, which is where a reader
 decides whether a person wrote this. Read both before your first `p` block.
 
 ---
@@ -111,11 +110,10 @@ or the other.
 
 **`background` is a boundary, not a description.** "Comfortable with maths" is
 not a prerequisite set. "Single-variable derivatives and integrals; no linear
-algebra; no complex numbers" is. Everything on the list may be used unexplained.
-Everything off it is taught. The usual way a course fails 0.2 is a model
-reaching for a convenience the list never granted — a matrix, a limit, a piece
-of notation — because it was the natural tool. Experts systematically misjudge
-which steps a novice already holds (Nathan & Petrosino 2003, *American
+algebra; no complex numbers" is. Everything on it may be used unexplained;
+everything off it is taught. Courses fail 0.2 by reaching for a convenient tool
+the list never granted, because it was the natural one. Experts systematically
+misjudge which steps a novice holds (Nathan & Petrosino 2003, *American
 Educational Research Journal* 40:905–928, "expert blind spot"), so check the
 list, never your sense of what is obvious.
 
@@ -200,14 +198,14 @@ whole feature surface: if you want a reader-facing behaviour, it is here.
 | `tier: depth` / `tier: apply` | A collapsed stub with a count, expandable in place |
 | `core:` on a block | Its **claim**, shown at Notes depth with the rest closed — and the opening line of the block at Full depth |
 | `gist:` on a block | Its claim at Notes depth only; the prose stays whole and untouched at Full depth |
-| `cat:` on a block or concept | A **chip** at Notes depth, a row on that **category's page**, and a facet in **Explore** |
+| `cat:` on a block or concept | A **chip** at Notes depth, a row on that **category's page**, and a facet in the **Category** menu on **Explore** |
 | `tags:` on a block or concept | A facet in **Explore** and a chip that links to everything sharing the tag |
-| `categories/<key>.yaml` | A page at **`#/<id>/cat/<key>`** listing every member wherever it sits, with the boundary and its siblings |
+| `categories/<key>.yaml` | A line in the **Kinds** band of the **index**, and a page at **`#/<id>/cat/<key>`** listing every member wherever it sits, with the boundary and its siblings |
 | `siblings:` in a category | A "not to be confused with" comparison strip on both pages |
 | `id:` on a `table` | An auto-numbered, citable **"Table 3.1"**, reachable by `<f k="…"/>` exactly as a figure is |
 | A `def` block with `term:` | An entry in the **"Before you start"** panel |
 | `<a href="#s4-2">§4.2</a>` | A **margin card**, a **return pill**, a **"Builds on" chip**, a **dependency-map edge**, and a **"used later in"** card on §4.2 |
-| `<c k="key">phrase</c>` | A **margin card**, a **concept hub** entry, a line in that concept's **"appears in"** list |
+| `<c k="key">phrase</c>` | A **margin card**, a line in the **Ideas** band of the **index**, and a line in that concept's **"appears in"** list |
 | `<a href="#/other-course/s6-1">…</a>` | A plain link into **another course** |
 | `<f k="fig-id"/>` | An auto-numbered, section-scoped **figure citation** |
 | `<m>…</m>` | Inline maths, rendered at read time |
@@ -222,7 +220,32 @@ whole feature surface: if you want a reader-facing behaviour, it is here.
 | `t: figure` | A rendered diagram, plot, chart, grid or timing trace (§10.1) |
 | `retention.target` in `course.yaml` | How hard the schedule holds the course (§4) |
 | `state.enabled: false` | A stateless reference: no quiz history, no review loop |
-| *(nothing — automatic)* | The "Before you start" panel, the stepped primer, the reader's note field, cross-course review at `#/review`, `problems.md`, `checklist.md`, import/export, sync |
+| `core:` on any block | What **Review** mode shows, and the whole of what a closed block says (§6.6) |
+| `cap:` on a `figure`, `table` or `image` | The caption, and the only part of that block **read aloud** (§2.2) |
+| *(nothing — automatic)* | The "Before you start" panel, the stepped primer, the reader's note field, the three reading modes (§6.8), read-aloud (§2.2), this course's review at `#/<id>/review` and the cross-course one at `#/review`, `problems.md`, `checklist.md`, import/export, sync |
+
+### 2.2 The page can be read aloud
+
+**Reading options → Listen** speaks the rendered column, starting from wherever
+the reader has scrolled to. It reads the page as it stands, so the lane, the
+depth and anything they have opened are honoured — and it speaks only text
+already on screen, so nothing you write for the eye can be contradicted by what
+the ear gets:
+
+| Spoken | Not spoken |
+|---|---|
+| headings, prose, `core:`, list items, a `def`'s term | the figure itself, table cells, code |
+| figure, table and image **captions** | formulas — see below |
+| a quiz question, if the reader has set Questions to Ask | a quiz **answer**, ever |
+
+**Two consequences for what you write**, both of which §10 asks for on other
+grounds — read-aloud is where skipping them becomes audible.
+
+1. **A figure with no `cap:` is silence.** The caption is all a listener gets,
+   so it must say what the figure shows, not name it.
+2. **A claim carried only by a formula is lost.** Maths is skipped: a rendered
+   equation flattens to its glyphs, `∫0∞e−stdt`, and reading that out is worse
+   than nothing. State the result in words; let the equation carry the form.
 
 ---
 
@@ -251,11 +274,10 @@ the semester `review: true`.
 the review set matches its declared basis.*
 
 **Phase 3a — Taxonomy.** Write `categories/<key>.yaml` for the kinds of thing
-this course will sort its material into (§5a). It comes before the spine, not
-after, because a block can only tag into a taxonomy that already exists — and a
-taxonomy derived after the fact fragments, with `invoke-labels` invented beside
-an existing `invocation-labels`. A textbook's own structure is usually most of
-the answer.
+this course sorts its material into (§5a). Before the spine, because a block can
+only tag into a taxonomy that exists, and one derived afterwards fragments —
+`redox-reactions` invented beside an existing `oxidation-reduction`. A
+textbook's own structure is usually most of the answer.
 *Stop: every category has a boundary naming what falls outside it, siblings name
 each other, and you can say for each one which blocks will join it. Skip the
 phase entirely if the material has no such kinds — an empty taxonomy is a
@@ -298,10 +320,13 @@ Re-reading is not verifying [M22]. Set `verified:` dates. Run §12, then
 ## 4. `course.yaml`
 
 ```yaml
-code: PHYS 201                   # short identifier, shown in the sidebar
-title: Oscillations and Waves
-tagline: One sentence: what this covers, in what order.
-meta: Source or textbook          # provenance line under the title
+code: CALC II                    # short identifier, shown in the sidebar
+title: Introduction to Differential Equations
+tagline: >-                       # `>-`, not a bare scalar: a tagline is a
+  First-order equations, the two   # sentence, and an unquoted ": " in one
+  methods that solve most of       # makes YAML read the line as a mapping
+  them, and what a solution is.    # (writing.md §4a)
+meta: OpenStax Calculus Volume 2   # provenance line under the title
 
 theme:
   hue: 200                       # optional: accent rotation, degrees (0-359)
@@ -355,15 +380,20 @@ It gives up the review loop (§1.2).
 ## 5. Concepts — `concepts/<key>.yaml`
 
 ```yaml
-term: Two's complement
+term: Initial-value problem
 body: |-
-  <p>The signed encoding used by essentially all real hardware…</p>
-src: Defined in §10.1
-review: true                           # in the review set; owes a drill file
-confusable_with: [sign-magnitude]      # only where readers actually confuse them
+  <p>A differential equation coupled with an initial value.</p>
+src: Defined in §4.1
+review: true                             # in the review set; owes a drill file
+confusable_with: [general-solution]      # only where readers actually confuse them
 ```
 
-The filename is the key: `twos-complement.yaml` → `<c k="twos-complement">`.
+The `body:` there is verbatim from OpenStax *Calculus Volume 2* §4.1 Key
+Concepts — one sentence, because a concept card is met in the margin of
+somebody else's paragraph and has to be read without leaving it.
+
+The filename is the key: `initial-value-problem.yaml` →
+`<c k="initial-value-problem">`.
 (A `key:` field inside the file overrides that; use it only to rename a concept
 without breaking links, then rename the file and remove it.)
 
@@ -405,26 +435,62 @@ It is the only grouping in the system that is neither positional (a section),
 argumentative (a tier) nor referential (a concept mention), and it is the one a
 reader still has after they have forgotten where they read something.
 
+Concepts and categories share one surface, the **index** at `#/<id>/index`:
+ideas in the first band, kinds in the second. They had a page each and the two
+were indistinguishable, so the reader had to open both to find out which was
+which. Writing them is unchanged — two directories, two schemas, the two tests
+below — but when you are deciding whether something is a concept or a category,
+picture the one page they both land on:
+
+| | An idea (`concepts/`) | A kind (`categories/`) |
+|---|---|---|
+| answers | *what is this?* | *what is this one of?* |
+| cardinality | one entry, many mentions | one set, many members |
+| carries | a `body:` that explains it | a `boundary:` that excludes things |
+| earns its place by | being re-explained in 3+ sections (M13) | having members you would want listed together |
+| a thing can have | as many mentions as the prose needs | exactly one `cat:`, plus any number of `tags:` |
+
+They are not alternatives and something can be both: a concept may carry a
+`cat:`, in which case it appears in Ideas as an entry and in that category's
+page as a member.
+
+A textbook with a taxonomy says so outright. OpenStax *Chemistry 2e* opens its
+chapter summary with one:
+
+> "Chemical reactions are classified according to similar patterns of behavior.
+> A large number of important reactions are included in three categories:
+> precipitation, acid-base, and oxidation-reduction (redox)."
+> — [Ch. 4 Summary](https://openstax.org/books/chemistry-2e/pages/4-summary)
+
+Three categories, named, with the basis of the division stated — a
+`categories/` directory, whose boundaries are the book's own definitions:
+
 ```yaml
-name: Invoke labels
-short: IL                    # 2-3 chars, the recognisable key. Optional.
+name: Precipitation reactions
+short: PPT                   # 2-3 chars, the recognisable key. Optional.
 boundary: |-
-  The labels a dispatcher attaches to an inbound call. Not response labels,
-  which are attached on the way out, and not lifecycle labels, which describe
-  the request rather than its routing.
-siblings: [response-labels]  # must name each other
+  Reactions in which dissolved substances react to form one (or more) solid
+  products. Not acid-base reactions, in which a hydrogen ion is transferred
+  from one chemical species to another, and not redox, in which the oxidation
+  number of a reactant element changes.
+siblings: [acid-base-reactions, redox-reactions]   # must name each other
 note: |-                     # optional; HTML, rendered above the members
-  <p>All eleven are assigned by the router, never by the caller.</p>
+  <p>One of the three categories OpenStax Chemistry 2e §4.2 sorts reactions
+  into.</p>
 ```
+
+The boundary is this category's definition then each sibling's, in the source's
+own words. Written that way it cannot drift from the material, and it is the
+sentence a reader is actually learning when they learn the category.
 
 Membership is declared on the thing, not in the category file:
 
 ```yaml
 - t: table
-  id: dispatch-paths
-  cap: The four dispatch paths
-  cat: invoke-labels          # the principal tag: one, and it must be declared
-  tags: [routing, dispatch]   # secondary, plural, slugs
+  id: solubility-rules
+  cap: Which ionic compounds dissolve, and which come out as a solid
+  cat: precipitation-reactions  # the principal tag: one, and it must be declared
+  tags: [solubility, aqueous]   # secondary, plural, slugs
 ```
 
 **A label is not a category, and neither replaces the other.** A `label:` names
@@ -463,7 +529,7 @@ category.
 `_section.yaml`:
 
 ```yaml
-title: Function Minimisation with Karnaugh Maps
+title: Separable Equations
 blurb: >-
   Two or three sentences: what this section is for, and why it comes here
   rather than earlier.
@@ -477,14 +543,15 @@ primer:                          # §9
 `N-<slug>.yaml`:
 
 ```yaml
-title: Grouping, implicants, and minimum SOP
+title: Separable equations
 blocks:
   - t: p
     h: |-
       Prose. Write HTML directly; inside a literal block nothing is escaped.
 quiz:
-  - type: Minimise SOP
-    …
+  - type: Solve a separable equation
+    q: |-
+      …                           # §7 has the whole shape
 ```
 
 Both files accept `id:` and `num:` overrides. Do not write them; positional
@@ -542,15 +609,13 @@ write it only to override one. Repeating a default is a line you pay for on
 every write and every re-read, and it buys nothing.
 
 **Never write the interface's own words.** Every block renders a frame you did
-not author: a callout prints its label, a figure prints its number, a collapsed
-tier prints its count, an `attempt` prints a text box, a submit button, and a
-line telling the reader the section teaches this next. Text repeating any of it
-is redundant against the engine rather than against other prose, which is the
-one kind of repetition M1 cannot see and no gate will catch. So an `attempt`
-poses the problem and stops. It does not ask for an answer, tell the reader to
-record one, or promise what comes after. Before writing a sentence that tells
-the reader what to do on the page, check §2.1 for whether the page already
-does it.
+not author: a callout prints its label, a figure its number, a collapsed tier
+its count, an `attempt` a text box, a submit button and a line saying the
+section teaches this next. Repeating any of it is redundancy against the engine
+rather than against other prose, which is the one kind M1 cannot see and no gate
+catches. So an `attempt` poses the problem and stops. Before writing a sentence
+telling the reader what to do on the page, check §2.1 for whether the page
+already does it.
 
 **`source:` belongs on every `def`, `key` and `trap`** — those three carry the
 conclusions a reader cannot catch by reading around them, they are the three
@@ -678,29 +743,32 @@ read, and the quiz is already a retrieval surface with a reveal gate, a `why`, a
 ```yaml
 # 1. an error-spotting quiz item, in the subsection that taught the procedure
 - type: Spot the error
-  concept: twos-complement
+  concept: separable-equation
   q: |-
-    <p>A student writes −6 as a 4-bit two's complement value like this. Which
-    step is wrong, and what is the correct result?</p>
-    <ol><li>6 is 0110.</li>
-    <li>Invert every bit: 1001.</li>
-    <li>So −6 is 1001.</li></ol>
-  a: Step 3. Inversion is only half of it; adding one gives 1010.
+    <p>A student solves <m>y' = y(1-y)</m> by separating and integrating, and
+    reports the family they get as the general solution. Which solutions has
+    the method dropped, and at which step should they have been caught?</p>
+  a: <m>y = 0</m> and <m>y = 1</m>. At step 1, before dividing.
   why: |-
-    <p>Inverting alone produces ones' complement, a real encoding in its own
-    right. That is what makes the intermediate value look legal. Check it by
-    weight: 1001 is −8 + 1 = −7, not −6.</p>
-  why_prompt: What does 1001 evaluate to if you read the top bit as −8?
-  verified: 2026-09-08
+    <p>Dividing by <m>g(y)</m> is what makes separation work and what discards
+    the roots of <m>g</m>. That is why the strategy's first step is "check for
+    any values of <m>y</m> that make <m>g(y)=0</m>" — the check comes before
+    the division, not after the answer.</p>
+  why_prompt: What does dividing both sides by <m>g(y)</m> assume about <m>g(y)</m>?
+  verified: 2026-09-13
 ```
 
 ```yaml
 # 2. an execution trap in the body, naming the slip itself
 - t: trap
   label: Common slip
+  source: OpenStax Calculus Volume 2 §4.3
+  core: |-
+    Dividing by <m>g(y)</m> discards every constant solution where
+    <m>g(y) = 0</m>.
   h: |-
-    <p>Inverting the bits is half the negation. Stopping there gives you the
-    ones' complement, which is off by one and looks like a legal answer.</p>
+    <p>They are solutions, and the division that makes the method available is
+    exactly what loses them. Check for them first.</p>
 ```
 
 The correct procedure appears in an `ex` block earlier in the same subsection.
@@ -715,29 +783,68 @@ Every `def`, `key` and `trap` declares one of these, never both. They decide
 what the reader sees when the block is closed, and the field name *is* the
 declaration — there is no mode flag.
 
+**Textbooks that ship a summary already do this.** OpenStax *Calculus Volume 2*
+opens [§4.3](https://openstax.org/books/calculus-volume-2/pages/4-3-separable-equations)
+with a definition, and its
+[Ch. 4 Key Concepts](https://openstax.org/books/calculus-volume-2/pages/4-key-concepts)
+gives the same sentence, word for word, as the whole of what to carry away:
+
+> "A separable differential equation is any equation that can be written in the
+> form y′=f(x)g(y)."
+
+The notes are not a paraphrase written afterwards but one sentence lifted out
+unchanged, the section being that sentence plus everything developing it.
+`core:` is the sentence; `h:` is the everything.
+
 **`core:` — the block's own opening claim, in its own field.**
 
 ```yaml
-- t: key
-  label: The split trap
+- t: def
+  term: Separable differential equation
+  source: OpenStax Calculus Volume 2 §4.3
   core: |-
-    Random frame-level splits leak near-duplicate frames across train and
-    validation.
+    Any equation that can be written in the form <m>y' = f(x)g(y)</m>.
   h: |-
-    <p>The camera captures frames continuously, so consecutive frames from one
-    feeding event are near-identical. The model then partly succeeds on
-    validation by having memorised that scene. Split at a coarser grain: hold
-    out a whole pen or a contiguous time block.</p>
+    <p>The form is the whole of the method's availability: with the two
+    variables apart, each side integrates against its own variable. Step 4 of
+    the strategy is where that stops — it is not always possible to obtain
+    <m>y</m> as an explicit function of <m>x</m>.</p>
 ```
 
-`h:` holds **only what develops the claim** — never the claim again. The two
-render as one paragraph at Full depth and the `core:` alone at Notes depth, so
-the sentence exists exactly once and there is nothing that can drift. The build
-fails a `core:` whose text reopens its own `h:`.
+`h:` holds **only what develops the claim** — never the claim again. At Full
+depth the claim renders as the block's **own opening paragraph** and `h:`
+follows it as the next one; at Notes depth the claim is all that shows. The
+sentence therefore exists exactly once and there is nothing that can drift. The
+build fails a `core:` whose text reopens its own `h:`.
 
-**A `core:` may be a list.** A claim that is several parallel facts is several
-lines, because that is what it is — flattening three tests into one sentence to
-fit a field is the field deforming the content.
+**A claim on a structure block does not close it.** The same source's
+Problem-Solving Strategy is five steps, and five steps are the content rather
+than a development of it. A `list` is `holds: structure` (§6.7), so its `core:`
+renders *above* the steps at every depth instead of hiding them:
+
+```yaml
+- t: list
+  label: Separation of variables
+  ordered: true
+  source: OpenStax Calculus Volume 2 §4.3
+  core: |-
+    The method of separation of variables is used to find the general solution
+    to a separable differential equation.
+  items:
+    - Check for any values of <m>y</m> that make <m>g(y)=0</m>. These correspond to constant solutions.
+    - Rewrite the differential equation in the form <m>\frac{dy}{g(y)} = f(x)\,dx</m>.
+    - Integrate both sides of the equation.
+    - Solve the resulting equation for <m>y</m> if possible.
+    - If an initial condition exists, substitute the appropriate values for <m>x</m> and <m>y</m> into the equation and solve for the constant.
+```
+
+That `core:` is verbatim from the Key Concepts and the five items are verbatim
+from the Problem-Solving Strategy — which is the whole authoring move: find the
+sentence the source already treats as the takeaway.
+
+**A `core:` may itself be a list**, where the claim is several parallel facts —
+flattening three tests into one sentence to fit a field is the field deforming
+the content.
 
 ```yaml
 - t: key
@@ -750,23 +857,20 @@ fit a field is the field deforming the content.
     <p>Ambiguous between spine and depth → choose depth.</p>
 ```
 
-This is still the claim stated once, not a summary in another form. Notes depth
-renders the points as points; full depth renders the same list above the
-development.
+Still one statement of the claim, not a summary in another form.
 
 **Write the `core:` so it stands alone.** A reader meeting it cold in week six
 gets that line and nothing else. No "the following", no "as above", no forward
 reference to the example underneath it.
 
-This is prose discipline, not extra writing: the claim goes first and the
-development follows. Real expository writing already does it much of the time.
-From SICP §1.1.1, [sarabander.github.io](https://sarabander.github.io/sicp/html/1_002e1.xhtml):
+Prose discipline, not extra writing — and expository writing already does it
+much of the time. From SICP §1.1.1,
+[sarabander.github.io](https://sarabander.github.io/sicp/html/1_002e1.xhtml):
 
 > "The leftmost element in the list is called the operator, and the other
 > elements are called operands."
 
-That is a `core:` as written — claim first, complete, standing alone. Two
-paragraphs earlier the same page does the opposite:
+A `core:` as written. Two paragraphs earlier the same page does the opposite:
 
 > "Expressions such as these, formed by delimiting a list of expressions within
 > parentheses in order to denote procedure application, are called
@@ -827,12 +931,11 @@ the wrong block type and wants to be a `key` (M36).
   cap: The two controls, and what each one does to a block
 ```
 
-Use `notes: open` on a table that is a genuine compare-and-contrast matrix. A
-matrix is already the compact form — it puts the things being compared side by
-side, which a list of claims cannot do, and displays that position related items
-close together beat both the running text and the outline on relational learning
-(Robinson & Kiewra 1995; Kiewra et al. 1999). Collapsing one to its caption
-throws away the only thing it was for.
+Use `notes: open` on a genuine compare-and-contrast matrix. A matrix is already
+the compact form: it puts the compared things side by side, which a list of
+claims cannot, and displays that position related items close together beat both
+running text and the outline on relational learning (Robinson & Kiewra 1995;
+Kiewra et al. 1999). Collapsing one to its caption throws away what it was for.
 
 Use `notes: closed` on a block whose claim is real but not worth a line when you
 are scanning. Use `hidden` almost never: it is the one value that takes a block
@@ -914,13 +1017,66 @@ is that a heading per row rebuilds the stack of header-and-paragraph this view
 exists to replace.
 
 ```
-▌ The split trap. Random frame-level splits leak near-duplicate
-  frames across train and validation.
+▌ Common slip. Dividing by g(y) discards every constant
+  solution where g(y) = 0.
 ```
 
 So write the label as the *takeaway* and the `core:` as the *rule*, and they
 carry different information. If the two would say the same thing, write only the
 claim.
+
+### 6.8 Writing for Full depth
+
+§6.7 is the half that is easy to overdo. Prose optimised only for compression
+stops being a textbook and becomes a deck of assertions: forty flashcards where
+the reader came for an explanation. Full depth is the default and where a first
+read happens, so it is the reading that has to be good first.
+
+**One control in the toolbar chooses between them**, and the names are what your
+prose will be read at:
+
+| Mode | Shows | What it is for |
+|---|---|---|
+| **Study** | every block, every word | the first pass |
+| **Review** | claims and structure, development closed | the week before an exam |
+| **Names** | spine blocks, names only | lookup |
+
+Study is `core:` **and** `h:`; Review is `core:` alone; Names is the label. One
+set of sentences works at all three — §6.6's evidence being that this is
+achievable, not a compromise.
+
+**The claim is a paragraph, not a bullet** (§6.6), so a sentence has to survive
+two readings:
+
+1. Read the `core:` alone. Complete, grammatical, no "as above", no forward
+   reference to something underneath it.
+2. Read `core:` then `h:` in order. Does the second paragraph *continue* from
+   the first without restating it, and without depending on a clause that only
+   exists in the first?
+
+| | As notes | As a textbook |
+|---|---|---|
+| "As we saw above, this one is separable." | fails — nothing above | reads |
+| "Sep. of vars: divide by g(y), integrate." | reads | fails — it is a note, not a sentence |
+| "A separable differential equation is any equation that can be written in the form y′=f(x)g(y)." | reads | reads |
+
+The third is OpenStax's, unedited: it clears both bars because it was written
+once to do both jobs.
+
+**`h:` starts a new paragraph, so it cannot finish a sentence `core:` started.**
+A development opening "…which is why the method works" is a fragment with a gap
+in front of it. Open it as prose: "The method works because…".
+
+**Transitions are `p` blocks.** A `def` ending "now we turn to the second
+method" has put a signpost inside a definition, where Notes depth strands it.
+The argument between two callouts goes in a `p` block between them — the block
+the lane drops last and the depth closes first.
+
+**Read it at both depths.** Study, every block open top to bottom, catches what
+Notes cannot: a claim that reads as a stub because its development was doing the
+explaining, two blocks whose paragraphs collide with no transition, and an `h:`
+that only makes sense if you just read the label. It is also the spoken reading
+(§2.2), so a section that reads as a textbook is one that can be listened to.
 
 ---
 
@@ -937,15 +1093,14 @@ applies, compute a quantity, **spot the error** (required for procedural
 subsections, D6), explain why the rule holds, judge a boundary case.
 
 ```yaml
-- type: Detect overflow                    # names a skill, never a number
-  concept: twos-complement                 # the retention identity
-  q: Add 0110 and 0101 as 4-bit two's complement values. Give the result and say
-     whether it overflowed.
-  a: 1011; overflow                        # the bare answer, no reasoning
+- type: Recognise a separable equation    # names a skill, never a number
+  concept: separable-equation              # the retention identity
+  q: Is <m>y' = x + y</m> separable? Say why or why not.
+  a: No                                    # the bare answer, no reasoning
   why: |-
-    <p>Both operands are positive and the result's sign bit is 1, which cannot
-    happen without overflow…</p>
-  why_prompt: What did the sign bits tell you?
+    <p>Separable means writable as <m>y' = f(x)g(y)</m>, a product. A sum does
+    not factor into one…</p>
+  why_prompt: What would <m>f</m> and <m>g</m> have to be for a sum to factor?
   verified: 2026-09-08
 ```
 
@@ -987,7 +1142,7 @@ exemption in the section blurb so the next pass can disagree with it.
 
 ```yaml
 - type: Synthesis
-  concept: twos-complement
+  concept: separable-equation
   q: |-
     <p>Two's complement has exactly one zero, and one negative value with no
     positive counterpart. Both follow from the same asymmetry. Describe a
@@ -1021,20 +1176,20 @@ by concept. A confident miss in Loop A recruits Loop B. A Loop B success never
 marks a type covered.
 
 ```yaml
-concept: twos-complement          # must match a concepts/<key>.yaml
+concept: separable-equation       # must match a concepts/<key>.yaml
 items:
   - format: short-answer          # multiple-choice | short-answer | cued-recall
                                   # | derivation | numeric
-    stem: Write −6 as a 4-bit two's complement value.
-    answer: "1010"
+    stem: Solve <m>y' = y(1-y)</m>, giving every solution.
+    answer: The logistic family, plus the constants <m>y = 0</m> and <m>y = 1</m>
     steps:
-      - "6 is 0110."
-      - "Invert: 1001. Add one: 1010."
-      - "Check by weight: −8 + 2 = −6."
+      - "g(y) = y(1-y) is zero at y = 0 and y = 1, so both are constant solutions."
+      - "Away from those, separate and integrate."
+      - "Report the family and the two constants."
     why: |-
-      <p>Stopping after the inversion gives 1001, which is −7. That is the
-      tempting wrong answer, and it looks legal.</p>
-    verified: 2026-09-08
+      <p>Reporting only the family is the tempting wrong answer, and it looks
+      complete: the two solutions it drops are the ones the division removed.</p>
+    verified: 2026-09-13
 ```
 
 Item ids are positional. The build checks: **three** items minimum (the
@@ -1083,10 +1238,12 @@ to establish, not a term. The primer's own run already covers terms [M29].
 
 ```yaml
 primer:
-  - ask: A four-variable K-map group covers eight cells. How many literals does its term have?
-    answer: One
+  - ask: Separating <m>y' = f(x)g(y)</m> puts a <m>dy</m> under <m>g(y)</m>.
+      What has that step assumed about <m>g(y)</m>?
+    answer: That it is not zero
     why: |-
-      <p>Each doubling of a group removes one literal.</p>
+      <p>Which is why the constant solutions have to be collected before the
+      division, not recovered after it.</p>
 ```
 
 The correction is not optional and the build enforces it: an uncorrected
@@ -1192,10 +1349,10 @@ it is mentioned in passing.
 
 ```yaml
 - t: image
-  src: assets/scope-trace.png
-  alt: Oscilloscope trace showing a 40 ns propagation delay
-  cap: Measured delay on the lab board
-  credit: Lab 4 handout, fig. 2
+  src: assets/slope-field.png
+  alt: Slope field for y' = y(1-y) with three solution curves drawn through it
+  cap: Solution curves are the curves the slope field is tangent to everywhere
+  credit: Redrawn from OpenStax Calculus Volume 2 §4.2
   width: 460
 ```
 
@@ -1302,6 +1459,10 @@ skipped.
 - [ ] `attempt` blocks appear only as the first block (M10)
 - [ ] Every `def` names a term; every subsection names at least one
 - [ ] Every block declares a tier the lane selector knows
+- [ ] Every `list` item, table heading, table cell and `steps` entry is a
+      **string**, not a mapping an unquoted `": "` turned into one (writing.md §4a)
+- [ ] Every `figure`, `table` and `image` carries a `cap:` that says what it
+      shows — it is the only part of them read aloud (§2.2)
 - [ ] Every `<m>` and `math` block compiles; no `<m>` in a `mono`/`map` table
 - [ ] Every authored HTML field escapes a bare `<` or `&`
 - [ ] Every `image` carries `alt`; every `plot` `fn` parses and is finite
@@ -1358,11 +1519,11 @@ No script decides any of these. Skip this list and nothing else catches it.
 - [ ] **Nothing marked `source:` with an origin was written from memory.** The
       field is a claim, and `generated` exists so you never have to lie in it.
 - [ ] **Every `verified:` date is a re-derivation**, not a re-reading (M22).
-- [ ] **The prose does not read as generated** (§13). Four counts, over the
-      whole course: em dashes ≤ 3 per 1000 words, hung tails ≤ 5% of sentences
-      (§13.3), "you" ≥ 6 per 1000 words (§13.1), and no `key` or `def` block of
-      four sentences without one under ten words. Read one block aloud. If three
-      sentences in a row land at the same length, that is the defect.
+- [ ] **The prose does not read as generated.** Four counts from `writing.md`,
+      over the whole course: no em dashes and no interpuncts (§4a), hung tails
+      ≤ 5% of sentences (§3), "you" ≥ 6 per 1000 words (§1), and no `key` or
+      `def` block of four sentences without one under ten words. Read a block
+      aloud: three sentences in a row at the same length is the defect.
 
 ```sh
 npm run check      # must be clean
@@ -1371,12 +1532,10 @@ npm run shots      # look at it: did figures draw, is the primer right,
                    # is any section a wall of undifferentiated p blocks
 ```
 
-**Read the section at Notes depth before you call it done.** Every `core:` line
-in order, and nothing else. Three things show up there and nowhere else: a claim
-that turns out to be a topic rather than an assertion, two blocks whose claims
-are the same claim, and a `def` that announces what the blocks below it will
-cover instead of defining its term. All three are invisible in the full text,
-because the prose around them fills the gap.
+**Read the section at both depths before you call it done** (§6.8). Notes is
+every `core:` line in order and nothing else, which is where a claim that is
+really a topic, two claims that are the same claim, and a `def` that announces
+rather than defines all become visible. The prose around them hides all three.
 
 ### Quality bar
 
@@ -1391,207 +1550,16 @@ course never showed them (§7.1). The last two are the ones that get skipped.
 
 ## 13. The sentence
 
-§14 catalogues defects in *what* a subsection contains. This section is about
-the sentence that carries it. That is where a reader decides whether a person
-wrote this for them or a machine produced it at them, and they decide it inside
-the first paragraph, before any of the structure above has had a chance to work.
+Prose craft has its own file: **[`writing.md`](writing.md)**. Read it once
+before your first `p` block.
 
-The cost is not aesthetic. Prose that reads as generated is prose the reader
-discounts, and a reader who is discounting is not encoding.
+It holds the three findings that license second person, concision and
+signposting; the four counts §12b gates (em dashes and interpuncts, hung tails,
+"you" per 1000 words, sentence-length variation); the stress position; the
+punctuation the engine does not want, including the YAML mapping trap a colon
+creates; verbs and nominalisation; the words to distrust; and three writers
+worth reading a page of first.
 
-### 13.1 Three findings, and what each one licenses
-
-**Address the reader.** Rewriting instructional text from formal to
-conversational style — mainly by moving to second person and speaking to the
-learner directly — improves retention at d = 0.30 and **transfer at d = 0.54**
-(Ginns, Martin & Marsh 2013, *Educational Psychology Review* 25:445–472,
-meta-analysis). Transfer is the larger of the two, and it is what §1's D4 and D5
-already spend budget on. Second person is a lever on the same outcome, and it is
-free.
-
-**Address is not instruction.** Second person names the reader's situation,
-their reasoning, and what they already hold: "the group you are standing in",
-"you were given the other direction". It does not turn a statement of fact into
-an order. "It is written P(A | B)" is a fact about notation; "Write it P(A | B)"
-commands an action the reader is not performing and has no reason to. The
-difference costs nothing and is invisible while you write, because both forms
-contain "you" and both feel direct. A course that drifts into the imperative
-reads as a worksheet, and the reader starts skipping the instructions, which are
-where the content went. §13.2's count is a floor on address. It is not a quota
-imperatives can fill.
-
-**Cut the clause that adds nothing.** Sentence-level coherence measures
-g = 0.63, the largest of the layout effects, and it is subtractive [T11]. A
-clause carrying nothing the reader will be asked for is not neutral. It is a
-cost. Strunk put the same rule as Rule 13: "Vigorous writing is concise. A
-sentence should contain no unnecessary words, a paragraph no unnecessary
-sentences, for the same reason that a drawing should have no unnecessary lines
-and a machine no unnecessary parts."
-
-**The machine tell is a habit, not a vocabulary.** Of the 379 excess style words
-that appeared in biomedical abstracts in 2024, 66% were verbs and 14% were
-adjectives; excess vocabulary from a genuine change of subject matter runs 79.2%
-nouns (Kobak et al. 2025, *Science Advances*, 15M abstracts). What marks
-generated prose is a preference for certain verbs and modifiers. That is a
-preference for one sentence shape. You cannot fix it by avoiding
-"delve". You fix it by changing the shape.
-
-### 13.2 The four numbers
-
-Counted over the prose fields of a course, code and maths excluded.
-
-| | typical model output | target |
-|---|---|---|
-| em dashes per 1000 words | 6–15 | **≤ 3** |
-| sentences ending in a hung tail | 15–24% | **≤ 5%** |
-| "you" per 1000 words | 1.8–20.6 | **≥ 6** |
-| sentences under 10 words | — | **≥ 19%** |
-
-These are targets for course prose, not for code comments. A comment is read
-once, by someone who chose to open the file. A `key` block is read by someone
-under load who is about to be tested on it.
-
-### 13.3 The hung tail
-
-One defect dominates, and it is why the prose reads as generated. A sentence
-states its point, then hangs a second clause off the end that glosses,
-editorialises or draws a moral:
-
-> …never to physical wire order **— a bus can be routed in any order.**
->
-> …removes most of the null checks **— which is why published implementations
-> use one and student implementations that segfault usually do not.**
->
-> A weaker invariant than a BST **— only parent against child — which is exactly
-> why a heap can be built in linear time.**
-
-Any one of those is a good sentence. One in five being that sentence is a
-cadence, and a cadence is what a reader hears as a machine. Every sentence lands
-the same way, so none of them lands.
-
-The end of a sentence is the **stress position**: "Stress positions are at
-points of syntactic closure, e.g. the ends of clauses, sentences, and sections"
-(Gopen & Swan 1990, *American Scientist* 78:550–558). It is where the reader
-puts what they will remember. Strunk's Rule 18 is the same instruction from the
-other side: "The proper place in the sentence for the word, or group of words,
-which the writer desires to make most prominent is usually the end." Spend it on
-a gloss and you have spent the only slot that sentence had.
-
-**The test.** Delete everything after the dash or the comma.
-
-- The sentence still teaches. The tail was commentary. It is gone, and you do
-  not reattach it.
-- The sentence lost something the reader will be asked for. The tail was a claim
-  wearing an appositive's clothes. Give it its own sentence, with its own
-  subject and its own verb.
-
-**The budget.** One hung tail per subsection. Not one per block.
-
-`which is why`, `that is why`, `which is exactly why`, and the participial tails
-`, ensuring …`, `, allowing …`, `, making it …`, `, enabling …` are all the same
-construction. They share the one budget.
-
-### 13.4 Rhythm
-
-Generated prose is metrically flat. Every sentence arrives at about the same
-length, so nothing is emphasised. Human explanatory prose varies, and the
-variation is itself the emphasis. A four-word sentence after two long ones is
-how a writer points.
-
-Gopen & Swan again: "Readers expect each unit of discourse (sentence, paragraph,
-section) to serve a single function." A sentence doing two jobs is usually a
-long one. Split it and you have the short sentence you were missing.
-
-**The test.** Read the block aloud. If three sentences in a row land within three
-words of each other, then one of them is two sentences or two of them are one.
-Every `key` or `def` block of four sentences or more carries at least one
-sentence under ten words.
-
-### 13.5 Verbs, and who is doing what
-
-A nominalisation buries the verb inside a noun, then needs a weak verb to prop
-it up. `the <X>ion/ment/ance of` is the reliable place to look. Not all are
-defects: "the impedance of" is the name of a quantity.
-
-| instead of | write |
-|---|---|
-| the definition of a full tree is | a full tree is |
-| performs a comparison of | compares |
-| is responsible for handling | handles |
-| there is a requirement that | must |
-| serves as / acts as / functions as | is |
-
-"Readers interpret any information between the grammatical subject of a sentence
-and its verb as an unimportant interruption" (Gopen & Swan). Put the thing the
-sentence is about first. Put its verb next. Put the new information last. Strunk
-Rule 12 covers the nouns: "Prefer the specific to the general, the definite to
-the vague, the concrete to the abstract."
-
-### 13.6 Words to distrust
-
-Not a blacklist — §13.1 says why a blacklist is the wrong instrument. Each is a
-prompt to check the *shape* of the sentence, not to reach for a synonym.
-
-`crucial` · `essential` · `vital` · `pivotal` · `paramount` · `robust` ·
-`seamless` · `leverage` · `utilise` · `delve` · `realm` · `landscape` ·
-`tapestry` · `testament` · `showcase` · `underscore` · `intricate` ·
-`meticulous` · `it is important to note` · `it is worth noting` ·
-`serves as` · `the fact that` · `in order to`
-
-`crucial`, `essential` and `vital` are one error committed three ways: the
-sentence asserts importance instead of demonstrating it. If a thing matters, the
-reason it matters is the sentence you should have written.
-
-**The error is wider than importance.** Any adjective handing the reader a
-judgement they were about to reach from the evidence in the same sentence does
-it: "the test is good", "a surprising result", "a simple rule", "the obvious
-choice". "The mammogram is good: it flags 80 of those 100" spends a clause
-telling the reader what to think about a number they have not read yet, and it
-arrives before anything has earned it. Give the number first and let the reader
-conclude. If you cannot say what makes it good, surprising or simple, it is
-not.
-
-A hedge is a defect in the *claim* rather than in the sentence, and is caught at
-14.9.
-
-### 13.7 Read a human first
-
-Before your first `p` block of a course, read one page of one of these. Not for
-the subject. For the cadence.
-
-**Richard Feynman**, *The Feynman Lectures on Physics* I.1, "Atoms in Motion",
-at [feynmanlectures.caltech.edu/I_01.html](https://www.feynmanlectures.caltech.edu/I_01.html).
-His answer to what one sentence he would pass on carries the whole atomic
-hypothesis: "all things are made of atoms—little particles that move around in
-perpetual motion, attracting each other when they are a little distance apart,
-but repelling upon being squeezed into one another." The next sentence is short,
-and it tells you what to do with the long one. **Steal:** one long sentence that
-is all content, then a short one that is all instruction. Nothing in the long
-one is a gloss.
-
-**Julia Evans**, "Patterns in confusing explanations", at
-[jvns.ca/blog/confusing-explanations](https://jvns.ca/blog/confusing-explanations/).
-Thirteen named patterns, several of them truths in this repo arrived at
-independently: *starting out abstract* is M10 and D3, *unsupported statements* is
-M20 and M28, *"what" without "why"* is M6 and M7, and *making outdated
-assumptions about the audience's knowledge* is 0.2. Her note on audience is §1
-in one line: "writing that's easy to understand for 1 person (other than you!)
-has a good chance of being easy to understand for many other people as well."
-**Steal:** the register. Short declaratives, second person, and a willingness to
-say that a thing is confusing.
-
-**Paul Halmos**, "How to Write Mathematics", *L'Enseignement Mathématique* 16
-(1970). The headings alone are most of the lesson: *Say something. Speak to
-someone. Organize first. Write in spirals. Down with the irrelevant and trivial.
-Resist symbols. Stop.* **Steal:** "Speak to someone" is §1 and 13.1's d = 0.54.
-"Stop." is 13.3.
-
-**Mechanism, if you want it.** Gopen & Swan, "The Science of Scientific
-Writing", *American Scientist* 78 (1990): 550–558, at
-[crowl.org/lawrence/writing/GopenSwan90.html](http://www.crowl.org/lawrence/writing/GopenSwan90.html),
-explains why the tests in 13.3 and 13.5 work instead of asserting them.
-
----
 
 ## 14. Failure modes
 
@@ -1602,7 +1570,7 @@ has a fix in one line.
 |---|---|---|
 | **14.1** | **Assumed knowledge.** You reach for the convenient tool — a matrix, a limit, a piece of notation — that `background` never granted. | Check the list, not your instinct (0.2, §12b). |
 | **14.2** | **The asserted rule.** A `key` block states a rule and moves on, because the derivation felt like a digression. | Derive it, or declare it given (§6.2). |
-| **14.3** | **The imperative drift.** Told to address the reader, you convert statements into orders and re-narrate the interface: "write this down", "note that", "click to reveal", "write it as X". | Second person names the reader's situation, not their next action (13.1). Check §2.1 before telling the reader what to do on the page. |
+| **14.3** | **The imperative drift.** Told to address the reader, you convert statements into orders and re-narrate the interface: "write this down", "note that", "click to reveal", "write it as X". | Second person names the reader's situation, not their next action (writing.md §1). Check §2.1 before telling the reader what to do on the page. |
 | **14.4** | **Encyclopedic drift.** Balanced survey prose covering a topic from all sides. | If a paragraph would sit unchanged in a Wikipedia article, it is wrong here. A course teaches one reader one thing in an order. |
 | **14.5** | **The example that re-explains.** A worked example opening by restating the definition. The most common non-redundancy violation there is. | The example starts at the first step of the work. |
 | **14.6** | **Fake variety in the quiz.** The same question three times with different numbers and different `type` labels. | Could a reader answer one and fail another? If not, merge them. |

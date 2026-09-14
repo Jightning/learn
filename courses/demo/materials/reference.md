@@ -1,4 +1,4 @@
-# Reference — feature map
+# Reference: feature map
 
 Where each capability is shown, once.
 
@@ -23,22 +23,22 @@ Where each capability is shown, once.
 
 ## Figure kinds
 
-`graph` (§4.1, circle + layered) · `flow` (§4.1, row + col) · `timing` (§4.1) ·
-`plot` (§4.2, `fn` + `points` + `dash` + ranges) · `bar` (§4.2, `baseline` +
-`accent`) · `scatter` (§4.2, `trend`) · `grid` (§4.3, `index: binary` +
-`groups`) · `matrix` (§4.3) · `svg` (§4.3, escape hatch).
+`graph` (§4.1, circle + layered), `flow` (§4.1, row + col), `timing` (§4.1),
+`plot` (§4.2, `fn` + `points` + `dash` + ranges), `bar` (§4.2, `baseline` +
+`accent`), `scatter` (§4.2, `trend`), `grid` (§4.3, `index: binary` +
+`groups`), `matrix` (§4.3), `svg` (§4.3, escape hatch).
 
 ## References
 
-`<a href="#s2-2">` subsection · `<c k="tier">` concept · `<f k="loop-machine"/>`
-figure · `<a href="#/ma26600/">` cross-course.
+`<a href="#s2-2">` subsection, `<c k="tier">` concept, `<f k="loop-machine"/>`
+figure, `<a href="#/ma26600/">` cross-course.
 
 ## Tiers
 
-`spine` — the whole course, once. `depth` — why / what-if, never examinable.
-`apply` — another instance. Lane selector: Spine · Spine+Apply · All. Collapsed
-runs show a stub with a text count. Read for the reader in §1.4, for the author
-in §3.2.
+`spine` is the whole course, once. `depth` is why and what-if, never
+examinable. `apply` is another instance. The Read selector under **Reading
+options** in the sidebar offers Spine, Spine+Apply, All. Collapsed runs show a
+stub with a text count. Read for the reader in §1.4, for the author in §3.2.
 
 ## Source badges
 
@@ -50,5 +50,5 @@ not-yet-audited, counted separately.
 
 `valueStyles`, `styles`, `syntax` (comment / keywords / patterns / strings),
 `theme.hue`, `state.enabled`, `blocks.js`. A colour encoding is explained where
-it is used, not on the start page — §1.4 teaches the tier vocabulary in the
+it is used, not on the start page: §1.4 teaches the tier vocabulary in the
 material itself, where it can say what the words are for [T12].

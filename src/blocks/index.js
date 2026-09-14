@@ -31,8 +31,8 @@ export const setBlockConfig = course => { CFG = course || {}; };
 const LABEL_WORDS = 4;
 
 const UNSOURCED = {
-  unverified: "unverified — not grounded in a named source",
-  generated: "generated — drafted by a model, not yet checked"
+  unverified: "unverified: not grounded in a named source",
+  generated: "generated: drafted by a model, not yet checked"
 };
 
 /* Authored fields are HTML, uniformly.
@@ -104,13 +104,14 @@ export const U = {
     if (env && env.prevSource === b.source) return "";
     return `<span class="bsrc">${esc(b.source)}</span>`;
   },
-  /* "Figure 3.2 — what it shows". The number is the citable half, so it is
-     rendered even when the author wrote no caption. `kind` is the noun, since
+  /* "Figure 3.2 | what it shows", the bar being the drawn .sep rather than a
+     typed dash. The number is the citable half, so it is rendered even when
+     the author wrote no caption. `kind` is the noun, since
      tables are numbered on the same rule as figures: a caption that cannot be
      cited is a caption the prose has to describe in words instead. */
   caption: (num, text, kind = "Figure") =>
     (num ? `<b class="fnum">${esc(kind)} ${esc(num)}</b>` : "") +
-    (num && text ? " — " : "") + (text || ""),
+    (num && text ? '<i class="sep" aria-hidden="true"></i>' : "") + (text || ""),
 
   /* The block's prose, claim first.
    *

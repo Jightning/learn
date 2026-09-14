@@ -28,14 +28,12 @@
      spends another fifteenth of an iPhone's viewport restating that the bar
      has ended. See 00-tokens.css for what it sets. */
   :root{--scroll-clear:calc(76px + var(--safe-t));--view-top:1.75rem}
-  .tb-sec{display:none}
-  .side-actions{display:flex}
 
   /* The glyph carries it. The word and its "/" shortcut hint are what make the
      button too wide to fit — and the hint names a key that is not there.
-     The breadcrumb's root goes the same way: at 390px, with a wide enough
-     Review count beside it, the crumb shrank below the word's own width and
-     clipped the way home in half. A house is legible at 16px; a half-clipped
+     The breadcrumb's root goes the same way: at 390px, with a long enough
+     trail beside it, the crumb shrank below the word's own width and clipped
+     the way home in half. A house is legible at 16px; a half-clipped
      "Courses" is not. */
   .tb-word,.crumb-word{display:none}
 }

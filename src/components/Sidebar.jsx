@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
-import { IconStart, IconConcept, IconPractice, IconMap, IconTuck, IconCat, IconExplore } from "./Icon.jsx";
+import { IconStart, IconIndex, IconPractice, IconMap, IconTuck, IconExplore,
+         IconReview } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
 import LaneSelect from "./LaneSelect.jsx";
 import DepthSelect from "./DepthSelect.jsx";
@@ -20,7 +21,8 @@ function Cycle({ n, active, visited }) {
 const EDGE = 28;
 
 export default function Sidebar({ course, cid, rest, here, open, onNavigate, onTuck, actions,
-                                  lane, onLane, depth, onDepth }) {
+                                  lane, onLane, depth, onDepth, due, zoom, onZoomReset,
+                                  speech }) {
   const H = r => `#/${cid}${r ? "/" + r : ""}`;
   const rail = useRef(null);
 
@@ -55,14 +57,28 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
   const activeSec = target && target.startsWith("s") ? target.split("-")[0] : null;
   const curNum = activeSec ? Number(activeSec.slice(1)) : 0;
 
-  /* Categories sits beside concepts because the two are the course's other
-     two indexes — one by mention, one by membership — and Explore sits last
-     because it is where you go when neither index had the shape you wanted. */
+  /* One Index, not two. "Core concepts" and "Categories" were adjacent rows
+     opening onto identical card grids, and the reader's only way to learn
+     which was which was to visit both. They are two bands of one page now; see
+     components/Index.jsx. Explore sits last because it is where you go when
+     the index did not have the shape you wanted. */
+  const ixHere = ["index", "concepts", "cat"].includes(rest)
+    || rest.startsWith("c/") || rest.startsWith("cat/");
   const top = [
     ["", "Overview", IconStart, !rest],
-    ["concepts", "Core concepts", IconConcept, rest === "concepts" || rest.startsWith("c/")],
-    ["cat", "Categories", IconCat, rest === "cat" || rest.startsWith("cat/")],
+    ["index", "Index", IconIndex, ixHere],
     ["practice", "Mixed practice", IconPractice, rest === "practice" || rest.startsWith("practice/")],
+    /* The queue was a chip in the toolbar. It is a place you go, which is what
+       every other row here is, and it sits beside mixed practice because the
+       two are the same act at two schedules. It carries a count, so the count
+       goes where a count goes in a table of contents: the far edge.
+
+       Scoped to this course, and so is the count. A rail belongs to one course
+       and a row in it that drilled every other course was the reason the page
+       needed a frame of its own; the cross-course queue is on the dashboard.
+       Absent entirely until this course has a drill bank. */
+    ...(due != null ? [["review", "Review", IconReview,
+                        rest === "review", due]] : []),
     ["map", "Dependency map", IconMap, rest === "map" || rest.startsWith("map/")],
     ["explore", "Explore", IconExplore, rest === "explore" || rest.startsWith("explore/")]
   ];
@@ -84,9 +100,13 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
       </div>
 
       <div class="navtop">
-        {top.map(([route, label, Ico, cur]) => (
-          <a key={label} href={H(route)} class={cur ? "cur" : ""} onClick={onNavigate}>
+        {top.map(([route, label, Ico, cur, n]) => (
+          <a key={label} href={H(route)} class={(cur ? "cur" : "") + (n != null ? " rv-row" : "")}
+             id={n != null ? "rv-open" : undefined}
+             title={n != null ? "Review what is due  (r)" : undefined}
+             onClick={onNavigate}>
             <span class="k"><Ico /></span>{label}
+            {n != null && <b class="rv-n">{n}</b>}
           </a>
         ))}
       </div>
@@ -96,13 +116,6 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
               aria-label="Hide the section list">
         <IconTuck open />
       </button>
-
-      {/* The toolbar's secondary actions, on a screen too narrow to carry
-          them permanently. Hidden above the breakpoint, where the toolbar
-          shows them instead. */}
-      <div class="side-actions">
-        <CourseActions inCourse expanded={actions.expanded} onExpand={actions.onExpand} />
-      </div>
 
       <nav class="rail" aria-label="Course sections">
         {course.sections.map(s => {
@@ -145,13 +158,30 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
        * wanted; the keys keep working whether or not it is open. */}
       {onLane && (
         <details class="axes">
-          <summary>Reading options</summary>
+          <summary><i class="caret" aria-hidden="true" />Reading options</summary>
           <LaneSelect lane={lane} onLane={onLane} />
           <DepthSelect depth={depth} onDepth={onDepth} />
-          <p class="axes-k">
-            <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> set how much is shown,
-            <kbd>d</kbd> steps the detail.
-          </p>
+          {/* The three the toolbar used to carry. They sit under the two axes
+              rather than beside them because they are settings of the same
+              kind — what the page shows, not where the page is — and because
+              this is the only panel on the site that already means that. */}
+          <div class="axes-acts">
+            <CourseActions inCourse cls="lane-b"
+                           expanded={actions.expanded} onExpand={actions.onExpand}
+                           zoom={zoom} onZoomReset={onZoomReset} />
+            {/* Listen belongs with the other two axes because it is the same
+                kind of setting: what the page gives you, not where the page is.
+                It is also the one control that must be reached by a real press
+                — iOS and Chrome only let speech start from a user gesture, so
+                this button is the gesture and nothing may start without it.
+                Absent where the browser has no speech engine at all. */}
+            {speech && speech.supported && (
+              <button class="lane-b spk-go" data-on={speech.live || undefined}
+                      onClick={speech.live ? speech.stop : speech.start}>
+                {speech.live ? "Stop reading" : "▶ Listen"}
+              </button>
+            )}
+          </div>
         </details>
       )}
     </aside>

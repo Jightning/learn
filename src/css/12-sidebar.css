@@ -65,7 +65,7 @@
   position:absolute;top:14px;right:10px;
   display:inline-flex;align-items:center;justify-content:center;
   width:26px;height:26px;padding:0;
-  background:none;border:1px solid transparent;border-radius:6px;
+  background:none;border:1px solid transparent;border-radius:3px;
   color:var(--ink-3);cursor:pointer;
 }
 .tuck:hover{border-color:var(--rule);color:var(--hi-ink);background:var(--surface-2)}
@@ -80,20 +80,12 @@
   width:22px;height:64px;padding:0;
   background:var(--surface);color:var(--ink-3);cursor:pointer;
   border:1px solid var(--rule);border-left:0;
-  border-radius:0 8px 8px 0;
+  border-radius:0 3px 3px 0;
 }
 .untuck:hover{color:var(--hi-ink);border-color:var(--hi)}
 
 @media (max-width:64em){
   .tuck,.untuck{display:none}
-}
-
-/* The toolbar's secondary actions, parked here on a narrow screen. The rule
-   below them keeps the band from reading as the first row of the section rail
-   it sits above. */
-.side-actions{
-  display:none;gap:8px;flex-wrap:wrap;
-  padding:14px 20px 16px;border-bottom:1px solid var(--rule);
 }
 
 /* ---------------------------------------------------------------- the axes
@@ -108,18 +100,13 @@
   margin:6px 0 calc(1rem + var(--safe-b));
   border-top:1px solid var(--rule-2);padding:2px 14px 0;
 }
+/* The marker is `.caret` (00-tokens) rather than the default triangle, which
+   cannot take the state or sit on the text baseline. */
 .axes>summary{
   font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-3);
-  padding:10px 0;cursor:pointer;list-style:none;
+  padding:10px 0;cursor:pointer;list-style:none;display:flex;align-items:center;
 }
 .axes>summary::-webkit-details-marker{display:none}
-/* The marker is drawn rather than inherited so it can turn with the state and
-   sit on the text baseline; the default triangle does neither. */
-.axes>summary::before{
-  content:"›";display:inline-block;width:1em;color:var(--ink-3);
-  transition:transform .15s ease;
-}
-.axes[open]>summary::before{transform:rotate(90deg)}
 .axes>summary:hover{color:var(--hi-ink)}
 .axes .lane,.axes .depth{
   display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 8px;
@@ -130,6 +117,13 @@
 .axes .lane-set{display:flex;gap:4px;flex-wrap:wrap}
 .axes .lane-cycle{display:none}
 .axes .lane-k{display:none}
+/* Reveal all, Theme and the zoom reset, which the toolbar used to hold. Set
+   off by a rule because they act on the page rather than on the two axes above
+   them, and wearing .lane-b so the panel is one kind of control throughout. */
+.axes-acts{
+  display:flex;flex-wrap:wrap;gap:5px;
+  margin:10px 0 2px;padding-top:10px;border-top:1px solid var(--rule-2);
+}
 .axes-k{
   font-family:var(--ui);font-size:var(--fs-micro);color:var(--ink-3);
   margin:2px 0 4px;line-height:1.7;
@@ -138,7 +132,4 @@
   font-family:var(--mono);font-size:var(--fs-micro);border:1px solid var(--rule);
   border-radius:3px;padding:0 4px;margin:0 2px;color:var(--ink-2);
   background:var(--surface);
-}
-@media (prefers-reduced-motion:reduce){
-  .axes>summary::before{transition:none}
 }

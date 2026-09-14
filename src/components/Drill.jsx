@@ -40,11 +40,11 @@ export default function Drill({ cid, C, item, cluster, onDone }) {
   return (
     <div class="drill" data-drill={item.id}>
       <div class="drill-h">
-        <span class="drill-c">{C.code} · {term}</span>
+        <span class="drill-c">{C.code}<i class="sep" aria-hidden="true" />{term}</span>
         <span class="drill-s">{R.label(R.get(cid, key))}</span>
       </div>
       {cluster && cluster.length > 1 && (
-        <p class="drill-mix">These get mistaken for each other: {cluster.join(" · ")}.</p>
+        <p class="drill-mix">These get mistaken for each other: {cluster.join(", ")}.</p>
       )}
 
       <div class="drill-q" dangerouslySetInnerHTML={{ __html: M(item.stem) }} />

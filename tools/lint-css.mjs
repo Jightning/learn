@@ -60,14 +60,23 @@ function topLevelRules(css) {
     }
   }
   return out
-    /* @media, @keyframes and friends open their own scope; their contents are
-       deliberately allowed to restate a selector */
-    .filter(r => !r.sel.trim().startsWith("@"))
     .map(r => ({
       line: r.line,
       sel: r.sel.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, " ").trim()
     }))
-    .filter(r => r.sel);
+    /* @media, @keyframes and friends open their own scope; their contents are
+       deliberately allowed to restate a selector.
+     *
+     * Tested *after* the comments are stripped, which it was not. A slice runs
+     * from the previous rule's closing brace, so a comment explaining an
+     * at-rule is part of that at-rule's slice — and the raw text then begins
+     * with "/*" rather than "@", so the at-rule slipped through the filter and
+     * was compared as though it were a selector. The effect was silent and
+     * two-way: a commented at-rule could collide with an uncommented copy of
+     * itself and report a duplicate that is not one, and two commented copies
+     * of a genuinely duplicated at-rule went on being compared while an
+     * uncommented one was skipped. */
+    .filter(r => r.sel && !r.sel.startsWith("@"));
 }
 
 const FILES = readdirSync(DIR).filter(n => n.endsWith(".css")).sort();
@@ -113,13 +122,12 @@ const HOOKS = {
   cal:          "Calibration.jsx view container; .cal-h/.cal-t/.cal-c are dressed",
   "cal-priv":   "PrivacyNote.jsx selector hook; the paragraph is dressed by .lede",
   cio:          "CourseIO.jsx panel container; its children are dressed",
-  done:         "Review.jsx state hook; the finished panel differs by content, not paint",
   "fx-miss":    "blocks/index.js malformed-content fallback; validate.mjs keeps it unshipped",
   "katex-mathml": "not emitted — KaTeX's own class, named by a regex in lib/util.js strip()",
   "lplus-w":    "Library.jsx text span inside the dressed .lplus button",
   preq:         "Prequestion.jsx modifier on .primer-card; the .preq-* parts are dressed",
   prun:         "Practice.jsx run container; .pbar/.pmeta are dressed",
-  rv:           "Topbar.jsx hook on a dressed .tbtn; the button is reached by #rv-open",
+  rv:           "Topbar.jsx hook on a dressed .tbtn, the library's copy of the queue;\n                 in a course it is the sidebar's .rv-row instead. Either way #rv-open",
   "tstub-t":    "TierStub.jsx label span inside the dressed .tstub-b button"
 };
 

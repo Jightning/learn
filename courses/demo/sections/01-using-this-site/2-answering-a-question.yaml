@@ -13,7 +13,7 @@ blocks:
     term: Confidence
     label: The step before the answer
     core: |-
-      Every question asks you to predict, in one tap, whether you will get it right — before the answer is reachable.
+      Every question asks you to predict, in one tap, whether you will get it right, before the answer is reachable.
     h: |-
       <p>The prediction is never graded. It is stored beside the outcome so the two can be compared, and the comparison is the point: <b>a wrong answer you were sure about</b> is a different problem from one you knew you were guessing at.</p>
 

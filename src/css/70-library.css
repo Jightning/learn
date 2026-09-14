@@ -13,7 +13,7 @@
   flex:0 0 auto;display:inline-flex;align-items:center;gap:.5em;
   font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.06em;text-transform:uppercase;
   background:none;border:1px solid var(--rule);color:var(--ink-2);
-  border-radius:7px;padding:8px 13px;cursor:pointer;
+  border-radius:3px;padding:8px 13px;cursor:pointer;
 }
 .lplus:hover{border-color:var(--hi);color:var(--hi-ink)}
 .lplus-x{font-size:1.15rem;line-height:1}
@@ -33,7 +33,7 @@
 .lcard{
   position:relative;display:flex;flex-direction:column;
   border:1px solid var(--rule);border-top:3px solid var(--hi);
-  border-radius:11px;background:var(--surface);
+  border-radius:3px;background:var(--surface);
   padding:16px 19px 18px;color:inherit;transition:border-color .13s ease;
 }
 .lcard:hover{border-color:var(--hi);border-top-color:var(--hi)}
@@ -57,7 +57,7 @@
 .lop{
   font-family:var(--ui);font-size:var(--fs-meta);font-weight:450;
   background:var(--surface-2);border:1px solid var(--rule);color:var(--ink-2);
-  border-radius:5px;padding:5px 10px;cursor:pointer;
+  border-radius:3px;padding:5px 10px;cursor:pointer;
 }
 .lop:hover{border-color:var(--hi);color:var(--hi-ink)}
 .lop.warn:hover{border-color:var(--wn);color:var(--wn-ink)}

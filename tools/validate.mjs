@@ -300,6 +300,65 @@ function checkClaimFit(C, warns) {
       }
 }
 
+/* Every cell of an enumeration is a string.
+ *
+ * A `list` item, a table heading, a table cell and a worked example's step are
+ * all interpolated straight into HTML. Hand any of them something that is not
+ * a string and the reader gets `[object Object]` in the middle of the prose —
+ * which is exactly what shipped, undetected, for as long as it took someone to
+ * notice by eye.
+ *
+ * The way it happens is a YAML trap rather than a typo, and it is one this
+ * project walked into deliberately. A plain scalar containing ": " is a
+ * *mapping*, not a string:
+ *
+ *     - the <b>index</b>: every idea the course reuses
+ *
+ * parses to `{"the <b>index</b>": "every idea the course reuses"}`. That is
+ * valid YAML, so the loader is happy, the schema check is happy, and nothing
+ * downstream looks at the type. It became likely the day §13.4a told authors
+ * to replace em dashes with colons, because a gloss after a colon is precisely
+ * the shape that trips it — the guidance is right and the trap is real, so the
+ * build has to hold both.
+ *
+ * An error rather than a warning: there is no reading of a mapping here that
+ * is what the author meant, and the output is visibly broken.
+ */
+function checkCells(C, errs) {
+  const bad = (where, v) => {
+    if (typeof v === "string" || typeof v === "number") return false;
+    const shown = JSON.stringify(v) || String(v);
+    errs.push(`${where} is ${Array.isArray(v) ? "a list" : typeof v} where a string is ` +
+      `required: ${shown.slice(0, 90)}` +
+      (v && !Array.isArray(v) && typeof v === "object"
+        ? ` — an unquoted ": " makes YAML read the line as a mapping; quote the whole string`
+        : ""));
+    return true;
+  };
+  const each = (where, arr, fn) => (arr || []).forEach((v, i) => fn(`${where}[${i}]`, v));
+
+  for (const s of C.sections || [])
+    for (const u of s.subs || [])
+      (u.blocks || []).forEach((b, i) => {
+        if (!b) return;
+        const at = `${u.id} block ${i} (${b.t})`;
+        if (b.t === "list") each(`${at} items`, b.items, bad);
+        if (b.t === "table") {
+          each(`${at} head`, b.head, bad);
+          each(`${at} rows`, b.rows, (w, row) =>
+            Array.isArray(row) ? each(w, row, bad) : bad(w, row));
+        }
+        each(`${at} steps`, b.steps, bad);
+      });
+
+  for (const s of C.sections || [])
+    for (const u of s.subs || [])
+      (u.quiz || []).forEach((q, i) => each(`${u.id} quiz ${i} steps`, q.steps, bad));
+
+  for (const [k, f] of Object.entries(C.drills || {}))
+    (f.items || []).forEach((it, i) => each(`drills/${k} item ${i} steps`, it.steps, bad));
+}
+
 /* M35: a category is declared, never inferred — the M31 shape.
  *
  * A category is not a label. A label names one block; a category has an
@@ -575,6 +634,7 @@ for (const id of courses) {
   checkSpineStandsAlone(C, errs);
   checkClaims(C, errs, warns);
   checkClaimFit(C, warns);
+  checkCells(C, errs);
   checkCats(C, errs, warns);
   checkReviewSet(C, errs, warns);
   checkDrills(C, errs, warns);

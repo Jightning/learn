@@ -1,0 +1,92 @@
+/* 76-speech — The read-aloud bar, and the mark on the line being spoken. */
+
+/* Docked, not floating.
+ *
+ * Sticky at the foot of `main` rather than fixed to the viewport, so it sits
+ * over the reading column and never over the rail, at any width, with no rule
+ * that has to know how wide the sidebar is or whether it is tucked. It is
+ * outside `.wrap` (app.jsx) because `.wrap` carries the content zoom and a
+ * control is not content.
+ *
+ * It exists only while a session does, so the reading page is unchanged for a
+ * reader who never presses Listen. That is the whole argument for putting the
+ * control under Reading options instead of adding a seventh thing to the
+ * toolbar. */
+.spk{
+  position:sticky;bottom:0;z-index:25;
+  margin:var(--sp-3) 0 0;
+  padding:.6rem calc(var(--wrap-pad) + var(--safe-l))
+          calc(.6rem + var(--safe-b)) calc(var(--wrap-pad) + var(--safe-r));
+  background:color-mix(in srgb,var(--surface) 92%,transparent);
+  backdrop-filter:blur(10px);
+  border-top:1px solid var(--rule);
+}
+/* An in-page jump must not land under the bar. The toolbar already claims the
+   top through --scroll-clear; this claims the bottom, and only while the bar is
+   there to claim it. */
+.shell:has(.spk){scroll-padding-bottom:7rem}
+
+.spk-run,.spk-set{
+  display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;
+  max-width:var(--wrap-max);margin:0 auto;
+}
+.spk-set{margin-top:.4rem}
+
+/* The starter, under Reading options. It wears .lane-b like everything else in
+   that panel; this only marks it as the one that is currently running, which a
+   panel of otherwise stateless buttons cannot say on its own. */
+.spk-go[data-on]{border-color:var(--hi);color:var(--hi-ink)}
+
+.spk-b{
+  font-family:var(--ui);font-size:var(--fs-meta);line-height:1;
+  min-width:2rem;min-height:2rem;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--rule);background:var(--surface);color:var(--ink-2);
+  border-radius:3px;cursor:pointer;flex:none;
+}
+.spk-b:hover{border-color:var(--hi);color:var(--hi-ink)}
+/* The one control that is pressed repeatedly, so it is the one that is filled.
+   Everything else on the bar is an outline. */
+.spk-play{background:var(--ink);border-color:var(--ink);color:var(--surface);min-width:2.4rem}
+.spk-play:hover{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.spk-x{margin-left:auto}
+
+/* Where the voice has got to, in the words the page uses for it, because "4 of
+   17" is a position and not a place. */
+.spk-where{
+  font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-2);
+  margin-left:.4rem;min-width:0;flex:1 1 8rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.spk-n{
+  font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);
+  font-variant-numeric:tabular-nums;flex:none;
+}
+.spk-note{font-family:var(--ui);font-size:var(--fs-micro);color:var(--ink-3);flex:1 1 auto}
+
+/* The line being spoken.
+ *
+ * A tint on the ground and a bar in the margin, not a change of ink: the
+ * reading column already spends ink weight and colour on the material's own
+ * structure, and a listener glancing down needs to find their place rather
+ * than read a new signal. Drawn outside the text box on both sides for the
+ * same reason a table row highlight is — a band that stops at the words reads
+ * as a box around them. */
+.is-speaking{
+  background:color-mix(in srgb,var(--hi) 10%,transparent);
+  box-shadow:-6px 0 0 color-mix(in srgb,var(--hi) 10%,transparent),
+              6px 0 0 color-mix(in srgb,var(--hi) 10%,transparent),
+             -8px 0 0 -1px var(--hi);
+  border-radius:1px;
+}
+@media (prefers-reduced-motion:no-preference){
+  .is-speaking{transition:background-color .2s ease}
+}
+
+@media (max-width:52em){
+  /* The count and the place compete for one line on a phone, and the place is
+     the half a listener needs. */
+  .spk-n{display:none}
+  .spk-note{display:none}
+  .spk{padding-left:calc(1.25rem + var(--safe-l));padding-right:calc(1.25rem + var(--safe-r))}
+}

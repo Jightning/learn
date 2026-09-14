@@ -1,7 +1,7 @@
 ---
 # Read by the build. `format` drives the drill-format coverage check; `dates`
 # turn the scheduler around to aim at the exam, so no interval steps over one.
-# Fill the dates in from your syllabus — they vary by term, so they are blank
+# Fill the dates in from your syllabus. They vary by term, so they are blank
 # rather than guessed.
 exam:
   format: [short-answer, multiple-choice]
@@ -13,7 +13,7 @@ exam:
 # to be error-prone.
 review:
   basis: >-
-    Replace this. Name the grounds on which concepts were marked for review —
+    Replace this. Name the grounds on which concepts were marked for review:
     typically everything the exams can test, plus the ideas that are
     error-prone under time pressure.
 ---
@@ -39,4 +39,4 @@ Everything else.
 ## Grading
 
 Weights vary by term and instructor. Copy the real numbers from your syllabus
-rather than guessing them — a confidently wrong weight is worse than a blank.
+rather than guessing them, because a confidently wrong weight is worse than a blank.

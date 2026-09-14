@@ -242,7 +242,7 @@ export const logRows = () => rows;
 /** Append one row. `id` must already be set and globally unique. */
 export function appendRow(row) {
   if (!row || typeof row.id !== "string" || !row.id)
-    throw new Error("a log row needs an id — it is the store's key and the sync unit");
+    throw new Error("a log row needs an id: it is the store's key and the sync unit");
   rows.push(row);
   pending.push(row);
   schedule();

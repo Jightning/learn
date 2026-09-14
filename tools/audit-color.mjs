@@ -4,7 +4,10 @@
  * Walks every rendered text node across every view and both themes, computes
  * the real (foreground, effective background) ratio for each distinct pair,
  * and fails if any falls below WCAG AA. Sampling a handful of selectors by
- * hand missed eight failures once; this does not. */
+ * hand missed eight failures once; this does not.
+ *
+ * It also gates the grounds' *tint*, which contrast cannot see. See the tint
+ * gate below for why a theme can pass every ratio and still be wrong. */
 import { chromium } from "playwright";
 import { readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -116,7 +119,68 @@ async function sweep(theme) {
   return [...found.values()].map(r => ({ ...r, r: ratio(r.fg, r.bg) }));
 }
 
+/* ------------------------------------------------------------ the tint gate
+ *
+ * Contrast is a lightness question and says nothing about hue, so a theme can
+ * clear AA on every pair and still be the wrong colour. That is exactly what
+ * happened: the dark grounds drifted to two and a half times the light
+ * grounds' chroma, every ratio passed, and the only detector was somebody
+ * looking at it and saying the page was too green.
+ *
+ * The palette's own rule is "the bias is small on purpose" (00-tokens.css), so
+ * that is what gets measured. A ground carries a whisper of hue to read as
+ * material rather than as a UI panel; past the ceiling it stops being a
+ * whisper and starts tinting the accent it sits under.
+ *
+ * The dark ceiling is the tighter of the two because colourfulness rises as
+ * the surround darkens: matching the light theme's number would still look
+ * more tinted than the light theme does. */
+const CEIL = { light: 0.008, dark: 0.008, "os-dark": 0.008 };
+const GROUNDS = ["--ground", "--surface", "--surface-2", "--sunk"];
+
+/** sRGB -> OKLCH chroma. Chroma alone: which hue the whisper is is a design
+    choice, how loud it is is the rule. A custom property resolves to the
+    literal text the token was written in, so this reads hex as well as rgb(). */
+function chromaOf(css) {
+  const h = css.trim().replace("#", "");
+  const rgb = /^[0-9a-f]{3}$/i.test(h)
+    ? [...h].map(c => parseInt(c + c, 16))
+    : /^[0-9a-f]{6}$/i.test(h)
+      ? [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16))
+      : css.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+  const [r, g, bl] = rgb.map(v => { v /= 255; return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * bl);
+  const mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * bl);
+  const st = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * bl);
+  return Math.hypot(1.9779984951 * l - 2.4285922050 * mm + 0.4505937099 * st,
+                    0.0259040371 * l + 0.7827717662 * mm - 0.8086757660 * st);
+}
+
+async function tints(theme) {
+  const { scheme, attr } = MODES[theme];
+  await p.emulateMedia({ colorScheme: scheme });
+  await p.goto(F + "/");
+  await p.evaluate(a => a ? document.documentElement.setAttribute("data-theme", a)
+                          : document.documentElement.removeAttribute("data-theme"), attr);
+  await p.waitForTimeout(150);
+  return p.evaluate(names => {
+    const cs = getComputedStyle(document.documentElement);
+    return names.map(n => [n, cs.getPropertyValue(n).trim()]);
+  }, GROUNDS);
+}
+
 let failures = 0;
+console.log("\n===== GROUND TINT =====");
+for (const theme of Object.keys(MODES)) {
+  for (const [name, css] of await tints(theme)) {
+    const c = chromaOf(css);
+    const over = c > CEIL[theme];
+    if (over) failures++;
+    console.log(`  ${over ? "FAIL" : "ok  "}  ${theme.padEnd(8)} ${name.padEnd(11)} ${css.padEnd(18)}`
+                + `C ${c.toFixed(4)} / ${CEIL[theme].toFixed(3)}`);
+  }
+}
+
 for (const theme of Object.keys(MODES)) {
   const rows = (await sweep(theme)).sort((a, b2) => a.r - b2.r);
   const fails = rows.filter(x => x.r < (x.large ? 3 : 4.5));

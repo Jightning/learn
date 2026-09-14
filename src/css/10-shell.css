@@ -23,8 +23,9 @@
 }
 main{padding:0 0 calc(40px + var(--safe-b));min-width:0}
 /* A route that renders no toolbar has nothing holding the status bar off, so
-   the column takes the inset itself. `#/sync` is the one such page inside the
-   shell; the review route has its own frame and pays for it in 66-review.css. */
+   the column takes the inset itself. `#/sync` is the only such page left —
+   review used to be the other, and now draws inside the toolbar like the rest
+   (66-review.css). */
 .shell.bare main{padding-top:var(--safe-t)}
 .topbar{
   position:sticky;top:0;z-index:30;display:flex;flex-wrap:nowrap;align-items:center;gap:14px;
@@ -60,12 +61,6 @@ main{padding:0 0 calc(40px + var(--safe-b));min-width:0}
    responsive sheet — so which won depended on file order rather than intent. */
 :root{--scroll-clear:calc(60px + var(--safe-t));--wrap-pad:40px;
        --wrap-max:calc(var(--measure) + var(--margin-rail) + 8rem)}
-/* The secondary actions are grouped so one breakpoint can move them together,
-   but the group must not become a single flex item here — that would collapse
-   the toolbar's gap between the three buttons it holds. `display:contents`
-   keeps them direct children of the toolbar; the mobile rule replaces it with
-   `display:none`, which hides the subtree either way. */
-.tb-sec{display:contents}
 /* The crumb yields first, everywhere, because it is the only thing here that
    is not a control and the only thing that repeats what the page already says
    in its heading. It used to be `flex:1 1 8rem`, which is a 128px floor it
@@ -107,7 +102,7 @@ main{padding:0 0 calc(40px + var(--safe-b));min-width:0}
 .tbtn{
   font-family:var(--ui);font-size:var(--fs-meta);font-weight:450;
   background:none;border:1px solid var(--rule);color:var(--ink-2);
-  padding:5px 11px;border-radius:5px;cursor:pointer;white-space:nowrap;
+  padding:5px 11px;border-radius:3px;cursor:pointer;white-space:nowrap;
   display:inline-flex;align-items:center;justify-content:center;gap:.45em;
 }
 .tbtn:hover{border-color:var(--hi);color:var(--hi-ink)}
@@ -155,7 +150,7 @@ a.tbtn{text-decoration:none}
      part of the link that still reaches the screen. */
   transform:translateY(calc(-100% - var(--safe-t) - 3rem));
   background:var(--surface);color:var(--ink);
-  border:1px solid var(--hi);border-radius:6px;
+  border:1px solid var(--hi);border-radius:3px;
   padding:.5rem .95rem;text-decoration:none;
   font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.04em;
   box-shadow:0 6px 20px rgba(8,11,16,.16);

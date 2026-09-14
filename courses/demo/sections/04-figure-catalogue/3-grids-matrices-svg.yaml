@@ -17,7 +17,7 @@ blocks:
   - t: figure
     cat: figure-kinds
     kind: grid
-    cap: "grid — Gray-coded labels, a binary index per cell, two highlighted groups, cell values coloured by the course's valueStyles"
+    cap: "grid: Gray-coded labels, a binary index per cell, two highlighted groups, cell values coloured by the course's valueStyles"
     spec:
       rowVars: [A, B]
       colVars: [C, D]
@@ -36,7 +36,7 @@ blocks:
   - t: figure
     cat: figure-kinds
     kind: matrix
-    cap: "matrix — a 2×2 identity, with a label"
+    cap: "matrix: a 2×2 identity, with a label"
     spec:
       label: "I (2×2)"
       rows:
@@ -47,7 +47,7 @@ blocks:
     cat: figure-kinds
     tier: depth
     kind: svg
-    cap: "svg — a hand-drawn seam between the two loops; the escape hatch draws exactly the body given, so it also carries its own arrowhead and font sizes"
+    cap: "svg: a hand-drawn seam between the two loops; the escape hatch draws exactly the body given, so it also carries its own arrowhead and font sizes"
     spec:
       viewBox: "0 0 320 130"
       body: >-

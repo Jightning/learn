@@ -9,11 +9,11 @@
    widest gap above it, because it is where a new idea starts */
 /* The card stays — a definition is the one block that genuinely is an object on
    the page rather than a passage of it, and it is the anchor the primer, the
-   concept hub and the "Before you start" panel all point at. The radius comes
+   index and the "Before you start" panel all point at. The radius comes
    down: an 8px corner on a 600px column reads as a UI card, and this is paper. */
 .def{
   border:1px solid var(--rule);border-left:3px solid var(--lo);
-  border-radius:4px;background:var(--surface);
+  border-radius:3px;background:var(--surface);
   padding:15px 18px;margin:var(--sp-3) 0 var(--sp-2);
 }
 
@@ -88,11 +88,11 @@
 .ex ol li,.blk li{margin-bottom:6px}
 .ex ol li:last-child,.blk li:last-child{margin-bottom:0}
 code{font-family:var(--mono);font-size:.875em;background:var(--surface-2);
-  padding:1px 5px;border-radius:4px;border:1px solid var(--rule-2)}
+  padding:1px 5px;border-radius:3px;border:1px solid var(--rule-2)}
 .def code,.key code,.ex code,.trap code{background:var(--surface)}
 pre{
   font-family:var(--mono);font-size:var(--fs-small);line-height:1.6;margin:0 0 var(--sp-3);
-  background:var(--surface);border:1px solid var(--rule);border-radius:8px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;
   padding:14px 16px;overflow-x:auto;
 }
 pre code{background:none;border:0;padding:0;font-size:inherit}
@@ -116,7 +116,7 @@ pre code{background:none;border:0;padding:0;font-size:inherit}
   padding:7px 12px;pointer-events:none;
 }
 .codewrap pre{margin:0}
-.tscroll{overflow-x:auto;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);border-radius:8px;
+.tscroll{overflow-x:auto;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);border-radius:3px;
   background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:.85rem}
 /* Same as a figure caption: it describes the table in a sentence. */

@@ -45,7 +45,6 @@ export const leadOf = b => (b && (b.core || b.gist)) || null;
  * This is also the cheapest route to the thing the evidence actually asks for:
  * related items positioned close together rather than run into prose. */
 export const leadList = v => (Array.isArray(v) ? v.filter(x => String(x).trim()) : null);
-export const isList = b => !!leadList(leadOf(b));
 
 /** Does this block state its claim separately from its development? */
 export const hasCore = b => !!(b && b.core);
@@ -289,18 +288,3 @@ export function topicsOf(items) {
   return out.filter(t => t.head || t.items.length);
 }
 
-/**
- * One section's shape at a glance, for the strip above the material.
- * Counts what a depth is closing, so the reader knows what is behind it.
- */
-export function shapeOf(section, depth) {
-  let shown = 0, closed = 0, named = 0;
-  for (const sub of section.subs || [])
-    for (const b of sub.blocks || []) {
-      const p = present(b, depth);
-      if (p.mode === "hidden") { closed++; continue; }
-      if (p.mode === "full") shown++;
-      else { named++; if (p.more) closed++; }
-    }
-  return { shown, closed, named };
-}

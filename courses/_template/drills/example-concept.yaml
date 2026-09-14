@@ -19,7 +19,7 @@ items:
 
   - format: multiple-choice
     stem: A second problem, with a surface unlike the worked example above.
-    answer: A different answer — no two items in a file may share one.
+    answer: A different answer, since no two items in a file may share one.
     steps: ["Vary how the question looks; hold what kind of answer it wants."]
     verified: 2026-01-01
 
