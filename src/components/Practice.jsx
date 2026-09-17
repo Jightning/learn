@@ -34,16 +34,6 @@ export default function Practice({ ctx, cat }) {
   const st = state.on ? state.stats(idx.QALL.map(q => q.id)) : null;
   const n = parseInt(count, 10);
 
-  /* What Start will actually do, in words. The controls are behind a
-     disclosure, so the page has to say what it is holding rather than leave the
-     reader to open it and check. */
-  const drawing = source === "drills" && bank.has
-    ? "concepts due for recall" : "one question per type";
-  const over = scope === "all" ? "every section"
-    : scope === "due" ? "what is due"
-    : scope === "weak" ? "what you have missed"
-    : ((C.sections.find(x => x.id === scope) || {}).title || "one section");
-
   const quizPool = () => {
     const pool = idx.QALL.filter(q => {
       if (scope === "all") return true;
@@ -84,10 +74,9 @@ export default function Practice({ ctx, cat }) {
        * four already had the right default — drills when the course has them,
        * every section, ten.
        *
-       * So the defaults are simply taken, stated in a sentence so nothing is
-       * hidden, and the controls that change them are one disclosure away.
-       * "Timed" is gone rather than moved: it had no handler and no reader, so
-       * it was a promise the page did not keep. */}
+       * So the defaults are simply taken, and the controls that change them
+       * are one disclosure away. "Timed" is gone rather than moved: it had no
+       * handler and no reader, so it was a promise the page did not keep. */}
       <div class="pgo">
         <button class="dbtn primary" id="p-start" onClick={start}>
           Start {n || "every"} question{n === 1 ? "" : "s"} →
@@ -95,7 +84,7 @@ export default function Practice({ ctx, cat }) {
       </div>
 
       <details class="pcfg">
-        <summary><i class="caret" aria-hidden="true" />Change questions</summary>
+        <summary><i class="caret" aria-hidden="true" />Questions</summary>
         <div class="pcfg-row">
           {bank.has && (
             <label>Draw from{" "}

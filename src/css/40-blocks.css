@@ -84,9 +84,12 @@
 .def dt{font-weight:670;margin-bottom:2px}
 .blk p:last-child,.def p:last-child,.key p:last-child,.trap p:last-child,
 .ex p:last-child,.note p:last-child{margin-bottom:0}
-.ex ol,.blk ol,.blk ul{margin:0 0 0 0;padding-left:20px}
-.ex ol li,.blk li{margin-bottom:6px}
-.ex ol li:last-child,.blk li:last-child{margin-bottom:0}
+/* `.bitems` is an `items:` list, on a `list` block or inside a callout
+   (U.items in blocks/index.js). Steps are scanned, so each gets its own line
+   and a little air, the same as a worked example's. */
+.ex ol,.bitems{margin:0;padding-left:20px}
+.ex ol li,.bitems li{margin-bottom:6px}
+.ex ol li:last-child,.bitems li:last-child{margin-bottom:0}
 code{font-family:var(--mono);font-size:.875em;background:var(--surface-2);
   padding:1px 5px;border-radius:3px;border:1px solid var(--rule-2)}
 .def code,.key code,.ex code,.trap code{background:var(--surface)}

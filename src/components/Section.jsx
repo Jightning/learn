@@ -12,11 +12,14 @@ import { useNotes, NoteGrip, NoteCard } from "./Notes.jsx";
 import TierStub from "./TierStub.jsx";
 import Attempt from "./Attempt.jsx";
 import CatChip from "./CatChip.jsx";
+import Asides from "./Asides.jsx";
+import { isFollow } from "../lib/follows.js";
+import { renderAnchors } from "../lib/asides.js";
 
 /* One reading row: content on the left, its references immediately to the
  * right. Hovering either side highlights both — handled locally per row
  * rather than by a global delegated listener. */
-function ReadingRow({ html, notes, noteAt, noteLabel, apart, ctx, id, children }) {
+function ReadingRow({ html, notes, noteAt, noteLabel, apart, follow, ctx, id, children }) {
   const row = useRef(null);
   const [hot, setHot] = useState(null);
   /* The row owns the note because the note is in two of its zones: the grip at
@@ -39,10 +42,12 @@ function ReadingRow({ html, notes, noteAt, noteLabel, apart, ctx, id, children }
 
   return (
     <div class="brow" ref={row} id={id} data-apart={apart || undefined}
+         data-follow={follow || undefined}
          onMouseOver={track(true)} onMouseOut={track(false)}>
       <div class="bmain">
         {html != null
-          ? <div class="bhtml" dangerouslySetInnerHTML={{ __html: decorate(html, ctx.cid, ctx.idx.FIG.byKey) }} />
+          ? <div class="bhtml" dangerouslySetInnerHTML={{
+              __html: decorate(renderAnchors(html), ctx.cid, ctx.idx.FIG.byKey) }} />
           : children}
         {/* Where a note is started: a grip on the block's own bottom edge,
             shown only while there is nothing to show in the margin. */}
@@ -81,7 +86,8 @@ function NoteRow({ b, p, ctx, refs, open, onToggle, showCat, runIn }) {
      on its own line for every row is the stack of header-and-paragraph this
      view exists to stop being. */
   const lab = runIn && String(b.label || "").trim() ? b.label : null;
-  const cls = `nrow is-${p.mode} t-${b.t}` + (open ? " is-open" : "");
+  const cls = `nrow is-${p.mode} t-${b.t}` + (open ? " is-open" : "") +
+              (isFollow(b) ? " is-follow" : "");
 
   return (
     <div class={cls}>
@@ -174,22 +180,27 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
   /* A block rendered in full: the reading row, exactly as it has always been. */
   const fullRow = ({ b, i }) => {
     const refs = refsOf(b);
+    /* Asides lead the margin: they annotate a phrase in this block and have
+       no page of their own, so they are never the ones demoted to chips. */
     const notes = (
       <>
+        <Asides b={b} ctx={ctx} />
         {i === leadIndex && <UsedLater id={sub.id} ctx={ctx} compact={refs.length > 0} />}
         <MarginRefs refs={refs} ctx={ctx} />
       </>
     );
+    const follow = isFollow(b) && i > 0;
     const at = `${sub.id}#${i}`;
     if (INTERACTIVE.includes(b.t))
       return (
-        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}>
+        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
+                    follow={follow}>
           <Attempt b={b} cid={cid} anchor={`${sub.id}#${i}@attempt`} />
         </ReadingRow>
       );
     return (
       <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
-                  apart={isApart(b.t)}
+                  apart={isApart(b.t)} follow={follow}
                   html={renderBlock(b, { fignum: idx.FIG.numOf(b),
                                         prevSource: prevSourceOf(sub.blocks, i) })} />
     );
@@ -309,8 +320,8 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
         : <div class="brow nbrow" key={"r" + at}><div class="bmain">{drawn}</div><aside class="bside" /></div>;
     }
     return (
-      <ReadingRow key={"stub" + at} ctx={ctx} notes={null}>
-        <TierStub items={run.items} ctx={ctx}
+      <ReadingRow key={"stub" + at} ctx={ctx} notes={null} follow={run.attached}>
+        <TierStub items={run.items} ctx={ctx} attached={run.attached}
                   refs={refsOf(run.items.map(x => x.b))}
                   onExpand={() => setOpenRun(o => ({ ...o, [at]: true }))} />
       </ReadingRow>
@@ -346,7 +357,7 @@ export default function Section({ section, ctx, expandAll, lane, onLane, depth, 
         )}
         {/* the map answers "what does this sit between", which is a question
             you have here, not back in the course nav */}
-        <a class="sec-where" href={H(`map/${section.id}`)}>Where this sits →</a>
+        <a class="sec-where" href={H(`map/${section.id}`)}>Dependency Map</a>
       </div>
       {/* The panel names the section's terms, which is exactly what a closed
           depth already puts on the page as its topic headings. Showing both is

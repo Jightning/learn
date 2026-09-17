@@ -14,9 +14,10 @@ import { readdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCourse } from "./lib/load.mjs";
+import { COURSES as COURSES_DIR } from "./lib/paths.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const COURSES = join(ROOT, "courses");
+const COURSES = COURSES_DIR;
 const args = process.argv.slice(2);
 const CHECK = args.includes("--check");
 const wanted = args.filter(a => !a.startsWith("--"));

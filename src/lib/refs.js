@@ -3,6 +3,7 @@
  * forms in the content, never hand-maintained. */
 import { M } from "./math.js";
 import { textOf, strip, clip } from "./util.js";
+import { dropAnchors } from "./asides.js";
 
 export function previewSub(SUBS, id) {
   const e = SUBS[id];
@@ -47,7 +48,10 @@ export function buildsOn(SUBS, sections, s) {
 /** authored "#s4-2" becomes course-scoped and tagged so hover can pair them,
  *  and <f k="key"/> becomes a link reading "Figure 3.2" */
 export const decorate = (html, cid, figs) =>
-  M(String(html))
+  /* An aside anchor is only meaningful beside its card, and only the reading
+     row draws the card, so it renders its anchors before calling this and
+     everywhere else the phrase is plain text (lib/asides.js). */
+  M(dropAnchors(html))
     .replace(/<a href="#(s[0-9]+(?:-[0-9]+)?)"/g,
       `<a class="xr" data-xr="$1" href="#/${cid}/$1"`)
     /* A concept mention is a destination, not an ornament. It rendered as a

@@ -1,12 +1,17 @@
 /* 55-tiers — The lane selector and the stubs it leaves behind. */
 
-/* A stub is text and a rule, never a colour band: the count is the signal. */
+/* A stub is text and a rule, never a colour band: the count is the signal —
+ * except an attached run (follows.js), which names what it holds instead of
+ * counting it, and a name is not bounded the way a digit is. `.tstub-t` is
+ * its own flex item so it is what shrinks and wraps; the chevron and the
+ * rule hold their size regardless. */
 .tstub{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;width:100%}
 .tstub-b{
-  display:inline-flex;align-items:center;gap:.4rem;flex:none;
+  display:inline-flex;align-items:center;gap:.4rem;flex:1 1 auto;min-width:0;
   font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.06em;
   color:var(--ink-3);background:none;border:0;padding:2px 0;cursor:pointer;
 }
+.tstub-t{min-width:0}
 .tstub-b::after{content:"";flex:1 1 2rem;min-width:2rem;border-top:1px dashed var(--rule);margin-left:.2rem}
 .tstub-b:hover{color:var(--hi-ink)}
 .tstub-b:hover::after{border-top-color:var(--hi)}

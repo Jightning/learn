@@ -7,6 +7,7 @@
  * repetition rather than material.
  */
 import { getItem, setItem, removeItem } from "./store.js";
+import { isFollow } from "./follows.js";
 export const TIERS = ["spine", "depth", "apply"];
 
 export const LANES = [
@@ -29,15 +30,29 @@ export function stubLabel(items) {
   return ["depth", "apply"].filter(t => n[t]).map(t => NOUN[t](n[t])).join(", ");
 }
 
-/** blocks, grouped into runs the lane either shows or collapses into one stub */
+/* What an attached stub says: the kind of follow-up and its name, so the
+ * reader sees "In depth: the mixed-partials argument" beside the block it explains
+ * rather than a count at the foot of the subsection. */
+const FOLLOW_NOUN = { depth: "In depth", apply: "Another example" };
+
+export function attachedLabel(items, nameOf) {
+  return items.map(it => `${FOLLOW_NOUN[tierOf(it.b)] || "More"}: ${nameOf(it.b)}`).join(" · ");
+}
+
+/** blocks, grouped into runs the lane either shows or collapses into one stub
+ *
+ * A collapsed run that starts with a follow-up is attached to the block above
+ * it, so it ends where the follow-ups do: a hidden block that follows nothing
+ * is a separate idea and gets a stub of its own. `attached` records that. */
 export function runsOf(blocks, lane) {
   const shown = SHOWN[lane] || SHOWN.apply;
   const runs = [];
   blocks.forEach((b, i) => {
     const hidden = !shown.includes(tierOf(b));
     const last = runs[runs.length - 1];
-    if (last && last.hidden === hidden) last.items.push({ b, i });
-    else runs.push({ hidden, items: [{ b, i }] });
+    const ends = last && last.attached && !isFollow(b);
+    if (last && last.hidden === hidden && !ends) last.items.push({ b, i });
+    else runs.push({ hidden, attached: hidden && isFollow(b) && i > 0, items: [{ b, i }] });
   });
   return runs;
 }

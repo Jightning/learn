@@ -1,0 +1,11 @@
+{
+  "name": "create-course",
+  "description": "Write study courses from sources, a repository, or research, with the checks and the spec that the study-site engine expects.",
+  "version": "0.1.0",
+  "keywords": [
+    "course",
+    "authoring",
+    "study",
+    "spaced-repetition"
+  ]
+}

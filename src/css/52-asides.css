@@ -1,0 +1,15 @@
+/* 52-asides — the course's own margin notes and the phrase each is anchored to.
+ *
+ * The phrase is marked the way a concept mention is — a rule under the text,
+ * never a fill — so a paragraph with two anchors still reads as prose. Dotted
+ * rather than dashed, because dashed already means "this goes somewhere", and
+ * an anchor goes nowhere: its note is beside it. Hover pairs the two (the
+ * ReadingRow effect in Section.jsx), the same gesture a concept card uses. */
+.nref{border-bottom:1px dotted var(--lo);cursor:help}
+.nref.hot{background:color-mix(in srgb,var(--lo) 13%,transparent);color:var(--lo-ink)}
+
+.mnote.is-a{border-left-color:var(--lo)}
+.mnote.is-a.hot{border-color:var(--lo)}
+.aside-body{color:var(--ink-2);font-size:var(--fs-small);line-height:1.5}
+.aside-body p{margin:0 0 6px}
+.aside-body>:last-child{margin-bottom:0}

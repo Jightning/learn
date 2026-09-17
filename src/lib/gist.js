@@ -22,7 +22,7 @@
  * Everything else falls out of the registry, so a course's own blocks.js can
  * declare how its renderer behaves at depth without touching this file.
  */
-import { Blocks, holdsOf } from "../blocks/index.js";
+import { Blocks, holdsOf, hasItems } from "../blocks/index.js";
 import { strip, clip } from "./util.js";
 import { M } from "./math.js";
 
@@ -232,9 +232,13 @@ export function present(b, depth) {
   /* A derived claim never promotes a closed or caption kind. Those are the
      renderer saying the block is not prose — a table, a figure — and a first
      sentence taken from one of those is not its claim. */
+  /* A prose callout carrying `items:` is a structure for this purpose: the
+     steps are the content, and a claim would close them behind a count of
+     them. It opens rather than leading, exactly as a `list` with a claim does. */
   const notes = explicit
+    || (kind === "lead" && hasItems(b) ? "open" : null)
     || (lead && (kind === "closed" || kind === "caption") ? promote : kind);
-  const hasBody = !!String(b.h || "").trim() || b.t === "figure" || b.t === "image" ||
+  const hasBody = !!String(b.h || "").trim() || hasItems(b) || b.t === "figure" || b.t === "image" ||
                   b.t === "table" || b.t === "math" || b.t === "code" || b.t === "list";
 
   if (depth === "full") return { mode: "full", name, lead: null, more: false };
@@ -281,7 +285,9 @@ export function present(b, depth) {
 export function topicsOf(items) {
   const out = [];
   for (const it of items) {
-    const isHead = it.b && it.b.t === "def";
+    /* A definition marked `follows:` belongs to the block above it, so it
+       continues that topic instead of opening its own. */
+    const isHead = it.b && it.b.t === "def" && !it.b.follows;
     if (isHead || !out.length) out.push({ head: isHead ? it : null, items: [] });
     if (!isHead) out[out.length - 1].items.push(it);
   }

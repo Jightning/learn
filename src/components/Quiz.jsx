@@ -19,9 +19,9 @@ import { M } from "../lib/math.js";
  * Short on purpose: the note sits at the end of a row of buttons, and a line
  * that wraps there reads as an error message. */
 function outcomeNote(conf, got, iv) {
-  if (conf === 1 && !got) return "worth another look";
-  if (conf === 0 && got) return "you knew it";
-  return iv ? `next review in ${iv} day${iv === 1 ? "" : "s"}` : "will come back soon";
+  if (conf === 1 && !got) return ""; // not needed
+  if (conf === 0 && got) return "";
+  return iv ? `next review in ${iv} day${iv === 1 ? "" : "s"}` : "";
 }
 
 /* A question card. The reader predicts, states a reason, then reveals and
@@ -126,7 +126,7 @@ function Question({ item, ctx, showWhere, forceOpen }) {
        * rather than a control, and the grade row below states what happened. */}
       {state.on && !shown && (
         <div class="qask">
-          <span class="qask-l">Before you look: how sure are you?</span>
+          <span class="qask-l"></span>
           <span class="qconf">
             <button class={"cbtn" + (conf === 1 ? " sel" : "")} data-conf="1" data-qid={item.id}
                     title="Predict you know this" onClick={() => predict(true)}>Sure</button>
@@ -145,7 +145,7 @@ function Question({ item, ctx, showWhere, forceOpen }) {
       )}
 
       {state.on && conf != null && !shown && (
-        <WhyField cid={cid} itemId={item.id} prompt={item.q.why_prompt || "Why? State it before you reveal."}
+        <WhyField cid={cid} itemId={item.id} prompt={item.q.why_prompt || "Why?"}
                   onCommit={commit} />
       )}
 
@@ -155,7 +155,6 @@ function Question({ item, ctx, showWhere, forceOpen }) {
           <div dangerouslySetInnerHTML={{ __html: M(item.q.why) }} />
           {state.on && (
             <div class="qgrade">
-              <span>Were you right?</span>
               <button class={"gbtn ok" + (got === 1 ? " sel" : "")} data-got="1" data-qid={item.id}
                       disabled={settled} onClick={() => grade(true)}>Got it</button>
               <button class={"gbtn no" + (got === 0 ? " sel" : "")} data-got="0" data-qid={item.id}

@@ -72,7 +72,6 @@ export default function Drill({ cid, C, item, cluster, onDone }) {
 
           {got == null ? (
             <div class="qgrade">
-              <span>Were you right?</span>
               <button class="gbtn ok" data-got="1" onClick={() => grade(true)}>Got it</button>
               <button class="gbtn no" data-got="0" onClick={() => grade(false)}>Missed it</button>
             </div>

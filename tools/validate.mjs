@@ -53,14 +53,16 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCourse } from "./lib/load.mjs";
 import { tex } from "./lib/math.mjs";
+import { COURSES as COURSES_DIR } from "./lib/paths.mjs";
 import { INTERACTIVE } from "../src/blocks/interactive.js";
 import { checkFigure } from "./lib/figures.mjs";
 import { TIERS, tierOf } from "../src/lib/tiers.js";
 import { NOTES_MODES, present, leadOf } from "../src/lib/gist.js";
+import { checkRunInLists, checkFollows, checkAsides } from "./lib/structure.mjs";
 import { textOf } from "../src/lib/util.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const COURSES = join(ROOT, "courses");
+const COURSES = COURSES_DIR;
 
 /* Renderable block types, read from the source so the list cannot drift from
    the code. Figure kinds are checked by lib/figures.mjs, against the registry
@@ -342,7 +344,7 @@ function checkCells(C, errs) {
       (u.blocks || []).forEach((b, i) => {
         if (!b) return;
         const at = `${u.id} block ${i} (${b.t})`;
-        if (b.t === "list") each(`${at} items`, b.items, bad);
+        if (b.items != null) each(`${at} items`, b.items, bad);
         if (b.t === "table") {
           each(`${at} head`, b.head, bad);
           each(`${at} rows`, b.rows, (w, row) =>
@@ -583,7 +585,7 @@ for (const id of courses) {
          space or an `=` as text, so `b <= a` and `j < i` are safe and must not
          be flagged; `x <id` is not, because it opens a tag. Likewise `a & b`
          is text, while `&amp` without its semicolon is not. */
-      const TAGS = "a|b|br|c|code|em|f|i|li|m|ol|p|span|strong|sub|sup|ul";
+      const TAGS = "a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul";
       const bare = new RegExp(`</?(?!(?:${TAGS})[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
       const checkHtml = (v, what) => {
         if (typeof v !== "string") return;
@@ -599,6 +601,9 @@ for (const id of courses) {
         if (!b) continue;
         for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
         for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
+        if (Array.isArray(b.items)) b.items.forEach(v => checkHtml(v, `${where} ${b.t} item`));
+        if (b.asides && typeof b.asides === "object")
+          for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
       }
       for (const item of u.quiz || [])
         for (const k of HTML_FIELDS) if (item[k] != null) checkHtml(item[k], `${where} quiz "${item.type}".${k}`);
@@ -634,6 +639,9 @@ for (const id of courses) {
   checkSpineStandsAlone(C, errs);
   checkClaims(C, errs, warns);
   checkClaimFit(C, warns);
+  checkRunInLists(C, errs);
+  checkFollows(C, errs);
+  checkAsides(C, errs, warns);
   checkCells(C, errs);
   checkCats(C, errs, warns);
   checkReviewSet(C, errs, warns);

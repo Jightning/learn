@@ -95,13 +95,6 @@ export default function Review({ only = null }) {
       <div class="review">
         <ReviewBar i={queue.length} n={queue.length} scope={scope} />
         <h1>{queue.length ? "Session complete." : "Nothing is due."}</h1>
-        <p class="lede">
-          {queue.length
-            ? "Come back tomorrow, a concept recalled once in each of three spaced sessions outlasts one recalled three times today."
-            : only
-              ? "You are ahead of this course's schedule. Concepts arrive here when an interval comes due, or when you miss a question you were confident about."
-              : "You are ahead of the schedule. Concepts arrive here when an interval comes due, or when you miss a question you were confident about."}
-        </p>
         <div class="review-nav">
           {queue.length > 0 && (
             <button class="dbtn" id="rv-again" onClick={again}>Another set</button>

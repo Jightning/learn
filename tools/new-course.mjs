@@ -2,11 +2,12 @@
 /* Scaffold a new subject from the template. No code is generated or needed.
  *   node tools/new-course.mjs ma26600 "Ordinary Differential Equations"
  */
-import { cpSync, existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadSpec } from "./lib/spec.mjs";
+import { COURSES, TEMPLATE, DOCS, PACKAGED } from "./lib/paths.mjs";
 
 /* A course's accent is one angle, and two courses that pick the same angle are
    indistinguishable in the library — the exact defect the rotation exists to
@@ -36,7 +37,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const [id, ...rest] = process.argv.slice(2);
 if (!id) { console.error('usage: new-course.mjs <id> "Course Title"'); process.exit(1); }
 const title = rest.join(" ") || "Course Title";
-const dest = join(ROOT, "courses", id);
+const dest = join(COURSES, id);
 if (existsSync(dest)) { console.error(`courses/${id} already exists`); process.exit(1); }
 
 /* Who the courses are for, written once per machine rather than once per
@@ -46,7 +47,7 @@ if (existsSync(dest)) { console.error(`courses/${id} already exists`); process.e
 function scaffoldReader(coursesDir) {
   const dest = join(coursesDir, "_reader.yaml");
   if (existsSync(dest)) return null;
-  const sec = loadSpec(join(ROOT, "docs/create_course.md")).pick(["1"]);
+  const sec = loadSpec(join(DOCS, "create_course.md")).pick(["1"]);
   const block = (/```yaml\n([\s\S]*?)```/.exec(sec) || [])[1];
   if (!block) throw new Error("create_course.md §1 has no reader block to copy");
   writeFileSync(dest,
@@ -58,9 +59,10 @@ function scaffoldReader(coursesDir) {
   return dest;
 }
 
-const hue = freeHue(join(ROOT, "courses"));
-const readerFile = scaffoldReader(join(ROOT, "courses"));
-cpSync(join(ROOT, "courses", "_template"), dest, { recursive: true });
+mkdirSync(COURSES, { recursive: true });
+const hue = freeHue(COURSES);
+const readerFile = scaffoldReader(COURSES);
+cpSync(TEMPLATE, dest, { recursive: true });
 const cfg = join(dest, "course.yaml");
 writeFileSync(cfg, readFileSync(cfg, "utf8")
   .replace("code: XX 00000", "code: " + id.toUpperCase())
@@ -72,11 +74,11 @@ writeFileSync(cfg, readFileSync(cfg, "utf8")
    `npm run check` compares them against the data. Writing them here is what
    makes a freshly scaffolded course pass the suite rather than fail it on two
    files the author never knew were owed. */
-execFileSync(process.execPath, [join(ROOT, "tools", "gen-materials.mjs"), id],
-  { cwd: ROOT, stdio: "ignore" });
+execFileSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), "gen-materials.mjs"), id],
+  { stdio: "ignore" });
 
 console.log(`created courses/${id}  (accent hue ${hue})`);
 if (readerFile) console.log("created courses/_reader.yaml — fill it in before authoring");
-console.log("  1. edit course.yaml");
-console.log("  2. add sections/NN-slug/_section.yaml and NN-slug files");
-console.log(`  3. node tools/build.mjs ${id} && node tools/validate.mjs ${id}`);
+console.log(`  1. edit courses/${id}/course.yaml`);
+console.log(`  2. write it: ask your agent, or see the workflow it follows`);
+console.log(`  3. ${PACKAGED ? 'node "<kit>/scripts/author.mjs"' : "node tools/author.mjs"} begin ${id}`);

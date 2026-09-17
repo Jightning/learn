@@ -12,7 +12,7 @@
 /* the map needs room the reading column cannot give it */
 .chub.mapview{max-width:none}
 
-/* The section you arrived from, ringed so "where this sits" answers itself. */
+/* The section you arrived from, ringed so "depen" answers itself. */
 .fx-here{fill:none;stroke:var(--hi);stroke-width:2}
 .fx-node.is-here .fx-nl{font-weight:700}
 .maphere{font-family:var(--mono);font-size:var(--fs-meta);color:var(--hi-ink);

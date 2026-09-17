@@ -56,6 +56,8 @@ const FIELDS = new Set([
         .matchAll(/\bb\.([a-zA-Z_]\w*)/g)].map(m => m[1]),
   "id",        /* lib/figures.js — numbering and citation */
   "tier",      /* lib/tiers.js   — the lane */
+  "follows",   /* lib/follows.js — attaches a block to the one above it */
+  "asides",    /* lib/asides.js  — margin notes anchored by <n k> */
   "notes",     /* lib/gist.js    — the per-block depth override */
   "cat",       /* lib/cats.js    — principal category */
   "tags",      /* lib/cats.js    — secondary memberships */

@@ -23,18 +23,50 @@ npm run new -- ma26600 "Ordinary Differential Equations"
 
 This will add a course to `courses/ma26600`.
 
-[This document](docs/create_course.md) details how to write out a course.
-[This document](docs/writing.md) is for AI's prose/writing.
+You can then start working on the course within that folder.
 The changes can be validated with:
 
 ```sh
 npm run check
 ```
 
-**Write the course with AI:** `docs/create_course.md` details what the model should do, while
-`npm run author` walks through the creation process one piece at a time for better token efficiency.
+Finally import your course to the site and enjoy.
 
-Lastly import your course to actual site (stored via indexedDB, if you don't use it for a week it'll get deleted so careful).
+`node plugin/scripts/pack.mjs <id>` creates a `.course.json` you can import into a site (not needed though, you can just import the course folder).
+
+**Write a course with AI:**
+
+Add the course content under `courses/your-course/sources` (so the model know what to work off).
+
+[This document](docs/create_course.md) details how to write out a course.
+[This document](docs/writing.md) is for AI's prose/writing.
+
+The AI uses the `create-course` skill, which runs these:
+
+```sh
+node tools/author.mjs begin ma26600 --source ~/code/some-repo  # sources + the rules for the course's shape; resumes where it left off
+node tools/author.mjs write ma26600 --lean  # the writing rules, once (--lean: cheaper)
+node tools/author.mjs done ma26600 s1-6 /abs/source.md  # records one subsection, names the next
+node tools/author.mjs finish ma26600  # materials, validation, coverage
+npm run coverage -- ma26600  # does a comparison to see if the course is covering everything
+```
+
+**Claude:**
+
+```sh
+# to add as a plugin
+/plugin marketplace add Jightning/learn-site
+/plugin install create-course@learn
+
+# adding as a plugin without installing
+claude --plugin-dir plugin
+```
+
+**Other Agents:**
+
+```sh
+node plugin/install.mjs ~/my-courses   # for other agents
+```
 
 ## Development
 

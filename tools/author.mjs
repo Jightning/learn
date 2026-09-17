@@ -1,274 +1,409 @@
 #!/usr/bin/env node
 /* ============================================================================
- * tools/author.mjs — drive course authoring one small, resumable unit at a time
+ * tools/author.mjs — the commands a CLI agent uses to write a course
  *
- *   node tools/author.mjs plan   <id>          what it will cost, and why
- *   node tools/author.mjs status <id>          what is done, what is left
- *   node tools/author.mjs next   <id> [--raw]  the next unit's prompt
- *   node tools/author.mjs done   <id> <unit>
- *   node tools/author.mjs reset  <id> [phase]
+ *   author begin  <id> [--source PATH]... [--lean] [--research]
+ *                     where the course stands, its sources, and the rules for its shape
+ *   author write  <id> [--lean] [--confident]
+ *                     the writing rules, once, and the first subsection
+ *   author done   <id> <sN-M> [SOURCE]...   record one, and name the next
+ *   author finish <id>                      materials, validate and coverage, compactly
+ *   author status <id> [--digest]   ·   redo <id> <sN-M|course|finish>...   ·   reset <id>
+ *   author plan   <id>                      what the rules and sources weigh
  *
- * The expensive way to author a course is one long conversation: every call
- * resends every earlier answer, so input grows with the square of the work.
- * On ma26600 (~160 units) that is ~15.6M input tokens.
+ * Four calls carry a whole course: begin, write, done per subsection, finish.
+ * Each prints only what the one before it did not, and every check here warns
+ * rather than refuses — a block count cannot overrule the model that wrote the
+ * blocks, and arguing with a gate costs more than the gate is worth.
  *
- * Three things fix it, and this file is all three:
+ * No command here runs a model. The agent the author is already talking to
+ * (Claude Code, or any CLI agent) is the one that writes: it reads the rules
+ * once, keeps its work in one cached conversation, and hands context-free work
+ * (concept files, drills, digging through a large source) to its own
+ * subagents (.claude/agents/). These commands do what code does better and
+ * for free: slicing the spec, listing sources safely, knowing what is
+ * finished, and refusing to call a subsection finished when it is not.
  *
- *   1. One call per unit, each independent. Input becomes linear in the work.
- *   2. Each unit gets only the spec headings its phase needs (lib/spec.mjs),
- *      not all 15k tokens of create_course.md + material_truth.md.
- *   3. Prior work arrives as a digest (lib/digest.mjs), not as prose — the
- *      hundredfold saving that makes non-redundancy affordable.
- *
- * Interruption falls out for free. The course folder is the state and the
- * ledger is a list of finished unit ids, so resuming costs one directory walk
- * rather than a replayed transcript. Nothing is held in memory between units.
+ * The workflow the agent follows is .claude/skills/create-course/SKILL.md.
+ * Progress is .author/<id>/: map.txt (one line per finished subsection, with
+ * the sources it was written from), course.done, finish.done, roots.txt.
+ * The generation log is written by tools/author-log.mjs from the session
+ * transcript, never by the model.
  * ==========================================================================*/
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
+import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 import { loadSpec } from "./lib/spec.mjs";
 import { digest } from "./lib/digest.mjs";
-import { readReader, peekReader } from "./lib/reader.mjs";
+import { readReader } from "./lib/reader.mjs";
+import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from "./lib/sources.mjs";
+import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE, PACKAGED } from "./lib/paths.mjs";
+import { note } from "./author-log.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const est = s => Math.round(s.length / 4);   /* chars/4: an estimate, not a count */
 
-const CC = loadSpec(join(ROOT, "docs/create_course.md"));
-const MT = loadSpec(join(ROOT, "docs/material_truth.md"));
-/* Prose craft moved out of create_course.md §13 into its own file. The phases
-   that write prose still need it, so it is sliced like the other two rather
-   than inlined back — `wr:` on a phase names the headings it wants. */
-const WR = loadSpec(join(ROOT, "docs/writing.md"));
+const CC = loadSpec(join(DOCS, "create_course.md"));
+const MT = loadSpec(join(DOCS, "material_truth.md"));
+const WR = loadSpec(join(DOCS, "writing.md"));
+/* AUTHOR_READER exists for the test suite, which cannot use a person's own
+   profile; everything else reads the one beside the courses. */
+const READER = process.env.AUTHOR_READER || join(COURSES, "_reader.yaml");
 
-/* ---------------------------------------------------------------- reader --
- * Who the course is for. Every phase sends §1, and §1 in the docs is a blank
- * form: the filled-in answer is personal, so it lives beside the courses it
- * calibrates (lib/reader.mjs) rather than in a tracked file.
+/* ----------------------------------------------------------------- steps --
+ * Which spec headings each step needs, by heading id (lib/spec.mjs):
+ * create_course.md (cc), material_truth.md (mt), writing.md (wr). A brief
+ * prints the union for its steps. `lean` drops the evidence, the prose craft
+ * and the self-review checklists, and keeps every rule a check enforces.
  */
-const READER = join(ROOT, "courses", "_reader.yaml");
+const PROSE = ["1*", "2*", "3*", "4*", "4a*", "5*", "6*"];
+const COURSE_STEPS = {
+  calibrate: { cc: ["0", "1*", "3", "11*"], mt: ["6*", "9*"] },
+  sequence:  { cc: ["0", "1*", "2*", "3"], mt: ["4*"] },
+  taxonomy:  { cc: ["0", "1*", "2*", "5a"], mt: ["10*"] },
+  conceptSet:{ cc: ["0", "1*", "5*"], mt: ["4*"] }
+};
+const WRITING_STEPS = {
+  spine:     { cc: ["0", "1*", "6", "6.1", "6.2", "6.4", "6.6", "5a", "10*"], wr: PROSE,
+               mt: ["2*", "3*", "5*", "10*"] },
+  quizzes:   { cc: ["0", "1*", "6.5", "7*", "9"], mt: ["2*"] },
+  tiers:     { cc: ["0", "1*", "6.3", "14"], wr: PROSE, mt: ["7*"] },
+  verify:    { cc: ["0", "1*", "12*"], mt: ["6*", "9*"] }
+};
+/* For the drafter subagent, which is pointed at these files rather than
+   handed the whole brief. */
+const DRAFTER = {
+  concepts:  { cc: ["0", "1*", "5*"], mt: ["4*"] },
+  drills:    { cc: ["0", "1*", "8*"], mt: ["8*"] }
+};
+const LEAN_DROPS = new Set(["12*", "14"]);
 
-/* ---------------------------------------------------------------- phases --
- * `cc` and `mt` name the headings this phase needs; anything not named is not
- * sent. `pick` lists every unit the phase owns and flags the ones already
- * written, so the same table answers both "what is left" and, under --fresh,
- * "what would a build from nothing cost".
+const union = (steps, key) => [...new Set(Object.values(steps).flatMap(s => s[key] || []))];
+const specOf = (steps, lean = false) => [
+  CC.pick(union(steps, "cc").filter(h => !(lean && LEAN_DROPS.has(h)))),
+  !lean && union(steps, "wr").length ? WR.pick(union(steps, "wr")) : "",
+  lean ? "" : "# Evidence (material_truth.md)\n\n" + MT.pick(union(steps, "mt"))
+].filter(Boolean).join("\n\n");
+
+/* ------------------------------------------------------------- arguments --*/
+const [cmd, id, ...rest] = process.argv.slice(2);
+const USAGE = "usage: author.mjs <begin|write|done|finish|status|redo|reset|plan> <course-id> [args]";
+const say = s => console.log(s);
+/* Every refusal is logged where the course is, so the record of a build does
+   not depend on the agent keeping a readable transcript. */
+const fail = s => {
+  console.log(s);
+  try { if (existsSync(courseDir)) note(courseDir, `\`author ${process.argv.slice(2).join(" ")}\` → ${s}`); }
+  catch { /* the log must never break a command */ }
+  process.exit(1);
+};
+if (!cmd || !id) fail(USAGE);
+const courseDir = join(COURSES, id);
+if (!existsSync(courseDir)) fail(`courses/${id} does not exist (npm run new -- ${id} "Title")`);
+
+const flag = f => rest.includes(f);
+const positional = rest.filter((a, i) => !a.startsWith("--") && rest[i - 1] !== "--source");
+const lean = flag("--lean"), research = flag("--research"), confident = flag("--confident");
+const stateDir = join(STATE, id);
+const marker = name => join(stateDir, `${name}.done`);
+const rootsFile = join(stateDir, "roots.txt");
+const today = new Date().toISOString().slice(0, 10);
+/* Beside this file in a package, under tools/ in the repository. */
+const script = name => join(ENGINE, PACKAGED ? "scripts" : "tools", `${name}.mjs`);
+
+/* The roots `begin` recorded, checked again rather than trusted. */
+function savedRoots() {
+  const extra = existsSync(rootsFile) ? readFileSync(rootsFile, "utf8").split("\n").filter(Boolean) : [];
+  return resolveRoots(courseDir, extra.filter(existsSync));
+}
+
+/* ---------------------------------------------------------- placeholders --
+ * `npm run new` copies the template's worked example. A file byte-identical
+ * to its template copy is still the example and would read as finished work,
+ * so `begin` removes it; anything edited is kept.
  */
-const sub = (n, u) => ({ id: `${n}:${u.id}`, target: u.file, sub: u.id });
-
-const PHASES = [
-  { n: 1, key: "calibrate", what: "materials/expectations.md",
-    cc: ["0", "1*", "3", "11*"], mt: ["6*", "9*"],
-    pick: d => [{ id: "1:course", target: "materials/expectations.md",
-                  written: d.subs.length > 0 }] },
-
-  { n: 2, key: "sequence", what: "sections/NN-slug/_section.yaml",
-    cc: ["0", "1*", "2*", "3"], mt: ["4*"],
-    pick: d => [{ id: "2:course", target: "sections/", written: d.subs.length > 0 }] },
-
-  /* Phase 9 sits third in the run order. The number is historical, as the
-     truth files' numbering is: a phase id is a ledger key, and renumbering the
-     five phases below it would orphan every `.author/<id>.json` mid-course. */
-  { n: 9, key: "taxonomy", what: "categories/<key>.yaml",
-    cc: ["0", "1*", "2*", "5a"], mt: ["10*"],
-    pick: d => [{ id: "9:course", target: "categories/",
-                  written: d.cats.length > 0 }] },
-
-  { n: 3, key: "concepts", what: "concepts/<key>.yaml",
-    cc: ["0", "1*", "5*"], mt: ["4*"],
-    pick: d => d.concepts.map(c => ({ id: `3:${c.key}`,
-      target: `concepts/${c.key}.yaml`, written: c.body })) },
-
-  /* 13* rides along because this is the phase that writes prose. Without it the
-     voice rules are a document nothing reads at the moment they apply. */
-  { n: 4, key: "spine", what: "spine blocks",
-    cc: ["0", "1*", "6", "6.1", "6.2", "6.4", "6.6", "5a", "10*"],
-    wr: ["1*", "2*", "3*", "4*", "4a*", "5*", "6*"],
-    mt: ["2*", "3*", "5*", "10*"],
-    pick: d => d.subs.map(u => ({ ...sub(4, u), written: u.blocks > 0 })) },
-
-  { n: 5, key: "quizzes", what: "quiz items",
-    cc: ["0", "1*", "6.5", "7*", "9"], mt: ["2*"],
-    pick: d => d.subs.map(u => ({ ...sub(5, u), written: u.quiz > 0, needs: !u.blocks })) },
-
-  { n: 6, key: "drills", what: "drills/<key>.yaml",
-    cc: ["0", "1*", "8*"], mt: ["8*"],
-    pick: d => d.concepts.filter(c => c.review)
-      .map(c => ({ id: `6:${c.key}`, target: `drills/${c.key}.yaml`, written: c.drills > 0 })) },
-
-  { n: 7, key: "tiers", what: "depth and apply blocks",
-    cc: ["0", "1*", "6.3", "14"],
-    wr: ["1*", "2*", "3*", "4*", "4a*", "5*", "6*"], mt: ["7*"],
-    pick: d => d.subs.map(u => ({ ...sub(7, u),
-      written: u.tiers.size > 1, needs: !u.blocks })) },
-
-  { n: 8, key: "verify", what: "re-derive every answer",
-    cc: ["0", "1*", "12*"], mt: ["6*", "9*"],
-    pick: d => d.subs.map(u => ({ ...sub(8, u), written: false, needs: !u.blocks })) }
-];
-
-/* Live: everything unwritten whose prerequisite exists. Fresh: everything. */
-const unitsOf = (p, d, led, fresh) =>
-  p.pick(d).filter(u => fresh || (!u.written && !u.needs && !led.has(u.id)));
-
-const phaseOf = id => PHASES.find(p => p.n === Number(String(id).split(":")[0]));
-
-/* ---------------------------------------------------------------- ledger --
- * Kept outside courses/ so a course folder stays pure data, and so a stray
- * .json never reaches load.mjs.
- */
-const ledgerPath = id => join(ROOT, ".author", `${id}.json`);
-
-function ledger(id) {
-  const p = ledgerPath(id);
-  const done = existsSync(p) ? new Set(JSON.parse(readFileSync(p, "utf8")).done) : new Set();
-  return {
-    done,
-    has: u => done.has(u),
-    mark(u) {
-      done.add(u);
-      mkdirSync(dirname(p), { recursive: true });
-      writeFileSync(p, JSON.stringify({ done: [...done] }, null, 2));
-    },
-    clear(phase) {
-      for (const u of [...done]) if (!phase || u.startsWith(phase + ":")) done.delete(u);
-      mkdirSync(dirname(p), { recursive: true });
-      writeFileSync(p, JSON.stringify({ done: [...done] }, null, 2));
+function placeholders() {
+  const tpl = TEMPLATE;
+  const out = [];
+  const walk = d => {
+    for (const f of readdirSync(d)) {
+      const p = join(d, f);
+      if (statSync(p).isDirectory()) { walk(p); continue; }
+      const rel = relative(tpl, p);
+      if (rel === "course.yaml") continue;
+      const mine = join(courseDir, rel);
+      if (existsSync(mine) && readFileSync(mine).equals(readFileSync(p))) out.push(rel);
     }
+  };
+  if (existsSync(tpl)) walk(tpl);
+  return out;
+}
+
+/* --------------------------------------------------------------- progress --*/
+function progress() {
+  const d = digest(courseDir);
+  const map = loadMap(WORKSPACE, id);
+  const key = u => relative(courseDir, u.file);
+  return {
+    d,
+    done: d.subs.filter(u => key(u) in map),
+    todo: d.subs.filter(u => !(key(u) in map)),
+    courseDone: existsSync(marker("course")),
+    finished: existsSync(marker("finish"))
   };
 }
 
-/* --------------------------------------------------------------- prompts --
- * Two parts, deliberately. `prefix` is identical for every unit in a phase, so
- * it is one cache write and then cache reads at a tenth of the price. `body`
- * is the only thing that varies, and it is kept small on purpose.
- */
-function prefix(phase, reader) {
+const thin = u => !u.blocks ? "no spine blocks" : !u.quiz ? "no quiz items" : null;
+const researchFile = u => join(courseDir, "sources", "research",
+  `${relative(join(courseDir, "sections"), dirname(u.file))}.md`);
+
+/* Warnings, never refusals. A check here is a heuristic — it counts blocks, it
+   does not read them — and the model writing the course knows things it does
+   not. Blocking would cost a turn to argue with; a warning costs a line, and
+   the same line lands in the log for a person to judge later. */
+const warn = text => {
+  say(`warning: ${text}`);
+  try { note(courseDir, `\`author ${process.argv.slice(2).join(" ")}\` → warning: ${text}`); }
+  catch { /* the log must never break a command */ }
+};
+
+/* What to write next, in one line, so no command has to repeat the rules. */
+function pointer(p) {
+  if (!p.courseDone) return `Next: steps 0-4 above, then \`author write ${id}\`.`;
+  const u = p.todo[0];
+  if (!u) return `Next: the drills, then \`author finish ${id}\`.`;
+  const sec = p.d.sections.find(s => s.subs.includes(u));
   return [
-    "# Authoring spec (excerpt)",
-    "",
-    "You are writing one unit of a course. Follow these rules exactly.",
-    "Emit only the file content asked for. No commentary, no fences.",
-    "",
-    CC.pick(phase.cc),
-    "",
-    phase.wr ? WR.pick(phase.wr) : "",
-    phase.wr ? "" : null,
-    "# The reader (§1, filled in)",
-    "",
-    "```yaml",
-    reader,
-    "```",
-    "",
-    "# Evidence",
-    "",
-    MT.pick(phase.mt)
-  ].filter(x => x !== null).join("\n");
+    `Next: ${u.id} ${u.title}  (${p.done.length}/${p.d.subs.length} done)`,
+    `  file:    courses/${id}/${relative(courseDir, u.file)}` +
+      (u.blocks ? `  — has ${u.blocks} blocks, ${u.quiz} quiz items: read it and continue` : ""),
+    `  section: ${sec.id} ${sec.title} (${sec.subs.map(x => x.id).join(", ")})`,
+    research && !existsSync(researchFile(u))
+      ? `  research: none for this section yet — course-researcher writes ` +
+        `courses/${id}/${relative(courseDir, researchFile(u))}, one \`## \` per subsection title` : "",
+    `  then:    author done ${id} ${u.id} <source>...`
+  ].filter(Boolean).join("\n");
 }
 
-function body(phase, unit, d, courseDir) {
-  const parts = [`# This unit\n\nPhase ${phase.n} (${phase.key}). Write: ${phase.what}`,
-    `Target file: ${unit.target}`];
+function briefText(which, reader) {
+  const steps = which === "course" ? COURSE_STEPS : WRITING_STEPS;
+  const procedure = which === "course" ? [
+    research ? "0. Research, if the sources are thin: course-researcher works out the scope and saves " +
+      "it to sources/research/scope.md (one `## ` per topic, in teaching order, with URLs). Use an " +
+      "authoritative outline (syllabus, exam spec, standard textbook) where one exists and fits the " +
+      "reader's goal; many subjects have none, so build it from the best reference material and say " +
+      "so. Never present an invented outline as official." : "",
+    "1. materials/expectations.md: every source topic taught, bridged, or under Skip with a reason.",
+    "2. sections/NN-slug/_section.yaml for each section, and for each subsection a " +
+      "sections/NN-slug/N-slug.yaml holding only its title.",
+    "3. categories/<key>.yaml, or none if the material has no such kinds.",
+    "4. The concept set: ideas used in three or more places, and which of them are the review set. " +
+      `course-drafter writes each concepts/<key>.yaml (rules: .author/${id}/rules-concepts.md).`,
+    `Then \`author write ${id}\`, which gives you the writing rules and the first subsection.`
+  ] : [
+    "For each subsection, finished before the next begins:",
+    "  - Read what it needs from its sources in one turn (parallel reads; part of a large file only).",
+    "  - Write the file once: spine (§6), then quizzes (§7), then depth and apply (§6.3)" +
+      (lean ? " — lean: depth only where a key rule's derivation did not fit the spine, no apply tier" : "") + ".",
+    "    Work every quiz answer out before writing it; `verified: <today>` only on answers you worked out.",
+    "    A source topic you do not teach gets a YAML comment at the top of the file: " +
+      "`# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",
+    confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",
+    `  - \`author done ${id} <sN-M> <source>...\` records it and names the next one. Its warnings are ` +
+      "advice, not gates: fix what is worth fixing and carry on.",
+    "When none are left: course-drafter writes drills/<key>.yaml for each review concept (rules: " +
+      `.author/${id}/rules-drills.md)` + (confident ? ", whose answers you then check" : "") +
+      `, then \`author finish ${id}\`.`
+  ];
+  return [
+    `# ${which === "course" ? "Steps 0-4: the shape of the course" : "Steps 5-7: writing it"}` +
+      `${lean ? " (lean)" : ""}. Today is ${today}.`,
+    "Keep these rules for the rest of the conversation; ask for them again only after a compaction.",
+    procedure.filter(Boolean).join("\n"),
+    `## The reader\n\n\`\`\`yaml\n${reader}\n\`\`\``,
+    `## The spec (§-numbers are create_course.md)\n\n${specOf(steps, lean)}`
+  ].join("\n\n");
+}
 
-  /* Coverage is what non-redundancy needs, and all it needs. */
-  if (d.text) parts.push(`# Already covered elsewhere in this course\n\n${d.text}`);
+function readerOrDie() {
+  try { return readReader(READER); } catch (e) { fail(e.message); }
+}
 
-  /* Phases that rewrite one subsection need that subsection, and only it. */
-  if (unit.sub && phase.n >= 5) {
-    const u = d.subs.find(s => s.id === unit.sub);
-    if (u && existsSync(u.file)) {
-      parts.push(`# Current contents of ${unit.sub}\n\n${readFileSync(u.file, "utf8")}`);
+/* ------------------------------------------------------------- commands --*/
+const commands = {
+
+  /* The first call, and the only one that has to be made: what exists, what
+     the sources are, and the rules for the part that is not written yet. */
+  begin() {
+    const sourceArgs = rest.flatMap((a, i) => a === "--source" ? [rest[i + 1]] : []);
+    if (sourceArgs.some(s => !s || s.startsWith("--"))) fail("--source needs a path");
+    let roots;
+    try {
+      roots = sourceArgs.length || !existsSync(rootsFile)
+        ? resolveRoots(courseDir, sourceArgs, process.env.INIT_CWD || process.cwd())
+        : savedRoots();
+    } catch (e) { fail(e.message); }
+
+    const left = placeholders();
+    for (const rel of left) {
+      rmSync(join(courseDir, rel));
+      for (let d = dirname(join(courseDir, rel)); d !== courseDir && !readdirSync(d).length; d = dirname(d))
+        rmSync(d, { recursive: true });
     }
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(rootsFile, roots.join("\n") + "\n");
+    for (const [name, steps] of Object.entries(DRAFTER))
+      writeFileSync(join(stateDir, `rules-${name}.md`), specOf({ [name]: steps }));
+
+    const files = list(roots);
+    const p = progress();
+    if (left.length) say(`removed untouched template examples: ${left.join(", ")}`);
+    say(`# ${id}: ${p.done.length}/${p.d.subs.length} subsections written` +
+      `${p.finished ? ", finished" : ""}\n`);
+    if (files.some(f => f.text)) {
+      say("## Sources (read what a subsection needs when you reach it, not all of this now)\n");
+      say(index(roots, files));
+      say("\n### Headings of the document files\n");
+      say(outline(roots, files) || "(none)");
+      say("");
+    } else {
+      say("## Sources\n\nNone. Research them (course-researcher), rerun with --source PATH, or write " +
+        "from what you know and mark every def, key and trap `source: generated`.\n");
+    }
+    say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-drills.md\n`);
+    if (p.courseDone || p.d.subs.length) {
+      say(`The course already has its sections. \`author write ${id}\` for the writing rules.`);
+      if (!p.courseDone) warn("steps 0-4 were never recorded; `author write` records them");
+    } else {
+      say(briefText("course", readerOrDie()));
+    }
+    say("\n" + pointer(p));
+  },
+
+  /* The second call: the writing rules, once, and the first subsection. */
+  write() {
+    const p = progress();
+    if (!p.courseDone) {
+      const missing = [
+        !existsSync(join(courseDir, "materials", "expectations.md")) && "materials/expectations.md",
+        !p.d.subs.length && "subsection files under sections/",
+        !p.d.concepts.length && "concept files",
+        p.d.concepts.some(c => !c.body) && "bodies in every concept file"
+      ].filter(Boolean);
+      if (missing.length) warn(`steps 0-4 look unfinished: no ${missing.join(", no ")}. ` +
+        "Carry on if that is deliberate.");
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(marker("course"), today);
+    }
+    say(briefText("writing", readerOrDie()));
+    say("\n" + pointer(progress()));
+  },
+
+  /* Once per subsection, and the only thing it adds is the next one. */
+  done() {
+    const [sub, ...sources] = positional;
+    if (!sub) fail(`usage: author done ${id} <sN-M> [source]...`);
+    const p = progress();
+    const u = p.d.subs.find(x => x.id === sub);
+    if (!u) fail(`no subsection ${sub} (have ${p.d.subs.map(x => x.id).join(", ")})`);
+    const why = thin(u);
+    if (why) warn(`${sub} has ${why}; recorded anyway`);
+    const file = relative(courseDir, u.file);
+    if (!flag("--no-validate")) {
+      const v = spawnSync(process.execPath, [script("validate"), id], { encoding: "utf8" });
+      const mine = (v.stdout || "").split("\n")
+        .filter(l => /✗/.test(l) && (l.includes(file) || l.includes(u.title) || new RegExp(`\\b${sub}\\b`).test(l)));
+      if (mine.length) warn(`validate on ${sub}:\n${mine.slice(0, 12).join("\n")}`);
+    }
+    const unknown = sources.filter(x => !x.startsWith("/") || !existsSync(x.split("#")[0]));
+    if (unknown.length) warn(`sources should be absolute paths that exist: ${unknown.join(", ")}`);
+    const map = mapPath(WORKSPACE, id);
+    mkdirSync(dirname(map), { recursive: true });
+    const kept = existsSync(map) ? readFileSync(map, "utf8").split("\n")
+      .filter(l => l && l.split(":")[0].trim() !== file) : [];
+    writeFileSync(map, [...kept, `${file}: ${sources.join(" | ") || "NONE"}`].join("\n") + "\n");
+    say(pointer(progress()));
+  },
+
+  /* The last call: the three course-wide checks, cut to what needs doing. */
+  finish() {
+    const run = (name, ...a) => spawnSync(process.execPath, [script(name), ...a], { encoding: "utf8" });
+    const p = progress();
+    if (p.todo.length) warn(`not written yet: ${p.todo.map(u => u.id).join(", ")}`);
+    const noDrills = p.d.concepts.filter(c => c.review && !c.drills).map(c => c.key);
+    if (noDrills.length) warn(`review concepts with no drills: ${noDrills.join(", ")}`);
+    const g = run("gen-materials", id);
+    say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
+    const v = run("validate", id);
+    const errs = (v.stdout || "").split("\n").filter(l => /✗/.test(l));
+    say(errs.length ? `validate: ${errs.length} errors\n${errs.slice(0, 30).join("\n")}` : "validate: ok");
+    const c = run("coverage", id);
+    const lines = (c.stdout || c.stderr || "").split("\n");
+    const flagged = lines.filter(l => /^\s+! |missing:|^Named by no|^  \//.test(l));
+    const summary = lines.filter(l => /topics below/.test(l)).join(" ") || "no report";
+    say(`coverage: ${summary}` + (flagged.length ? `\n${flagged.slice(0, 60).join("\n")}` : ""));
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(marker("finish"), today);
+    note(courseDir, `\`author finish ${id}\` → materials ${g.status === 0 ? "ok" : "FAILED"}, ` +
+      `validate ${errs.length ? errs.length + " errors" : "ok"}, coverage: ${summary}`);
+    say(`\nRecorded as finished. Teach each flagged topic or list it under Skip, or leave it: ` +
+      `nothing here blocks. \`author redo ${id} <sN-M>\` to revise.`);
+  },
+
+  status() {
+    const p = progress();
+    say(`${id}: steps 0-4 ${p.courseDone ? "done" : "to do"} · ${p.done.length}/${p.d.subs.length} ` +
+      `subsections · finish ${p.finished ? "done" : "to do"}`);
+    if (p.todo.length) say(`to write: ${p.todo.map(u => u.id).join(", ")}`);
+    const thinDone = p.done.filter(thin);
+    if (thinDone.length) say(`recorded but thin: ${thinDone.map(u => `${u.id} (${thin(u)})`).join(", ")}`);
+    const left = placeholders();
+    if (left.length) say(`untouched template examples (begin removes them): ${left.join(", ")}`);
+    say(pointer(p));
+    if (flag("--digest") && p.d.text) say(`\nWhat the course already covers:\n${p.d.text}`);
+  },
+
+  redo() {
+    if (!positional.length || positional.some(r => !/^(s\d+-\d+|course|finish)$/.test(r)))
+      fail(`usage: author redo ${id} <sN-M|course|finish>...`);
+    const d = digest(courseDir);
+    const unknown = positional.filter(r => r.startsWith("s") && !d.subs.some(u => u.id === r));
+    if (unknown.length) fail(`no subsection ${unknown.join(", ")}`);
+    const files = new Set(d.subs.filter(u => positional.includes(u.id)).map(u => relative(courseDir, u.file)));
+    const map = mapPath(WORKSPACE, id);
+    if (files.size && existsSync(map)) {
+      writeFileSync(map, readFileSync(map, "utf8").split("\n")
+        .filter(l => !files.has(l.split(":")[0].trim())).join("\n"));
+    }
+    if (positional.includes("course")) rmSync(marker("course"), { force: true });
+    if (files.size || positional.includes("finish")) rmSync(marker("finish"), { force: true });
+    say(`reopened ${positional.join(", ")}: read each file, change what was asked, then ` +
+      `\`author done ${id} <sN-M>\` again.`);
+    say(pointer(progress()));
+  },
+
+  reset() {
+    for (const f of [mapPath(WORKSPACE, id), marker("course"), marker("finish")]) rmSync(f, { force: true });
+    say(`forgot progress for ${id}; the course files are untouched`);
+  },
+
+  /* What the rules weigh: they sit in context for the whole conversation. */
+  plan() {
+    const p = progress();
+    let files = [];
+    try { files = list(savedRoots()); } catch { /* sources moved since begin */ }
+    const text = files.filter(f => f.text);
+    for (const l of [false, true]) {
+      say(`begin (steps 0-4 rules)${l ? " --lean" : "       "}  ~${est(specOf(COURSE_STEPS, l))} tok    ` +
+          `write (writing rules)${l ? " --lean" : ""}  ~${est(specOf(WRITING_STEPS, l))} tok`);
+    }
+    say(`sources: ${text.length} readable files, ~${Math.round(text.reduce((n, f) => n + f.bytes, 0) / 4)} tok ` +
+      "in all (read per subsection, not at once)");
+    say(`subsections: ${p.done.length} written, ${p.todo.length} left`);
+    say("Every turn re-reads the conversation from cache (~0.1x price): the rules' size and the " +
+      "number of turns drive the cost. --lean shrinks the rules; one write per subsection keeps turns down.");
   }
+};
 
-  const src = join(courseDir, "sources", `${unit.sub || "course"}.md`);
-  if (existsSync(src)) parts.push(`# Source material\n\n${readFileSync(src, "utf8")}`);
-  else parts.push(`# Source material\n\n(none at ${src} — flag anything unverifiable)`);
-
-  return parts.join("\n\n");
-}
-
-/* ------------------------------------------------------------------ main --*/
-const [cmd, id, ...rest] = process.argv.slice(2);
-if (!cmd || !id) {
-  console.error("usage: author.mjs <plan|status|next|done|reset> <course-id> [args]");
-  process.exit(1);
-}
-const courseDir = join(ROOT, "courses", id);
-if (!existsSync(courseDir)) { console.error(`courses/${id} does not exist`); process.exit(1); }
-
-/* `plan` and `status` describe work rather than emit it, so they cost the
-   profile without demanding one. `next` is the command that actually produces
-   a prompt, and it stops rather than guessing. */
-let reader;
-if (cmd === "next") {
-  try { reader = readReader(READER); }
-  catch (e) { console.error(e.message); process.exit(1); }
-} else reader = peekReader(READER);
-
-const d = digest(courseDir);
-const led = ledger(id);
-const fresh = rest.includes("--fresh");
-const pending = PHASES.flatMap(p => unitsOf(p, d, led, false).map(u => ({ ...u, phase: p })));
-
-if (cmd === "plan") {
-  const full = est(readFileSync(join(ROOT, "docs/create_course.md"), "utf8")) +
-               est(readFileSync(join(ROOT, "docs/material_truth.md"), "utf8")) +
-               est(readFileSync(join(ROOT, "docs/writing.md"), "utf8"));
-  console.log(`courses/${id} — ${d.sections.length} sections, ${d.subs.length} subsections, ` +
-              `${d.concepts.length} concepts` + (fresh ? "   [full build]" : "   [remaining]") + "\n");
-  console.log("phase                units   prefix   body   per-unit   phase total");
-  console.log("-".repeat(70));
-  let total = 0, naiveSpec = 0, units = 0;
-  for (const p of PHASES) {
-    const us = unitsOf(p, d, led, fresh);
-    if (!us.length) continue;
-    const pre = est(prefix(p, reader));
-    const bod = Math.round(us.reduce((n, u) => n + est(body(p, u, d, courseDir)), 0) / us.length);
-    const cost = pre + bod * us.length;         /* prefix cached after unit 1 */
-    total += cost; naiveSpec += (full + bod) * us.length; units += us.length;
-    console.log(`${String(p.n) + " " + p.key}`.padEnd(20) +
-      String(us.length).padStart(5) + String(pre).padStart(9) +
-      String(bod).padStart(7) + String(pre + bod).padStart(11) + String(cost).padStart(14));
-  }
-  const conv = units * full + 1000 * (units * (units - 1) / 2);
-  console.log("-".repeat(70));
-  console.log(`sliced spec + digest, prefix cached:       ${String(total).padStart(10)} tok  1.0x`);
-  console.log(`same units, full spec resent every call:   ${String(naiveSpec).padStart(10)} tok  ` +
-    `${(naiveSpec / total).toFixed(1)}x`);
-  console.log(`one growing conversation (~1k out/unit):   ${String(conv).padStart(10)} tok  ` +
-    `${(conv / total).toFixed(1)}x`);
-  console.log(`\n${units} units. Estimates are chars/4; --fresh uses the finished ` +
-    `digest, so early units are overstated.`);
-}
-
-if (cmd === "status") {
-  for (const p of PHASES) {
-    const all = p.pick(d);
-    const left = unitsOf(p, d, led, false).length;
-    if (!all.length) continue;
-    console.log(`${p.n} ${p.key.padEnd(10)} ${all.length - left}/${all.length}` +
-      (left ? `   next: ${unitsOf(p, d, led, false)[0].id}` : "   complete"));
-  }
-  console.log(pending.length ? `\n${pending.length} units pending` : "\nnothing pending");
-}
-
-if (cmd === "next") {
-  const u = pending[0];
-  if (!u) { console.log("nothing pending"); process.exit(0); }
-  const pre = prefix(u.phase, reader), bod = body(u.phase, u, d, courseDir);
-  if (rest.includes("--raw")) { console.log(pre + "\n\n" + bod); process.exit(0); }
-  console.error(`unit ${u.id} -> ${u.target}   prefix ~${est(pre)} tok (cacheable), ` +
-                `body ~${est(bod)} tok`);
-  console.log(pre + "\n\n" + bod);
-}
-
-if (cmd === "done") {
-  const u = rest[0];
-  if (!u) { console.error("usage: author.mjs done <course-id> <unit-id>"); process.exit(1); }
-  if (!phaseOf(u)) { console.error(`"${u}" names no phase`); process.exit(1); }
-  led.mark(u);
-  console.log(`marked ${u}`);
-}
-
-if (cmd === "reset") { led.clear(rest[0]); console.log(`cleared ${rest[0] || "everything"}`); }
+if (!commands[cmd]) fail(USAGE);
+commands[cmd]();

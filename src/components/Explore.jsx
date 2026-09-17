@@ -162,7 +162,7 @@ export default function Explore({ ctx, seed }) {
         <p class="xcount">
           {res.length
             ? `${res.length}${res.length === 200 ? "+" : ""} ${res.length === 1 ? "result" : "results"}`
-            : q.trim() || faceted ? "Nothing matches." : "Type a query, or pick a facet."}
+            : q.trim() || faceted ? "Nothing found." : ""}
         </p>
       </div>
 

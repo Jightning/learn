@@ -1547,12 +1547,10 @@ for (const cid of ids) {
    *
    * It used to open as a form — three dropdowns and a dead checkbox — in front
    * of the activity with the largest effect on the site, when all four controls
-   * already had the right default. Start is now primary and says in words what
-   * it will draw; the controls are one disclosure away. */
+   * already had the right default. Start is now primary; the controls are one
+   * disclosure away. */
   ck(P("practice opens on Start, not on a form"),
      await page.locator("#p-start").isVisible());
-  ck(P("and says what it will draw"),
-     (await page.locator(".pgo-w").innerText()).trim().length > 12);
   ck(P("the controls are not in the way"),
      await page.locator(".pcfg-row").isVisible() === false);
   /* A control nothing reads is a promise the page does not keep. */
@@ -1801,6 +1799,63 @@ for (const cid of ids) {
   const after = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   ck(P("theme toggle repaints"), before !== after, `${before} -> ${after}`);
   await shot(cid + "-dark");
+}
+
+/* ---------------------------------------------------------------------------
+ * Structure inside and between blocks, on the page that motivated it.
+ *
+ * ma26600 §1.6 carries all three: a procedure in `items:`, a depth "why"
+ * attached to the definition it explains, and an aside anchored to one step.
+ * Pinned to that subsection rather than swept, because each is authored in a
+ * handful of places and a sweep would pass vacuously wherever it is absent.
+ * ------------------------------------------------------------------------ */
+if (ids.includes("ma26600")) {
+  const P = n => `ma26600 §1.6: ${n}`;
+  await go("#/ma26600/s1-6");
+  const sub = page.locator("#s1-6");
+  const potential = sub.locator(".key", { hasText: "Building the potential" });
+  ck(P("a callout's steps render as a list"),
+     await potential.locator("ol.bitems > li").count() === 4);
+
+  /* The default lane hides depth, so the why is a stub hanging off its parent. */
+  const attached = sub.locator(".brow[data-follow] .tstub-t", { hasText: "The mixed-partials argument" });
+  ck(P("a hidden follow-up is a named stub"), await attached.count() === 1,
+     await sub.locator(".tstub-t").allInnerTexts().then(t => t.join(" | ")));
+  const rail = await sub.locator(".brow[data-follow] > .bmain").first()
+    .evaluate(el => getComputedStyle(el).borderLeftWidth).catch(() => "");
+  ck(P("a follow-up draws its rail"), rail === "2px", rail);
+  if (await attached.count()) {
+    await attached.click(); await page.waitForTimeout(300);
+    ck(P("the stub opens the why in place, still attached"),
+       await sub.locator(".brow[data-follow] .note", { hasText: "The mixed-partials argument" }).count() === 1);
+  }
+
+  /* The aside pairs with its phrase the way a concept card does. */
+  const anchor = sub.locator('.nref[data-xr="n:only-y"]');
+  const card = sub.locator('.mnote.is-a[data-xr="n:only-y"]');
+  ck(P("an anchored phrase is marked"), await anchor.count() === 1);
+  ck(P("its aside sits in the margin of the same row"),
+     await sub.locator('.brow:has(.nref[data-xr="n:only-y"]) .bside .mnote.is-a').count() === 1);
+  if (await anchor.count() && await card.count()) {
+    await anchor.hover(); await page.waitForTimeout(150);
+    ck(P("hovering the phrase lights its aside"),
+       await card.evaluate(el => el.classList.contains("hot")));
+  }
+  ck(P("no raw anchor markup reaches the page"),
+     !(await page.locator("#s1-6").innerHTML()).includes("<n "));
+
+  /* Review keeps the steps: they are the content, not development under a claim. */
+  await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+  const review = page.locator(".depth .lane-b", { hasText: "Review" });
+  if (await review.count()) {
+    await review.click(); await page.waitForTimeout(300);
+    ck(P("Review depth keeps a callout's steps open"),
+       await sub.locator("ol.bitems > li").count() >= 4);
+    ck(P("Review depth shows the phrase without its anchor mark"),
+       await sub.locator(".nrow .nref").count() === 0);
+    await page.locator(".depth .lane-b", { hasText: "Study" }).click(); await page.waitForTimeout(250);
+  }
+  await shot("ma26600-s1-6");
 }
 
 /* ---------------------------------------------------------------------------

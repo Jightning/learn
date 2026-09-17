@@ -18,10 +18,11 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { loadCourse } from "./lib/load.mjs";
 import { courseFiles, PUBLIC } from "./lib/files.mjs";
+import { COURSES as COURSES_DIR, WORKSPACE } from "./lib/paths.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const COURSES = join(ROOT, "courses");
-const OUT = join(ROOT, "packed");
+const COURSES = COURSES_DIR;
+const OUT = join(WORKSPACE, "packed");
 
 const args = process.argv.slice(2);
 const all = readdirSync(COURSES, { withFileTypes: true })

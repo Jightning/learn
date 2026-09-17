@@ -1,0 +1,13 @@
+{
+  "name": "learn",
+  "owner": {
+    "name": "learn"
+  },
+  "plugins": [
+    {
+      "name": "create-course",
+      "source": "./plugin",
+      "description": "Write study courses from sources, a repository, or research, with the checks the study-site engine expects."
+    }
+  ]
+}

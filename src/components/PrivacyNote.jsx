@@ -15,8 +15,7 @@ import { configured } from "../lib/cloud.js";
 export default function PrivacyNote() {
   if (!configured()) return (
     <p class="lede cal-priv">
-      Everything on this device stays on this device. Your answers, notes and
-      courses are stored in this browser and are not uploaded anywhere.
+      No sync, nothing will get uploaded.
     </p>
   );
   return (
