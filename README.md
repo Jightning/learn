@@ -55,7 +55,7 @@ npm run coverage -- ma26600  # does a comparison to see if the course is coverin
 
 ```sh
 # to add as a plugin
-/plugin marketplace add Jightning/learn-site
+/plugin marketplace add Jightning/learn
 /plugin install create-course@learn
 
 # adding as a plugin without installing
