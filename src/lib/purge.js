@@ -20,6 +20,7 @@
  *   stated reasons      why.dropWhy       why:<cid>:*
  *   reading lane        tiers.dropLane    lane:<cid>
  *   reading depth       depth.dropDepth   depth:<cid>
+ *   chosen accent       theme.dropHue     hue:<cid>
  *   replay checkpoint   replay.invalidate ckpt:<cid>
  *   outcome rows        log.dropCourse    the log itself
  *
@@ -32,6 +33,7 @@ import { reset as resetRetention } from "./retention.js";
 import { dropNotes } from "./notes.js";
 import { dropWhy } from "./why.js";
 import { dropDepth } from "./depth.js";
+import { dropHue } from "./theme.js";
 import { dropLane } from "./tiers.js";
 import { invalidate } from "./replay.js";
 import { dropCourse } from "./log.js";
@@ -51,6 +53,7 @@ export function purge(cid, code) {
   dropWhy(cid);
   dropLane(cid);
   dropDepth(cid);
+  dropHue(cid);
   invalidate(cid);
   return dropCourse(cid);
 }

@@ -6,12 +6,12 @@
  * a hue that the contrast sweep would then have to cover in three modes. */
 
 /* ---------------------------------------------------------------- the pair */
-/* Lane and depth sit on one line: they are two halves of one question about
-   how much material is on the page, and separating them read as two unrelated
-   toolbars stacked. */
+/* The lane's row. It was a pair — lane and depth on one line — until the depth
+   axis turned out to be the toolbar's Study / Review / Names under three other
+   names; see components/Sidebar.jsx. The container stays because the lane is
+   still a labelled row inside a band of them. */
 .lanes{display:flex;align-items:center;gap:.4rem 1.4rem;flex-wrap:wrap;margin:0 0 var(--sp-2)}
-.lanes .lane,.lanes .depth{margin:0}
-.depth{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+.lanes .lane{margin:0}
 
 
 /* ------------------------------------------------------------------- notes */

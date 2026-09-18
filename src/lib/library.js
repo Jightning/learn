@@ -14,6 +14,7 @@
 import { INDEX as BUILTIN, ORDER as BUILTIN_ORDER } from "virtual:courses";
 import { parseCourse } from "./parse.js";
 import { imported, importedIndex } from "./courses.js";
+import { ordered } from "./order.js";
 import { getItem, setItem } from "./store.js";
 
 /* Built-in courses the reader has dismissed.
@@ -95,7 +96,9 @@ export function refresh() {
   /* Only the *listing* drops a dismissed course. Its INDEX entry stays, so a
      bookmark still resolves and `taken` still refuses an import that would
      collide with it. */
+  /* Bundled first, then imported — and then the reader's own arrangement over
+     the top of that, which is what they see. See lib/order.js. */
   ORDER.length = 0;
-  ORDER.push(...BUILTIN_ORDER.filter(k => !gone.has(k)),
-             ...Object.keys(own).filter(k => !BUILTIN[k]));
+  ORDER.push(...ordered([...BUILTIN_ORDER.filter(k => !gone.has(k)),
+                         ...Object.keys(own).filter(k => !BUILTIN[k])]));
 }

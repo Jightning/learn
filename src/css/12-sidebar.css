@@ -88,17 +88,39 @@
   .tuck,.untuck{display:none}
 }
 
-/* ---------------------------------------------------------------- the axes
- * Lane and depth, at the foot of the navigation.
+/* ------------------------------------------------------------- the settings
+ * What the page gives you and what it looks like, at the foot of the
+ * navigation.
  *
  * They were in the content flow, between a section's blurb and its first
  * paragraph: two segmented controls, nine combinations, named after what the
  * engine filters. The mode switch in the toolbar is what a reader meets now,
- * and this is where the axes themselves live — on the page being read, as far
- * from the reading column as the layout allows, closed until asked for. */
+ * and this is where the rest lives — on the page being read, as far from the
+ * reading column as the layout allows, closed until asked for.
+ *
+ * Sticky, because the rail above it is as long as the course: on a 62-section
+ * course the panel sat 2000px down its own scroll port, which is a control the
+ * reader has to go looking for. It is the last child of the scrolling sidebar
+ * and the sidebar carries no bottom padding (10-shell.css), so bottom:0 pins it
+ * to the real edge.
+ */
 .axes{
-  margin:6px 0 calc(1rem + var(--safe-b));
-  border-top:1px solid var(--rule-2);padding:2px 14px 0;
+  position:sticky;bottom:0;z-index:2;
+  margin:6px 0 0;background:var(--surface);
+  border-top:1px solid var(--rule-2);padding:0 14px calc(2px + var(--safe-b));
+}
+/* Open, it stops being the last line of the list and becomes a thing in front
+ * of it: its own ground, its own border, and a shadow that only makes sense
+ * upward, since that is the only side the rail passes behind it on. Inset from
+ * both edges for the same reason — a panel flush with the sidebar's border
+ * reads as the sidebar's own foot, which is exactly the confusion the card is
+ * drawn to remove. */
+.axes[open]{
+  margin:10px 8px calc(8px + var(--safe-b));
+  padding:0 12px 12px;
+  background:var(--surface-2);
+  border:1px solid var(--rule);border-radius:4px;
+  box-shadow:0 -8px 22px -14px rgba(8,11,16,.45);
 }
 /* The marker is `.caret` (00-tokens) rather than the default triangle, which
    cannot take the state or sit on the text baseline. */
@@ -108,22 +130,26 @@
 }
 .axes>summary::-webkit-details-marker{display:none}
 .axes>summary:hover{color:var(--hi-ink)}
-.axes .lane,.axes .depth{
-  display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 8px;
-}
+.axes[open]>summary{color:var(--ink-2);border-bottom:1px solid var(--rule-2);margin-bottom:2px}
+
+/* Three parts, no headings and no rules between them. The panel is already
+   inside a disclosure and holds six controls; a label over each band was a
+   third level of structure over a list the eye takes in at once. What separates
+   them is the shape of the rows themselves — a line of chips, then two labelled
+   rows — and the space around them. */
+.axes-body{display:flex;flex-direction:column;padding:11px 0 2px}
+.axes .lane{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 8px}
 /* The rail is 308px and a three-button set plus its label does not fit on one
    line in it. The cycling button is the narrow form the responsive sheet
    already switches to, so here it is simply the one that shows. */
 .axes .lane-set{display:flex;gap:4px;flex-wrap:wrap}
 .axes .lane-cycle{display:none}
 .axes .lane-k{display:none}
-/* Reveal all, Theme and the zoom reset, which the toolbar used to hold. Set
-   off by a rule because they act on the page rather than on the two axes above
-   them, and wearing .lane-b so the panel is one kind of control throughout. */
-.axes-acts{
-  display:flex;flex-wrap:wrap;gap:5px;
-  margin:10px 0 2px;padding-top:10px;border-top:1px solid var(--rule-2);
-}
+/* Reveal all, Listen, Theme and the zoom reset, on one line above the settings
+   that stay set. They wrap rather than scroll: the rail is 308px and "Stop
+   reading" is a wide label, so a second line is the honest outcome at that
+   width and a clipped fourth control is not. */
+.axes-acts{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px}
 .axes-k{
   font-family:var(--ui);font-size:var(--fs-micro);color:var(--ink-3);
   margin:2px 0 4px;line-height:1.7;
@@ -133,3 +159,33 @@
   border-radius:3px;padding:0 4px;margin:0 2px;color:var(--ink-2);
   background:var(--surface);
 }
+
+/* ------------------------------------------------------------- the swatches
+ * The course's accent, offered as itself. Each swatch carries `data-hue`, so
+ * the token block in 00-tokens.css redeclares the whole palette against that
+ * angle and `var(--hi)` below paints the colour the course would actually be —
+ * the swatch is a sample, not an approximation of one.
+ *
+ * Square rather than round, and the same 3px radius as every other control
+ * here: a row of circles in a panel of rectangles reads as a different system.
+ */
+.hues{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 2px}
+.hue-set{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.hue-b{
+  width:20px;height:20px;padding:0;cursor:pointer;
+  background:var(--hi);border:1px solid var(--rule);border-radius:3px;
+}
+.hue-b:hover{border-color:var(--ink-3)}
+/* Selected is a ring outside the swatch, never a mark inside it: a tick drawn
+   on the colour has to clear contrast against all eight of them, and the
+   whole point of the control is that the swatch shows the colour undisturbed. */
+.hue-b.sel{border-color:var(--ink-2);box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--ink-2)}
+/* The author's own, which is a word because it is not a colour — it is
+   whichever colour the course declares, and naming it is the only honest
+   rendering. */
+.hue-own{
+  width:auto;height:auto;background:var(--surface);color:var(--ink-2);
+  font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;
+  padding:3px 8px;
+}
+.hue-own.sel{color:var(--ink);box-shadow:none;border-color:var(--ink-2)}

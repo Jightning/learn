@@ -74,6 +74,10 @@ export default function App() {
   }, []);
   const [, forceRender] = useState(0);
   const [zoom, setZoom] = useState(readZoom);
+  /* A repaint the course did not cause. The accent is written to the document
+     root by the effect below, and the reader choosing one changes nothing the
+     effect already depends on — so the choice has to say it was made. */
+  const [hueSet, setHueSet] = useState(0);
   const [lane, setLaneFor] = useState("apply");
   const [depth, setDepthFor] = useState("full");
   const contentRef = useRef(null);
@@ -190,7 +194,7 @@ export default function App() {
   setBlockConfig(course);
 
   useEffect(() => {
-    applyHue(course);
+    applyHue(course, cid);
     if (!course) return;
     /* One course's styles at a time. They used to be appended and never
        removed, so opening three courses left three stylesheets fighting. */
@@ -203,7 +207,7 @@ export default function App() {
       el.textContent = course.styles;
       document.head.appendChild(el);
     }
-  }, [course, cid]);
+  }, [course, cid, hueSet]);
 
   const labelFor = useCallback(
     id => (idx && id && idx.SUBS[id] ? labelOf(idx.SUBS, id) : (course ? course.title : "Courses")),
@@ -432,9 +436,9 @@ export default function App() {
           <Sidebar course={course} cid={cid} rest={rest} here={reading}
                    open={menuOpen} onNavigate={() => setMenuOpen(false)}
                    onTuck={toggleTuck}
-                   lane={lane} onLane={onLane} depth={depth} onDepth={onDepth}
+                   lane={lane} onLane={onLane}
                    due={dueHere} zoom={zoom} onZoomReset={() => setZoom(1)}
-                   speech={speech}
+                   speech={speech} onHue={() => setHueSet(n => n + 1)}
                    actions={{ expanded: expandAll,
                               onExpand: () => setExpandAll(v => !v) }} />
         )}

@@ -15,7 +15,7 @@
   font-family:var(--sans);font-size:var(--fs-small);color:var(--ink-3);
   margin-top:9px;letter-spacing:.02em;
 }
-.rail{position:relative;padding:10px 16px 0 0}
+.rail{position:relative;padding:10px 16px 18px 0}
 .rail::before{
   content:"";position:absolute;left:var(--rail);top:0;bottom:0;width:1px;
   background:var(--rule-2);

@@ -3,7 +3,7 @@ import { IconStart, IconIndex, IconPractice, IconMap, IconTuck, IconExplore,
          IconReview } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
 import LaneSelect from "./LaneSelect.jsx";
-import DepthSelect from "./DepthSelect.jsx";
+import HueSelect from "./HueSelect.jsx";
 
 /* State is carried by the number itself — weight, colour and an edge marker.
    The previous 26x18px pulse was too small to read as a signal and landed as a
@@ -21,8 +21,8 @@ function Cycle({ n, active, visited }) {
 const EDGE = 28;
 
 export default function Sidebar({ course, cid, rest, here, open, onNavigate, onTuck, actions,
-                                  lane, onLane, depth, onDepth, due, zoom, onZoomReset,
-                                  speech }) {
+                                  lane, onLane, due, zoom, onZoomReset,
+                                  speech, onHue }) {
   const H = r => `#/${cid}${r ? "/" + r : ""}`;
   const rail = useRef(null);
 
@@ -142,45 +142,58 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
         })}
       </nav>
 
-      {/* The two axes the mode switch presets, for a reader who wants them
-          directly.
+      {/* Everything that is a setting rather than a place.
        *
-       * They used to sit between a section's blurb and its first paragraph —
-       * nine combinations and two unexplained taxonomies in front of the
-       * material. They are not removed, because a course whose blocks are
-       * almost all spine still needs both, and because the value of provided
-       * support reverses with expertise: the right amount is a property of who
-       * is reading, so the reader has to be able to reach it.
+       * It used to be called "Reading options" and hold the two axes the mode
+       * switch presets. The depth axis has gone: Study / Review / Names in the
+       * toolbar is the same three states under names that say what they are
+       * for, and two controls for one setting is one control too many — the
+       * reader who found both had to work out that they were the same thing.
+       * The lane is not that, so it stays: it is the one question the mode
+       * switch cannot ask on its own.
        *
-       * Here, at the foot of the navigation, is as far from the reading column
-       * as it gets while still being on the page the reader is reading. It is
-       * a <details>, closed by default, so it costs one line until it is
-       * wanted; the keys keep working whether or not it is open. */}
+       * What is left reads top to bottom by how long a control's reach is: the
+       * page actions first, on one line, because they are pressed mid-read and
+       * forgotten; then the two settings that stay set — the lane, and the
+       * colour the course wears on this device.
+       *
+       * It sits at the foot of the navigation and sticks there — the rail above
+       * it is as long as the course, and a panel that scrolls away is a panel
+       * that is not there on a 62-section course. Closed it is one line; open
+       * it is a card, set on its own ground and inside its own border, so that
+       * a panel that overlaps the section list is obviously in front of it
+       * rather than part of it. */}
       {onLane && (
         <details class="axes">
-          <summary><i class="caret" aria-hidden="true" />Reading options</summary>
-          <LaneSelect lane={lane} onLane={onLane} />
-          <DepthSelect depth={depth} onDepth={onDepth} />
-          {/* The three the toolbar used to carry. They sit under the two axes
-              rather than beside them because they are settings of the same
-              kind — what the page shows, not where the page is — and because
-              this is the only panel on the site that already means that. */}
-          <div class="axes-acts">
-            <CourseActions inCourse cls="lane-b"
-                           expanded={actions.expanded} onExpand={actions.onExpand}
-                           zoom={zoom} onZoomReset={onZoomReset} />
-            {/* Listen belongs with the other two axes because it is the same
-                kind of setting: what the page gives you, not where the page is.
-                It is also the one control that must be reached by a real press
-                — iOS and Chrome only let speech start from a user gesture, so
-                this button is the gesture and nothing may start without it.
-                Absent where the browser has no speech engine at all. */}
-            {speech && speech.supported && (
-              <button class="lane-b spk-go" data-on={speech.live || undefined}
-                      onClick={speech.live ? speech.stop : speech.start}>
-                {speech.live ? "Stop reading" : "▶ Listen"}
-              </button>
-            )}
+          <summary><i class="caret" aria-hidden="true" />Settings</summary>
+          <div class="axes-body">
+            {/* The four page actions on one line, above the two settings that
+                take a row each. They are the controls with the shortest reach —
+                pressed mid-read and then forgotten — so they go where the eye
+                lands first, and they are short enough that four of them fit the
+                rail's width. No headings over the three parts: with six
+                controls in a panel that is already inside a disclosure, a label
+                per band was a third level of structure over a list you can read
+                in one glance. */}
+            <div class="axes-acts">
+              <CourseActions inCourse cls="lane-b" show="page"
+                             expanded={actions.expanded} onExpand={actions.onExpand}
+                             zoom={zoom} onZoomReset={onZoomReset} />
+              {/* Listen is the one control that must be reached by a real press:
+                  iOS and Chrome only let speech start from a user gesture, so
+                  this button is the gesture and nothing may start without it.
+                  Absent where the browser has no speech engine at all. */}
+              {speech && speech.supported && (
+                <button class="lane-b spk-go" data-on={speech.live || undefined}
+                        onClick={speech.live ? speech.stop : speech.start}>
+                  {speech.live ? "Stop reading" : "▶ Listen"}
+                </button>
+              )}
+              <CourseActions inCourse cls="lane-b" show="look" />
+            </div>
+
+            <LaneSelect lane={lane} onLane={onLane} />
+            <HueSelect cid={cid} onHue={onHue} />
           </div>
         </details>
       )}

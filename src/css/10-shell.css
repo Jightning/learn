@@ -18,7 +18,13 @@
      installed app, bottom because it ends at the home indicator, left because
      below the breakpoint this is a drawer pinned to a screen edge the notch
      can occupy in landscape. */
-  padding:calc(22px + var(--safe-t)) 0 calc(40px + var(--safe-b));
+  /* No bottom padding. The settings panel at the foot sticks to the bottom of
+     this scroll port (12-sidebar.css), and a sticky box is clamped to its
+     parent's *content* box — 40px of padding under it would park it 40px short
+     of the edge and it would never look pinned. The breathing room the padding
+     was there for is on .rail instead, where it belongs: it is space below the
+     last section, not below the panel. */
+  padding:calc(22px + var(--safe-t)) 0 0;
   padding-left:var(--safe-l);
 }
 main{padding:0 0 calc(40px + var(--safe-b));min-width:0}

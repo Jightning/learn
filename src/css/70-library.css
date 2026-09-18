@@ -61,6 +61,21 @@
 }
 .lop:hover{border-color:var(--hi);color:var(--hi-ink)}
 .lop.warn:hover{border-color:var(--wn);color:var(--wn-ink)}
+/* The handle that moves a card. An icon rather than a word because the card's
+   foot has room for one line and the other two controls are verbs that cannot
+   be drawn — and because the two columns of dots are already what "drag me"
+   looks like everywhere else. `grab` over `move`: the cursor names what the
+   hand does, not what happens afterwards. */
+.lgrab{display:inline-flex;align-items:center;padding:4px 7px;cursor:grab;
+  color:var(--ink-3)}
+.lgrab:active{cursor:grabbing}
+.lgrab:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+/* Carrying a card, and the card it is over. The one being dragged fades rather
+   than disappears — it is still on the shelf, it is just in the reader's hand —
+   and the target takes the accent edge on the side the card would land on.
+   Colour is not alone in either: one is opacity, the other is a 3px edge. */
+.lcard.is-held{opacity:.45}
+.lcard.is-over{border-color:var(--hi);border-left:3px solid var(--hi)}
 .lcard .lc{font-family:var(--mono);font-size:var(--fs-meta);color:var(--hi-ink);letter-spacing:.05em}
 /* The due count is a badge on the card, not a word in its text flow. It used
    to be `float:right` in the calibration sheet, which the card's column layout

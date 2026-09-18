@@ -144,10 +144,17 @@ tbody tr:last-child td{border-bottom:0}
 .tscroll,pre{max-width:100%}
 
 /* Where a claim came from. Text, never colour alone: an unverified one says so
-   in words and takes a dashed edge, so the marker survives a greyscale print
-   and a colour-blind reader. */
+   in words, so the marker survives a greyscale print and a colour-blind
+   reader. */
 /* A citation is read: "Edwards, Penney & Calvis 6e" in a fixed advance is the
    same string with its word shapes removed. */
 .bsrc{display:block;margin-top:.55rem;font-family:var(--ui);font-size:var(--fs-meta);
   color:var(--ink-3)}
-.bsrc.is-un{border-left:2px dashed var(--wn);padding-left:.5rem;color:var(--wn-ink)}
+/* One word in red, and nothing else.
+ *
+ * It used to take a dashed left rule and a block of padding as well, which
+ * made a one-word confession the loudest object in a callout that had already
+ * said its piece — three devices (rule, indent, colour) for a mark that has to
+ * be *noticed* and then got out of the way of. The word is doing the work; red
+ * is what makes it findable when you are scanning for what to check. */
+.bsrc.is-un{color:var(--un)}

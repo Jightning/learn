@@ -17,9 +17,19 @@
  * the only control on the site that can lose work, and what it erases — the
  * answer log — is displayed and exported on the calibration page. It now sits
  * there, under the row that offers to export the thing first.
+ *
+ * `show` is which of them the caller wants, and it exists for one reason: the
+ * sidebar reads Reveal all, Listen, Theme, and Listen is not defined here —
+ * speech has to start inside a user gesture on a button the Speaker owns. So
+ * the sidebar mounts this twice around it rather than accepting whatever order
+ * one mount would impose. The library asks for all three; it has no Listen.
  */
 export default function CourseActions({ inCourse, expanded, onExpand,
-                                        zoom = 1, onZoomReset, cls = "tbtn" }) {
+                                        zoom = 1, onZoomReset, cls = "tbtn",
+                                        show = "all" }) {
+  const page = show === "all" || show === "page";
+  const look = show === "all" || show === "look";
+
   const toggleTheme = () => {
     const el = document.documentElement;
     let cur = el.getAttribute("data-theme");
@@ -33,17 +43,19 @@ export default function CourseActions({ inCourse, expanded, onExpand,
           the depth had it rather than to the full text — otherwise closing is a
           different act from never having opened, and the reader who opened one
           block to check something can never get their view back. */}
-      {inCourse && (
+      {inCourse && page && (
         <button class={cls} onClick={onExpand}
                 title={expanded ? "Put the page back the way this depth had it"
                                 : "Open every block and reveal every answer"}>
           {expanded ? "Close all" : "Reveal all"}
         </button>
       )}
-      <button class={cls} onClick={toggleTheme} aria-label="Toggle colour theme">Theme</button>
+      {look && (
+        <button class={cls} onClick={toggleTheme} aria-label="Toggle colour theme">Theme</button>
+      )}
       {/* Only once it is off its default, so it reports a state the reader set
           rather than adding a permanent control to a panel of them. */}
-      {zoom !== 1 && onZoomReset && (
+      {page && zoom !== 1 && onZoomReset && (
         <button class={cls + " zoomchip"} onClick={onZoomReset}
                 title="Reset content zoom  (ctrl 0)" aria-label="Reset content zoom">
           {Math.round(zoom * 100)}%

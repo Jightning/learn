@@ -21,6 +21,11 @@ export function IconIndex()    { return <svg {...P}><path d="M3 2.5h8.5v11H3z"/>
 /* Explore: the search lens with a filter under it. */
 export function IconExplore()  { return <svg {...P}><circle cx="6.6" cy="6.6" r="4.1"/><path d="M9.6 9.6 14 14"/><path d="M3.4 13.6h4"/></svg>; }
 
+/* The grab handle: the two columns of dots every reorderable row in every
+   toolkit wears. It is a learned shape rather than a described one, which is
+   why it can be an icon at all — "drag me" has no picture. */
+export function IconGrab()     { return <svg {...P}><path d="M6 3.5h.01M10 3.5h.01M6 8h.01M10 8h.01M6 12.5h.01M10 12.5h.01"/></svg>; }
+
 export function IconTuck({ open }) {
   return (
     <svg {...P} width="15" height="15">

@@ -129,7 +129,10 @@ if (single) {
     await card.locator(".lmore").click();
     await page.waitForTimeout(90);
     if (await card.locator(".lop.warn").count()) gone++;
-    if (await card.locator(".lop:not(.warn):not(.lmore)").count()) exports++;
+    /* The grab handle wears .lop too and is on every card, so it has to be
+       excluded here — otherwise "only imported courses offer export" passes on
+       a control that has nothing to do with exporting. */
+    if (await card.locator(".lop:not(.warn):not(.lmore):not(.lgrab)").count()) exports++;
   }
   /* Close the last one, so the state the following checks see is the resting
      one rather than whatever this loop left open. */
@@ -185,6 +188,82 @@ if (single) {
      until there is history, the history once there is. */
   ck("an untouched card says how big the course is",
      /\d+ sections/.test(await page.locator(".lcard .lstat").first().innerText()));
+
+  /* ------------------------------------------------------------ reordering
+   * Where a course sits on the shelf is the reader's, not the build's.
+   *
+   * The arrow keys are asserted first, and not because a drag is hard to
+   * automate: they are the only way this is reachable without a mouse at all,
+   * so they are the path that has to hold. The drag is checked after, through
+   * the browser's own HTML5 drag-and-drop, because the handle is what a mouse
+   * actually reaches for.
+   *
+   * Four claims: the move happens, focus travels with the card (or a second
+   * press goes to the page instead), the new order survives a reload — it is a
+   * preference, not view state — and an arrow at the end of the shelf moves
+   * nothing rather than wrapping a card to the far end. */
+  if (ops.cards > 1) {
+    const shelf = () => page.evaluate(() =>
+      [...document.querySelectorAll(".lcard .lhit")].map(a => a.getAttribute("href").slice(2)));
+    /* The handle lives behind the same overflow as Export and Remove, so
+       reaching it is a press — and the menu is exclusive and toggling, so this
+       opens one only when it is not already open. */
+    const handle = async i => {
+      const card = page.locator(".lcard").nth(i);
+      if (!(await card.locator(".lgrab").count())) {
+        await card.locator(".lmore").click();
+        await page.waitForTimeout(120);
+      }
+      return card.locator(".lgrab");
+    };
+    const start = await shelf();
+
+    ck("the handle is behind the card's overflow, like the rest of management",
+       await page.locator(".lcard .lgrab").count() === 0,
+       (await page.locator(".lcard .lgrab").count()) + " on the card face");
+    const grab = await handle(0);
+    ck("the card's menu offers one", await grab.count() === 1);
+
+    await grab.focus();
+    await page.keyboard.press("ArrowRight"); await page.waitForTimeout(250);
+    const moved = await shelf();
+    ck("an arrow key moves the course along the shelf",
+       moved[0] === start[1] && moved[1] === start[0],
+       `${start.join(",")} -> ${moved.join(",")}`);
+    ck("the handle keeps focus across the move",
+       await page.evaluate(() => !!document.activeElement?.classList.contains("lgrab")));
+
+    await go();
+    ck("the order is the reader's and survives a reload",
+       (await shelf()).join(",") === moved.join(","), (await shelf()).join(","));
+
+    /* Back the other way, which asserts the reverse key on the same card. */
+    await (await handle(1)).focus();
+    await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(250);
+    ck("the reverse key puts it back",
+       (await shelf()).join(",") === start.join(","), (await shelf()).join(","));
+    await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(250);
+    ck("an arrow at the end of the shelf moves nothing",
+       (await shelf()).join(",") === start.join(","), (await shelf()).join(","));
+
+    /* The mouse path: a real drag from the handle onto another card lands the
+       course at that card's place. */
+    await handle(0);
+    await page.dragAndDrop(".lgrid .lcard:nth-child(1) .lgrab", ".lgrid .lcard:nth-child(2)");
+    await page.waitForTimeout(300);
+    const dragged = await shelf();
+    ck("dragging the handle onto another card moves it there",
+       dragged[0] === start[1] && dragged[1] === start[0],
+       `${start.join(",")} -> ${dragged.join(",")}`);
+
+    /* Leave the shelf as it was found: everything below counts cards and reads
+       the first one. */
+    await (await handle(1)).focus();
+    await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(250);
+    ck("the shelf is back the way it was found",
+       (await shelf()).join(",") === start.join(","), (await shelf()).join(","));
+    await go();
+  }
 
   await openConfirm("Remove"); await page.waitForTimeout(220);
   ck("removal asks first", await page.locator(".modal.danger").count() === 1);
@@ -561,7 +640,7 @@ for (const cid of ids) {
       barH: Math.round(bar.getBoundingClientRect().height),
       rows: new Set(shown.map(b => Math.round(mid(b)))).size,
       /* What the toolbar sheds has to still exist. It is in the sidebar now,
-         under Reading options, at every width rather than only below this
+         under Settings, at every width rather than only below this
          breakpoint — so this counts the panel's contents rather than asking
          whether a mobile-only band is showing. */
       shed: document.querySelectorAll(".axes-acts .lane-b").length,
@@ -579,7 +658,7 @@ for (const cid of ids) {
   ck(P("toolbar is one row on a phone"), narrow.rows === 1, narrow.rows + " rows");
   ck(P("toolbar costs under a sixth of a phone screen"), narrow.barH < 800 / 6, narrow.barH + "px");
   ck(P("the controls it sheds are in the sidebar"), narrow.shed >= 2,
-     narrow.shed + " under Reading options");
+     narrow.shed + " under Settings");
   /* The row is scoped to this course, so a course with no drill bank of its
      own has none — which is most of them, and asserting one unconditionally
      asserted that every course runs a review schedule. What has to hold is
@@ -1042,10 +1121,30 @@ for (const cid of ids) {
     await go(`#/${cid}/${secIds[0]}`);
     const hash = await page.evaluate(() => location.hash);
     const fullRows = await page.locator(".brow").count();
-    ck(P("the depth control sits beside the lane"), await page.locator(".depth .lane-b").count() >= 3);
+    /* The settings panel used to carry a "Show" row — Full / Notes / Names —
+       beside the lane. It was the toolbar's Study / Review / Names under three
+       other names, so a reader who found both had two controls for one setting
+       and no way to tell that they were the same one. The axis is unchanged and
+       still bound to `d`; only the duplicate control is gone. */
+    ck(P("the panel carries no second control for the depth"),
+       await page.locator(".axes .depth").count() === 0);
 
-    const setDepth = d => page.evaluate(v =>
-      document.querySelector(`.depth .lane-b[data-depth="${v}"]`).click(), d);
+    /* Driven by the key the reader has, since that is now the direct way in.
+       The depth is read back off the section, which is where it shows: `full`
+       carries no class, the other two name themselves. */
+    const depthNow = () => page.evaluate(() => {
+      const el = document.querySelector(".sec-body");
+      if (!el) return null;
+      return el.classList.contains("depth-index") ? "index"
+           : el.classList.contains("depth-notes") ? "notes" : "full";
+    });
+    const setDepth = async d => {
+      for (let i = 0; i < 4 && (await depthNow()) !== d; i++) {
+        await page.keyboard.press("d");
+        await page.waitForTimeout(220);
+      }
+      return (await depthNow()) === d;
+    };
     await setDepth("notes"); await page.waitForTimeout(300);
     const closed = await page.locator(".nrow, .ntopic-h").count();
     ck(P("notes depth closes blocks"), closed > 0, `${closed} closed`);
@@ -1145,14 +1244,16 @@ for (const cid of ids) {
     ck(P("the quiz closes with the depth"),
        await page.locator(".quiz-line").count() > 0 || await page.locator(".quiz").count() === 0);
 
-    /* `d` cycles, and the keyboard reaches what the control does. */
+    /* `d` cycles, and it is the only control over this axis that is left. */
+    const wasDepth = await depthNow();
     await page.keyboard.press("d"); await page.waitForTimeout(250);
-    ck(P("d cycles the depth"), await page.locator(".depth .lane-b.sel").count() === 1);
+    ck(P("d cycles the depth"), (await depthNow()) !== wasDepth,
+       `${wasDepth} -> ${await depthNow()}`);
     /* The page-level control is a round trip, not a one-way door: reveal, then
        close, and the depth's own view has to come back — including any block
        the reader had opened by hand underneath it. */
     await setDepth("notes"); await page.waitForTimeout(300);
-    /* Both moved out of the toolbar and into the sidebar's Reading options,
+    /* Both moved out of the toolbar and into the sidebar's Settings panel,
        which is a <details>. Opened first, because a control a reader cannot
        reach is not a control — clicking it through the DOM would pass this
        test with the disclosure permanently shut. */
@@ -1189,6 +1290,113 @@ for (const cid of ids) {
 
     await setDepth("full"); await page.waitForTimeout(250);
     ck(P("full depth closes nothing"), await page.locator(".nrow, .quiz-line").count() === 0);
+  }
+
+  /* ---------------------------------------------------------- the settings
+   * The panel at the foot of the navigation: what it is called, where it
+   * stays, whether it reads as a thing in front of the list or as the last
+   * line of it, and the one setting that is neither a lane nor a depth.
+   * ------------------------------------------------------------------------ */
+  {
+    await go(`#/${cid}/${secIds[0]}`);
+    const panel = page.locator(".axes");
+    ck(P("the panel says what it is"),
+       (await panel.locator("summary").innerText()).trim() === "Settings",
+       await panel.locator("summary").innerText());
+
+    /* Pinned to the foot of the sidebar, not parked at the end of the section
+       list. The viewport is squeezed first so the rail is guaranteed to
+       overflow — on a five-section course at 900px it may not, and an
+       assertion that silently skips is not an assertion. */
+    await page.setViewportSize({ width: 1440, height: 520 });
+    await page.waitForTimeout(250);
+    const stuck = await page.evaluate(() => {
+      const side = document.querySelector(".sidebar"), ax = document.querySelector(".axes");
+      if (!side || !ax) return null;
+      side.scrollTop = 0;
+      const a = ax.getBoundingClientRect(), s = side.getBoundingClientRect();
+      return { room: Math.round(side.scrollHeight - side.clientHeight),
+               gap: Math.round(s.bottom - a.bottom) };
+    });
+    ck(P("the rail is long enough for the question to mean anything"),
+       stuck && stuck.room > 40, JSON.stringify(stuck));
+    ck(P("the settings stay at the foot of the sidebar while the rail scrolls"),
+       stuck && Math.abs(stuck.gap) <= 2, JSON.stringify(stuck));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.waitForTimeout(250);
+
+    /* Open, it is a card in front of the list rather than its last row: its own
+       ground and its own border, both of which the closed form has neither of. */
+    const look = async () => page.evaluate(() => {
+      const ax = document.querySelector(".axes");
+      const c = getComputedStyle(ax);
+      return { bg: c.backgroundColor,
+               border: parseFloat(c.borderLeftWidth) || 0,
+               side: getComputedStyle(document.querySelector(".sidebar")).backgroundColor };
+    });
+    const shut = await look();
+    await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+    await page.waitForTimeout(200);
+    const open = await look();
+    ck(P("the open panel is set on its own ground"),
+       open.bg !== open.side && open.bg !== shut.bg,
+       `${shut.bg} -> ${open.bg} on ${open.side}`);
+    ck(P("and draws its own edge"), open.border > 0 && shut.border === 0,
+       `${shut.border} -> ${open.border}`);
+
+    /* The panel reads by how long a control's reach is: the page actions on one
+       line first — pressed mid-read and forgotten — then the settings that stay
+       set. Asserted as geometry rather than as markup, because "on one line" is
+       the claim, and a flex row that wraps at this width would satisfy any
+       structural check while failing the thing it is there for. */
+    const row = await page.evaluate(() => {
+      const acts = document.querySelector(".axes .axes-acts");
+      const lane = document.querySelector(".axes .lane");
+      if (!acts || !lane) return null;
+      const btns = [...acts.querySelectorAll(".lane-b")];
+      return {
+        labels: btns.map(b => b.textContent.trim()),
+        rows: new Set(btns.map(b => Math.round(b.getBoundingClientRect().top))).size,
+        above: acts.getBoundingClientRect().bottom <= lane.getBoundingClientRect().top + 1
+      };
+    });
+    ck(P("the page actions sit on one line"),
+       row && row.labels.length >= 2 && row.rows === 1, JSON.stringify(row));
+    ck(P("above the reading lane, not beside it"), row && row.above, JSON.stringify(row));
+
+    /* The course's accent, which the reader may overrule on this device. */
+    const swatch = page.locator(".hues .hue-b:not(.hue-own)");
+    ck(P("the panel offers the course's colour"), await swatch.count() >= 4,
+       (await swatch.count()) + " swatches");
+    const hue = () => page.evaluate(() =>
+      document.documentElement.style.getPropertyValue("--hue"));
+    const authored = await hue();
+    await swatch.nth(3).click(); await page.waitForTimeout(250);
+    const picked = await hue();
+    ck(P("picking a colour rotates the course's accent"),
+       picked !== "" && picked !== authored, `${authored || "(course)"} -> ${picked}`);
+    ck(P("and the swatch says which one is on"),
+       await page.locator(".hues .hue-b.sel").count() === 1);
+
+    /* It is a preference, so it outlives the page — and it is per course, so
+       the shelf has to agree with it. */
+    await go(`#/${cid}/${secIds[0]}`);
+    ck(P("the chosen colour is remembered"), (await hue()) === picked, await hue());
+    await go();
+    const card = await page.evaluate(id => {
+      const a = [...document.querySelectorAll(".lcard .lhit")]
+        .find(x => x.getAttribute("href") === "#/" + id);
+      return a ? getComputedStyle(a.parentElement).getPropertyValue("--hue").trim() : null;
+    }, cid);
+    if (card !== null)
+      ck(P("and the library card wears it too"), card === picked, `${card} vs ${picked}`);
+
+    /* And there is a way back to what the author chose. */
+    await go(`#/${cid}/${secIds[0]}`);
+    await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
+    await page.locator(".hues .hue-own").click(); await page.waitForTimeout(250);
+    ck(P("the course's own colour can be put back"), (await hue()) === authored,
+       `${await hue()} vs ${authored || "(none)"}`);
   }
 
   /* categories: membership, a boundary, and the sibling it is defined against.
@@ -1294,10 +1502,14 @@ for (const cid of ids) {
     });
     if (bid) {
       /* Set the course to its most closed depth first, so "forced open" is a
-         claim about this route rather than about the default. */
-      await page.evaluate(() =>
-        document.querySelector('.depth .lane-b[data-depth="index"]').click());
-      await page.waitForTimeout(250);
+         claim about this route rather than about the default. Through the key,
+         which is the control the reader has. */
+      for (let i = 0; i < 4; i++) {
+        const at = await page.evaluate(() =>
+          !!document.querySelector(".sec-body")?.classList.contains("depth-index"));
+        if (at) break;
+        await page.keyboard.press("d"); await page.waitForTimeout(220);
+      }
       await go(`#/${cid}/${bid}`);
       ck(P("a block address resolves to its section"),
          await page.locator(".sec-body").count() === 1);
@@ -1310,11 +1522,14 @@ for (const cid of ids) {
         return !!el && !el.querySelector(".nrow") && !!el.querySelector(".bhtml");
       }, bid);
       ck(P("an addressed block is open even at index depth"), openAtIndexDepth, bid);
-      await page.evaluate(() => {
-        const b = document.querySelector('.depth .lane-b[data-depth="full"]');
-        if (b) b.click();
-      });
-      await page.waitForTimeout(250);
+      for (let i = 0; i < 4; i++) {
+        const el = await page.evaluate(() => {
+          const b = document.querySelector(".sec-body");
+          return !b || (!b.classList.contains("depth-index") && !b.classList.contains("depth-notes"));
+        });
+        if (el) break;
+        await page.keyboard.press("d"); await page.waitForTimeout(220);
+      }
     }
   }
 
@@ -1418,7 +1633,7 @@ for (const cid of ids) {
       return { r: (Math.max(a, b2) + 0.05) / (Math.min(a, b2) + 0.05),
                weight: parseInt(cs.fontWeight) || 400 };
     });
-    /* Theme left the toolbar for the sidebar's Reading options, which is a
+    /* Theme left the toolbar for the sidebar's Settings panel, which is a
        <details>; opened first so this drives the control a reader has. */
     const toggleTheme = async () => {
       await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
@@ -1802,6 +2017,61 @@ for (const cid of ids) {
 }
 
 /* ---------------------------------------------------------------------------
+ * The one mark on the page that is about the page rather than the subject.
+ *
+ * A block whose claim nobody grounded says so in a word — `unverified` or
+ * `generated` — and that word is now the whole of the device: no rule, no
+ * indent, no box, and a red that belongs to nothing else on the site. It used
+ * to take a dashed left edge and half a rem of padding as well, which made a
+ * one-word confession the loudest object in a callout that had already made
+ * its point.
+ *
+ * Pinned to the demo, which is the course that deliberately ships both.
+ * ------------------------------------------------------------------------ */
+if (ids.includes("demo")) {
+  const P = n => `unsourced badge: ${n}`;
+  await go("#/demo/s5-2");
+  const badge = page.locator(".bsrc.is-un").first();
+  ck(P("the demo still ships one"), await badge.count() === 1);
+  if (await badge.count()) {
+    ck(P("it is one word and nothing else"),
+       /^(generated|unverified)$/.test((await badge.innerText()).trim()),
+       await badge.innerText());
+    const drawn = await badge.evaluate(el => {
+      const c = getComputedStyle(el);
+      const px = v => {
+        const cx = document.createElement("canvas").getContext("2d");
+        cx.fillStyle = "#000"; cx.fillStyle = v; cx.fillRect(0, 0, 1, 1);
+        const d = cx.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2]];
+      };
+      return {
+        edges: ["Top", "Right", "Bottom", "Left"]
+          .reduce((n, s2) => n + (parseFloat(c["border" + s2 + "Width"]) || 0), 0),
+        pad: ["Top", "Right", "Bottom", "Left"]
+          .reduce((n, s2) => n + (parseFloat(c["padding" + s2]) || 0), 0),
+        ink: px(c.color),
+        /* what a grounded citation is drawn in, where the page has one */
+        plain: (() => {
+          const o = document.querySelector(".bsrc:not(.is-un)");
+          return o ? px(getComputedStyle(o).color) : null;
+        })()
+      };
+    });
+    ck(P("it draws no rule and takes no indent"),
+       drawn.edges === 0 && drawn.pad === 0, JSON.stringify(drawn));
+    /* Red, and measurably so: more red than either other channel, by a margin
+       no grey or terracotta on this palette reaches. Asserted on the channels
+       rather than on a hex, because the token is stated in OKLCH and the exact
+       sRGB it resolves to is the browser's business. */
+    const [r, g, b] = drawn.ink;
+    ck(P("and is red"), r > g + 60 && r > b + 60, drawn.ink.join(","));
+    if (drawn.plain)
+      ck(P("which a grounded citation is not"),
+         drawn.plain.join(",") !== drawn.ink.join(","), drawn.plain.join(","));
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Structure inside and between blocks, on the page that motivated it.
  *
  * ma26600 §1.6 carries all three: a procedure in `items:`, a depth "why"
@@ -1844,16 +2114,18 @@ if (ids.includes("ma26600")) {
   ck(P("no raw anchor markup reaches the page"),
      !(await page.locator("#s1-6").innerHTML()).includes("<n "));
 
-  /* Review keeps the steps: they are the content, not development under a claim. */
-  await page.evaluate(() => document.querySelector(".axes")?.setAttribute("open", ""));
-  const review = page.locator(".depth .lane-b", { hasText: "Review" });
+  /* Review keeps the steps: they are the content, not development under a claim.
+     Set from the toolbar, which is the one control over this axis since the
+     sidebar's duplicate of it was removed. */
+  const review = page.locator(".modesw-b:not(.modesw-cycle)", { hasText: "Review" });
   if (await review.count()) {
     await review.click(); await page.waitForTimeout(300);
     ck(P("Review depth keeps a callout's steps open"),
        await sub.locator("ol.bitems > li").count() >= 4);
     ck(P("Review depth shows the phrase without its anchor mark"),
        await sub.locator(".nrow .nref").count() === 0);
-    await page.locator(".depth .lane-b", { hasText: "Study" }).click(); await page.waitForTimeout(250);
+    await page.locator(".modesw-b:not(.modesw-cycle)", { hasText: "Study" }).click();
+    await page.waitForTimeout(250);
   }
   await shot("ma26600-s1-6");
 }
@@ -2098,7 +2370,7 @@ if (ids.includes("ma26600")) {
   if (!engine) ck("no speech engine in this browser, wiring not asserted", true);
   else {
     ck("no bar before a session", await page.locator(".spk").count() === 0);
-    /* Under Reading options with the other two axes. It has to be a real press
+    /* Under Settings, in the Reading band. It has to be a real press
        and not a call: iOS and Chrome only let speech begin inside a user
        gesture, so a test that started the session any other way would pass
        against a build no reader could use. */

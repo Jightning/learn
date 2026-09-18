@@ -176,7 +176,7 @@ surface: a reader-facing behaviour you want is here.
 
 ### 2.2 The page can be read aloud
 
-**Reading options → Listen** speaks the rendered column from wherever the reader
+**Settings → Listen** speaks the rendered column from wherever the reader
 has scrolled: lane, depth and anything opened are honoured, and only text on
 screen is spoken.
 
@@ -275,7 +275,9 @@ syntax:                          # optional: highlighting for `code` blocks
 
 Only the first four fields are required. `theme.hue` rotates the accents with
 lightness and chroma fixed, so contrast holds [T1, T3]; `npm run new` picks a
-free angle. `code` keys learner state, so two courses sharing one share a
+free angle. It is the course's colour, not the last word on it: a reader can
+pick another under **Settings → Appearance**, per course and per device, and
+that choice is never written back into the course. `code` keys learner state, so two courses sharing one share a
 reader's history silently. `retention.target` defaults to 0.9; lower it where
 the material is background rather than load-bearing. **`audit:` is a ratchet** —
 lower a key as its pass lands and the course can never regress.

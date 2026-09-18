@@ -30,6 +30,7 @@ const R = await import("../src/lib/retention.js");
 const { writeNote, readNote, setFolded, isFolded } = await import("../src/lib/notes.js");
 const { pushWhy, lastWhy } = await import("../src/lib/why.js");
 const { laneFor, setLane } = await import("../src/lib/tiers.js");
+const { hueFor, setHue } = await import("../src/lib/theme.js");
 const { append, forCourse } = await import("../src/lib/log.js");
 const { rebuild } = await import("../src/lib/replay.js");
 const { purge } = await import("../src/lib/purge.js");
@@ -52,6 +53,7 @@ function live(C) {
   setFolded(C.id, "s1-1", true);          /* the fold set is a key of its own */
   pushWhy(C.id, "q1", { text: "because the coefficient is constant", correct: true });
   setLane(C.id, "all");
+  setHue(C.id, 135);                      /* the accent the reader picked for it */
   append({ course: C.id, loop: "A", itemId: "q1", concept: "concept-1",
            confidence: "sure", correct: false, ts: Date.now() });
   append({ course: C.id, loop: "B", itemId: "d1", concept: "concept-1",
@@ -69,6 +71,7 @@ const held = C => ({
   fold: isFolded(C.id, "s1-1"),
   why: !!lastWhy(C.id, "q1"),
   lane: laneFor(C.id),
+  hue: hueFor(C.id),
   ckpt: keys().includes(`ckpt:${C.id}`),
   rows: forCourse(C.id).length
 });
@@ -76,7 +79,8 @@ const held = C => ({
 const beforeA = held(A), beforeB = held(B);
 check("the fixture actually wrote something",
       beforeA.study && beforeA.retain && beforeA.note && beforeA.why &&
-      beforeA.fold && beforeA.lane === "all" && beforeA.ckpt && beforeA.rows === 2,
+      beforeA.fold && beforeA.lane === "all" && beforeA.hue === 135 &&
+      beforeA.ckpt && beforeA.rows === 2,
       JSON.stringify(beforeA));
 
 const dropped = await purge(A.id, A.code);
@@ -93,6 +97,7 @@ check("the stated reason is gone",      afterA.why === false);
    the bodies alone would leave it behind. */
 check("which notes were folded is gone", afterA.fold === false);
 check("the reading lane is forgotten",  afterA.lane === "apply", afterA.lane);
+check("the chosen accent is forgotten", afterA.hue === null, String(afterA.hue));
 check("the replay checkpoint is gone",  afterA.ckpt === false);
 check("the outcome rows are gone",      afterA.rows === 0, String(afterA.rows));
 check("purge reports what it dropped",  dropped === 2, String(dropped));

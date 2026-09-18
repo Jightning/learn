@@ -148,6 +148,15 @@
   --dc:oklch(55% .114 calc(var(--h-dc) + var(--hue)));
   --hz:oklch(64% .015 calc(var(--h-hz) + var(--hue)));
   --wn:oklch(58% .140 var(--h-wn));
+  /* The one *red* on the site, and it has exactly one job: a claim nobody
+     grounded. `--wn` is a deliberately restrained terracotta because a warning
+     inside the material must not read as an alarm — but "this sentence may
+     simply be false" is not a warning about the subject, it is a warning about
+     the page, and it is the only mark a reader must never skim past. It does
+     not rotate with --hue for the same reason --wn does not: it is not an
+     identity. Measured against all four grounds in both themes: 5.1:1 at the
+     worst of them, so it clears AA as a small-text colour everywhere. */
+  --un:oklch(52% .200 27);
 
   /* Small-text variants. WCAG measures luminance, which still drifts with hue
      at a fixed OKLCH lightness, so these sit at 46% — dark enough that the
@@ -189,6 +198,7 @@
     --dc:oklch(70% .112 calc(var(--h-dc) + var(--hue)));
     --hz:oklch(62% .019 calc(var(--h-hz) + var(--hue)));
     --wn:oklch(74% .135 var(--h-wn));
+  --un:oklch(72% .160 27);
     --hi-ink:var(--hi); --lo-ink:var(--lo); --dc-ink:var(--dc); --wn-ink:var(--wn);
     --hz-ink:oklch(71% .018 calc(var(--h-hz) + var(--hue)));
     --hn:oklch(74% .075 258); --hn-ink:var(--hn);
@@ -202,6 +212,7 @@
   --dc:oklch(70% .112 calc(var(--h-dc) + var(--hue)));
   --hz:oklch(62% .019 calc(var(--h-hz) + var(--hue)));
   --wn:oklch(74% .135 var(--h-wn));
+  --un:oklch(72% .160 27);
   --hi-ink:var(--hi); --lo-ink:var(--lo); --dc-ink:var(--dc); --wn-ink:var(--wn);
   --hz-ink:oklch(71% .018 calc(var(--h-hz) + var(--hue)));
   --hn:oklch(74% .075 258); --hn-ink:var(--hn);

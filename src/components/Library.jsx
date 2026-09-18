@@ -4,9 +4,12 @@ import { stateFor } from "../lib/state.js";
 import { counts } from "../lib/retention.js";
 import { importedIndex, filesOf, removeCourse } from "../lib/courses.js";
 import { refresh, dismissed, setDismissed } from "../lib/library.js";
+import { setOrder, move } from "../lib/order.js";
 import { queueDelete } from "../lib/cloud.js";
 import { purge } from "../lib/purge.js";
 import { evictionRisk } from "../lib/store.js";
+import { hueOf } from "../lib/theme.js";
+import { IconGrab } from "./Icon.jsx";
 import CourseIO from "./CourseIO.jsx";
 import Modal from "./Modal.jsx";
 import CloudPanel from "./CloudPanel.jsx";
@@ -22,6 +25,8 @@ export default function Library({ courses, order, loading, error, onChange }) {
   const [adding, setAdding] = useState(false);
   const [doomed, setDoomed] = useState(null);   /* the course a confirm is open for */
   const [ops, setOps] = useState(null);         /* the card whose management is open */
+  const [held, setHeld] = useState(null);       /* the card being dragged, if any */
+  const [over, setOver] = useState(null);       /* the card it is currently over */
   const [msg, setMsg] = useState(null);
   const [atRisk, setAtRisk] = useState(false);
   const mine = importedIndex();
@@ -31,6 +36,24 @@ export default function Library({ courses, order, loading, error, onChange }) {
      rather than a heuristic, and only where the reader can do something about
      it. See store.evictionRisk. */
   useEffect(() => { evictionRisk().then(setAtRisk); }, []);
+
+  /* Where a course sits on the shelf.
+   *
+   * Two ways in, and they are not alternatives: the handle is what a mouse
+   * reaches for, and the arrow keys are the only way a keyboard or a screen
+   * reader can do this at all — HTML5 drag-and-drop has no keyboard equivalent
+   * and never had one. Both go through here, so the two cannot drift.
+   *
+   * The card keeps focus across the move because the grid is keyed on the
+   * course id: Preact moves the existing node rather than rebuilding it, and
+   * the focused handle travels inside it. Otherwise the second arrow press
+   * would go to the page. */
+  const shuffle = (cid, to) => {
+    if (to < 0 || to >= order.length) return;
+    setOrder(move(order, cid, to));
+    refresh();
+    onChange && onChange();
+  };
 
   const save = cid => {
     const files = filesOf(cid);
@@ -133,11 +156,27 @@ export default function Library({ courses, order, loading, error, onChange }) {
                "hide" for one bundled with the site — the demo is a guide, and a
                guide you have finished should not be permanent furniture. */
             const ownIt = !!mine[id];
+            /* The reader's own rotation if they set one, else the author's —
+               the card has to agree with the course it opens. */
+            const hue = hueOf(id, c);
             return (
-              /* the card wears the course's accent rotation, so the courses are
-                 already distinguishable before you open one */
-              <div class="lcard" key={id} data-hue
-                   style={`--hue:${Number((c.theme || {}).hue) || 0}`}>
+              /* The card wears the course's accent rotation, so the courses are
+                 already distinguishable before you open one.
+
+                 It is a drop target only while one of its siblings is actually
+                 being carried: without that guard it would preventDefault on a
+                 file dragged in from the desktop and swallow it. */
+              <div key={id} data-hue
+                   class={"lcard" + (held === id ? " is-held" : "") +
+                          (over === id && held && held !== id ? " is-over" : "")}
+                   style={`--hue:${hue == null ? 0 : hue}`}
+                   onDragOver={e => { if (held && held !== id) { e.preventDefault(); setOver(id); } }}
+                   onDragLeave={() => setOver(v => (v === id ? null : v))}
+                   onDrop={e => {
+                     e.preventDefault();
+                     if (held && held !== id) shuffle(held, order.indexOf(id));
+                     setHeld(null); setOver(null);
+                   }}>
                 {/* The whole card is the target, but the ops below must stay
                     clickable — so the link is a layer under them rather than a
                     wrapper around them, which is also what keeps a button out
@@ -184,6 +223,28 @@ export default function Library({ courses, order, loading, error, onChange }) {
                           onClick={() => setOps(v => (v === id ? null : id))}>…</button>
                   {ops === id && (
                     <>
+                      {/* Icon rather than a word, so three controls fit the one
+                          line the card's foot has room for. It is the only one
+                          of the three that needs no naming: the dots are the
+                          convention, and the other two are verbs. */}
+                      <button class="lop lgrab" draggable
+                              aria-label={`Move ${c.title || id}`}
+                              title="Drag to move this course, or use the arrow keys"
+                              onDragStart={e => {
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData("text/plain", id);
+                                setHeld(id);
+                              }}
+                              onDragEnd={() => { setHeld(null); setOver(null); }}
+                              onKeyDown={e => {
+                                const by = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1
+                                         : e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : 0;
+                                if (!by) return;
+                                e.preventDefault();
+                                shuffle(id, order.indexOf(id) + by);
+                              }}>
+                        <IconGrab />
+                      </button>
                       {ownIt && (
                         <button class="lop" onClick={() => save(id)}
                                 aria-label={`Export ${c.title || id}`}>Export</button>
