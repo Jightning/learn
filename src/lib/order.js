@@ -7,9 +7,11 @@
  * every day sits wherever the build put it, and on a shelf of eight cards that
  * is two rows down.
  *
- * So the order is a preference, stored per device like every other thing the
- * browser holds about the reader — not part of a course, and never synced as
- * one: a course is content, and where its card sits is not.
+ * So the order is a preference and not part of a course: a course is content,
+ * and where its card sits is not — exporting one carries no arrangement with
+ * it. It is a statement about the shelf, though, and the shelf is the same
+ * shelf on every device the reader owns, so it travels with the backup where
+ * there is one (lib/prefs.js) rather than being remade on each.
  *
  * What is stored is a list of ids and nothing else. An id the reader has never
  * moved is not in it, an id for a course that has since been removed is
@@ -17,7 +19,8 @@
  * it was), and a course that arrives after a reorder goes to the end — which
  * is where a new thing goes on a shelf someone has already arranged.
  * ==========================================================================*/
-import { getItem, setItem } from "./store.js";
+import { getItem } from "./store.js";
+import { setPref } from "./prefs.js";
 
 const KEY = "order:v1";
 
@@ -29,7 +32,7 @@ const read = () => {
 };
 
 /** Record an order. The caller passes the whole shelf, in the order it is in. */
-export const setOrder = ids => setItem(KEY, JSON.stringify(ids));
+export const setOrder = ids => setPref(KEY, JSON.stringify(ids));
 
 /**
  * `ids` as the reader arranged them: everything they have placed, in their

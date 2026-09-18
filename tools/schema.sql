@@ -30,6 +30,19 @@ CREATE TABLE IF NOT EXISTS courses (
   deleted_at INTEGER             -- NULL while live
 );
 
+-- The handful of settings that belong to the shelf rather than to a device:
+-- a course's colour, the order of the cards, which bundled ones are dismissed.
+-- One row per key, because a single settings blob would let a device that has
+-- not looked in a week overwrite every key with what it remembers. `ts` is the
+-- client's stamp and the only tiebreak: the later write wins, per key. The
+-- value is ciphertext like everything else; the key name is not, exactly as a
+-- course id is not.
+CREATE TABLE IF NOT EXISTS prefs (
+  k   TEXT PRIMARY KEY,
+  ts  INTEGER NOT NULL,
+  enc TEXT NOT NULL
+);
+
 -- D1 caps how large a single value may be, and a course runs to ~1.5MB, so a
 -- body is stored in pieces and reassembled on read.
 CREATE TABLE IF NOT EXISTS course_chunks (

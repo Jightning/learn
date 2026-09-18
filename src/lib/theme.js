@@ -10,13 +10,15 @@
  *
  * The author picks a rotation and the reader may overrule it. Those are two
  * different claims: the author's is "this is what the course looks like", the
- * reader's is "this is how I tell my courses apart", and the second wins on
- * the device it was made on because the reader is the one looking at the
- * shelf. The override is per course and per device, stored beside the lane and
- * the depth; it is not written into the course, so exporting a course still
- * exports the author's choice.
+ * reader's is "this is how I tell my courses apart", and the second wins
+ * because the reader is the one looking at the shelf. The override is per
+ * course, and it is one of the three settings that belong to the shelf rather
+ * than to a device — so it travels with the backup where there is one, and is
+ * stamped rather than merely stored (lib/prefs.js). It is still not written
+ * into the course, so exporting one still exports the author's choice.
  */
-import { getItem, setItem, removeItem } from "./store.js";
+import { getItem } from "./store.js";
+import { setPref, dropPref } from "./prefs.js";
 
 /* Eight rotations, evenly spaced, because the palette is a rotation and
    nothing else — a list of named colours would be a second colour system, and
@@ -36,12 +38,12 @@ export function hueFor(cid) {
 /** Choose one, or pass null to go back to the course's own. */
 export function setHue(cid, h) {
   if (!cid) return;
-  if (h == null) removeItem(KEY(cid));
-  else if (Number.isFinite(Number(h))) setItem(KEY(cid), String(Number(h)));
+  if (h == null) dropPref(KEY(cid));
+  else if (Number.isFinite(Number(h))) setPref(KEY(cid), String(Number(h)));
 }
 
 /** Forget a choice. lib/purge.js is the caller. */
-export function dropHue(cid) { if (cid) removeItem(KEY(cid)); }
+export function dropHue(cid) { if (cid) dropPref(KEY(cid)); }
 
 /**
  * The rotation a course is actually drawn at: the reader's choice, else the

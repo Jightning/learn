@@ -582,9 +582,10 @@ The site's own backup is the one thing that crosses the wire, and it is the
 owner's alone: it runs only where a secret has been entered, so every other
 reader makes no request and has no account. What it sends is AES-GCM ciphertext
 sealed in the page under a key derived from that secret — the backend can store
-the log and the courses without being able to read either. Metadata is the
-honest exception and is named rather than glossed: row ids, device ids,
-timestamps and sizes are visible to it, and `PrivacyNote.jsx` says so on the
+the log, the courses and the three shelf settings without being able to read any
+of them. Metadata is the honest exception and is named rather than glossed: row
+ids, device ids, course ids, setting names, timestamps and sizes are visible to
+it, and `PrivacyNote.jsx` says so on the
 page where the data itself is shown.
 
 ---

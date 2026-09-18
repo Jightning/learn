@@ -145,6 +145,10 @@ export default function App() {
     const onSync = e => {
       if (cid && course && e.detail.courses.includes(cid)) rebuild(cid, course);
       if ((e.detail.installed || []).length || (e.detail.removed || []).length) refreshLibrary();
+      /* Settings from another device are about the shelf itself — its order,
+         what is dismissed from it, what colour this course wears — so both the
+         listing and the accent have to be re-derived rather than repainted. */
+      if (e.detail.settings) { refreshLibrary(); applyHue(course, cid); }
       forceRender(n => n + 1);
     };
     addEventListener("learn:synced", onSync);

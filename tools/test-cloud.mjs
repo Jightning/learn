@@ -183,6 +183,41 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
   check("and it leaves the listing", !swept.body.courses.some(c => c.id === "doomed"));
 }
 
+/* ---------------------------------------------------------------- settings --
+ * The shelf's own settings — a course's colour, the card order, the bundled
+ * courses dismissed — are the one thing here that two devices can both write.
+ * The server's whole part in that is comparing stamps, so that is what is
+ * checked: the later one wins and the earlier one changes nothing. */
+{
+  const db = fresh(), counter = { n: 0 };
+  const pref = (k, ts, enc) => ({ k, ts, enc });
+
+  const first = await call(syncRoute, { device: "laptop", since: 0,
+    prefs: [pref("hue:ma26600", 1000, "blue"), pref("order:v1", 1000, "abc")] }, { db, counter });
+  check("settings ride along in the same call",
+        (first.body.prefs || []).length === 2, JSON.stringify(first.body.prefs));
+
+  const stale = await call(syncRoute, { device: "phone", since: 0,
+    prefs: [pref("hue:ma26600", 999, "amber")] }, { db, counter });
+  check("a device carrying an older stamp does not overwrite a newer setting",
+        stale.body.prefs.find(p => p.k === "hue:ma26600").enc === "blue",
+        JSON.stringify(stale.body.prefs));
+
+  const fresher = await call(syncRoute, { device: "phone", since: 0,
+    prefs: [pref("hue:ma26600", 1001, "amber")] }, { db, counter });
+  check("a later one replaces it",
+        fresher.body.prefs.find(p => p.k === "hue:ma26600").enc === "amber");
+  check("and the key it said nothing about is untouched",
+        fresher.body.prefs.find(p => p.k === "order:v1").enc === "abc");
+
+  const junk = await call(syncRoute, { device: "phone", since: 0,
+    prefs: [pref("../../etc", 9e12, "x"), pref("hue:x", 9e12, "")] }, { db, counter });
+  check("a key that is a path, or a value that is empty, is refused",
+        junk.body.prefs.length === 2, JSON.stringify(junk.body.prefs.map(p => p.k)));
+  check("what is stored is ciphertext the server never reads into",
+        !JSON.stringify(junk.body.prefs).includes("hue:x"));
+}
+
 /* ------------------------------------------------------------ one round trip -*/
 {
   const db = fresh(), counter = { n: 0 };
@@ -215,6 +250,18 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
         needsUpload({ id: "x", version: "abc", deleted: true }, "abc", "abc") === false);
   check("a tombstoned course just hand-installed here is sent, which restores it",
         needsUpload({ id: "x", version: "abc", deleted: true }, null, "fresh") === true);
+
+  /* The second bug that shipped, and the reader's words for it: "the backup
+     courses are from a very old version". A content hash says the copies
+     differ and nothing about which came first, so a device holding an old copy
+     read "differs" as "mine is newer" and handed it up over the fresh one.
+     Whether *this* device changed its copy is the question with an answer. */
+  check("a device whose copy the account has moved past does not hand it back up",
+        needsUpload({ id: "x", version: "newer" }, "older", "older") === false);
+  check("but a copy edited here since the account saw it still goes up",
+        needsUpload({ id: "x", version: "newer" }, "older", "edited-here") === true);
+  check("and a hand-installed copy the account has never acknowledged goes up",
+        needsUpload({ id: "x", version: "newer" }, null, "fresh") === true);
 }
 
 console.log(fail.length ? `\nFAIL cloud  ${fail.length} failing` : "\nall passing");

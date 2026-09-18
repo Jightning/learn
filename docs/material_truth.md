@@ -30,6 +30,16 @@ measured against a written record of what the reader knows, not the author's
 sense of what is obvious — and, where a course uses tiers, against the **spine**
 (M23). M1 and M2 pull against each other; references are how they coexist.
 
+**This governs words, not only ideas.** Every term, symbol, abbreviation and
+named technique the prose uses is either in the declared prerequisite set or
+defined earlier in the course by a `def` the reader has passed. There is no
+third licence: a word the reader has not met and the course does not define is
+an assumption the calibration does not cover, and it breaks M2 whether or not
+the sentence around it is true. The test is naming, not judgement — for each
+term, name the prerequisite line or the earlier block that licenses it. "Clear
+from context" and "standard notation" are the author's sense of what is
+obvious, which is the thing this rule exists to overrule.
+
 **M3. The calibration is written down.** `materials/expectations.md` records what
 is assumed, bridged, taught and skipped, the exam format and dates, and the basis
 for the review set (M31). Whether a worked example helps or *hurts* depends on
@@ -100,8 +110,25 @@ block (M25).
 cheap (one file and a link) and carries no cost ceiling. It creates no scheduling
 obligation: that is M31, paid for by M26.
 
-**M14. No forward reference without a link.** Move the idea earlier, or make it a
-concept.
+**M14. Nothing points at material the reader has not reached.** They have read
+what precedes this subsection and nothing else — not the syllabus, not the
+outline, not the section drafted this morning. Two failures, and the second is
+the one that gets written:
+
+*Pointing forward.* Using or naming an idea from a later subsection. Move the
+idea earlier, or make it a concept and link it: a link renders a margin card and
+draws a map edge, while "we will see this in §7" renders as nothing.
+
+*Claiming a past that has not happened.* "As we saw", "recall that", "as
+established above", "by now you know". Each is a factual claim about the
+reader's history and each is checkable: name the subsection it points at. If
+that subsection comes later, or does not exist, the sentence is false, and the
+reader is left hunting for a memory they never had.
+
+`depth` blocks and follow-ups are where this concentrates, because they are
+written last, when the whole course is in the author's head and none of it is in
+the reader's. A `depth` block is read **at the position of its parent**: as far
+as its reader is concerned, everything after that parent is still unwritten.
 
 **M15. The sequence follows the institution's own order** where one exists. The
 reader sits that institution's exams; an order that desynchronises from lectures

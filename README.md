@@ -1,6 +1,6 @@
 # Learn
 
-[Check it out here]("https://learn-12i.pages.dev/")
+[Check it out here](https://learn-12i.pages.dev/)
 
 A site for more optimized learning. A course gets imported and displayed in nice and structured fashion. This functions as a study tool for both long and short term learning.
 

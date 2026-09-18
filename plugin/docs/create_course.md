@@ -27,7 +27,7 @@ and is the one that gets dropped.
 | Rule | | Source |
 |---|---|---|
 | **Non-redundancy** | Every piece of *explanation* appears exactly once. | [M1] |
-| **Closure** | Nothing is used that is not a declared prerequisite or defined earlier. | [M2] |
+| **Closure** | Every term, symbol and technique is a declared prerequisite or is defined earlier. | [M2] |
 | **Derivability** | Every rule is reached, not asserted. | §6.2, §6.3 |
 
 References are how the first two coexist. Non-redundancy governs explanation,
@@ -51,6 +51,33 @@ with a note. A flagged gap is a task; a guess is a defect nobody finds.
 **0.8** Your default voice is wrong for this: balanced, hedged, encyclopedic
 prose covering a topic. §14 lists the shapes that produces; `writing.md` is the
 sentence itself. Read both before your first `p` block.
+
+**0.9 A term the reader has not met is a defect, not a style choice.** Closure
+is about words, not only ideas [M2]. Before using a word, a symbol, an
+abbreviation or the name of a technique, name what licenses it: a line in
+`background` (§1), or a `def` in this subsection or an earlier one. There is no
+third licence, and a parenthetical gloss is not a definition — the panel,
+primer and index are built from `def` blocks and cannot see it [M8].
+
+It slips in mid-sentence rather than in a heading, and in three places most:
+the aside that reaches for a bigger word than the block it annotates; the `why`
+on a question, written once the course is finished; the `depth` block, where
+the argument really is more advanced than the spine.
+
+**Test:** for every term and symbol in the subsection that the reader could not
+have met before it, say where it was taught. One you cannot place is a defect —
+define it, link it as a concept (§5), or cut it.
+
+**0.10 The reader has read what precedes this subsection and nothing else.**
+Not the syllabus, not the outline, not the section you drafted an hour ago. So
+nothing points forward without a link, and no sentence claims a past that has
+not happened — "as we saw", "recall that", "by now you know" [M14]. Both are
+checkable the same way: name the subsection it points at, and if that
+subsection comes later or does not exist, the sentence is wrong.
+
+A `depth` block is read **at the position of its parent**, not at the end of
+the course. Written last, it is the block most likely to treat the rest of the
+course as already read.
 
 ---
 
@@ -533,6 +560,10 @@ tries to derive a convention concludes they missed something.
   spine; the spine may never need depth. The build fails a spine block citing a
   figure only a collapsed tier declares.
 - **Nothing examinable is `depth`** [M25]: the test is examinability, not length.
+- **A `depth` block is read where its parent sits** (0.10). It may use what the
+  spine has taught *up to that point* and nothing later, and it may not tell the
+  reader they have already seen something they have not. This is the block that
+  breaks the rule, because it is written once the whole course exists.
 - **An `apply` block never re-explains** [M24]; the fix is a link.
 - Budget: one or two `apply` blocks per concept across the course (D1).
 
@@ -1094,6 +1125,14 @@ No script decides any of these.
 
 - [ ] **Closure holds** (0.2): walk the course with `background` beside you. The
       check most likely to fail, and the one no build will run.
+- [ ] **Every term is licensed** (0.9): for each term, symbol and abbreviation
+      the subsection introduces, name the prerequisite line or the earlier `def`
+      that taught it. Read the asides, the `why` fields and the `depth` blocks
+      specifically — they are written last and reach furthest.
+- [ ] **Nothing points at what the reader has not reached** (0.10, M14): every
+      "as we saw" names a subsection that comes *before* this one, and nothing
+      forward is used without a link. `npm run audit` lists the phrases; only
+      you can say which subsection each one meant.
 - [ ] **Every `def` and `key` has its why**, in the block or a `depth` follow-up
       directly under it (§6.3) — never at the foot of the subsection.
 - [ ] **Every `key` is derived or declared given** (§6.2).

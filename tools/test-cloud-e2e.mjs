@@ -36,6 +36,7 @@ catch { console.error("playwright not installed.  npm i -D playwright"); process
 
 const { onRequestPost: syncRoute } = await import("../functions/api/sync.js");
 const { onRequestPost: courseRoute } = await import("../functions/api/course.js");
+const { versionOfFiles } = await import("../src/lib/seal.js");
 
 /* ------------------------------------------------------- the deployment, local
  * Static assets exactly as Pages serves them, plus the two Functions bound to
@@ -123,7 +124,7 @@ check("the phone starts with only the bundled course",
       !beforeB.includes("onlylaptop"), beforeB.join(", "));
 
 /* Installed through the UI, because that is how a course actually arrives. */
-const install = async page => {
+const install = async (page, files = course) => {
   await page.goto(ORIGIN + "/");
   await page.waitForTimeout(500);
   await page.locator("#lib-add").click();
@@ -131,7 +132,7 @@ const install = async page => {
   await page.locator('.modal .cio input[accept*="zip"]').setInputFiles([{
     name: "onlylaptop.course.json",
     mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(course))
+    buffer: Buffer.from(JSON.stringify(files))
   }]);
   await page.waitForTimeout(1500);
 };
@@ -231,11 +232,85 @@ if (binButton) {
         onPhone.includes("onlylaptop"), onPhone.join(", "));
 }
 
+/* ------------------------------------------------ the older copy stays put --
+ * The reported bug, in the reader's own words: "I added a new course, removed a
+ * few others [...] when I click backup on my phone it doesn't update anything
+ * [...] the backup courses are from a very old version."
+ *
+ * A course's version is a content hash, and a hash says the copies differ
+ * without saying which came first. Read as "the account has an older copy",
+ * that sent the *stale* device's body up over the fresh one — and because
+ * pullCourses skips whatever was just pushed, the stale device also came away
+ * unchanged, which is the "doesn't update anything" half. Every backup after
+ * the good one undid it, and a new browser then installed the wreckage.
+ *
+ * What a device can answer is whether it changed its own copy, so that is what
+ * it is asked here: the phone's copy still hashes to what the account gave it. */
+{
+  const edited = { ...course,
+    "course.yaml": "code: E2E 1\ntitle: Only On The Laptop\ntagline: edited on the laptop\n" };
+  const newer = await versionOfFiles(edited);
+
+  await install(A, edited);
+  await backUp(A);
+
+  const onPhone = await backUp(B);
+  check("the device holding the older copy installs the newer one",
+        /installed 1/i.test(onPhone), onPhone);
+  check("rather than handing its own back up", !/backed up/i.test(onPhone), onPhone);
+  check("so the account still holds the newer copy",
+        db.prepare("SELECT version FROM courses WHERE id = 'onlylaptop'").get().version === newer,
+        db.prepare("SELECT version FROM courses WHERE id = 'onlylaptop'").get().version);
+}
+
 /* A push and a pull in one sync: the listing that came back is older than the
    upload, so a course handed up must not then be fetched straight back down. */
 hits.course = 0;
 await backUp(A);
 check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.course} body calls`);
+
+/* ----------------------------------------------------------- the settings --
+ * Three things about a device belong to the shelf rather than to the device:
+ * the colour a course wears, the order of the cards, and which bundled ones
+ * are dismissed. The reader's words: "I [...] changed the colors and then
+ * clicked backup [...] it doesn't update anything" — they did not travel at
+ * all, because nothing but the log and the bodies ever left. src/lib/prefs.js
+ * is the rule; this is the loop, through the controls that write them. */
+{
+  /* Set a colour on the laptop, from the course's own sidebar. */
+  await A.goto(ORIGIN + "/#/onlylaptop");
+  await A.waitForTimeout(900);
+  await A.locator("details.axes > summary").click();   /* it lives under Settings */
+  await A.waitForTimeout(200);
+  const swatch = A.locator('[data-hue-pick="135"]');
+  const reachable = await swatch.count();
+  check("the colour picker is on the course", reachable === 1, `${reachable} found`);
+  if (reachable) { await swatch.click(); await A.waitForTimeout(400); }
+
+  /* And dismiss the bundled course, which is the other kind of shelf setting. */
+  await A.goto(ORIGIN + "/");
+  await A.waitForTimeout(500);
+  await binCourse(A, "demo");
+  await A.waitForTimeout(300);
+  await A.locator("#lib-drop").click();
+  await A.waitForTimeout(400);
+
+  await backUp(A);
+  const msg = await backUp(B);
+  check("the phone reports taking the settings", /setting/i.test(msg), msg);
+
+  const cards = await shelf(B);
+  check("a bundled course dismissed on one device is dismissed on the other",
+        !cards.includes("demo"), cards.join(", "));
+
+  const painted = await B.evaluate(() => {
+    const card = [...document.querySelectorAll(".lcard")]
+      .find(c => c.querySelector('.lhit[href="#/onlylaptop"]'));
+    return card ? card.getAttribute("style") : "";
+  });
+  check("and the colour chosen on one is the colour on the other",
+        /--hue:\s*135/.test(painted), painted);
+}
 
 await browser.close();
 server.close();

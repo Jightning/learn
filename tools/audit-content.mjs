@@ -31,6 +31,7 @@ import { fileURLToPath } from "node:url";
 import { loadCourse } from "./lib/load.mjs";
 import { conceptOf } from "../src/lib/index.js";
 import { present } from "../src/lib/gist.js";
+import { pointsAtNothing } from "./lib/sequence.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = join(ROOT, "courses");
@@ -139,7 +140,8 @@ function audit(id) {
     max: ceiling[k] != null ? Number(ceiling[k]) : 1
   }));
 
-  return { C, rows, over: rows.filter(r => r.frac > r.max), details: detailsWithoutRecall(C) };
+  return { C, rows, over: rows.filter(r => r.frac > r.max), details: detailsWithoutRecall(C),
+           points: pointsAtNothing(C) };
 }
 
 const wanted = process.argv.slice(2);
@@ -149,7 +151,7 @@ const ids = readdirSync(COURSES, { withFileTypes: true })
 
 let failed = 0;
 for (const id of ids) {
-  const { rows, over, details } = audit(id);
+  const { rows, over, details, points } = audit(id);
   if (over.length) failed++;
 
   console.log(`${over.length ? "FAIL" : "ok  "} ${id.padEnd(10)} ` +
@@ -158,6 +160,11 @@ for (const id of ids) {
     console.log(`       ✗ ${pct(r.frac)} ${r.label}, against a declared ceiling of ${pct(r.max)}`);
   for (const key of details)
     console.log(`       ! drills/${key}: a key block states a value and no item cues it back (M33)`);
+  /* Listed, never counted: the phrase is right whenever the subsection it
+     points at really does come earlier, and only the author knows which one it
+     meant. Reading the list is the check (§12b). */
+  for (const at of points)
+    console.log(`       ! ${at} — name the subsection this points at; it must come earlier (M14)`);
 }
 
 process.exit(failed ? 1 : 0);

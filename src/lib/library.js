@@ -15,7 +15,8 @@ import { INDEX as BUILTIN, ORDER as BUILTIN_ORDER } from "virtual:courses";
 import { parseCourse } from "./parse.js";
 import { imported, importedIndex } from "./courses.js";
 import { ordered } from "./order.js";
-import { getItem, setItem } from "./store.js";
+import { getItem } from "./store.js";
+import { setPref } from "./prefs.js";
 
 /* Built-in courses the reader has dismissed.
  *
@@ -24,8 +25,9 @@ import { getItem, setItem } from "./store.js";
  * introductory guide, and a guide you have read should not sit on the shelf
  * forever. Dismissing it hides the card and nothing else: the entry stays in
  * INDEX, so a link to it still opens and an import cannot silently collide
- * with its id or its code. It is per device, like everything else the browser
- * holds about the reader.
+ * with its id or its code. It is a fact about the shelf rather than about the
+ * browser, so it travels with the backup where there is one (lib/prefs.js): a
+ * guide dismissed once should not come back on the next device.
  */
 const HIDDEN = "hidden:v1";
 const readHidden = () => {
@@ -41,7 +43,7 @@ export function setDismissed(cid, on) {
   if (!BUILTIN[cid]) throw new Error(`${cid} is not a bundled course`);
   const set = readHidden();
   on ? set.add(cid) : set.delete(cid);
-  setItem(HIDDEN, JSON.stringify([...set]));
+  setPref(HIDDEN, JSON.stringify([...set]));
   refresh();
 }
 

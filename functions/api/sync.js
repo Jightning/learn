@@ -18,6 +18,15 @@ import { json, guard, body, purgeBin, okId } from "./_shared.js";
 
 const MAX_ROWS = 2000;      /* per request, in and out */
 const PAGE = 500;           /* rows returned before the client is told to come back */
+/* Settings are a handful of short strings — one per course plus two — so they
+   ride along on every sync rather than paging. The caps are there to keep that
+   true for a caller that decides otherwise. */
+const MAX_PREFS = 500;
+const MAX_PREF_BYTES = 8 * 1024;
+
+/* A preference key is a name, not an id: `hue:<course>`, `order:v1`. Same
+   reasoning as okId — it is used in a key and it comes from the network. */
+const okKey = k => typeof k === "string" && /^[\w:.-]{1,80}$/.test(k);
 
 export async function onRequestPost(context) {
   const stop = guard(context.request, context.env);
@@ -69,6 +78,22 @@ export async function onRequestPost(context) {
       "UPDATE courses SET deleted_at = NULL, updated_at = ? WHERE id = ?").bind(now, id));
   }
 
+  /* ----------------------------------------------------------- settings --
+     The colour a course wears, the order of the shelf, the bundled courses
+     dismissed from it. Per key rather than one blob, and the later stamp wins:
+     the `WHERE` on the upsert is what makes a device carrying a week-old
+     opinion unable to overwrite a newer one. The client decides what a stamp
+     means (src/lib/prefs.js); the server only compares them. */
+  const prefs = Array.isArray(payload.prefs) ? payload.prefs.slice(0, MAX_PREFS) : [];
+  for (const p of prefs) {
+    if (!p || !okKey(p.k) || typeof p.enc !== "string" || !p.enc) continue;
+    if (p.enc.length > MAX_PREF_BYTES) continue;
+    writes.push(db.prepare(
+      "INSERT INTO prefs (k, ts, enc) VALUES (?, ?, ?) ON CONFLICT(k) DO UPDATE SET " +
+      "ts = excluded.ts, enc = excluded.enc WHERE excluded.ts > prefs.ts")
+      .bind(p.k, Number(p.ts) || 0, p.enc));
+  }
+
   if (writes.length) await db.batch(writes);
 
   /* ----------------------------------------------------------- the reply --
@@ -92,6 +117,10 @@ export async function onRequestPost(context) {
   const listing = await db.prepare(
     "SELECT id, version, bytes, deleted_at FROM courses ORDER BY id").all();
 
+  /* And the settings, whole, for the same reason: a device cannot act on a key
+     it is never told about, and the whole table is a few hundred bytes. */
+  const settings = await db.prepare("SELECT k, ts, enc FROM prefs ORDER BY k").all();
+
   return json({
     ok: true,
     now,
@@ -103,6 +132,7 @@ export async function onRequestPost(context) {
       id: c.id, version: c.version, bytes: c.bytes, deleted: !!c.deleted_at,
       deletedAt: c.deleted_at || null
     })),
+    prefs: settings.results || [],
     purged
   });
 }

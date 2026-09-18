@@ -4,8 +4,9 @@
  * The site is public and works entirely offline: everything a reader does lives
  * in IndexedDB, and that is the whole product for everyone except the person
  * holding the secret. This file is what that one person gets — a copy of the
- * log and the courses on the account's own backend, so a wiped browser is a
- * download rather than a loss.
+ * log, the courses, and the handful of settings that belong to the shelf rather
+ * than to a device (src/lib/prefs.js), on the account's own backend, so a wiped
+ * browser is a download rather than a loss.
  *
  * Three properties, in the order they mattered:
  *
@@ -34,6 +35,7 @@ import { importCourse, importedIndex, filesOf, versionOf, markSynced,
 import { invalidate } from "./replay.js";
 import { purge } from "./purge.js";
 import { deriveKey, seal as sealBytes, open as openBytes, versionOfFiles } from "./seal.js";
+import { mine as myPrefs, apply as applyPrefs } from "./prefs.js";
 
 const SECRET = "cloud:secret";
 const CURSOR = "cloud:cursor";      /* server-assigned seq, never a clock */
@@ -76,6 +78,18 @@ const sealer = async () => {
 };
 const seal = async value => sealBytes(await sealer(), value);
 const open = async text => openBytes(await sealer(), text);
+
+/* Settings from the account, opened. One that will not open is one written
+   under a different secret: it is skipped rather than allowed to abort a sync
+   that is mostly about other things. */
+const opened = async (prefs = []) => {
+  const out = [];
+  for (const p of prefs) {
+    try { out.push({ k: p.k, ts: p.ts, v: await open(p.enc) }); }
+    catch { console.warn(`setting ${p.k}: could not be decrypted with this secret`); }
+  }
+  return out;
+};
 
 /* ----------------------------------------------------------------- calling --*/
 class Unauthorized extends Error {}
@@ -132,10 +146,25 @@ export function needsUpload(remote, localVersion, contentVersion) {
      its answers on the strength of a tombstone that predated it. */
   if (remote && remote.deleted) return localVersion == null;
   if (!remote) return true;                         /* the account has never seen it */
-  return remote.version !== contentVersion;         /* it has an older copy */
+  if (remote.version === contentVersion) return false;      /* the same bytes, both ends */
+
+  /* The two copies differ, and "differs" is all a content hash can say: it is a
+     digest, not a clock, so it reads the same from the stale end as from the
+     fresh one. Treating that as "the account has an older copy" is what made a
+     device holding last week's course hand it up — the account's newer body was
+     replaced by the stale one, and pullCourses then skipped the course because
+     this device had just sent it. One device backing up after another undid it.
+
+     The question a device *can* answer is whether it changed its own copy.
+     `localVersion` is the version the account last acknowledged for this copy,
+     so content that still hashes to it has not been touched here: the
+     difference is the account's doing, and the account's copy is the one to
+     keep. `null` is the other case — hand-installed and never acknowledged,
+     which is the reader saying this is the copy they want. */
+  return localVersion !== contentVersion;
 }
 
-/** Hand up anything the account does not have, or holds at an older version. */
+/** Hand up anything the account does not have, or holds an older copy of. */
 async function pushCourses(listing) {
   const there = new Map(listing.map(c => [c.id, c]));
   const sent = [];
@@ -150,7 +179,11 @@ async function pushCourses(listing) {
     if (!files) continue;
     const version = await versionOfFiles(files);
     if (!needsUpload(remote, versionOf(id), version)) {
-      markSynced(id, version);      /* already up there, just labelled wrongly here */
+      /* Only when the account really is holding these bytes. The other reason
+         to decline is that the account is *ahead*, and stamping the local copy
+         then would record an upload that never happened; the pull below is
+         what settles that one. */
+      if (remote && !remote.deleted && remote.version === version) markSynced(id, version);
       continue;
     }
     await call("/api/course", { op: "put", id, version, enc: await seal(files) });
@@ -223,8 +256,15 @@ export async function sync({ manual = false } = {}) {
     const sealed = await Promise.all(
       pending.map(async r => ({ id: r.id, ts: r.ts, enc: await seal(r) })));
 
+    /* Settings ride along with the rows. There are a few of them and they are
+       short, so the whole set goes every time rather than being tracked: the
+       account keeps whichever stamp is later, per key, and sending a key that
+       has not changed costs a hundred bytes and settles nothing. */
+    const sealedPrefs = await Promise.all(
+      myPrefs().map(async p => ({ k: p.k, ts: p.ts, enc: await seal(p.v ?? null) })));
+
     let cursor = Number(getItem(CURSOR)) || 0;
-    let merged = 0, listing = [], pages = 0, wrote = 0;
+    let merged = 0, listing = [], pages = 0, wrote = 0, settings = 0;
     /* Which courses the merged rows belong to: an open course has to be
        refolded rather than merely repainted, or it shows yesterday's schedule
        until the reader navigates away and back. */
@@ -236,6 +276,7 @@ export async function sync({ manual = false } = {}) {
         device: dev, since: cursor,
         rows: pages === 0 ? sealed : [],
         deletes: pages === 0 ? dropped : [],
+        prefs: pages === 0 ? sealedPrefs : [],
         restores: []
       });
       if (pages === 0) {
@@ -243,6 +284,7 @@ export async function sync({ manual = false } = {}) {
         if (sealed.length) markSent(pending.map(r => r.id));
         if (dropped.length) removeItem(BIN);
         listing = res.courses || [];
+        settings = applyPrefs(await opened(res.prefs));
       }
       const plain = [];
       for (const r of res.rows || []) {
@@ -264,11 +306,11 @@ export async function sync({ manual = false } = {}) {
 
     setItem(LAST, String(Date.now()));
     setItem(SEEN, JSON.stringify(listing.filter(c => c.deleted)));
-    if (merged || installed.length || removed.length)
+    if (merged || installed.length || removed.length || settings)
       dispatchEvent(new CustomEvent("learn:synced", {
-        detail: { merged, installed, removed, courses: [...touched] } }));
+        detail: { merged, installed, removed, settings, courses: [...touched] } }));
 
-    return { ok: true, sent: wrote, merged, uploaded, installed, removed,
+    return { ok: true, sent: wrote, merged, uploaded, installed, removed, settings,
              bin: listing.filter(c => c.deleted) };
   } catch (e) {
     /* Cursors are only advanced on success, so a failure costs nothing but the
