@@ -30223,7 +30223,7 @@ R("table", {
 	name: (b) => b.cap || b.label,
 	render: (b, _u, env) => {
 		const vmap = b.map || (b.mono ? CFG.valueStyles : null);
-		const sep = (i) => b.split != null && i === b.split - 1 ? " class=\"sep\"" : "";
+		const sep = (i) => b.split != null && i === b.split - 1 ? " class=\"tsplit\"" : "";
 		let h = U.body(b) + `<div class="tscroll"><table class="tbl${b.mono ? " tmono" : ""}">`;
 		const cap = U.caption(env.fignum, b.cap, "Table");
 		if (cap) h += `<caption>${cap}</caption>`;
@@ -30577,7 +30577,7 @@ function checkAsides(C, errs, warns) {
 					continue;
 				}
 				if (anchorKeys(v).length) errs.push(`${at}: asides.${k} contains an anchor — asides do not nest`);
-				if (strip(v).length > ASIDE_MAX) warns.push(`${at}: asides.${k} runs past ${ASIDE_MAX} characters — a longer explanation is a depth block with follows: true`);
+				if (strip(v).length > ASIDE_MAX) warns.push(`${at}: asides.${k} runs past ${ASIDE_MAX} characters — consider a depth follow-up if this crowds the margin (no length limit)`);
 			}
 		});
 		if (anchorKeys(textOf(u.quiz || [])).length) errs.push(`${u.id}: an aside anchor in a question — asides belong to blocks`);

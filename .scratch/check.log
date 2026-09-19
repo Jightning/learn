@@ -1,0 +1,473 @@
+
+> check
+> node tools/build.mjs && node tools/pack.mjs --private && node tools/test-replay.mjs && node tools/test-purge.mjs && node tools/test-order.mjs && node tools/test-prefs.mjs && node tools/test-sequence.mjs && node tools/test-prune.mjs && node tools/test-md.mjs && node tools/test-structure.mjs && node tools/test-text.mjs && node tools/test-next.mjs && node tools/test-speech.mjs && node tools/test-sync.mjs && node tools/test-cloud.mjs && node tools/test-cloud-e2e.mjs && node tools/test-author.mjs && node tools/test-coverage.mjs && node tools/gen-icons.mjs --check && node tools/lint-css.mjs && node tools/check-doc.mjs && node tools/build-agent-kit.mjs --check && node tools/validate.mjs && node tools/test-schedule.mjs && node tools/test-figures.mjs && node tools/gen-materials.mjs --check && node tools/audit-content.mjs && node tools/test-ui.mjs && node tools/audit-color.mjs && node tools/check-template.mjs
+
+  demo          5 sections ·  14 subsections ·   39 questions · custom blocks · public
+  ece20001     14 sections ·  49 subsections ·  224 questions · no code · private
+  ece27000      7 sections ·  24 subsections ·  118 questions · no code · private
+  ma26600       6 sections ·  31 subsections ·  166 questions · no code · private
+  resume       24 sections ·  93 subsections ·  377 questions · no code · private
+
+built dist/  1 public · 4 private (kept out of dist/) · 56 sections · 924 questions
+  shell         1009KB
+  demo           118KB    36KB gzipped
+  ece20001     204 files · 1104KB · 310KB gzipped -> packed/ece20001.course.json
+  ece27000      82 files · 368KB · 109KB gzipped -> packed/ece27000.course.json
+  ma26600      110 files · 566KB · 157KB gzipped -> packed/ma26600.course.json
+  resume       199 files · 1296KB · 387KB gzipped -> packed/resume.course.json
+
+Open these from the app's library to install them on a device.
+replay vs lived
+  ok    Loop B state matches
+  ok    Loop A state matches
+checkpoint
+  ok    resuming from a checkpoint equals one pass
+merge
+  ok    union sorted by ts is order-independent
+sanity
+  ok    stability grew across reviews
+  ok    criterion tracked distinct items
+  ok    a due date exists
+
+all passing
+  ok    the fixture actually wrote something
+  ok    Loop A ratings are gone
+  ok    Loop B schedule is gone
+  ok    the subsection note is gone
+  ok    the block-anchored note is gone
+  ok    the stated reason is gone
+  ok    which notes were folded is gone
+  ok    the reading lane is forgotten
+  ok    the chosen accent is forgotten
+  ok    the replay checkpoint is gone
+  ok    the outcome rows are gone
+  ok    purge reports what it dropped
+  ok    the other course keeps everything
+  ok    no key still names the removed course
+  ok    the log has only the other course's rows
+  ok    a rebuild after the purge finds nothing to fold
+  ok    purging an unknown course drops nothing
+  ok    purging an unknown course does not throw
+
+all passed
+  ok    a course moves to the place it was dropped on
+  ok    and backwards as well as forwards
+  ok    a move off the end of the shelf changes nothing
+  ok    moving a course to where it already is changes nothing
+  ok    moving a course that is not there changes nothing
+  ok    the original is never mutated
+  ok    with nothing saved, the shelf is the order it was given in
+  ok    a saved order is what the shelf reads
+  ok    and the set it is applied to may be in any order
+  ok    a newly imported course lands at the end
+  ok    a removed course simply does not appear
+  ok    and coming back puts it where it was
+  ok    courses never moved keep their given order behind the ones that were
+  ok    an unreadable saved order falls back to the given one
+  ok    and entries that are not course ids are ignored
+
+all passed
+  ok    a course colour is a synced setting
+  ok    so are the shelf's order and its dismissals
+  ok    a reading position is not
+  ok    nor the secret
+  ok    and writing one through this door is refused rather than quietly allowed
+  ok    a setting is offered with its value
+  ok    and stamped when it was made
+  ok    clearing one leaves a tombstone rather than an absence
+  ok    and the value is gone from the device
+  ok    an unstamped setting still travels
+  ok    an older stamp from the account is ignored
+  ok    a newer one is taken
+  ok    and taking it moves the stamp, so it is not taken twice
+  ok    a cleared setting arrives as a clearing
+  ok    a key this device has never heard of is taken
+  ok    a key that is not a setting is refused
+  ok    a device carrying an old opinion of one key does not overwrite another
+  ok    and its own key keeps its stamp
+
+all passing
+  ok    caught: As we saw in the last part, the carry bit …
+  ok    caught: Recall that a separable equation divides b…
+  ok    caught: As established above, the potential exists…
+  ok    caught: You already know how to integrate this.…
+  ok    caught: By now you can read a truth table.…
+  ok    caught: Earlier we defined the Jacobian.…
+  ok    caught: The method from the previous section appli…
+  ok    caught: We will see why this matters when we get t…
+  ok    caught: There is more on this later.…
+  ok    caught: A fuller argument waits in a later section…
+  ok    caught: The rest comes later in this course.…
+  ok    left alone: Cued recall is the format that retrieves a…
+  ok    left alone: Recall improves when the test is spaced ra…
+  ok    left alone: The drill asks you to recall the threshold…
+  ok    left alone: Free recall and recognition are different …
+  ok    left alone: You saw one instance of this above, and he…
+  ok    left alone: The reader will recall nothing they never …
+  ok    left alone: Later work on this problem uses the same s…
+  ok    left alone: This is covered by the prerequisite on com…
+  ok    a list item is read
+  ok    an aside is read
+  ok    a quiz why is read
+  ok    and each names the subsection it is in
+  ok    prose that points nowhere is not listed
+  ok    an empty course is quiet
+
+all passing
+  ok    everything past the newest KEEP is attempted
+  ok    the newest KEEP are not touched
+  ok    the deletes are reported in list order
+  ok    each delete names the project
+  ok    each delete passes --force
+  ok    a successful delete is reported ok
+  ok    the status is carried through for printing
+  ok    a prompt answered 'no' is not reported as a deletion
+  ok    the refusal line is what gets shown
+  ok    a throwing delete is a failed result, not a crash
+  ok    a throw does not stop the ones after it
+  ok    nothing to prune runs no commands
+  ok    an empty list is a no-op
+  ok    KEEP below 1 still keeps the newest
+
+all passed
+  ok    escaped: <script>alert(1)</script>
+  ok    escaped: <img src=x onerror=alert(1)>
+  ok    escaped: <iframe src=javascript:alert(1)>
+  ok    escaped: <a href='javascript:alert(1)'>x<
+  ok    escaped: <svg/onload=alert(1)>
+  ok    escaped: </p><script>alert(1)</script><p>
+  ok    escaped: <style>*{display:none}</style>
+  ok    allows https://example.com/a
+  ok    allows http://example.com/a
+  ok    refuses javascript:alert(1)
+  ok    refuses JaVaScRiPt:alert(1)
+  ok    refuses data:text/html,<script>1</sc
+  ok    refuses vbscript:msgbox(1)
+  ok    refuses file:///etc/passwd
+  ok    a refused link keeps the literal text the reader typed
+  ok    renders "**b**"
+  ok    renders "*i*"
+  ok    renders "_i_"
+  ok    renders "`c`"
+  ok    renders "- a\n- b"
+  ok    renders "1. a\n2. b"
+  ok    renders "a\n\nb"
+  ok    renders "a\nb"
+  ok    renders ""
+  ok    renders "   "
+  ok    renders "a & b"
+  ok    a bare number is not mistaken for a code placeholder
+  ok    emphasis inside a code span stays literal
+  ok    a list closes before the paragraph after it
+
+all passed
+  ok    a key renders its items as an ordered list
+  ok    items render inside the callout, before the source line
+  ok    items are unordered unless ordered: true
+  ok    a def renders items
+  ok    a trap renders items
+  ok    a note renders items
+  ok    a list block still renders its items after its intro
+  ok    a callout with no items renders no empty list
+  ok    Review depth keeps a callout's steps open
+  ok    …even when it carries a claim
+  ok    an explicit notes: still wins
+  ok    a note with items stays closed, as notes do
+  ok    split marks the last input column, head and body
+  ok    no table cell wears the hairline divider's class
+  ok    a table with no split marks nothing
+  ok    a follow-up attaches to the block above it
+  ok    consecutive follow-ups share one parent
+  ok    a block without follows attaches to nothing
+  ok    a follow-up on the first block attaches to nothing
+  ok    a hidden follow-up is its own attached run
+  ok    a hidden block that follows nothing gets its own stub
+  ok    a run of hidden follow-ups stays one run
+  ok    a follow-up of a hidden parent joins the parent's run
+  ok    the attached stub names what it holds
+  ok    a def marked follows does not open its own topic
+  ok    an anchored aside is found with its phrase and body
+  ok    an aside with no anchor is not drawn
+  ok    anchors inside items are found
+  ok    the reading row marks the phrase for pairing
+  ok    everywhere else the phrase is plain text
+  ok    decorate drops anchors it was not given pre-rendered
+  ok    decorate keeps anchors the row already rendered
+  ok    anchorKeys lists every key
+  ok    a run-in enumeration in a callout fails
+  ok    …and names items: as the fix
+  ok    equation numbers do not trip it
+  ok    O(1) and derivative orders do not trip it
+  ok    items: on a block that cannot render them fails
+  ok    follows: on the first block fails
+  ok    follows: must be true
+  ok    a spine block may not follow a depth block
+  ok    a depth block may follow a spine block
+  ok    an anchor with no aside fails
+  ok    an aside with no anchor fails
+  ok    a paired anchor and aside pass
+  ok    a long aside warns
+  ok    an anchor in a question fails
+
+all passed
+  ok    gt decodes
+  ok    lt decodes
+  ok    amp decodes
+  ok    numeric decodes
+  ok    nbsp becomes a space
+  ok    unknown entity is left alone
+  ok    an encoded tag survives as text
+  ok    a gloss is produced
+  ok    no TeX source survives into a gloss
+  ok    no raw entity survives into a gloss
+  ok    the maths is rendered, not dropped
+  ok    an escaped comparison arrives as a glyph
+  ok    clip marks what it cut
+  ok    clip leaves a short string whole
+  ok    a claim is taken from the opening sentence
+  ok    a colon means it was introducing a list, not making a claim
+  ok    a semicolon likewise
+  ok    a fragment is not a claim
+  ok    a whole paragraph is not a claim
+  ok    an authored core is never overridden
+  ok    an authored gist is never overridden
+  ok    an authored claim is what renders
+  ok    a derived claim keeps its maths as markup
+  ok    a derived claim stops at its first sentence
+  ok    a decimal point inside maths does not end the sentence
+  ok    a dot inside an attribute does not end the sentence
+  ok    a slice closes what it left open
+  ok    prose with no sentence terminator keeps its name
+  ok    a prose block with no authored claim now leads rather than closing
+  ok    and it still says there is more behind it
+  ok    a block the gate rejects falls back to its name
+
+all passed
+  ok    a fresh course recommends something
+  ok    a fresh course starts at section 1
+  ok    the first recommendation carries a reason
+  ok    a first-time reader is told the course assumes nothing before this
+  ok    and the reason is a sentence, not a count
+  ok    a one-part section does not say "1 parts"
+  ok    the first recommendation goes somewhere
+  ok    a finished course still recommends something
+  ok    a finished course offers practice, not a dead end
+  ok    an untouched quiz behind an answered one is offered
+  ok    and it names the subsection it belongs to
+  ok    no storage means nothing is due, not everything
+  ok    the floor is a small number of cards
+  ok    a place in another course does not become a resume
+  ok    a place in this course leads
+  ok    resume names the subsection by its number
+  ok    resume estimates what is left
+  ok    every recommendation is complete (start)
+  ok    every recommendation is complete (practice)
+  ok    every recommendation is complete (quiz)
+  ok    every recommendation is complete (resume)
+
+all passed
+  ok    a short cue is one chunk
+  ok    and is unchanged
+  ok    a long cue is split
+  ok    no chunk can reach the platform's cutoff
+  ok    nothing is lost in the split
+  ok    splits land on sentence ends
+  ok    an over-long sentence breaks at a clause
+  ok    and still fits
+  ok    an unbroken run is cut rather than truncated by the platform
+  ok    empty text produces no chunks
+  ok    every offered rate keeps a chunk under the cutoff
+  ok    a cue with no speakable text still holds a place
+  ok    chunks know which cue they came from
+  ok    the last chunk of a cue is marked
+  ok    nothing is spoken before play
+  ok    play speaks the first chunk
+  ok    the queue runs to the end
+  ok    every cue was spoken
+  ok    pause cancels rather than calling pause()
+  ok    pause is a state the UI can show
+  ok    and it holds the position
+  ok    resume speaks again from there
+  ok    and still finishes
+  ok    a cancelled utterance cannot advance the queue
+  ok    and cannot restart playback
+  ok    a queue that runs out ends
+  ok    a cue arriving after the end restarts playback
+  ok    and is spoken
+  ok    appending mid-session keeps the earlier cues
+  ok    a held cue stops the session
+  ok    and the cue after it is not spoken
+  ok    play carries on past the hold
+  ok    skip lands on the next cue
+  ok    and keeps playing
+  ok    skipping back lands on the cue start
+  ok    changing speed takes effect at once
+  ok    and is reported
+  ok    stop rewinds to the start
+  ok    a resumption is booked rather than spoken in the same task
+  ok    a step booked before stop does not speak after it
+  ok    and the session stays stopped
+  ok    restarting speaks the new session once, not both
+  ok    stopping cancels at once
+  ok    and again a turn later, for what had not started yet
+  ok    a novelty voice is never chosen
+  ok    even when the platform calls it the default
+  ok    an enhanced voice outranks a plain good one
+  ok    the menu is ordered by the same judgement
+  ok    another language is not offered
+  ok    no voices at all is not a crash
+  ok    an unset preference speaks in the best voice available
+  ok    no platform engine is a state, not a crash
+  ok    and every control is inert rather than fatal
+
+all passing  (53)
+  ok    a slow clock's rows still reach the fast device
+  ok    a timestamp cursor would have lost them (so the test is meaningful)
+  ok    three rows in one millisecond all arrive
+  ok    their ids stay distinct
+  ok    both devices hold the same rows
+  ok    both devices compute the same schedule
+  ok    neither answer was discarded
+  ok    first merge takes both
+  ok    second merge takes none
+  ok    the log did not grow
+  ok    a re-sorted redelivery is still ignored
+  ok    an id-less row throws instead of vanishing
+
+all passing
+  ok    an unauthenticated sync is refused
+  ok    a wrong secret is refused
+  ok    neither one touched the database
+  ok    with no secret configured the route does not exist
+  ok    course bodies are behind the same gate
+  ok    still nothing read
+  ok    a closed window refuses even the owner
+  ok    rows are accepted in the same call that pulls
+  ok    a device is told nothing it wrote itself
+  ok    re-sending the same rows writes nothing
+  ok    the other device receives them
+  ok    and a cursor to come back with
+  ok    a second pull at that cursor is empty
+  ok    a device may not write another device's rows
+  ok    a course body can be handed up
+  ok    it appears in the sync listing
+  ok    and comes back byte-identical
+  ok    what is stored cannot be read without the key
+  ok    with the key it opens
+  ok    the wrong secret cannot open it
+  ok    a modified payload fails rather than opening as something else
+  ok    a large body is stored in pieces
+  ok    and reassembles exactly
+  ok    replacing it with a shorter one leaves no tail
+  ok    an id that is a path is refused
+  ok    a deletion is a tombstone, not a disappearance
+  ok    the other device is told to remove it
+  ok    the body is kept while it is in the bin
+  ok    restoring clears the tombstone
+  ok    and the body is still there to come back
+  ok    a tombstone past the window is purged
+  ok    its body goes with it
+  ok    and it leaves the listing
+  ok    settings ride along in the same call
+  ok    a device carrying an older stamp does not overwrite a newer setting
+  ok    a later one replaces it
+  ok    and the key it said nothing about is untouched
+  ok    a key that is a path, or a value that is empty, is refused
+  ok    what is stored is ciphertext the server never reads into
+  ok    a sync is one request carrying rows, deletions and the listing
+  ok    a course the account has never seen is sent
+  ok    a course whose local version came from somewhere else is still sent
+  ok    a course the account holds at the same content is not sent
+  ok    a course the account holds at an older version is sent
+  ok    a tombstoned course this device got from the account is not sent back up
+  ok    a tombstoned course just hand-installed here is sent, which restores it
+  ok    a device whose copy the account has moved past does not hand it back up
+  ok    but a copy edited here since the account saw it still goes up
+  ok    and a hand-installed copy the account has never acknowledged goes up
+
+all passing
+  ok    the phone starts with only the bundled course
+  ok    the laptop has the course
+  ok    the laptop reports handing it up
+  ok    the phone reports installing it
+  ok    the phone now has the course
+  ok    an unchanged shelf transfers no bodies
+  ok    and says so rather than claiming work
+  ok    a deletion on one device removes it on the other
+  ok    the deleted course is offered back from the bin
+  ok    restoring brings it back
+  ok    the re-imported course is on the shelf before syncing
+  ok    backing up does not delete a course just re-imported
+  ok    the re-import reaches the other device too
+  ok    the device holding the older copy installs the newer one
+  ok    rather than handing its own back up
+  ok    so the account still holds the newer copy
+  ok    a synced shelf still transfers no bodies
+  ok    the colour picker is on the course
+  ok    the phone reports taking the settings
+  ok    a bundled course dismissed on one device is dismissed on the other
+  ok    and the colour chosen on one is the colour on the other
+
+all passing
+ok   author     36/36 checks
+ok   coverage   25/25 checks
+ok   icons      derived from icon.svg, sizes match
+ok   css        no selector declared twice, no var() naming a missing token,
+                no class emitted without a rule
+ok   docs       25 examples in 2 files parse, every block type and field is real
+ok   agent-kit  the workflow, the spec and plugin/ are in step
+ok   demo       5 sections · 14 subsections · 39 questions · 6 concepts
+ok   ece20001   14 sections · 49 subsections · 224 questions · 70 concepts
+FAIL ece27000   7 sections · 24 subsections · 123 questions · 43 concepts
+       ✗ s7-2 "Dataflow Modelling and the Operator Set" key.h: bare "&" in HTML — write &lt; or &amp;  …> is logical, and <code>&A</code> is reduction. …
+       ✗ s7-2 "Dataflow Modelling and the Operator Set" ex.h: bare "&" in HTML — write &lt; or &amp;  …
+  <li>Reduction: <code>&A</code> ANDs         '…
+       ✗ s7-2 "Dataflow Modelling and the Operator Set" quiz "Evaluate a reduction operation".q: bare "&" in HTML — write &lt; or &amp;  …1101</code>, give <code>&A</code>,
+<code>|A</cod…
+       ✗ s7-2 "Dataflow Modelling and the Operator Set" quiz "Evaluate a reduction operation".why: bare "&" in HTML — write &lt; or &amp;  …wn bits together. <code>&A</code> is
+           …
+       ✗ s7-3 "Behavioural Modelling and Hierarchy": names no term with a def block — its section's primer loses coverage
+       ✗ s7-3 "Behavioural Modelling and Hierarchy": no questions
+       ✗ concepts/behavioural-model: review: true with no drills/behavioural-model.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/bubble-pushing: review: true with no drills/bubble-pushing.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/complement: review: true with no drills/complement.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/dataflow-model: review: true with no drills/dataflow-model.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/demorgans-theorem: review: true with no drills/demorgans-theorem.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/design-cost: review: true with no drills/design-cost.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/duality: review: true with no drills/duality.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/dynamic-power: review: true with no drills/dynamic-power.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/equality-comparator: review: true with no drills/equality-comparator.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/fan-out: review: true with no drills/fan-out.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/full-adder: review: true with no drills/full-adder.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/half-adder: review: true with no drills/half-adder.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/hexadecimal: review: true with no drills/hexadecimal.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/karnaugh-map: review: true with no drills/karnaugh-map.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/logic-level: review: true with no drills/logic-level.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/majority-function: review: true with no drills/majority-function.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/mos-switch-model: review: true with no drills/mos-switch-model.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/nand: review: true with no drills/nand.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/noise-margin: review: true with no drills/noise-margin.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/nor: review: true with no drills/nor.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/number-literal: review: true with no drills/number-literal.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/positional-number-system: review: true with no drills/positional-number-system.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/product-of-sums: review: true with no drills/product-of-sums.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/propagation-delay: review: true with no drills/propagation-delay.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/pull-down-network: review: true with no drills/pull-down-network.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/pull-up-network: review: true with no drills/pull-up-network.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/rc-time-constant: review: true with no drills/rc-time-constant.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/shannons-expansion: review: true with no drills/shannons-expansion.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/static-power: review: true with no drills/static-power.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/structural-model: review: true with no drills/structural-model.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/sum-of-products: review: true with no drills/sum-of-products.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/timing-diagram: review: true with no drills/timing-diagram.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/transition-time: review: true with no drills/transition-time.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/truth-table: review: true with no drills/truth-table.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/universal-gate: review: true with no drills/universal-gate.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/unsigned-range: review: true with no drills/unsigned-range.yaml — a reviewed concept owes 3 worked items
+       ✗ concepts/xor: review: true with no drills/xor.yaml — a reviewed concept owes 3 worked items
+       ! concept "behavioural-model" is defined but never referenced
+       ! concept "majority-function" is defined but never referenced
+       ! concept "static-cmos" is defined but never referenced
+ok   ma26600    6 sections · 31 subsections · 166 questions · 35 concepts
+ok   resume     24 sections · 93 subsections · 377 questions · 37 concepts
+exit=1

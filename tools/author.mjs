@@ -67,7 +67,7 @@ const WRITING_STEPS = {
   spine:     { cc: ["0", "1*", "6", "6.1", "6.2", "6.4", "6.6", "5a", "10*"], wr: PROSE,
                mt: ["2*", "3*", "5*", "10*"] },
   quizzes:   { cc: ["0", "1*", "6.5", "7*", "9"], mt: ["2*"] },
-  tiers:     { cc: ["0", "1*", "6.3", "14"], wr: PROSE, mt: ["7*"] },
+  tiers:     { cc: ["0", "1*", "6.3*", "14"], wr: PROSE, mt: ["7*"] },
   verify:    { cc: ["0", "1*", "12*"], mt: ["6*", "9*"] }
 };
 /* For the drafter subagent, which is pointed at these files rather than
@@ -204,7 +204,7 @@ function briefText(which, reader) {
     "For each subsection, finished before the next begins:",
     "  - Read what it needs from its sources in one turn (parallel reads; part of a large file only).",
     "  - Write the file once: spine (§6), then quizzes (§7), then depth and apply (§6.3)" +
-      (lean ? " — lean: depth only where a key rule's derivation did not fit the spine, no apply tier" : "") + ".",
+      (lean ? " — lean: keep optional material focused; retain any examples or depth needed for understanding" : "") + ".",
     "    Work every quiz answer out before writing it; `verified: <today>` only on answers you worked out.",
     "    A source topic you do not teach gets a YAML comment at the top of the file: " +
       "`# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",

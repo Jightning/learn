@@ -3383,7 +3383,7 @@ const WRITING_STEPS = {
 		cc: [
 			"0",
 			"1*",
-			"6.3",
+			"6.3*",
 			"14"
 		],
 		wr: PROSE,
@@ -3514,7 +3514,7 @@ function briefText(which, reader) {
 	] : [
 		"For each subsection, finished before the next begins:",
 		"  - Read what it needs from its sources in one turn (parallel reads; part of a large file only).",
-		"  - Write the file once: spine (§6), then quizzes (§7), then depth and apply (§6.3)" + (lean ? " — lean: depth only where a key rule's derivation did not fit the spine, no apply tier" : "") + ".",
+		"  - Write the file once: spine (§6), then quizzes (§7), then depth and apply (§6.3)" + (lean ? " — lean: keep optional material focused; retain any examples or depth needed for understanding" : "") + ".",
 		"    Work every quiz answer out before writing it; `verified: <today>` only on answers you worked out.",
 		"    A source topic you do not teach gets a YAML comment at the top of the file: `# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",
 		confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",

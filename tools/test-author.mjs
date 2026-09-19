@@ -121,8 +121,15 @@ try {
   const brief = author("write", cid), lean = author("write", cid, "--lean");
   ck("write carries the writing rules, the reader and the spec",
      /Steps 5-7/.test(brief.stdout) && /goal: test/.test(brief.stdout) && /## The spec/.test(brief.stdout));
-  ck("a lean brief is much smaller", lean.stdout.length < brief.stdout.length * 0.75 && /no apply tier/.test(lean.stdout),
+  ck("a lean brief is much smaller", lean.stdout.length < brief.stdout.length * 0.75 && /keep optional material focused/.test(lean.stdout),
      `${lean.stdout.length} vs ${brief.stdout.length}`);
+  for (const [name, output] of [["full", brief.stdout], ["lean", lean.stdout]]) {
+    ck(`${name} writing rules include phrase notes and the complexity judgement`,
+       /Judging a passage/.test(output) && /asides:/.test(output) && /follows: true/.test(output));
+    ck(`${name} writing rules allow combined help without caps`,
+       /Use none, one, or several/.test(output) && /no numerical caps/.test(output) &&
+       !/Nothing earns all three|no apply tier/.test(output));
+  }
   ck("write warns about unfinished shape but records it anyway",
      /warning: steps 0-4 look unfinished/.test(brief.stdout) && existsSync(join(state, "course.done")), brief.stdout.slice(0, 200));
   ck("begin gives the shape rules while the course has none",

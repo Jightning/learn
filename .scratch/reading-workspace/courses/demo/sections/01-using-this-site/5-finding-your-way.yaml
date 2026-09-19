@@ -1,0 +1,132 @@
+title: Finding your way around
+blocks:
+  - t: p
+    source: docs/architecture.md §4
+    h: |-
+      Courses cross-reference themselves heavily, which only works if following a reference is cheap and coming back is free. Everything in this subsection exists to make one idea reachable from wherever you happen to be standing.
+
+  - t: def
+    source: docs/code_truth.md T12
+    term: Margin card
+    label: References come to you
+    cat: navigation-surfaces
+    core: |-
+      A page that mentions an idea defined elsewhere puts a card in the margin beside that line, carrying enough of the definition to keep reading.
+    h: |-
+      <p>You are never sent to the end of the section to find out what a word meant, and following the link properly leaves a pill that takes you back to where you were.</p>
+
+  - t: list
+    source: docs/architecture.md §4
+    core: |-
+      Five navigation surfaces, each answering a different question.
+    h: |-
+      The rest of the navigation, in one list:
+    items:
+      # Quoted for the same reason as the list in §1.1: the colon would
+      # otherwise make this line a mapping rather than a string.
+      - '<b>The index</b>, in two bands: <i>ideas</i>, every reused concept with everywhere it appears, and <i>kinds</i>, every category the course sorts its material into with what each one is not'
+      - <b>The dependency map</b>, which section needs which, with your mastery drawn onto the nodes
+      - <b>Search</b> (<code>/</code>), across the whole course, arrow keys to pick
+      - <b>Explore</b>, the same index with filters on it, down to the individual rule or table
+      - <b>The sidebar</b> (<code>\</code> hides it) and <code>[</code> <code>]</code> to page between sections
+
+  - t: def
+    source: docs/material_truth.md M35
+    term: Category
+    label: The half of the index that is not a list of ideas
+    cat: navigation-surfaces
+    core: |-
+      A <b>category</b> is a set of things that are the same <i>kind</i> of thing, wherever in the course they happen to sit.
+    h: |-
+      <p>A section groups by position and a <c k="non-redundancy">concept</c> groups by mention; neither answers “what are all the X?”. A category does, and it carries a <b>boundary</b>: what falls outside it, and which neighbouring category those things belong to instead. That boundary is usually the thing you were actually trying to learn.</p>
+      <p>Ideas and kinds share the index page because they are the two halves of one question. An idea is a thing you have to hold; a kind is a shelf you can find things on. Neither is a place in the course.</p>
+
+  - t: key
+    source: docs/architecture.md §3f
+    label: Two search surfaces, two questions
+    cat: navigation-surfaces
+    core: |-
+      <code>/</code> opens the overlay when you want to <i>go</i> somewhere; <b>Explore</b> is the page for when you want to <i>see everything</i> of some kind.
+    h: |-
+      <p>The overlay is one box and one list because a half-remembered word does not want a filter panel in front of it. Explore filters by kind, category and tag, holds its state in the URL, and will happily return a whole category with nothing typed at all. Both reach individual blocks, not just the page a block sits on.</p>
+
+  - t: note
+    source: docs/deploy.md
+    label: Reading on a phone
+    core: |-
+      Add it to the Home Screen: iOS deletes a tab’s storage after seven days.
+    h: |-
+      <p>Add the site to your Home Screen. That is not a preference: on iOS, a browser tab's storage is deleted after seven days without a visit, and a review schedule routinely plans further ahead than that. A home-screen install is exempt, and it is also what lets the site open with no network.</p>
+
+  - t: p
+    tier: depth
+    source: docs/deploy.md
+    h: |-
+      Two devices can be kept in step without an account existing anywhere: <code>npm run sync</code> runs a server on your own machine, prints an address and a token, and stops on its own after ten idle minutes. Your answers and courses move between your devices and nowhere else. There is no middle.
+
+  - t: trap
+    tier: depth
+    source: docs/deploy.md
+    label: The folder is the backup
+    core: |-
+      A course installed in a browser is one copy in one place, and browsers do evict storage.
+    h: |-
+      <p>Keep the folder you imported from, or export the course back out from its card in the library. That round trip is also how you hand a course to a model for editing and take the changes back.</p>
+
+quiz:
+  - type: Choose the navigation
+    concept: non-redundancy
+    q: |-
+      You are mid-paragraph and it uses a term you have forgotten. What does the site expect you to do?
+    a: |-
+      Read the margin card that is already beside that line. For the full entry, follow the link and use the return pill to come back.
+    why: |-
+      <p>The reference is placed next to the mention rather than collected at the end because a definition you have to go looking for is one you read the paragraph without.</p>
+    why_prompt: Why is the card beside the line rather than at the end of the section?
+    verified: 2026-09-06
+
+  - type: Tell two indexes apart
+    concept: non-redundancy
+    q: |-
+      You remember reading a table of something, but not which section it was in. The index has two bands, Ideas and Kinds. Which one is built to answer that, and why is the other one not?
+    a: |-
+      Kinds. A category groups things by what kind they are regardless of where they sit, so it does not need you to remember the position. Ideas is an index of <em>mentions</em>: it answers "where else is this idea talked about", which still starts from knowing which idea you want.
+    why: |-
+      <p>"Search" is the tempting answer and it works only if you can recall a word that was actually in the table. The point of a category is that it is reachable when the thing you have retained is the <em>kind</em> rather than the wording or the place.</p>
+    why_prompt: Which of the two indexes needs you to already know where you read it?
+    verified: 2026-09-11
+
+  - type: Protect your data
+    concept: completeness
+    q: |-
+      Why does reading on an iPhone specifically call for adding the site to the Home Screen?
+    a: |-
+      Because iOS deletes a tab's stored data after seven days without a visit, and review intervals are routinely longer than that. Home-screen apps are exempt.
+    why: |-
+      <p>It is the one platform rule that can silently destroy a schedule, and it does so precisely when the schedule is working. Long intervals are the goal, and long intervals are what trip the deletion.</p>
+    why_prompt: Why does a *longer* review interval make this more dangerous, not less?
+    verified: 2026-09-06
+
+  - type: Synthesis
+    concept: confidence
+    q: |-
+      <p>You read a course end to end in the Spine lane, answer every quiz item
+      on the first try, and mark high confidence each time. Your review queue
+      stays empty the whole way. Six weeks later most of it is gone.</p>
+      <p>Which part of the design let that happen, and what would you change
+      about it? Say what your change would cost.</p>
+    a: |-
+      <p>A good answer names the mechanism: enrolment is driven by confident
+      misses and by drilling a concept from its own entry, so a reader who never
+      misses never enrols anything. It then picks a side. Auto-enrolling every
+      concept on first read buys retention and costs the reader a queue they
+      did not ask for, full of items about things they already hold. Leaving it
+      manual keeps the queue honest and puts the work of noticing on the
+      reader.</p>
+    why: |-
+      <p>There is no right answer here, and the trade-off is real rather than a
+      teaching device. The site takes the second option on purpose. What is
+      being tested is whether you can see the empty queue as a consequence of a
+      choice rather than as the system working.</p>
+    why_prompt: What are the only two events that put a concept into the queue?
+    verified: 2026-09-08

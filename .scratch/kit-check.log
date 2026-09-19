@@ -1,0 +1,1 @@
+FAIL agent-kit  stale, run node tools/build-agent-kit.mjs: plugin/docs/create_course.md

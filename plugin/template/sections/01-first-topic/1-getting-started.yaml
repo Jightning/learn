@@ -166,8 +166,9 @@ blocks:
 
   # An aside names one phrase inside a block rather than the whole block: mark
   # it `<n k="…">` in the text and write the note under the same key in
-  # `asides:`. Both are required together, and the note shows only at Study
-  # depth, so the block must read correctly with the aside ignored.
+  # `asides:`. Both are required together. Notes are available in Study and
+  # Review; hover or focus a note to highlight its exact text. The prose stays
+  # unmarked at rest and must still read correctly with the aside ignored.
   - t: key
     follows: true
     cat: block-kinds

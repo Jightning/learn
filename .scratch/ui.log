@@ -1,0 +1,44 @@
+FAIL dist/       1483/1525 checks
+       ✗ the handle keeps focus across the move
+       ✗ the order is the reader's and survives a reload  [demo,ece20001,ece20007,ece27000,ece29401,ece36800,ma26600,resume]
+       ✗ the reverse key puts it back  [ece20001,demo,ece20007,ece27000,ece29401,ece36800,ma26600,resume]
+       ✗ an arrow at the end of the shelf moves nothing  [ece20001,demo,ece20007,ece27000,ece29401,ece36800,ma26600,resume]
+       ✗ dragging the handle onto another card moves it there  [demo,ece20001,ece20007,ece27000,ece29401,ece36800,ma26600,resume -> demo,ece20001,ece20007,ece27000,ece29401,ece36800,ma26600,resume]
+       ✗ the shelf is back the way it was found  [ece20001,demo,ece20007,ece27000,ece29401,ece36800,ma26600,resume]
+       ✗ demo: a margin tab opens the run it holds  [5 collapsed -> 5]
+       ✗ demo: the open panel is set on its own ground  [rgb(244, 246, 243) -> rgb(244, 246, 243) on rgb(251, 252, 250)]
+       ✗ demo: and draws its own edge  [1 -> 1]
+       ✗ ece20001: margin cards align with their blocks  [20 rows, worst -19px]
+       ✗ ece20001: a confident miss says what follows from it
+       ✗ ece20001: a margin tab opens the run it holds  [3 collapsed -> 3]
+       ✗ ece20001: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ ece20001: and draws its own edge  [1 -> 1]
+       ✗ ece20001: a member says where it lives
+       ✗ ece20007: a confident miss says what follows from it
+       ✗ ece20007: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ ece20007: and draws its own edge  [1 -> 1]
+       ✗ ece27000: no full card beside a heading  [1 rows]
+       ✗ ece27000: margin cards align with their blocks  [7 rows, worst -51px]
+       ✗ ece27000: a linked subsection is marked on arrival  [s7-3 wanted s7-2]
+       ✗ ece27000: a confident miss says what follows from it
+       ✗ ece27000: a margin tab opens the run it holds  [1 collapsed -> 2]
+       ✗ ece27000: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ ece27000: and draws its own edge  [1 -> 1]
+       ✗ ece27000: a member says where it lives
+       ✗ ece29401: a confident miss says what follows from it
+       ✗ ece29401: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ ece29401: and draws its own edge  [1 -> 1]
+       ✗ ece36800: a confident miss says what follows from it
+       ✗ ece36800: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ ece36800: and draws its own edge  [1 -> 1]
+       ✗ ma26600: a margin tab opens the run it holds  [7 collapsed -> 8]
+       ✗ ma26600: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ ma26600: and draws its own edge  [1 -> 1]
+       ✗ resume: a margin tab opens the run it holds  [2 collapsed -> 3]
+       ✗ resume: the open panel is set on its own ground  [rgb(38, 36, 34) -> rgb(38, 36, 34) on rgb(30, 28, 26)]
+       ✗ resume: and draws its own edge  [1 -> 1]
+       ✗ resume: a member says where it lives
+       ✗ resume: an addressed block is open even at index depth  [s1-1~0]
+       ✗ resume: the snippet keeps the material's own case  ["…hy lets each step emit an event the next one li"]
+       ✗ no JavaScript errors  [CONSOLE: Error: <path> attribute d: Expected number, "…7927e+38 L369.9 -4.2873219171892…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 3 L 0interval 3 L 0in…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 3 L 0interval 3 L 0in…". | CONSOLE: Error: <svg> attribute width: Expected length, "NaN". | CONSOLE: Error: <path> attribute d: Expected number, "M 0 25 L 0interval 25 L 0i…".]
+exit=1

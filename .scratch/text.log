@@ -1,0 +1,33 @@
+  ok    gt decodes
+  ok    lt decodes
+  ok    amp decodes
+  ok    numeric decodes
+  ok    nbsp becomes a space
+  ok    unknown entity is left alone
+  ok    an encoded tag survives as text
+  ok    a gloss is produced
+  ok    no TeX source survives into a gloss
+  ok    no raw entity survives into a gloss
+  ok    the maths is rendered, not dropped
+  ok    an escaped comparison arrives as a glyph
+  ok    clip marks what it cut
+  ok    clip leaves a short string whole
+  ok    a claim is taken from the opening sentence
+  ok    a colon means it was introducing a list, not making a claim
+  ok    a semicolon likewise
+  ok    a fragment is not a claim
+  ok    a whole paragraph is not a claim
+  ok    an authored core is never overridden
+  ok    an authored gist is never overridden
+  ok    an authored claim is what renders
+  ok    a derived claim keeps its maths as markup
+  ok    a derived claim stops at its first sentence
+  ok    a decimal point inside maths does not end the sentence
+  ok    a dot inside an attribute does not end the sentence
+  ok    a slice closes what it left open
+  ok    prose with no sentence terminator keeps its name
+  ok    a prose block with no authored claim now leads rather than closing
+  ok    and it still says there is more behind it
+  ok    a block the gate rejects falls back to its name
+
+all passed

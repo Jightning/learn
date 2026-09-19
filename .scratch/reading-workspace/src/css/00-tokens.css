@@ -1,0 +1,324 @@
+/* 00-tokens — Design tokens, reset and theming. Change colours here. */
+
+/* ---------------------------------------------------------------- geometry */
+:root{
+  /* Per-course accent rotation. A course sets its own in course.yaml; this is
+     what the library and any course without one wear. It is not 0 because the
+     four base hues below put 0 in amber, and amber on every hover across the
+     picker reads as a warning rather than as an accent. */
+  --hue:170;
+  --h-hi:63; --h-lo:254; --h-dc:301; --h-hz:261; --h-wn:15;
+  /* Three faces, cast by job rather than by habit.
+   *
+   * The casting was the problem, not the faces. `--mono` was the display voice:
+   * 133 declarations across 23 of 28 stylesheets, every h1 on the site, and 28
+   * uppercase transforms beside them — a terminal face doing the work of a
+   * book's, on a page whose body is a serif. Mono now holds only what it is
+   * actually for: identifiers, counts, keycaps, code.
+   *
+   * `--display` is named separately from `--serif` so the heading face is one
+   * variable rather than eight declarations, which is what makes it testable
+   * against the alternative rather than argued about. */
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:"IBM Plex Serif",Georgia,"Times New Roman",serif;   /* reading body */
+  --display:var(--sans);                                     /* headings      */
+  --ui:"IBM Plex Sans",system-ui,-apple-system,sans-serif;   /* chrome        */
+  --rail:2.375rem;   /* the number gutter in the section rail */
+
+  /* Type scale for everything that is not body prose.
+     
+     The floor is the point. Before this the most-used size in the whole
+     stylesheet was .66rem — 10.6px — with roughly eighty declarations under
+     12px, against a 17px body: the chrome was consistently two thirds the size
+     of the thing it labelled, and on a closed page the chrome outnumbers the
+     content. A label nobody can read is not a quieter label, it is a louder
+     one, because the eye stops to decode it.
+     
+     --fs-micro is the absolute floor and is for counters and badges a reader
+     matches by shape rather than reads. Anything with words in it starts at
+     --fs-meta. */
+  --fs-micro:.75rem;    /* 12px — counts, badges, keycaps */
+  --fs-meta:.8125rem;   /* 13px — labels, chips, eyebrows, sources */
+  --fs-small:.875rem;   /* 14px — secondary prose, captions, note claims */
+
+  /* Reading geometry, in rem so it tracks the reader's font-size setting.
+     Column and type scale together, which keeps characters-per-line constant
+     at any text size (T7/T8). 37.5rem = var(--measure) at a 16px root. */
+  --measure:37.5rem;
+  --margin-rail:16.375rem;
+
+  /* Vertical rhythm, in rem so it tracks the reader's text size along with the
+     measure. Four beats, not one: the gap before a block is what says how big
+     a break it is. Uniform margins made a definition, an aside and a table all
+     read as the same beat, which is the one thing spacing is for. */
+  --sp-1:.5rem;      /* an interjection, kept against what it qualifies */
+  --sp-2:1rem;       /* the default beat between blocks                 */
+  --sp-3:1.75rem;    /* a new idea, or a digression set apart           */
+  --sp-4:2.75rem;    /* an object — table, figure, subsection opening   */
+
+  /* The blank a view opens with, and the matching break before the pager that
+     closes a section. Named once because seven rules set it and they have to
+     move together — they were seven separate 56px, and a phone needs a
+     different number from a desktop. 56px reads as air beside a 40px page
+     gutter; under a 61px sticky toolbar on a 390px screen it is a seventh of
+     the viewport spent on nothing, so the responsive sheet halves it. */
+  --view-top:3.5rem;
+
+  /* What the device's own hardware takes out of the page.
+   *
+   * `viewport-fit=cover` (src/index.html) hands the app the whole screen,
+   * corners and notch included, and `apple-mobile-web-app-status-bar-style:
+   * black-translucent` means an installed iOS app draws *under* the status
+   * bar rather than below it. Both are deliberate — a Home Screen app that
+   * letterboxes itself looks like a web page — but they are only correct if
+   * the frame then puts its own chrome back inside the safe area. Without
+   * that the toolbar rides under the Dynamic Island: the breadcrumb, Menu and
+   * Review are drawn beneath an opaque black pill and are untappable.
+   *
+   * Named as four tokens rather than written at each site because the sites
+   * are in five stylesheets and a `env()` missing from one of them is
+   * invisible on every machine a developer owns. Every one falls back to 0px,
+   * which is what a desktop, an Android phone with no cutout, and a browser
+   * that never heard of `env()` all get. */
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-l:env(safe-area-inset-left,0px);
+  --safe-r:env(safe-area-inset-right,0px);
+
+  /* Ground, ink and rules are global: a course's accent rotation must not move
+     the page out from under the reader.
+   *
+   * Lab paper, not parchment. The subject is engineering and mathematics, so
+   * the stock to borrow from is the plate-glazed sheet of a lab notebook and
+   * the drafting ink on it: a cool near-white carrying a faint green bias, so
+   * the ground reads as material rather than as a UI panel. The previous
+   * neutrals were a blue-grey #DFE3E9 with content floating directly on it and
+   * no paper anywhere on the page.
+   *
+   * The bias is small on purpose. It has to survive beside every hue in the
+   * rotation without tinting one course's accent toward it. */
+  --ground:#EEF1EE;
+  --surface:#FBFCFA;
+  --surface-2:#F4F6F3;
+  /* A ground *below* the page, where --surface and --surface-2 are both above
+     it. The reading column already spends the raised direction on blocks, so a
+     surface that has to read as a different kind of thing (a question rather
+     than a passage) has nowhere to go but down. One token because two themes
+     have to agree on it and a hand-mixed colour in each would drift.
+
+     Shallow on purpose in light: at #E3E7E3 the step down was nine units off
+     the ground and a page of questions read as a grey panel laid over the
+     paper rather than as a recess in it. The rule around the card is what
+     draws the edge; the ground only has to say which side of it you are on. */
+  --sunk:#E9ECE8;
+  --ink:#161A18;
+  --ink-2:#414843;
+  --ink-3:#666E68;   /* carries small text; verified by audit-color.mjs */
+  --rule:#D6DCD6;
+  --rule-2:#E6EAE5;
+}
+
+/* ----------------------------------------------------------------- palette
+   Accents are stated in OKLCH so a course can rotate the whole set by one
+   angle (--hue) and keep every contrast ratio: lightness and chroma are fixed
+   per token, only hue moves. The four base hues reproduce the original
+   hand-picked palette at --hue:0.
+        hi = logic 1, lo = logic 0, dc = don't care X, hz = high-Z
+        wn = warning, the one accent whose job is not a course's identity
+
+   `wn` is warm because a warning that is not warm does no semantic work — the
+   reader has to learn the mapping instead of arriving with it. It stops short
+   of a saturated red deliberately: red in an achievement context measurably
+   depresses performance, so this is a restrained terracotta, not an alarm.
+
+   It is also the one accent that does NOT rotate with --hue. The rotation
+   exists to tell courses apart, and a warning is not an identity: rotating it
+   makes "common mistake" olive in one course and teal in another, which is
+   exactly the learned-mapping cost the token was added to avoid.
+
+   A custom property resolves its var() references where it is *declared*, so
+   setting --hue deeper in the tree cannot re-tint tokens declared on :root.
+   Any element carrying [data-hue] therefore re-declares the palette against
+   its own angle — that is how six course cards sit on one page in six
+   accents. Ground, ink and rules stay global, so a rotation moves the accent
+   and nothing else. */
+:root,[data-hue]{
+  --hi:oklch(62% .132 calc(var(--h-hi) + var(--hue)));
+  --lo:oklch(55% .130 calc(var(--h-lo) + var(--hue)));
+  --dc:oklch(55% .114 calc(var(--h-dc) + var(--hue)));
+  --hz:oklch(64% .015 calc(var(--h-hz) + var(--hue)));
+  --wn:oklch(58% .140 var(--h-wn));
+  /* The one *red* on the site, and it has exactly one job: a claim nobody
+     grounded. `--wn` is a deliberately restrained terracotta because a warning
+     inside the material must not read as an alarm — but "this sentence may
+     simply be false" is not a warning about the subject, it is a warning about
+     the page, and it is the only mark a reader must never skim past. It does
+     not rotate with --hue for the same reason --wn does not: it is not an
+     identity. Measured against all four grounds in both themes: 5.1:1 at the
+     worst of them, so it clears AA as a small-text colour everywhere. */
+  --un:oklch(52% .200 27);
+
+  /* Small-text variants. WCAG measures luminance, which still drifts with hue
+     at a fixed OKLCH lightness, so these sit at 46% — dark enough that the
+     worst hue in the rotation clears AA rather than only the best one. */
+  --hi-ink:oklch(46% .112 calc(var(--h-hi) + var(--hue)));
+  --lo-ink:oklch(46% .116 calc(var(--h-lo) + var(--hue)));
+  --dc-ink:oklch(46% .111 calc(var(--h-dc) + var(--hue)));
+  --hz-ink:oklch(47% .018 calc(var(--h-hz) + var(--hue)));
+  --wn-ink:oklch(46% .130 var(--h-wn));
+  --focus:var(--lo);
+
+  /* The reader's own hand.
+   *
+   * A study page carries two hands: the book's and yours. The engine already
+   * insists on that distinction everywhere it matters — learner content carries
+   * data-nosnippet, notes are deliberately styled unlike course content so they
+   * never read as something the material said — but visually it was barely
+   * there, and on a page where the accent already marks labels, links, chips,
+   * numbers and states, there was no ink left to say "you wrote this".
+   *
+   * `--hn` is that ink, and like `--wn` it does NOT rotate with --hue. A course
+   * accent is an identity; authorship is not. Rotating it would make the
+   * reader's own margin note teal in one course and violet in the next, which
+   * is the learned-mapping cost the fixed tokens exist to avoid. It sits far
+   * enough from every rotation position to stay distinguishable from whatever
+   * accent is beside it. */
+  --hn:oklch(52% .085 258);
+  --hn-ink:oklch(46% .085 258);
+  --hn-wash:oklch(95% .018 258);
+}
+
+/* Dark palette: the accents clear AA on a dark ground on their own, so the
+   small-text variants alias them instead of darkening. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]),
+  :root:not([data-theme="light"]) [data-hue]{
+    --hi:oklch(77% .131 calc(var(--h-hi) + var(--hue)));
+    --lo:oklch(72% .112 calc(var(--h-lo) + var(--hue)));
+    --dc:oklch(70% .112 calc(var(--h-dc) + var(--hue)));
+    --hz:oklch(62% .019 calc(var(--h-hz) + var(--hue)));
+    --wn:oklch(74% .135 var(--h-wn));
+  --un:oklch(72% .160 27);
+    --hi-ink:var(--hi); --lo-ink:var(--lo); --dc-ink:var(--dc); --wn-ink:var(--wn);
+    --hz-ink:oklch(71% .018 calc(var(--h-hz) + var(--hue)));
+    --hn:oklch(74% .075 258); --hn-ink:var(--hn);
+    --hn-wash:oklch(27% .030 258);
+  }
+}
+:root[data-theme="dark"],
+:root[data-theme="dark"] [data-hue]{
+  --hi:oklch(77% .131 calc(var(--h-hi) + var(--hue)));
+  --lo:oklch(72% .112 calc(var(--h-lo) + var(--hue)));
+  --dc:oklch(70% .112 calc(var(--h-dc) + var(--hue)));
+  --hz:oklch(62% .019 calc(var(--h-hz) + var(--hue)));
+  --wn:oklch(74% .135 var(--h-wn));
+  --un:oklch(72% .160 27);
+  --hi-ink:var(--hi); --lo-ink:var(--lo); --dc-ink:var(--dc); --wn-ink:var(--wn);
+  --hz-ink:oklch(71% .018 calc(var(--h-hz) + var(--hue)));
+  --hn:oklch(74% .075 258); --hn-ink:var(--hn);
+  --hn-wash:oklch(27% .030 258);
+}
+
+/* Dark neutrals. Warm, and much closer to grey than the light set is.
+ *
+ * They used to be the light theme's green bias inverted, and it did not
+ * survive the inversion. Measured in OKLCH the four light grounds average
+ * C = 0.005; the four dark ones averaged C = 0.013, two and a half times as
+ * much. Nothing intended that — the light set is careful about the bias
+ * precisely so it cannot tint a course accent, and the dark set quietly spent
+ * the budget twice over.
+ *
+ * The gap is worse than the ratio makes it sound, because colourfulness is not
+ * constant with surround: the same chroma reads stronger against a dark ground
+ * than a light one (the Hunt effect). So an *equal*-chroma dark theme would
+ * already look greener than the light theme it matched, and this one was not
+ * equal. The page read as olive.
+ *
+ * The fix keeps every token's lightness to the digit — contrast ratios are
+ * untouched, and audit-color.mjs still reports zero pairs below AA in all
+ * three theme states — and moves only chroma and hue: C down to the light
+ * theme's 0.005, hue from 137° (green) to 75° (a warm yellow-grey). Warm
+ * rather than merely neutral because a dark theme is read in a dark room, and
+ * a dead-neutral dark reads as an unlit panel where a warm one reads as a dim
+ * one.
+ *
+ * Light stays green. The bias belongs to paper, and this is not paper.
+ * Accents are not touched: --hi/--lo/--dc/--hz rotate with the course, --wn is
+ * the warning and --hn is the reader's own hand, and none of the three is a
+ * ground. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#151411; --surface:#1E1C1A; --surface-2:#262422; --sunk:#0F0E0C;
+    --ink:#EAE8E6; --ink-2:#B6B3B0; --ink-3:#918F8C;
+    --rule:#353330; --rule-2:#2C2A27;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#151411; --surface:#1E1C1A; --surface-2:#262422; --sunk:#0F0E0C;
+  --ink:#EAE8E6; --ink-2:#B6B3B0; --ink-3:#918F8C;
+  --rule:#353330; --rule-2:#2C2A27;
+}
+
+/* ------------------------------------------------------------------- reset */
+*{box-sizing:border-box}
+/* text-size-adjust: WebKit inflates text when a column gets wide relative to
+   the viewport, which on rotation resizes the reading measure the whole layout
+   is built around. The reader's own text-size setting still applies — this
+   turns off the browser's guess, not the preference. */
+html{scroll-behavior:smooth;scroll-padding-top:1rem;
+  -webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{
+  margin:0;background:var(--ground);color:var(--ink);
+  font-family:var(--sans);font-size:1.0625rem;line-height:1.68;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--lo-ink)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:3px}
+a.xr{
+  color:var(--lo-ink);text-decoration:none;
+  border-bottom:1px solid color-mix(in srgb,var(--lo) 38%,transparent);
+  padding-bottom:.5px;
+}
+a.xr:hover,a.xr.hot{border-bottom-color:var(--lo);background:color-mix(in srgb,var(--lo) 9%,transparent)}
+
+/* ------------------------------------------------- the disclosure caret
+ * One primitive, because three <details> summaries drew their own and all
+ * three drew it the same wrong way.
+ *
+ * They used a "›" glyph in a 1em box and turned it 90°. A glyph's ink is not
+ * centred in its box — it sits above the baseline in a line box that runs from
+ * ascender to descender, and its advance is narrower than the em — so the
+ * rotation pivot was several pixels off the mark the eye tracks, and the caret
+ * swung through an arc instead of turning in place.
+ *
+ * This is a triangle clipped out of a square, with its vertices chosen so the
+ * centroid lands exactly on the box centre: two at x=32 and one at x=86 gives
+ * (32+32+86)/3 = 50, and (10+90+50)/3 = 50. Pivot and visual centre coincide,
+ * so the only thing that changes is the angle. */
+.caret{
+  display:inline-block;flex:none;
+  width:.58em;height:.58em;margin-right:.42em;
+  background:currentColor;
+  clip-path:polygon(32% 10%,32% 90%,86% 50%);
+  transition:transform .15s ease;
+}
+[open]>summary>.caret,summary.is-open>.caret{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){ .caret{transition:none} }
+
+/* ------------------------------------------------------- the separator
+ * Two pieces of metadata on one line, divided by a drawn rule rather than by a
+ * typed character.
+ *
+ * The site used "·" for this in about twenty places. It is a glyph doing a
+ * rule's job: it sits on the text baseline rather than centred on the line, it
+ * inherits the ink of whatever it divides so it competes with both halves at
+ * the same weight, and its advance width is whatever the face gives it, which
+ * differs between the three faces here. A hairline is centred, quieter than
+ * either side, and the same width everywhere.
+ *
+ * Lists of names are not this. Three subsection titles divided by rules read
+ * as a table with no header; they take commas, because they are a list. */
+.sep{
+  display:inline-block;width:1px;height:.82em;flex:none;
+  background:var(--rule);vertical-align:-.06em;margin:0 .55em;
+}

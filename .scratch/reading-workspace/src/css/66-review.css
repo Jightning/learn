@@ -1,0 +1,46 @@
+/* 66-review — The review page, at either scope. */
+
+/* An ordinary view.
+ *
+ * This used to draw its own frame: full-bleed, its own safe-area padding, its
+ * own min-height, no sidebar and a Close button to get out of. That made it
+ * the one page on the site that was really a modal, and once the queue became
+ * a row in the navigation beside every other destination, the modal was the
+ * only thing still claiming it was not one.
+ *
+ * So there is no frame here now, only a column. The page is drawn inside
+ * `.wrap` like the index and the dependency map, which means the toolbar above
+ * it pays for the status bar (10-shell.css) and the way out is the rail, the
+ * breadcrumb and the back button — the same three every other page offers. */
+.review{padding:var(--view-top) 0 0;max-width:34rem}
+.review>*:last-child{margin-bottom:0}
+
+.review-bar{
+  display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
+  padding:0 0 .9rem;border-bottom:1px solid var(--rule);margin-bottom:1.2rem;
+}
+/* One word naming the screen, beside a count. The word takes the UI face; the
+   count keeps the mono, which is the split the whole type recast runs on. */
+.review-t{font-family:var(--ui);font-size:var(--fs-small);font-weight:500;color:var(--ink-2)}
+/* Which queue this is. The bar serves one course and all of them now, and "2
+   of 12" means a different thing in each, so the scope is named rather than
+   inferred from whatever rail happens to be beside it. */
+.review-scope{
+  font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);
+  border-left:1px solid var(--rule);padding-left:.7rem;
+}
+/* Dots alone are shape and colour with no words, so the count repeats as text. */
+.review-dots{display:inline-flex;gap:4px;margin-left:auto}
+.review-dots i{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--rule)}
+.review-dots i.on{background:var(--hi);border-color:var(--hi)}
+.review-n{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3)}
+.review h1{font-size:1.4rem;margin:0 0 .5rem}
+.review-nav{display:flex;gap:8px;margin-top:1.2rem;flex-wrap:wrap}
+.review .drill{margin-bottom:1rem}
+
+/* The dots are the first thing to go when the bar runs out of room: the count
+   beside them says the same thing in words. */
+@media (max-width:32em){
+  .review-dots{display:none}
+  .review-n{margin-left:auto}
+}

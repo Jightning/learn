@@ -237,7 +237,12 @@ R("table", { holds: "structure", apart: true, notes: "caption", defaultLabel: "T
              name: b => b.cap || b.label,
              render: (b, _u, env) => {
   const vmap = b.map || (b.mono ? CFG.valueStyles : null);
-  const sep = i => (b.split != null && i === b.split - 1 ? ' class="sep"' : "");
+  /* `tsplit`, not `sep`: `.sep` is the hairline divider token (00-tokens.css),
+     which sets display:inline-block and a 1px box. Put on a cell it took the
+     cell out of the table layout entirely, so every `split:` table rendered
+     that column as a run of 1px grey blocks. Two meanings cannot share a
+     class name; the rarer one moves. */
+  const sep = i => (b.split != null && i === b.split - 1 ? ' class="tsplit"' : "");
   let h = U.body(b) + `<div class="tscroll"><table class="tbl${b.mono ? " tmono" : ""}">`;
   const cap = U.caption(env.fignum, b.cap, "Table");
   if (cap) h += `<caption>${cap}</caption>`;

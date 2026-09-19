@@ -35,6 +35,8 @@ const ck = (n, ok, x = "") => R.push({ n, ok, x });
    is ever present, or a feature that stopped rendering everywhere would pass
    every per-course check in the sweep. */
 let sawQueueRow = false;
+let sawAside = false;      /* a course aside survived the switch to Review */
+let sawDepthTab = false;   /* a collapsed run drew its margin tab */
 const go = async (h = "") => { await page.goto(URL + h); await page.waitForTimeout(450); };
 const shot = async name => { if (SHOTS) await page.screenshot({ path: join(shotDir, name + ".png") }); };
 
@@ -676,7 +678,7 @@ for (const cid of ids) {
   const taps = await page.evaluate(() => {
     const small = [];
     for (const el of document.querySelectorAll(
-      ".topbar .tbtn, .crumb-home, .cbtn, .gbtn, .tstub-b, .note-pull")) {
+      ".topbar .tbtn, .crumb-home, .cbtn, .gbtn, .dtab, .note-pull")) {
       const r0 = el.getBoundingClientRect();
       if (!r0.width || !r0.height) continue;
       el.scrollIntoView({ block: "center" });
@@ -1101,16 +1103,16 @@ for (const cid of ids) {
     const spine = await page.locator(".brow").count();
     ck(P("the spine lane never shows more than every lane"), spine <= all, `${spine} of ${all} rows`);
     ck(P("changing lane does not change the route"), await page.evaluate(() => location.hash) === hash);
-    const stubs = await page.locator(".tstub").count();
-    if (stubs) {
-      ck(P("a stub names what it holds"),
-         (await page.locator(".tstub-t").first().innerText()).trim().length > 3);
-      ck(P("a collapsed run leaves no margin card"),
-         await page.locator(".brow:has(.tstub) .bside .mnote").count() === 0);
-      await page.locator(".tstub-b").first().click(); await page.waitForTimeout(300);
-      ck(P("a stub expands in place"),
-         await page.locator(".tstub").count() === stubs - 1 &&
+    const tab = page.locator('.dtab[aria-expanded="false"]').first();
+    if (await tab.count()) {
+      const panelId = await tab.getAttribute("aria-controls");
+      const toggle = page.locator(`.dtab[aria-controls="${panelId}"]`);
+      ck(P("a collapsed tier has a rail tab"), !!panelId);
+      await toggle.click(); await page.waitForTimeout(300);
+      ck(P("a tab expands in place"), await toggle.getAttribute("aria-expanded") === "true" &&
          await page.evaluate(() => location.hash) === hash);
+      await toggle.click(); await page.waitForTimeout(200);
+      ck(P("a tab closes its content"), await toggle.getAttribute("aria-expanded") === "false");
     }
     await page.locator(".lane-b[data-lane='apply']").click(); await page.waitForTimeout(250);
   }
@@ -1158,6 +1160,39 @@ for (const cid of ids) {
        what develops it sits under that topic. */
     ck(P("notes depth groups claims under their topic"),
        await page.locator(".ntopic").count() > 0);
+
+    /* An aside is the course explaining a phrase the reader may not know, and
+       help that exists in one reading mode is help nobody can lean on — so it
+       does not belong to Study. At a closed depth the block it annotates may be
+       shut, so the card moves to the run's one rail; a card that can light
+       nothing carries the way to its phrase instead of a dead pairing. */
+    const asidesHere = await page.locator(".mnote.is-a").count();
+    if (asidesHere) {
+      sawAside = true;
+      ck(P("every aside is either paired or offers the way to its phrase"),
+         await page.evaluate(() =>
+           [...document.querySelectorAll(".mnote.is-a")]
+             .every(n => n.hasAttribute("data-xr") || !!n.querySelector(".mn-open"))));
+    }
+
+    /* A collapsed run at a closed depth is a tab in the margin, never the
+       dashed rule across the measure a first read gets: on a page of one-line
+       rows that rule was the loudest thing there, and it announced what was
+       absent more firmly than the rows announced what was present. */
+    ck(P("no tier stub crosses the reading column at a closed depth"),
+       await page.locator(".sec-body .tstub").count() === 0);
+    const tab = page.locator('.dtab[aria-expanded="false"]').first();
+    if (await tab.count()) {
+      sawDepthTab = true;
+      const panelId = await tab.getAttribute("aria-controls");
+      const toggle = page.locator(`.dtab[aria-controls="${panelId}"]`);
+      const panel = page.locator(`[id="${panelId}"]`);
+      await toggle.click(); await page.waitForTimeout(300);
+      ck(P("a margin tab opens the full run it holds"), await panel.isVisible() &&
+         await panel.locator(".bhtml, .attempt").count() > 0);
+      await toggle.click(); await page.waitForTimeout(300);
+      ck(P("and closes it again from the same place"), await panel.isHidden());
+    }
     /* A row showing nothing but its own label is a row you must open before it
        says anything, which is what notes depth is not for.
        
@@ -2088,15 +2123,15 @@ if (ids.includes("ma26600")) {
      await potential.locator("ol.bitems > li").count() === 4);
 
   /* The default lane hides depth, so the why is a stub hanging off its parent. */
-  const attached = sub.locator(".brow[data-follow] .tstub-t", { hasText: "The mixed-partials argument" });
-  ck(P("a hidden follow-up is a named stub"), await attached.count() === 1,
-     await sub.locator(".tstub-t").allInnerTexts().then(t => t.join(" | ")));
+  const attached = sub.locator('.dtab[aria-expanded="false"]').first();
+  ck(P("a hidden follow-up has a rail tab"), await attached.count() === 1,
+     await sub.locator(".dtab-t").allInnerTexts().then(t => t.join(" | ")));
   const rail = await sub.locator(".brow[data-follow] > .bmain").first()
     .evaluate(el => getComputedStyle(el).borderLeftWidth).catch(() => "");
   ck(P("a follow-up draws its rail"), rail === "2px", rail);
   if (await attached.count()) {
     await attached.click(); await page.waitForTimeout(300);
-    ck(P("the stub opens the why in place, still attached"),
+    ck(P("the tab opens the why in place, still attached"),
        await sub.locator(".brow[data-follow] .note", { hasText: "The mixed-partials argument" }).count() === 1);
   }
 
@@ -2336,6 +2371,8 @@ if (ids.includes("ma26600")) {
      have shown the row. Without this the per-course check above would pass on
      a build where the row never rendered at all. */
   ck("the review queue reaches the rail of a course that has one", sawQueueRow);
+ck("some course carries an aside into Review", sawAside);
+ck("some collapsed run draws its tab in the margin", sawDepthTab);
 
   /* The course-scoped one. This is the half that needed the reframing: a rail
      belongs to one course, and a row in it that drilled every other course was
@@ -2546,6 +2583,9 @@ if (ids.includes("ma26600")) {
        !/tok-[cksn]|<span|&lt;/.test(r.text), JSON.stringify(r.text.slice(0, 60)));
   }
 }
+
+/* Phrase-note pairing, depth disclosures and text-level resize preservation
+   have focused browser coverage in test-reading.mjs, including mobile. */
 
 ck("no JavaScript errors", errs.length === 0, errs.join(" | "));
 await browser.close();

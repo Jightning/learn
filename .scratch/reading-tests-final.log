@@ -1,0 +1,31 @@
+ok  split table cells stay in table layout
+ok  Study keeps each aside by its own block
+ok  Study highlights only the referenced text
+ok  Study supports keyboard note pairing
+ok  Study leaves prose unmarked at rest
+ok  Review keeps each aside by its own block
+ok  Review highlights only the referenced text
+ok  Review supports keyboard note pairing
+ok  Review leaves prose unmarked at rest
+ok  Names keeps each aside by its own block
+ok  Names highlights only the referenced text
+ok  Names supports keyboard note pairing
+ok  Names leaves prose unmarked at rest
+ok  Review can reveal the exact sentence behind a note
+ok  Review retains help attached to hidden prose
+ok  Study starts depth hidden
+ok  Study opens examples and graphics in full
+ok  Study closes depth from the same tab
+ok  Review starts depth hidden
+ok  Review opens examples and graphics in full
+ok  Review closes depth from the same tab
+ok  mobile notes stay readable without horizontal overflow
+ok  resize to 1100 preserves the same text line (0px)
+ok  resize to 900 preserves the same text line (0px)
+ok  resize to 600 preserves the same text line (0px)
+ok  resize to 1600 preserves the same text line (0px)
+ok  continuous resizing preserves the original text anchor
+ok  height-only resizing leaves the scroll position alone
+ok  Review preserves the line within a long claim
+ok  reader interactions raise no JavaScript errors: 
+30 reading checks passed

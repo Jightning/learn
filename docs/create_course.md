@@ -44,7 +44,10 @@ should look it up), `generated` (a model wrote it, unchecked), or an empty field
 with a note. A flagged gap is a task; a guess is a defect nobody finds.
 [M20, M21, M28, M30]
 
-**0.6** Where this file gives a count, hit it; a range, land inside it.
+**0.6** Numerical teaching and prose targets guide judgement; they are not
+strict caps. Add or remove examples, notes, depth and other material according
+to the reader's needs. Required fields and valid references remain structural
+requirements, independent of content quantity.
 
 **0.7** Run §12 before you emit.
 
@@ -116,7 +119,7 @@ Seven defaults. Where a switch is off, the entry inverts rather than disappears.
 
 | | Switched on by | Default | Because |
 |---|---|---|---|
-| **D1** | schema acquisition **not** a failure | `apply` stays lean: one or two instances per concept | Worked-example support reverses with expertise [material_truth Trade-offs]. Off: more worked instances |
+| **D1** | schema acquisition **not** a failure | `apply` is added where the passage earns it (§6.3), not by quota | Worked-example support reverses with expertise [material_truth Trade-offs]. Off: more worked instances |
 | **D2** | discrimination **not** a failure | `confusable_with` only where the confusion is real | Interleaving pays on confusable pairs, costs on unrelated ones [T16]. Off: declare and interleave every pair they mix up |
 | **D3** | `onboarding` asks for a concrete anchor | Open concrete, then fade it | Concrete-first-and-stay-concrete is the worst sequence tested [M10]. Off: formal statement opens |
 | **D4** | transfer is a failure | `attempt` blocks ON for conceptual subsections | Problem solving before instruction beats the reverse on transfer, d = 0.36 [material_truth] |
@@ -518,7 +521,7 @@ pre-training panel [M8, T14], and it is how closure is checked: a term with no
 <opener>   exactly one, first block only — or none
 def        the abstract statement, retiring the opener explicitly
 key        the rule that makes it usable, and where it comes from
-ex         one worked example, fully stepped
+ex         worked examples where needed, fully stepped
 figure     the artefact that makes it concrete
 trap       what goes wrong, named as a specific slip
 ```
@@ -565,11 +568,41 @@ tries to derive a convention concludes they missed something.
   reader they have already seen something they have not. This is the block that
   breaks the rule, because it is written once the whole course exists.
 - **An `apply` block never re-explains** [M24]; the fix is a link.
-- Budget: one or two `apply` blocks per concept across the course (D1).
+- **A `depth` block may be any kind.** `figure`, `table`, `math`, `code`, `ex`,
+  a second `def` — the tier decides whether a block is on the page, never how it
+  is drawn. A derivation that wants a diagram gets the diagram. The one rule
+  that follows from M23: a spine block may not cite a figure that exists only
+  inside a collapsed tier, and the build fails it.
+- **Examples, asides and depth have no numerical caps.** Choose their number
+  and length for the reader and passage. Counts elsewhere in this guide are
+  starting points for author judgement, not limits on useful explanation.
 
-**Every `def` and `key` owes the reader its why.** If the block cannot say why in
-a sentence of its own, write it as a `depth` follow-up. A subsection whose depth
-blocks are all caveats and no reasons has skipped this pass.
+**Every `def` and `key` owes the reader its why.** State it in the block when
+brief; otherwise place a `depth` follow-up directly after the block.
+
+#### Judging a passage: what help, if any, is needed
+
+Evaluate the passage against the reader's stated prerequisites and what has
+already been taught. Look for unfamiliar notation, omitted reasoning steps,
+abstract claims without a concrete referent, or multiple interacting choices.
+These are prompts to inspect comprehension, not a complexity score that
+requires more content. A difficult passage may already explain itself well.
+
+- **Unfamiliar word, symbol, sentence or step:** attach an aside to that text.
+- **Missing rationale or optional elaboration:** put a depth follow-up at the
+  point where the question arises, using prose, a diagram, or another suitable
+  block type.
+- **A reader cannot apply the idea or distinguish cases:** provide a worked
+  example showing the relevant decisions. Examples can explain concepts as
+  well as procedures. Use `spine` when needed for the learning objective,
+  `depth` for optional explanation, and `apply` for further practice instances.
+
+Use none, one, or several of these when each addresses a distinct gap. Do not
+assume that an aside replaces an example or that a complex topic always needs
+one. Add further examples when they expose a new decision or useful contrast;
+do not withhold them to meet a quota. For a textbook excerpt, preserve the
+quoted wording and attach explanations to the particular phrases that need
+clarification, with worked examples or diagrams nearby when useful.
 
 #### Follow-ups: `follows: true`
 
@@ -591,18 +624,26 @@ Attaches a block to the nearest non-follow-up above it, without nesting:
     <p>If a potential exists, <m>M_y = F_{xy} = F_{yx} = N_x</m>…</p>
 ```
 
-On the page a follow-up hangs off its parent, and when its tier is hidden it
-becomes a stub naming it — "In depth: The mixed-partials argument". So **place a
-follow-up directly after its parent** and label a `depth` follow-up with what the
-argument *is*. The build holds three rules: a follow-up needs a block above it; a
-spine block may not follow a collapsible tier; a follow-up shares its parent's
-tier. Use it for a real dependency, not for the next idea along.
+Place a follow-up directly after its parent. When its tier is collapsed,
+a subtle **In depth** rail tab opens and closes the full content in Study or
+Review, including examples, figures and all other block types. Labels belong
+to the expanded content; the tab needs no description.
+
+The build checks that a follow-up has a preceding parent, that a spine block
+does not depend on a collapsible parent, and that a follow-up of a non-spine
+parent shares that parent's tier. Use `follows: true` for a real dependency.
+
+**Depth belongs where the question arises.** Insert it throughout a subsection
+beside the material it explains, rather than collecting explanations at the
+end. Keep essential or examinable material in the spine.
 
 #### Asides: a note on one phrase
 
 Where the why belongs to one step or symbol, mark the phrase `<n k="…">` and
-write the note in the same block's `asides:`. The phrase is underlined and the
-note is a margin card.
+write the note in the same block's `asides:`. Wrap the exact phrase, sentence,
+or step that needs clarification. The note appears beside that block, wrapping
+below it on narrow screens. This uses the existing markup; no line-number
+metadata is needed, and the reference survives changes in screen width.
 
 ```yaml
 - t: key
@@ -619,17 +660,29 @@ note is a margin card.
       cancels the <m>x</m>-terms.</p>
 ```
 
-One or two sentences; the build warns past 320 characters, where it is a `depth`
-follow-up instead. Every anchor needs its aside and every aside its anchor, in
-the same block; anchors work in `h`, `core` and `items`, not in questions. The
-card shows only at Study depth, so **the block must read correctly with every
-aside ignored** — nothing examinable goes in one [M25].
+Keep notes focused. The build offers layout advice past 320 characters, not
+a length limit; retain a longer note when appropriate or use a depth follow-up
+when it needs its own figures or worked steps. Every anchor needs its aside and every aside its anchor, in
+the same block; anchors work in `h`, `core` and `items`, not in questions.
+
+**The phrase carries no mark at rest.** A reader who does not need the note sees
+an ordinary sentence; hovering the card in the margin lights the phrase it is
+about, and hovering the phrase lights the card. So an anchor costs the prose
+nothing, and there is no reason to ration them within a block beyond keeping
+each one about one thing.
+
+The card is in the margin in **every** reading mode. Where a closed depth has
+shut the block the phrase lives in, the card says so and offers the way to it.
+**The block must still read correctly with every aside ignored** — an aside is
+help with a passage, never a step of the argument, and nothing examinable goes
+in one [M25].
 
 ### 6.4 Traps
 
-**One or two per subsection**; a procedural subsection needs at least one
-*execution* trap (D6). Five traps is zero traps: signalling degrades with
-density [T13].
+**Use a trap for each distinct, plausible misunderstanding.** One or two is
+a common starting point, not a cap; omit redundant traps and include additional
+ones when they teach different mistakes. A procedural subsection should cover
+relevant execution errors (D6).
 
 | Kind | Names | Shape |
 |---|---|---|
@@ -1091,6 +1144,8 @@ list because it was the natural tool.
 - [ ] Every `follows:` has a block above it, and no spine block follows a
       collapsible tier (§6.3)
 - [ ] Every `<n k>` has its aside in the same block, and every aside its anchor
+- [ ] Every passage carrying an unfamiliar phrase, symbol or excerpt has been
+      through the three questions in §6.3, and what it earned is what it got
 - [ ] Every `def` names a term; every subsection names at least one
 - [ ] Every block declares a tier the lane selector knows
 - [ ] Every list item, table heading, table cell and `steps` entry is a
@@ -1137,7 +1192,7 @@ No script decides any of these.
       directly under it (§6.3) — never at the foot of the subsection.
 - [ ] **Every `key` is derived or declared given** (§6.2).
 - [ ] **The opener is retired**, and the anchor names where it breaks (§6.2).
-- [ ] **The traps are traps**, one or two, with an execution trap and an
+- [ ] **The traps address distinct mistakes**, with an execution trap and an
       error-spotting item in every procedural subsection (§6.4, §6.5).
 - [ ] **The quiz types are distinct**: could a reader answer one and fail
       another? If not, they are one type in two labels (14.6).
@@ -1192,18 +1247,20 @@ The shapes a capable model produces by default.
 | **14.4** | **Encyclopedic drift.** Balanced survey prose. | If a paragraph would sit unchanged in a Wikipedia article, it is wrong here. |
 | **14.5** | **The example that re-explains.** | The example starts at the first step of the work. |
 | **14.6** | **Fake variety in the quiz.** One question three times with different numbers. | Could a reader answer one and fail another? If not, merge. |
-| **14.7** | **Trap inflation.** | One or two per subsection (§6.4). |
+| **14.7** | **Trap inflation.** | Each trap addresses a distinct misunderstanding (§6.4); no numerical cap. |
 | **14.8** | **Depth as a dumping ground.** | The test is examinability, not length (§6.3). |
 | **14.9** | **Hedged claims.** "Generally", "typically". | Name the condition, or write `unverified`. |
 | **14.10** | **Confident fabrication of institutional fact.** | Do not (0.5). |
 | **14.11** | **Manufactured confusability.** | Only pairs readers actually mix up (D2). |
-| **14.12** | **The four-example subsection.** | One example, three drill items (D1). |
+| **14.12** | **The unearned example.** A second and third instance because the topic felt hard. | Name the gap first (§6.3), then choose the needed asides, depth and examples. Combine them when they address different gaps. |
 | **14.13** | **Skipping Phase 6.** | A course that stops after Phase 5 has no retention loop. |
-| **14.14** | **Marking everything for review.** | The cap is judgement, which is why you overshoot it (§5.1). |
+| **14.14** | **Marking everything for review.** | Choose the review set by the stated learning goal (§5.1). |
 | **14.15** | **Coverage mistaken for mastery.** | The synthesis item (§7.1). |
-| **14.16** | **Density drift.** By the fortieth subsection the `key` blocks are half again as long. | Two to four sentences; three or four blocks of a kind, not five. Calibrate against what shipped. |
+| **14.16** | **Density drift.** By the fortieth subsection the `key` blocks are half again as long. | Check whether each sentence and block serves a distinct learning need; length alone is not a reason to cut it. |
 | **14.17** | **The run-in procedure.** | `items:` with `ordered: true` (§6.1). |
 | **14.18** | **The missing or detached why.** | A `depth` follow-up directly under the block, or an aside on the phrase (§6.3). |
+| **14.19** | **The unannotated excerpt.** A quoted theorem, spec or listing explained only in the prose around it. | An aside per phrase the reader cannot resolve (§6.3). |
+| **14.20** | **Depth pooled at the end.** Every "why" in the subsection collected into one run at its foot. | Each sits at the point it answers (§6.3). |
 
 ---
 

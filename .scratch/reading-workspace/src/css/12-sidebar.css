@@ -1,0 +1,191 @@
+/* 12-sidebar — collapsing the navigation.
+ *
+ * This replaces an earlier "read mode" that also hid the margin cards. That was
+ * the wrong thing to hide: the cards put a reference beside the mention that
+ * needs it (spatial contiguity), so removing them removes a benefit. The
+ * sidebar is navigation chrome and contributes nothing while you are reading,
+ * so that is what collapses. */
+
+.shell.tucked{grid-template-columns:minmax(0,1fr)}
+.shell.tucked .sidebar{display:none}
+/* Centre the *reading column*, not the wrap.
+ *
+ * Hiding the sidebar frees 308px, and centring the whole wrap spent all of it
+ * on outer gutter: at 1440 the text slid 130px left of where it had just been
+ * and the page carried 225px of nothing on each side, with a half-empty margin
+ * rail on top of that. The reader collapsed the navigation to get more of the
+ * material and got more emptiness — the same trade T28 refuses for zoom.
+ *
+ * The measure cannot absorb it: 37.5rem measures 63 characters per line and
+ * widening to 42rem reaches 70, which is further from the 66 T7 targets, not
+ * closer. So the surplus is real and the only question is where it sits. It
+ * sits where the sidebar was: the column the eye tracks is centred in the
+ * viewport, the rail hangs in the margin beside it as it does in a book, and
+ * the text lands within a few pixels of where it was before the tuck. */
+.shell.tucked .wrap{
+  max-width:var(--wrap-max);
+  margin-left:calc(50% - var(--measure) / 2 - var(--wrap-pad));
+  /* A gutter on the right as well, so the rail never sits flush against the
+     edge. Where the two margins leave less than the max-width, the box narrows
+     rather than overflowing, which is what keeps the column centred all the
+     way down to the breakpoint. */
+  margin-right:var(--wrap-pad);
+}
+/* The bar does *not* follow the column here, which is the one place it does
+   not. Untucked, the crumb starts where the heading starts, because the two
+   are the same words and reading them at two different left edges is noise.
+   Tucked, that alignment costs the whole vacated sidebar: the bar spans the
+   full width and the crumb sat 420px in, with an empty 420px of chrome to its
+   left and the trail truncating on the right while that space went unused. So
+   the crumb takes the page's own gutter instead and the column stays where it
+   is. Nothing is misaligned by it — the crumb is chrome, and above it there is
+   no heading to line up with. */
+.shell.tucked .topbar{
+  padding-left:calc(var(--wrap-pad) + var(--safe-l));
+  padding-right:var(--wrap-pad);
+}
+
+/* the collapse control sits with the other page actions */
+.tbtn.icon{display:inline-flex;align-items:center;gap:7px}
+.tbtn.on{border-color:var(--hi);color:var(--hi-ink)}
+
+/* content settles in when the route changes, so a new section reads as
+   arriving rather than as the page having blinked */
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.viewport{animation:viewIn .22s cubic-bezier(.2,.6,.2,1) both}
+
+@media (prefers-reduced-motion:reduce){
+  .viewport{animation:none}
+}
+
+/* The collapse control sits on the sidebar's own edge, because that is what it
+   acts on. When collapsed, a slim tab at the same edge brings it back without
+   needing the keyboard. */
+.tuck{
+  position:absolute;top:14px;right:10px;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;padding:0;
+  background:none;border:1px solid transparent;border-radius:3px;
+  color:var(--ink-3);cursor:pointer;
+}
+.tuck:hover{border-color:var(--rule);color:var(--hi-ink);background:var(--surface-2)}
+/* No `position:relative` here. The sidebar is `position:sticky` (10-shell), and
+   this file loads later — a relative override silently un-stuck it, so the rail
+   scrolled away with the page. Sticky is already a positioned element, so the
+   absolute .tuck above resolves against it either way. */
+
+.untuck{
+  position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:40;
+  display:flex;align-items:center;justify-content:center;
+  width:22px;height:64px;padding:0;
+  background:var(--surface);color:var(--ink-3);cursor:pointer;
+  border:1px solid var(--rule);border-left:0;
+  border-radius:0 3px 3px 0;
+}
+.untuck:hover{color:var(--hi-ink);border-color:var(--hi)}
+
+@media (max-width:64em){
+  .tuck,.untuck{display:none}
+}
+
+/* ------------------------------------------------------------- the settings
+ * What the page gives you and what it looks like, at the foot of the
+ * navigation.
+ *
+ * They were in the content flow, between a section's blurb and its first
+ * paragraph: two segmented controls, nine combinations, named after what the
+ * engine filters. The mode switch in the toolbar is what a reader meets now,
+ * and this is where the rest lives — on the page being read, as far from the
+ * reading column as the layout allows, closed until asked for.
+ *
+ * Sticky, because the rail above it is as long as the course: on a 62-section
+ * course the panel sat 2000px down its own scroll port, which is a control the
+ * reader has to go looking for. It is the last child of the scrolling sidebar
+ * and the sidebar carries no bottom padding (10-shell.css), so bottom:0 pins it
+ * to the real edge.
+ */
+.axes{
+  position:sticky;bottom:0;z-index:2;
+  margin:6px 0 0;background:var(--surface);
+  border-top:1px solid var(--rule-2);padding:0 14px calc(2px + var(--safe-b));
+}
+/* Open, it stops being the last line of the list and becomes a thing in front
+ * of it: its own ground, its own border, and a shadow that only makes sense
+ * upward, since that is the only side the rail passes behind it on. Inset from
+ * both edges for the same reason — a panel flush with the sidebar's border
+ * reads as the sidebar's own foot, which is exactly the confusion the card is
+ * drawn to remove. */
+.axes[open]{
+  margin:10px 8px calc(8px + var(--safe-b));
+  padding:0 12px 12px;
+  background:var(--surface-2);
+  border:1px solid var(--rule);border-radius:4px;
+  box-shadow:0 -8px 22px -14px rgba(8,11,16,.45);
+}
+/* The marker is `.caret` (00-tokens) rather than the default triangle, which
+   cannot take the state or sit on the text baseline. */
+.axes>summary{
+  font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-3);
+  padding:10px 0;cursor:pointer;list-style:none;display:flex;align-items:center;
+}
+.axes>summary::-webkit-details-marker{display:none}
+.axes>summary:hover{color:var(--hi-ink)}
+.axes[open]>summary{color:var(--ink-2);border-bottom:1px solid var(--rule-2);margin-bottom:2px}
+
+/* Three parts, no headings and no rules between them. The panel is already
+   inside a disclosure and holds six controls; a label over each band was a
+   third level of structure over a list the eye takes in at once. What separates
+   them is the shape of the rows themselves — a line of chips, then two labelled
+   rows — and the space around them. */
+.axes-body{display:flex;flex-direction:column;padding:11px 0 2px}
+.axes .lane{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 8px}
+/* The rail is 308px and a three-button set plus its label does not fit on one
+   line in it. The cycling button is the narrow form the responsive sheet
+   already switches to, so here it is simply the one that shows. */
+.axes .lane-set{display:flex;gap:4px;flex-wrap:wrap}
+.axes .lane-cycle{display:none}
+.axes .lane-k{display:none}
+/* Reveal all, Listen, Theme and the zoom reset, on one line above the settings
+   that stay set. They wrap rather than scroll: the rail is 308px and "Stop
+   reading" is a wide label, so a second line is the honest outcome at that
+   width and a clipped fourth control is not. */
+.axes-acts{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 12px}
+.axes-k{
+  font-family:var(--ui);font-size:var(--fs-micro);color:var(--ink-3);
+  margin:2px 0 4px;line-height:1.7;
+}
+.axes-k kbd{
+  font-family:var(--mono);font-size:var(--fs-micro);border:1px solid var(--rule);
+  border-radius:3px;padding:0 4px;margin:0 2px;color:var(--ink-2);
+  background:var(--surface);
+}
+
+/* ------------------------------------------------------------- the swatches
+ * The course's accent, offered as itself. Each swatch carries `data-hue`, so
+ * the token block in 00-tokens.css redeclares the whole palette against that
+ * angle and `var(--hi)` below paints the colour the course would actually be —
+ * the swatch is a sample, not an approximation of one.
+ *
+ * Square rather than round, and the same 3px radius as every other control
+ * here: a row of circles in a panel of rectangles reads as a different system.
+ */
+.hues{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 2px}
+.hue-set{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.hue-b{
+  width:20px;height:20px;padding:0;cursor:pointer;
+  background:var(--hi);border:1px solid var(--rule);border-radius:3px;
+}
+.hue-b:hover{border-color:var(--ink-3)}
+/* Selected is a ring outside the swatch, never a mark inside it: a tick drawn
+   on the colour has to clear contrast against all eight of them, and the
+   whole point of the control is that the swatch shows the colour undisturbed. */
+.hue-b.sel{border-color:var(--ink-2);box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--ink-2)}
+/* The author's own, which is a word because it is not a colour — it is
+   whichever colour the course declares, and naming it is the only honest
+   rendering. */
+.hue-own{
+  width:auto;height:auto;background:var(--surface);color:var(--ink-2);
+  font-family:var(--mono);font-size:var(--fs-micro);letter-spacing:.04em;
+  padding:3px 8px;
+}
+.hue-own.sel{color:var(--ink);box-shadow:none;border-color:var(--ink-2)}
