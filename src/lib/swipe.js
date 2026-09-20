@@ -2,8 +2,8 @@
    on that line. Keeping these tests separate lets a vertical scroll cancel
    early instead of becoming a swipe when the finger later drifts right. */
 const INTENT_DISTANCE = 12;
-const OPEN_DISTANCE = 72;
-const HORIZONTAL_RATIO = 3;
+const OPEN_DISTANCE = 48;
+const HORIZONTAL_RATIO = 1.5;
 
 export function swipeIntent(dx, dy) {
   if (Math.hypot(dx, dy) < INTENT_DISTANCE) return null;

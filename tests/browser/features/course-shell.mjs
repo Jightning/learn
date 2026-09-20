@@ -246,13 +246,17 @@ export async function testCourseShell(ctx, cid) {
   await page.waitForTimeout(50);
   ck(P("angled scrolling does not open the mobile sidebar"),
      await page.locator(".sidebar.open").count() === 0);
-  await swipe([[30, 180], [65, 184], [90, 186]]);
+  await swipe([[30, 300], [42, 270], [95, 180]]);
+  await page.waitForTimeout(50);
+  ck(P("angled upward scrolling does not open the mobile sidebar"),
+     await page.locator(".sidebar.open").count() === 0);
+  await swipe([[30, 180], [50, 184], [70, 186]]);
   await page.waitForTimeout(50);
   ck(P("a short right drag does not open the mobile sidebar"),
      await page.locator(".sidebar.open").count() === 0);
-  await swipe([[30, 180], [55, 184], [125, 190]]);
+  await swipe([[30, 180], [50, 186], [90, 205]]);
   await page.waitForTimeout(250);
-  ck(P("an explicit right swipe opens the mobile sidebar"),
+  ck(P("a diagonal right swipe opens the mobile sidebar"),
      await page.locator(".sidebar.open").count() === 1
      && await page.locator(".scrim.on").count() === 1);
   /* The scrim spans the viewport behind the drawer. Its centre is inside the
