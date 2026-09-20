@@ -193,6 +193,7 @@ export function createSpeech({
   voiceURI = null,
   lang = "en",
   max = CHUNK,
+  canSpeak = () => true,
   defer = (f, ms = 0) => setTimeout(f, ms)
 } = {}) {
   const supported = !!(synth && Utterance);
@@ -245,6 +246,12 @@ export function createSpeech({
   /* --------------------------------------------------------------- speaking */
   function step() {
     if (!supported) return;
+    /* A scheduled step can wake after the page has been backgrounded. The
+       visibility event normally cancels it first, but background tabs may
+       suspend that event and this timer in either order. Check at the last
+       possible boundary so this session never hands a new utterance to the
+       operating system while its owner is not in the foreground. */
+    if (!canSpeak()) { suspend(); return; }
     if (pos >= flat.length) { status = "ended"; notify(); return; }
 
     const piece = flat[pos];
@@ -334,6 +341,20 @@ export function createSpeech({
     notify();
   }
 
+  /** Cancel platform speech regardless of our state. A browser can retain an
+   * utterance that has not started yet after the app has already cleared its
+   * queue, so lifecycle teardown must not trust `status` as proof that the
+   * operating-system queue is empty. Preserve the position only for a live
+   * session; idle and ended sessions remain what they were. */
+  function suspend() {
+    const wasSpeaking = status === "speaking";
+    cancel();
+    if (wasSpeaking) {
+      status = "paused";
+      notify();
+    }
+  }
+
   function stop() {
     cancel();
     pos = 0; charAt = 0; from = 0;
@@ -393,6 +414,6 @@ export function createSpeech({
 
   function subscribe(fn) { subs.add(fn); fn(state()); return () => subs.delete(fn); }
 
-  return { supported, subscribe, state, enqueue, clear, play, pause, stop,
+  return { supported, subscribe, state, enqueue, clear, play, pause, suspend, stop,
            seek, skip, setRate, setVoice, get rate() { return rate; } };
 }

@@ -265,6 +265,39 @@ const drain = (synth, n = 50) => { while (synth.live && n--) synth.finish(); };
 }
 
 {
+  /* Lifecycle cleanup cannot infer that the platform queue is empty from the
+     app's state. Some engines accept an utterance, start it later, and survive
+     a navigation in between; cancellation must therefore run even while the
+     app already reports idle. */
+  const { synth, s } = make();
+  const before = synth.cancels;
+  s.suspend();
+  ck("background cleanup cancels even when the session says idle",
+     synth.cancels === before + 2, String(synth.cancels - before));
+  ck("background cleanup does not invent a live session",
+     s.state().status === "idle", s.state().status);
+}
+
+{
+  /* play() schedules its first utterance for Safari. If the page is sent to
+     the background before that callback runs, no text may reach the platform
+     queue even when the visibility event itself was delayed or missed. */
+  const synth = fake();
+  const queued = [];
+  let foreground = true;
+  const s = createSpeech({ synth, Utterance: Utt, defer: f => queued.push(f),
+                           canSpeak: () => foreground, max: 40 });
+  s.enqueue([{ id: "a", text: "Section zero. Quizzes." }]);
+  s.play();
+  foreground = false;
+  queued.splice(0).forEach(f => f());
+  ck("a deferred utterance cannot start after the page is backgrounded",
+     synth.spoken.length === 0, synth.spoken.join(" | "));
+  ck("a backgrounded session is paused rather than left claiming to play",
+     s.state().status === "paused", s.state().status);
+}
+
+{
   /* The platform's default voice is not a quality bar. macOS lists two dozen
      novelty voices beside the useful ones and code that reads only a name
      cannot tell them apart, so a page could be read by Zarvox. */

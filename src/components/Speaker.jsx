@@ -33,7 +33,11 @@ export function useSpeaker(rootRef, route) {
     engine.current = createSpeech({
       rate: num(getItem(K.rate), DEFAULT_RATE),
       voiceURI: getItem(K.voice) || null,
-      lang: document.documentElement.lang || "en"
+      lang: document.documentElement.lang || "en",
+      /* `speak()` is deferred for Safari, so being foregrounded when the user
+         pressed Listen is not enough: the callback must still be allowed when
+         it actually reaches the platform queue. */
+      canSpeak: () => document.visibilityState === "visible" && document.hasFocus()
     });
   }
   const e = engine.current;
@@ -55,12 +59,20 @@ export function useSpeaker(rootRef, route) {
      nothing left on screen to stop it. Not `beforeunload`, which does not fire
      on iOS when a tab is discarded. */
   useEffect(() => {
-    const hide = () => { if (document.hidden) e.pause(); };
+    /* Always reach the platform cancel, even when our state already says idle:
+       an utterance the browser accepted but has not started is exactly the
+       orphan that can otherwise begin talking after the app is backgrounded. */
+    const hide = () => { if (document.hidden) e.suspend(); };
+    const blur = () => e.suspend();
     const gone = () => e.clear();
     document.addEventListener("visibilitychange", hide);
+    addEventListener("blur", blur);
+    addEventListener("freeze", gone);
     addEventListener("pagehide", gone);
     return () => {
       document.removeEventListener("visibilitychange", hide);
+      removeEventListener("blur", blur);
+      removeEventListener("freeze", gone);
       removeEventListener("pagehide", gone);
       /* Unmounting is the same event for our purposes: nothing on screen owns
          this session any more. */
