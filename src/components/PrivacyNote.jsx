@@ -21,8 +21,8 @@ export default function PrivacyNote() {
   return (
     <p class="lede cal-priv">
       This device backs up to your own account once a day. Your answer log, your
-      courses, and the three settings that belong to the shelf — a course's
-      colour, the order of the cards, which bundled ones you dismissed — are
+      courses, your notes and saved markers, and the settings that belong to the
+      shelf — a course's colour, card order and dismissed bundled courses — are
       encrypted in this browser first, with a key derived from your secret, so
       they can be stored there but not read there. What the backup can see is
       the shape of it: which device wrote a row, when, and how big it was.

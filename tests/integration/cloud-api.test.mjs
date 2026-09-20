@@ -184,18 +184,23 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
 }
 
 /* ---------------------------------------------------------------- settings --
- * The shelf's own settings — a course's colour, the card order, the bundled
- * courses dismissed — are the one thing here that two devices can both write.
- * The server's whole part in that is comparing stamps, so that is what is
- * checked: the later one wins and the earlier one changes nothing. */
+ * Shelf settings and learner notes are the editable state two devices can both
+ * write. The server's whole part in that is comparing stamps, so that is what
+ * is checked: the later one wins and the earlier one changes nothing. */
 {
   const db = fresh(), counter = { n: 0 };
   const pref = (k, ts, enc) => ({ k, ts, enc });
 
   const first = await call(syncRoute, { device: "laptop", since: 0,
-    prefs: [pref("hue:ma26600", 1000, "blue"), pref("order:v1", 1000, "abc")] }, { db, counter });
-  check("settings ride along in the same call",
-        (first.body.prefs || []).length === 2, JSON.stringify(first.body.prefs));
+    prefs: [pref("hue:ma26600", 1000, "blue"), pref("order:v1", 1000, "abc"),
+            pref("note:ma26600:s1-2#3", 1000, "encrypted-note"),
+            pref("note:ma26600:s1-2#4", 1000, "x".repeat(9 * 1024))] }, { db, counter });
+  check("notes and settings ride along in the same call",
+        (first.body.prefs || []).length === 4, String(first.body.prefs?.length));
+  check("a block note key containing # is accepted",
+        first.body.prefs.find(p => p.k === "note:ma26600:s1-2#3")?.enc === "encrypted-note");
+  check("a note larger than the old settings-only limit is accepted",
+        first.body.prefs.find(p => p.k === "note:ma26600:s1-2#4")?.enc.length === 9 * 1024);
 
   const stale = await call(syncRoute, { device: "phone", since: 0,
     prefs: [pref("hue:ma26600", 999, "amber")] }, { db, counter });
@@ -213,7 +218,7 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
   const junk = await call(syncRoute, { device: "phone", since: 0,
     prefs: [pref("../../etc", 9e12, "x"), pref("hue:x", 9e12, "")] }, { db, counter });
   check("a key that is a path, or a value that is empty, is refused",
-        junk.body.prefs.length === 2, JSON.stringify(junk.body.prefs.map(p => p.k)));
+        junk.body.prefs.length === 4, JSON.stringify(junk.body.prefs.map(p => p.k)));
   check("what is stored is ciphertext the server never reads into",
         !JSON.stringify(junk.body.prefs).includes("hue:x"));
 }

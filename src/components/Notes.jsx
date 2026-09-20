@@ -58,6 +58,18 @@ export function useNotes(cid, anchor) {
     setEditing(-1); setPull(0);
   }, [cid, anchor]);
 
+  /* A manual backup can pull a newer note while this block remains mounted.
+     App-level repainting cannot replace hook state, so reload the anchor when
+     the sync reports that note records changed. */
+  useEffect(() => {
+    const onSync = e => {
+      if (!e.detail.notes || editing >= 0) return;
+      apply(anchor ? readNotes(cid, anchor) : []);
+    };
+    addEventListener("learn:synced", onSync);
+    return () => removeEventListener("learn:synced", onSync);
+  }, [cid, anchor, editing]);
+
   const later = next => {
     clearTimeout(save.current);
     save.current = setTimeout(() => writeNotes(cid, anchor, next), 400);

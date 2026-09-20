@@ -18,15 +18,16 @@ import { json, guard, body, purgeBin, okId } from "./_shared.js";
 
 const MAX_ROWS = 2000;      /* per request, in and out */
 const PAGE = 500;           /* rows returned before the client is told to come back */
-/* Settings are a handful of short strings — one per course plus two — so they
-   ride along on every sync rather than paging. The caps are there to keep that
-   true for a caller that decides otherwise. */
-const MAX_PREFS = 500;
-const MAX_PREF_BYTES = 8 * 1024;
+/* Settings and one encrypted value per note anchor ride along with a sync. */
+const MAX_PREFS = 2000;
+/* Notes can contain pasted explanations and Markdown. Eight kilobytes was
+   enough for a colour or card order but silently discarded ordinary longer
+   notes once encryption/base64 overhead was added. */
+const MAX_PREF_BYTES = 128 * 1024;
 
-/* A preference key is a name, not an id: `hue:<course>`, `order:v1`. Same
-   reasoning as okId — it is used in a key and it comes from the network. */
-const okKey = k => typeof k === "string" && /^[\w:.-]{1,80}$/.test(k);
+/* `#` identifies a block within a subsection note. The key is still data from
+   the network, so path separators and every other punctuation mark stay out. */
+const okKey = k => typeof k === "string" && /^[\w:.#-]{1,160}$/.test(k);
 
 export async function onRequestPost(context) {
   const stop = guard(context.request, context.env);
@@ -78,9 +79,9 @@ export async function onRequestPost(context) {
       "UPDATE courses SET deleted_at = NULL, updated_at = ? WHERE id = ?").bind(now, id));
   }
 
-  /* ----------------------------------------------------------- settings --
-     The colour a course wears, the order of the shelf, the bundled courses
-     dismissed from it. Per key rather than one blob, and the later stamp wins:
+  /* ----------------------------------------------- notes and settings --
+     Learner notes and shelf preferences. Per key rather than one blob, and
+     the later stamp wins:
      the `WHERE` on the upsert is what makes a device carrying a week-old
      opinion unable to overwrite a newer one. The client decides what a stamp
      means (src/lib/prefs.js); the server only compares them. */
@@ -117,8 +118,8 @@ export async function onRequestPost(context) {
   const listing = await db.prepare(
     "SELECT id, version, bytes, deleted_at FROM courses ORDER BY id").all();
 
-  /* And the settings, whole, for the same reason: a device cannot act on a key
-     it is never told about, and the whole table is a few hundred bytes. */
+  /* And the notes/settings, whole, for the same reason: a device cannot act on
+     a key it is never told about. */
   const settings = await db.prepare("SELECT k, ts, enc FROM prefs ORDER BY k").all();
 
   return json({

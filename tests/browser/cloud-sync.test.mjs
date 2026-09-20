@@ -269,8 +269,47 @@ hits.course = 0;
 await backUp(A);
 check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.course} body calls`);
 
+/* ------------------------------------------------ notes and saved markers --
+ * They are editable, unlike the append-only answer log, so each anchor uses
+ * the same stamped last-write-wins channel as shelf settings. A blank note is
+ * the saved marker; it must travel as part of the note rather than through a
+ * second bookmark system. */
+{
+  await A.goto(ORIGIN + "/#/onlylaptop/s1-1");
+  await A.waitForTimeout(900);
+  const grip = A.locator(".note-pull").first();
+  await grip.click();
+  await A.locator(".note-area").fill("remember this on every device");
+  await A.locator(".note-edit", { hasText: "done" }).click();
+  await A.waitForTimeout(450);
+
+  await grip.click();
+  await A.waitForTimeout(150);
+  await A.locator(".note-area").blur();
+  await A.waitForTimeout(450);
+  check("the laptop has a written note and blank saved marker",
+        await A.locator(".note-body", { hasText: "remember this" }).count() === 1 &&
+        await A.locator(".mnote.is-blank").count() === 0 &&
+        await A.locator(".note-blank").count() === 1);
+
+  await backUp(A);
+  await backUp(B);
+  await B.goto(ORIGIN + "/#/onlylaptop/s1-1");
+  await B.waitForTimeout(900);
+  check("a note written on the laptop appears on the phone",
+        await B.locator(".note-body", { hasText: "remember this on every device" }).count() === 1);
+  check("the blank saved marker appears on the phone too",
+        await B.locator(".note-blank").count() === 1);
+
+  await B.goto(ORIGIN + "/#/onlylaptop/explore/saved");
+  await B.waitForTimeout(700);
+  check("the synced annotation appears in Saved",
+        await B.locator(".saved-section .note-body", { hasText: "remember this" }).count() === 1 &&
+        await B.locator(".saved-section .note-blank").count() === 1);
+}
+
 /* ----------------------------------------------------------- the settings --
- * Three things about a device belong to the shelf rather than to the device:
+ * Three settings belong to the shelf rather than to the device:
  * the colour a course wears, the order of the cards, and which bundled ones
  * are dismissed. The reader's words: "I [...] changed the colors and then
  * clicked backup [...] it doesn't update anything" — they did not travel at

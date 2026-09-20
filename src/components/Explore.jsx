@@ -205,6 +205,13 @@ export default function Explore({ ctx, seed, depth: readingDepth = "notes" }) {
    as the source material instead of inventing a second collection design. */
 function Saved({ ctx, depth }) {
   const { cid, idx } = ctx;
+  const [synced, setSynced] = useState(0);
+
+  useEffect(() => {
+    const onSync = e => { if (e.detail.notes) setSynced(n => n + 1); };
+    addEventListener("learn:synced", onSync);
+    return () => removeEventListener("learn:synced", onSync);
+  }, []);
 
   const groups = useMemo(() => {
     const bySub = new Map();
@@ -221,7 +228,7 @@ function Saved({ ctx, depth }) {
       else group.items.push(entry);
     }
     return [...bySub.values()];
-  }, [cid, idx]);
+  }, [cid, idx, synced]);
 
   return (
     <div class="saved-view">

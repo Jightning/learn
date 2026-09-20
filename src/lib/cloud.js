@@ -4,9 +4,9 @@
  * The site is public and works entirely offline: everything a reader does lives
  * in IndexedDB, and that is the whole product for everyone except the person
  * holding the secret. This file is what that one person gets — a copy of the
- * log, the courses, and the handful of settings that belong to the shelf rather
- * than to a device (src/lib/prefs.js), on the account's own backend, so a wiped
- * browser is a download rather than a loss.
+ * log, the courses, learner notes and the settings that belong to the shelf
+ * rather than to a device (src/lib/prefs.js), on the account's own backend, so
+ * a wiped browser is a download rather than a loss.
  *
  * Three properties, in the order they mattered:
  *
@@ -35,7 +35,7 @@ import { importCourse, importedIndex, filesOf, versionOf, markSynced,
 import { invalidate } from "./replay.js";
 import { purge } from "./purge.js";
 import { deriveKey, seal as sealBytes, open as openBytes, versionOfFiles } from "./seal.js";
-import { mine as myPrefs, apply as applyPrefs } from "./prefs.js";
+import { mine as myPrefs, apply as applyPrefs, isNotePref } from "./prefs.js";
 
 const SECRET = "cloud:secret";
 const CURSOR = "cloud:cursor";      /* server-assigned seq, never a clock */
@@ -256,15 +256,15 @@ export async function sync({ manual = false } = {}) {
     const sealed = await Promise.all(
       pending.map(async r => ({ id: r.id, ts: r.ts, enc: await seal(r) })));
 
-    /* Settings ride along with the rows. There are a few of them and they are
-       short, so the whole set goes every time rather than being tracked: the
-       account keeps whichever stamp is later, per key, and sending a key that
-       has not changed costs a hundred bytes and settles nothing. */
+    /* Notes and settings ride along with the rows. Each note anchor is its own
+       key, so editing one block cannot overwrite a note edited elsewhere. The
+       account keeps whichever stamp is later per key; deleted notes travel as
+       encrypted null tombstones so an offline device cannot resurrect them. */
     const sealedPrefs = await Promise.all(
       myPrefs().map(async p => ({ k: p.k, ts: p.ts, enc: await seal(p.v ?? null) })));
 
     let cursor = Number(getItem(CURSOR)) || 0;
-    let merged = 0, listing = [], pages = 0, wrote = 0, settings = 0;
+    let merged = 0, listing = [], pages = 0, wrote = 0, settings = 0, notes = false;
     /* Which courses the merged rows belong to: an open course has to be
        refolded rather than merely repainted, or it shows yesterday's schedule
        until the reader navigates away and back. */
@@ -284,7 +284,9 @@ export async function sync({ manual = false } = {}) {
         if (sealed.length) markSent(pending.map(r => r.id));
         if (dropped.length) removeItem(BIN);
         listing = res.courses || [];
-        settings = applyPrefs(await opened(res.prefs));
+        const accountPrefs = await opened(res.prefs);
+        settings = applyPrefs(accountPrefs);
+        notes = settings > 0 && accountPrefs.some(p => isNotePref(p.k));
       }
       const plain = [];
       for (const r of res.rows || []) {
@@ -308,9 +310,9 @@ export async function sync({ manual = false } = {}) {
     setItem(SEEN, JSON.stringify(listing.filter(c => c.deleted)));
     if (merged || installed.length || removed.length || settings)
       dispatchEvent(new CustomEvent("learn:synced", {
-        detail: { merged, installed, removed, settings, courses: [...touched] } }));
+        detail: { merged, installed, removed, settings, notes, courses: [...touched] } }));
 
-    return { ok: true, sent: wrote, merged, uploaded, installed, removed, settings,
+    return { ok: true, sent: wrote, merged, uploaded, installed, removed, settings, notes,
              bin: listing.filter(c => c.deleted) };
   } catch (e) {
     /* Cursors are only advanced on success, so a failure costs nothing but the

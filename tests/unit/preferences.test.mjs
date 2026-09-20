@@ -3,11 +3,10 @@
  *
  *   npm run test:unit -- preferences
  *
- * The colour a course wears, the order of the shelf, and which bundled courses
- * are dismissed are the only three things about a device that belong to the
- * account instead. Two devices can set the same one, so the merge needs a rule
- * and the rule needs a test: the later stamp wins, per key, and a key nobody
- * touched is a key nobody overwrites.
+ * Shelf settings and learner notes belong to the account rather than one
+ * device. Two devices can edit the same one, so the merge needs a rule and the
+ * rule needs a test: the later stamp wins, per key, and a key nobody touched is
+ * a key nobody overwrites.
  *
  * No indexedDB in node, so store.js keeps everything in its memory mirror —
  * the same read model the app uses. See tests/unit/course-order.test.mjs.
@@ -27,6 +26,10 @@ const of = k => mine().find(p => p.k === k);
 check("a course colour is a synced setting", isPref("hue:ma26600"));
 check("so are the shelf's order and its dismissals",
       isPref("order:v1") && isPref("hidden:v1"));
+check("written notes and blank saved markers are synced per anchor",
+      isPref("note:ma26600:s1-2") && isPref("note:ma26600:s1-2#3"));
+check("an answer attempt that happens to use the note prefix stays local",
+      !isPref("note:ma26600:s1-2#3@attempt"));
 /* Everything else about a device stays on it: where the reader was, how deep
    they read, which lane they are in, and above all the secret itself. */
 check("a reading position is not", !isPref("study:ma26600"));
@@ -44,6 +47,26 @@ check("and writing one through this door is refused rather than quietly allowed"
   const p = of("hue:alpha");
   check("a setting is offered with its value", p && p.v === "90", JSON.stringify(p));
   check("and stamped when it was made", p.ts >= before && p.ts <= Date.now(), String(p && p.ts));
+}
+
+/* Existing local notes predate stamping. They must be offered on the first
+   backup, while a later deletion remains a tombstone that reaches devices
+   which still hold the old value. */
+{
+  setItem("note:legacy:s1-1#2", JSON.stringify(["already here", ""]));
+  check("an unstamped existing note travels on the first backup",
+        (of("note:legacy:s1-1#2") || {}).ts === 1);
+
+  setPref("note:alpha:s2-1#4", JSON.stringify(["from this device"]));
+  const ours = of("note:alpha:s2-1#4").ts;
+  check("a newer note from another device replaces this anchor only",
+        apply([{ k: "note:alpha:s2-1#4", ts: ours + 1000,
+                 v: JSON.stringify(["from the other device"]) }]) === 1 &&
+        getItem("note:alpha:s2-1#4").includes("other device"));
+  check("deleting that note arrives as a tombstone",
+        apply([{ k: "note:alpha:s2-1#4", ts: ours + 2000, v: null }]) === 1 &&
+        getItem("note:alpha:s2-1#4") == null &&
+        of("note:alpha:s2-1#4").v == null);
 }
 
 /* Clearing is a write. A device that never heard about it would otherwise hand

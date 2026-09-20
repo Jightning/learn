@@ -1,13 +1,11 @@
 /* ============================================================================
- * src/lib/prefs.js — the few settings that follow the reader between devices
+ * src/lib/prefs.js — editable state that follows the reader between devices
  *
  * Almost everything the browser holds about a reader is per device on purpose:
  * where they were in a course, how deep they read it, which lane they are in.
- * Three settings are not, because they are statements about the *shelf* rather
- * than about the device looking at it — the colour a course is tinted, the
- * order the cards sit in, and which bundled ones are dismissed. A reader who
- * arranges their shelf on a laptop and then opens a phone is looking at the
- * same shelf, and it used to be someone else's.
+ * Shelf choices and learner notes are not. A reader who arranges their shelf
+ * or annotates a block on a laptop and then opens a phone is looking at the
+ * same shelf and the same notes.
  *
  * Two devices can both set the same thing, so there has to be a rule. The rule
  * is the latest write wins, per key: each change is stamped when it is made and
@@ -30,11 +28,15 @@ import { getItem, setItem, removeItem, keys } from "./store.js";
    never travels: it is this device's account of what it did. */
 const STAMPS = "pref:stamps";
 
-/* What travels. A short list on purpose — every addition is a thing that can
-   arrive from another device and surprise someone. */
-const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/];
+/* What travels. Attempt drafts deliberately do not: they share the note prefix
+   for historical reasons, but `@attempt` is not a learner note. The saved key
+   is the compatibility shape used by the first saved-block implementation. */
+const NOTE = /^note:[\w-]{1,64}:s\d+(?:-\d+)?(?:#\d+)?$/;
+const SAVED = /^saved:[\w-]{1,64}$/;
+const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/, NOTE, SAVED];
 
 export const isPref = k => typeof k === "string" && SYNCED.some(re => re.test(k));
+export const isNotePref = k => typeof k === "string" && (NOTE.test(k) || SAVED.test(k));
 
 const stamps = () => { try { return JSON.parse(getItem(STAMPS)) || {}; } catch { return {}; } };
 const write = s => setItem(STAMPS, JSON.stringify(s));
@@ -48,7 +50,7 @@ const write = s => setItem(STAMPS, JSON.stringify(s));
  * because a stamp of 0 can never be greater than a stamp of 0. */
 const tsOf = (s, k) => (s[k] != null ? Number(s[k]) : (getItem(k) != null ? 1 : 0));
 
-/** Set one, and record when. The three modules that own these keys call this
+/** Set one, and record when. The modules that own these keys call this
  *  rather than store.setItem, so a change cannot be made without a stamp. */
 export function setPref(k, v) {
   if (!isPref(k)) throw new Error(`${k} is not a synced preference`);

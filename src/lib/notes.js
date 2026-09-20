@@ -6,6 +6,7 @@
  * text does not. Notes are the learner's, so they are visually distinct from
  * course content and never mixed into it. */
 import { getItem, setItem, removeItem, keys } from "./store.js";
+import { setPref, dropPref } from "./prefs.js";
 
 /** `anchor` is a subsection id, optionally suffixed with #<block index> */
 const key = (cid, anchor) => `note:${cid}:${anchor}`;
@@ -21,8 +22,8 @@ const legacySaved = cid => {
 const forgetLegacySaved = (cid, anchor) => {
   const set = legacySaved(cid);
   if (!set.delete(anchor)) return;
-  if (set.size) setItem(LEGACY_SAVED(cid), JSON.stringify([...set]));
-  else removeItem(LEGACY_SAVED(cid));
+  if (set.size) setPref(LEGACY_SAVED(cid), JSON.stringify([...set]));
+  else dropPref(LEGACY_SAVED(cid));
 };
 
 /* Exactly one blank note is meaningful: it is the saved marker. Written notes
@@ -73,8 +74,8 @@ export function readNotes(cid, anchor) {
 export function writeNotes(cid, anchor, list) {
   const keep = notesOf(list);
   forgetLegacySaved(cid, anchor);
-  if (keep.length) setItem(key(cid, anchor), JSON.stringify(keep));
-  else removeItem(key(cid, anchor));
+  if (keep.length) setPref(key(cid, anchor), JSON.stringify(keep));
+  else dropPref(key(cid, anchor));
 }
 
 /* Which of a course's notes the reader has folded shut.
@@ -101,7 +102,10 @@ export function setFolded(cid, anchor, on) {
  *  lib/purge.js is the caller. */
 export function dropNotes(cid) {
   const pre = key(cid, "");
-  for (const k of keys()) if (k.startsWith(pre)) removeItem(k);
+  for (const k of keys()) if (k.startsWith(pre)) {
+    /* Attempt drafts are device-local and are not valid synced preferences. */
+    if (k.includes("@attempt")) removeItem(k); else dropPref(k);
+  }
   removeItem(FOLD(cid));
-  removeItem(LEGACY_SAVED(cid));
+  if (getItem(LEGACY_SAVED(cid)) != null) dropPref(LEGACY_SAVED(cid));
 }

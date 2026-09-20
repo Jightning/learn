@@ -50,7 +50,7 @@ export default function CloudPanel({ setup = false, onChange }) {
     if (r.uploaded.length) parts.push(`backed up ${r.uploaded.length} course(s)`);
     if (r.installed.length) parts.push(`installed ${r.installed.length}`);
     if (r.removed.length) parts.push(`removed ${r.removed.length}`);
-    if (r.settings) parts.push(`took ${r.settings} setting(s)`);
+    if (r.settings) parts.push(`took ${r.settings} note/setting update(s)`);
     setMsg(parts.join(", ") + ".");
     refresh();
     onChange && onChange();
