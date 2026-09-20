@@ -1,6 +1,16 @@
 export async function testCourseShell(ctx, cid) {
   const { page, ck, go, shot } = ctx;
   const P = n => `${cid}: ${n}`;
+  const swipe = points => page.evaluate(path => {
+    const target = document.querySelector("main");
+    const fire = (type, point) => target.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, pointerId: 41, pointerType: "touch", isPrimary: true,
+      clientX: point[0], clientY: point[1]
+    }));
+    fire("pointerdown", path[0]);
+    path.slice(1, -1).forEach(point => fire("pointermove", point));
+    fire("pointerup", path[path.length - 1]);
+  }, points);
   await go(`#/${cid}`);
   ck(P("course home renders"), await page.locator(".desk h1").isVisible());
   const nSections = await page.locator(".spine .srow").count();
@@ -230,6 +240,27 @@ export async function testCourseShell(ctx, cid) {
      JSON.stringify(narrow.queue));
   if (narrow.queue.length) ctx.sawQueueRow = true;
 
+  /* The drawer opens from an intentional touch swipe, not from a vertical
+     scroll whose finger happens to drift right or from a short adjustment. */
+  await swipe([[30, 180], [42, 210], [95, 300]]);
+  await page.waitForTimeout(50);
+  ck(P("angled scrolling does not open the mobile sidebar"),
+     await page.locator(".sidebar.open").count() === 0);
+  await swipe([[30, 180], [65, 184], [90, 186]]);
+  await page.waitForTimeout(50);
+  ck(P("a short right drag does not open the mobile sidebar"),
+     await page.locator(".sidebar.open").count() === 0);
+  await swipe([[30, 180], [55, 184], [125, 190]]);
+  await page.waitForTimeout(250);
+  ck(P("an explicit right swipe opens the mobile sidebar"),
+     await page.locator(".sidebar.open").count() === 1
+     && await page.locator(".scrim.on").count() === 1);
+  /* The scrim spans the viewport behind the drawer. Its centre is inside the
+     290px drawer on a 390px phone, so click the exposed strip rather than ask
+     Playwright to click a point another element is meant to cover. */
+  await page.locator(".scrim.on").click({ position: { x: 350, y: 400 } });
+  await page.waitForTimeout(220);
+
   /* WCAG 2.5.8 is 24px; 44px is the platform guidance. Inline links inside a
      sentence are exempt and excluded. Measured by hit-testing rather than by
      reading boxes, because a target may be widened by a pseudo-element. */
@@ -254,6 +285,11 @@ export async function testCourseShell(ctx, cid) {
   ck(P("every control is at least 24px tappable"), taps.length === 0, taps.slice(0, 3).join(" "));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(250);
+  await swipe([[30, 180], [55, 184], [125, 190]]);
+  await page.waitForTimeout(50);
+  ck(P("a touch swipe does not open the desktop sidebar"),
+     await page.locator(".sidebar.open").count() === 0
+     && await page.locator(".scrim.on").count() === 0);
   await shot(cid + "-section");
 
   /* A flow figure is an ordered list with CSS connectors. It used to emit

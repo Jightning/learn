@@ -16,6 +16,7 @@ import { readZoom, applyZoom, zoomFromKey } from "./lib/zoom.js";
 import { getItem, setItem } from "./lib/store.js";
 import { land, resume, track, repin } from "./lib/place.js";
 import { warm as warmSearch } from "./lib/search.js";
+import { swipeIntent, opensSidebar } from "./lib/swipe.js";
 
 import Sidebar from "./components/Sidebar.jsx";
 import { IconTuck } from "./components/Icon.jsx";
@@ -90,6 +91,46 @@ export default function App() {
      returns it synchronously so that path never flashes a loading state. */
   const [course, setCourse] = useState(() => (cid ? peek(cid) : null));
   const [loadError, setLoadError] = useState(null);
+
+  /* A closed mobile drawer follows an intentional right swipe. Pointer events
+     keep this touch-only without suppressing the browser's normal scrolling.
+     The first meaningful movement locks the gesture out if it is vertical or
+     leftward; the completed swipe then has to be strongly horizontal too, so
+     a reader whose scrolling finger drifts right cannot open navigation. */
+  useEffect(() => {
+    if (!course || wide || menuOpen || searchOpen) return;
+    let swipe = null;
+    const down = e => {
+      if (e.pointerType !== "touch") return;
+      if (!e.isPrimary) { swipe = null; return; }
+      swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, cancelled: false };
+    };
+    const move = e => {
+      if (!swipe || e.pointerId !== swipe.id || swipe.cancelled) return;
+      const intent = swipeIntent(e.clientX - swipe.x, e.clientY - swipe.y);
+      if (intent === "other") swipe.cancelled = true;
+    };
+    const up = e => {
+      if (!swipe || e.pointerId !== swipe.id) return;
+      const opens = !swipe.cancelled
+        && opensSidebar(e.clientX - swipe.x, e.clientY - swipe.y);
+      swipe = null;
+      if (opens) setMenuOpen(true);
+    };
+    const cancel = e => {
+      if (swipe && e.pointerId === swipe.id) swipe = null;
+    };
+    addEventListener("pointerdown", down, { passive: true });
+    addEventListener("pointermove", move, { passive: true });
+    addEventListener("pointerup", up, { passive: true });
+    addEventListener("pointercancel", cancel, { passive: true });
+    return () => {
+      removeEventListener("pointerdown", down);
+      removeEventListener("pointermove", move);
+      removeEventListener("pointerup", up);
+      removeEventListener("pointercancel", cancel);
+    };
+  }, [course, wide, menuOpen, searchOpen]);
 
   /* The preference is about the sidebar, and the library has none — it is
      `shell.solo` and renders one full-width column already. Applying `tucked`
