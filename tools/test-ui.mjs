@@ -798,6 +798,40 @@ for (const cid of ids) {
   }
   ck(P("no unresolved figure references"), await page.locator(".xr-miss").count() === 0);
 
+  /* A table split is a border on the last input cell, not the inline separator
+     used between metadata labels. Reusing `.sep` here changes a th/td into an
+     inline 1px box, which leaves the values painted as detached dark blocks.
+     Keep this on the shipped demo route so the regression exercises the actual
+     renderer and the table styles rather than only checking a
+     string in the source. */
+  if (cid === "demo") {
+    const tableHref = await page.evaluate(() => {
+      const link = [...document.querySelectorAll(".spine .srow")]
+        .find(a => /Tables and code/i.test(a.textContent));
+      return link?.getAttribute("href") || null;
+    });
+    ck(P("the tables section is reachable"), !!tableHref, tableHref || "missing");
+    if (tableHref) {
+      await go(tableHref);
+      const split = await page.evaluate(() => [...document.querySelectorAll(
+        ".tbl th.tsplit, .tbl td.tsplit"
+      )].map(cell => {
+        const r = cell.getBoundingClientRect();
+        return {
+          display: getComputedStyle(cell).display,
+          width: Math.round(r.width),
+          text: cell.textContent.trim(),
+          hasInlineSeparator: cell.classList.contains("sep")
+        };
+      }));
+      ck(P("split cells keep table layout"), split.length > 0 &&
+         split.every(c => c.display === "table-cell" && c.width > 20 &&
+                          c.text.length > 0 && !c.hasInlineSeparator),
+         JSON.stringify(split.slice(0, 3)));
+      await go(`#/${cid}/${last}`);
+    }
+  }
+
   /* a caption is citable only once it carries a number */
   const capped = await page.locator(".fcap, figcaption").count();
   if (capped) {

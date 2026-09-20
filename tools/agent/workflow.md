@@ -11,18 +11,22 @@ Four calls carry a course: `begin`, `write`, `done` per subsection, `finish`.
 
 ## Cost
 
-Each turn re-reads this conversation from cache, so cost follows context size and turn count.
+Each model request processes conversation context; cached input is cheaper, not free, and cache hits are not guaranteed. Subagents also consume usage.
 
 - Ask for each set of rules once; after a compaction, `{{AUTHOR}} status <id> --digest`.
 - Read a subsection's sources in one turn, in parallel, and only the parts you need.
-- Write each subsection file in one `Write`. Use `Edit` for fixes only.
+- Write each subsection file in one operation with the available file-writing tool; use targeted patches for fixes.
 - Don't re-read what you just wrote, and don't run commands this file doesn't list.
-- Delegate wide reading; a subagent's reading never enters this conversation.
+- Delegate wide reading only when it saves context or independent work; return concise findings and citations, not raw source dumps. For a small lookup, search locally instead of spawning an agent.
 - Cheaper on request: `--lean` on `begin` and `write` (about 40% smaller rules, no apply tier) and `--no-validate` on `done`. `--confident` is the opposite — extra answer checks — for a small model, or when asked.
 
 ## Subagents
 
+Use the cheapest available model that can meet the task's correctness and teaching requirements. Cost savings must not remove required depth, source checks, step-by-step answer verification, or validation. Assign one bounded deliverable, the relevant rules and sources, and a short acceptance checklist. Give writers explicit file ownership; other agents may be working, so they must not revert others' edits.
+
 {{DELEGATE}}
+
+The parent checks the result against the sources and rules before accepting it, including independently checking drill answers. Escalate when evidence conflicts, reasoning exceeds the worker's ability, or substantive errors remain after one focused correction. Choose a stronger model upfront for difficult derivations or ambiguous synthesis; do not burn usage on repeated cheap attempts. Report uncertainty instead of inventing content. Never delegate a subsection's spine, quizzes or depth; those need this conversation's view of the course.
 
 ## Revising and resuming
 

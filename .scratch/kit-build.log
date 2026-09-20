@@ -1,3 +1,0 @@
-built plugin/: a Claude Code plugin (skill, subagents, log hook) and, in the same folder, AGENTS.md + install.mjs for any other agent
-try it:   claude --plugin-dir plugin
-publish:  commit plugin/ and .claude-plugin/marketplace.json, then push

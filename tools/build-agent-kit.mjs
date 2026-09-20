@@ -5,12 +5,14 @@
  *   node tools/build-agent-kit.mjs [--check]
  *
  * A course is written by an agent following one workflow (tools/agent/
- * workflow.md) and calling the `author` commands. Three copies of that
- * workflow exist, and this builds all three from the one source so they
+ * workflow.md) and calling the `author` commands. This builds its entrypoints
+ * from one source so they
  * cannot drift:
  *
  *   .claude/skills/create-course/SKILL.md   this repository, Claude Code
- *   AGENTS.md                               this repository, every other agent
+ *   .agents/skills/create-course/SKILL.md  this repository, Codex
+ *   .codex/agents/*.toml                   Codex course workers
+ *   AGENTS.md                             this repository, shared workflow
  *   plugin/                                 the published package, committed
  *
  * The package holds bundled scripts (no npm install), the spec, the course
@@ -54,32 +56,33 @@ const DOCS = ["create_course.md", "material_truth.md", "writing.md"];
 const workflow = readFileSync(join(ROOT, "tools/agent/workflow.md"), "utf8");
 
 const DELEGATE = {
+  codex: "- In Codex, use `gpt-5.6-luna` with medium reasoning for routine concept cards, drill banks based on established worked examples, and focused source extraction. These are the defaults in `.codex/agents/course-drafter.toml` and `course-researcher.toml`. Reassess against the models available in the session; never silently inherit the parent's expensive model.\n" +
+    "- `course-drafter` owns one concept card or drill bank. Supply `.author/<id>/rules-concepts.md` or `rules-drills.md` and only the relevant course files. `course-researcher` returns concise cited notes for a bounded question.\n" +
+    "- For harder synthesis or derivations, select the cheapest capable stronger model (for example `gpt-5.6-terra`, then `gpt-5.6-sol`); reserve Astra for work that needs it. The cheap custom roles pin their model: use a `default` worker with the relevant role instructions and an explicit model and reasoning effort when escalating.\n" +
+    "- When `spawn_agent` exposes `fork_turns`, set `fork_turns=\"none\"` and explicitly select model and reasoning effort; provide a self-contained task. A full-history fork can inherit the parent's model and prevent an override. Check the returned configuration when available. If a requested model is unavailable or ignored, report it and select a supported suitable model explicitly; do not silently launch an expensive worker.",
   claude: "- `course-drafter` (Haiku): writes one concept card or one drill bank. Give it the file to " +
     "write, the rules file `.author/<id>/rules-concepts.md` or `rules-drills.md`, and the course files to read.\n" +
     "- `course-researcher`: reads widely and returns or saves condensed notes with citations. Use it for " +
-    "a repository's subsystem, a long document you need only part of, or web research.\n" +
-    "- Never delegate a subsection's spine, quizzes or depth. Those need this conversation's view of the course.",
+    "a repository's subsystem, a long document you need only part of, or web research.",
   any: "- If your CLI can run subagents or spawn a cheaper model, hand it one concept card or one drill " +
     "bank at a time, with the rules file `.author/<id>/rules-concepts.md` or `rules-drills.md` and the " +
     "course files to read; and hand it wide reading (a repository's subsystem, a long document, web " +
     "research) so the raw material stays out of this conversation.\n" +
     "- If it cannot, do that work yourself, but read narrowly: search for what you need instead of " +
-    "reading whole files.\n" +
-    "- Never delegate a subsection's spine, quizzes or depth. Those need this conversation's view of the course."
+    "reading whole files."
 };
 const LOG = {
   claude: "The generation log (`courses/<id>/.authoring-log.md`) is written by a hook from this session's " +
     "transcript, and by the commands themselves. Never write or edit it.",
   any: "The generation log (`courses/<id>/.authoring-log.md`) is written by the commands themselves. " +
-    "Never write or edit it. (Token counts are recorded only under Claude Code, which can read its own " +
-    "transcript.)"
+    "Never write or edit it. Transcript token counts depend on the installed agent hook; the commands work without it."
 };
 
 const fill = (vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, v), workflow);
 
 const repoVars = {
   AUTHOR: "node tools/author.mjs", NEW: 'npm run new --', PACK: "node tools/pack.mjs",
-  WHERE: "Run them from the repository root.", DELEGATE: DELEGATE.claude, LOG: LOG.claude
+  WHERE: "Run them from the repository root.", DELEGATE: DELEGATE.codex, LOG: LOG.any
 };
 const pluginVars = a => ({
   AUTHOR: `node "${a}/scripts/author.mjs"`, NEW: `node "${a}/scripts/new-course.mjs"`,
@@ -88,10 +91,12 @@ const pluginVars = a => ({
     "hold the course and its progress.",
   DELEGATE: DELEGATE.claude, LOG: LOG.claude
 });
-const anyVars = a => ({ ...pluginVars(a), DELEGATE: DELEGATE.any, LOG: LOG.any });
+const anyVars = a => ({ ...pluginVars(a),
+  DELEGATE: DELEGATE.codex + "\n- This portable install supplies instructions only, not Codex custom roles. If the role files are absent, use a `default` worker with the same bounded instructions and explicit model and reasoning settings.\n" + DELEGATE.any,
+  LOG: LOG.any });
 
 const FRONT = "---\nname: create-course\ndescription: Create, continue, or revise a course in " +
-  "courses/<id>/ from sources, a repository, or research. Use when the user asks to make, write, " +
+  "the courses directory from sources, a repository, or research. Use when the user asks to make, write, " +
   "generate, resume, fix, or extend a course or its subsections.\n---\n\n";
 
 /* The marketplace lives at the repository root: that is where Claude Code
@@ -110,7 +115,10 @@ const MARKETPLACE = JSON.stringify({
 /* Files that must match what this builds, in the repository itself. */
 const generated = {
   ".claude-plugin/marketplace.json": MARKETPLACE,
-  ".claude/skills/create-course/SKILL.md": FRONT + fill(repoVars),
+  ".claude/skills/create-course/SKILL.md": FRONT + fill({ ...repoVars, DELEGATE: DELEGATE.claude, LOG: LOG.claude }),
+  ".agents/skills/create-course/SKILL.md": FRONT + fill(repoVars),
+  ...Object.fromEntries(["course-drafter", "course-researcher"].map(name =>
+    [`.codex/agents/${name}.toml`, readFileSync(join(ROOT, "tools/agent", `${name}.toml`), "utf8")])),
   "AGENTS.md": `# ${pkg.name}\n\nThis repository builds study courses and the site that reads them. ` +
     "To create, continue or revise a course, follow the workflow below. For anything else, read " +
     "`README.md` and `docs/`.\n\n" + fill(repoVars)
@@ -235,7 +243,7 @@ into the course.
 
 Without installing, one session can try it: \`claude --plugin-dir <repo>/plugin\`.
 
-## Any other CLI agent
+## Codex and other CLI agents
 
 \`\`\`sh
 node install.mjs ~/my-courses            # writes AGENTS.md there
@@ -243,7 +251,10 @@ node install.mjs ~/my-courses --name AGENTS.md,GEMINI.md
 \`\`\`
 
 The file tells the agent the same workflow and the commands to run. Subagents are optional: where
-the CLI has none, the agent does that work itself.
+the CLI has none, the agent does that work itself. In Codex, it specifies a cheap model for routine
+work and stronger models when correctness requires them; this portable installer does not install
+custom agent TOML files. In the full repository, Codex discovers the skill in
+\`.agents/skills/create-course/\` and the workers in \`.codex/agents/\`.
 
 ## What it writes
 

@@ -16,7 +16,7 @@ into the course.
 
 Without installing, one session can try it: `claude --plugin-dir <repo>/plugin`.
 
-## Any other CLI agent
+## Codex and other CLI agents
 
 ```sh
 node install.mjs ~/my-courses            # writes AGENTS.md there
@@ -24,7 +24,10 @@ node install.mjs ~/my-courses --name AGENTS.md,GEMINI.md
 ```
 
 The file tells the agent the same workflow and the commands to run. Subagents are optional: where
-the CLI has none, the agent does that work itself.
+the CLI has none, the agent does that work itself. In Codex, it specifies a cheap model for routine
+work and stronger models when correctness requires them; this portable installer does not install
+custom agent TOML files. In the full repository, Codex discovers the skill in
+`.agents/skills/create-course/` and the workers in `.codex/agents/`.
 
 ## What it writes
 
