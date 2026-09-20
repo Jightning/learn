@@ -9,7 +9,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveDist, installPacked } from "./lib/harness.mjs";
+import { serveDist, installDemoFixture } from "./lib/harness.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const { origin: ORIGIN, close: closeServer } = await serveDist(ROOT);
@@ -42,14 +42,13 @@ const shot = async name => { if (SHOTS) await page.screenshot({ path: join(shotD
 
 await go();
 
-/* Only the courses in PUBLIC reach dist/, so the deployment ships one. The
-   rest are private and arrive the way a reader's own courses do — through the
-   import control — which both restores full coverage here and exercises that
-   path on every run. */
-const installed = await installPacked(page, ROOT);
+/* Only the courses in PUBLIC reach dist/. A second course derived from demo is
+   imported through the reader's real path so multi-course behavior remains
+   covered without making tests depend on user courses in courses/ or packed/. */
+const installed = await installDemoFixture(page, ROOT);
 if (installed) {
   const failed = await page.locator(".cio-msg.bad").count();
-  ck("packed courses install", failed === 0,
+  ck("demo fixture installs", failed === 0,
      failed ? await page.locator(".cio-msg.bad").first().innerText() : `${installed} courses`);
   await go();
 }
@@ -432,7 +431,7 @@ if (single) {
       }
     }, standalone);
     await ip.goto(URL); await ip.waitForTimeout(400);
-    await installPacked(ip, ROOT);
+    await installDemoFixture(ip, ROOT);
     await ip.goto(URL); await ip.waitForTimeout(1100);
     const warn = await ip.locator(".cio-warn").count();
     ck(`on ${where} the install advice is ${standalone ? "silent" : "shown"}`,
@@ -1504,6 +1503,9 @@ for (const cid of ids) {
     }));
     await go(`#/${cid}/explore`);
     ck(P("explore opens with no query"), await page.locator(".xq").count() === 1);
+    ck(P("saved blocks are a view within Explore"),
+       await page.locator('.xviews a[href$="/explore/saved"]').count() === 1 &&
+       await page.locator('.sidebar .navtop a', { hasText: "Saved" }).count() === 0);
     /* A facet per axis the course actually has. Kind and Show are structural
        and always present; Category and Tag are declared, and a course with no
        taxonomy must show neither rather than an empty menu. Counting buttons
@@ -2067,6 +2069,27 @@ for (const cid of ids) {
     await page.locator(".note-drop").click(); await page.waitForTimeout(400);
     ck(P("a note can be deleted"), await page.locator(".note-one").count() === 1,
        (await page.locator(".note-one").count()) + " left");
+
+    /* A marker is the no-writing path into the same collection. Its page-tab
+       shape is intentionally not a star, and the collection belongs to
+       Explore rather than adding another permanent sidebar destination. */
+    const marker = page.locator(".note-save").first();
+    await marker.click(); await page.waitForTimeout(300);
+    ck(P("a block can be marked without writing a note"),
+       await marker.getAttribute("aria-pressed") === "true");
+    await go(`#/${cid}/explore/saved`);
+    ck(P("Saved groups annotations under their section"),
+       await page.locator(".saved-group > header h2").count() > 0);
+    ck(P("Saved shows written notes and blank markers together"),
+       await page.locator(".saved-note").count() > 0 &&
+       await page.locator(".saved-card.is-marker").count() > 0);
+    await page.locator(".saved-filter").click(); await page.waitForTimeout(250);
+    ck(P("the marker filter hides written notes"),
+       await page.locator(".saved-note").count() === 0 &&
+       await page.locator(".saved-card.is-marker").count() > 0);
+    await go(`#/${cid}/index`);
+    await go(`#/${cid}/explore/saved`);
+    ck(P("saved markers persist"), await page.locator(".saved-card.is-marker").count() > 0);
   }
 
   /* One course's styles at a time: they used to be appended and never removed,

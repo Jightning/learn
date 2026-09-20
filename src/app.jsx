@@ -387,6 +387,7 @@ export default function App() {
     view = <Practice ctx={ctx} cat={rest.slice(9)} />;
   else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} drills={drills} />;
   else if (rest === "explore") view = <Explore ctx={ctx} seed={null} />;
+  else if (rest === "explore/saved") view = <Explore ctx={ctx} seed={{ saved: true }} />;
   else if (rest.startsWith("explore/tag/"))
     view = <Explore ctx={ctx} seed={{ tag: decodeURIComponent(rest.slice(12)) }} />;
   else if (rest.startsWith("explore/cat/"))

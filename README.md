@@ -27,7 +27,8 @@ You can then start working on the course within that folder.
 The changes can be validated with:
 
 ```sh
-npm run check
+npm run validate -- ma26600
+npm run audit -- ma26600
 ```
 
 Finally import your course to the site and enjoy.
@@ -51,17 +52,6 @@ node tools/author.mjs finish ma26600  # materials, validation, coverage
 npm run coverage -- ma26600  # does a comparison to see if the course is covering everything
 ```
 
-**Codex:** Open this repository as the project and ask for a course. Codex reads
-`AGENTS.md`, discovers `.agents/skills/create-course/`, and loads course workers
-from `.codex/agents/`. Routine, well-sourced tasks use GPT-5.6 Luna with medium
-reasoning. Harder tasks use a stronger suitable model; the main agent checks
-sources and answers and retains the subsection writing. Model choices are
-explicit so cheap workers do not inherit an expensive parent model.
-
-The shared workflow and worker templates live in `tools/agent/`.
-`npm run kit` regenerates the Codex and Claude entrypoints and the portable kit;
-`node tools/build-agent-kit.mjs --check` detects stale generated copies.
-
 **Claude:**
 
 ```sh
@@ -75,8 +65,10 @@ claude --plugin-dir plugin
 
 **Other Agents:**
 
+Run the following command
+
 ```sh
-node plugin/install.mjs ~/my-courses   # for other agents
+node plugin/install.mjs ~/my-courses   # for other agents, adds the AGENTS.md which links back to this repo
 ```
 
 ## Development
@@ -93,4 +85,5 @@ Building:
 ```sh
 npm run build  # for dist/
 npm run deploy  # builds, publishes to Cloudflare Pages, and keeps 2 newest deployments
+npm run check  # engine checks against demo and _template; user courses are not read
 ```

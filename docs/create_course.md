@@ -7,9 +7,9 @@ follow them; read the entry only if one seems wrong.
 
 ```sh
 npm run new -- <id> "Course Title"   # scaffold courses/<id>/
-npm run check                        # build + validate + browser tests
-npm run audit                        # sourcing, verification, routing, drills
-npm run shots                        # render every page to .shots/
+npm run validate -- <id>             # structure and references for this course
+npm run audit -- <id>                # sourcing, verification, routing, drills
+npm run pack -- <id>                 # bundle for browser import and inspection
 ```
 
 ---
@@ -264,11 +264,12 @@ concept's `key` blocks has an item (D7, M33).*
 **7 — Depth and apply.** Now add `tier: depth` and `tier: apply`. Last,
 deliberately: written earlier, spine material gets absorbed into digressions.
 Every `key` whose derivation did not fit the spine gets it here (§6.3).
-*Stop: `npm run check` passes the spine-only render.*
+*Stop: `npm run validate -- <id>` passes, then the imported course reads
+correctly in Spine mode.*
 
 **8 — Verify.** Re-derive every worked answer and drill solution; re-reading is
-not verifying [M22]. Set `verified:` dates, run §12, `npm run check`,
-`npm run audit`.
+not verifying [M22]. Set `verified:` dates, run §12,
+`npm run validate -- <id>`, and `npm run audit -- <id>`.
 
 ---
 
@@ -806,7 +807,7 @@ met in four sessions across three days" is content; "Four places a course can
 take you" is a count, and closing the list behind it hands the reader a title.
 Three fixes, in order: write a `core:` (works on any block), set `notes: open`
 for the judgement calls, or accept the label only where it genuinely is the whole
-content. `npm run check` warns about a list buried in a prose block's `h:` — move
+content. `npm run validate -- <id>` warns about a list buried in a prose block's `h:` — move
 it into `items:`, which the engine can see. A worked example is exempt: its
 `<ol>` is the working [M11].
 
@@ -1212,9 +1213,9 @@ No script decides any of these.
       `def` of four sentences without one under ten words (writing.md).
 
 ```sh
-npm run check      # must be clean
-npm run audit      # the fractions and the M33 warnings
-npm run shots      # look at it
+npm run validate -- <id>  # must be clean
+npm run audit -- <id>     # the fractions and the M33 warnings
+npm run pack -- <id>      # import it and look at both depths
 ```
 
 **Read the section at both depths before calling it done** (§6.7).

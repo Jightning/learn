@@ -4,14 +4,13 @@
  * Two things every browser-driving tool now needs, and neither is obvious.
  *
  * Courses are fetched at runtime, so the page needs an origin: `file://` cannot
- * fetch. And only the courses in `PUBLIC` reach dist/, so the private ones —
- * which is every other one — arrive the way a reader's own courses do, through
- * the import control. Sweeping only the public course would leave every other
- * palette and every other course's routes ungated.
+ * fetch. A synthetic demo-derived import exercises the multi-course user path
+ * without making engine tests depend on private course content.
  * ==========================================================================*/
 import { createServer } from "node:http";
-import { createReadStream, existsSync, statSync, readdirSync } from "node:fs";
+import { createReadStream, existsSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
+import { courseFiles } from "./files.mjs";
 
 const MIME = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
@@ -49,25 +48,27 @@ export async function serveDist(root) {
   };
 }
 
-/**
- * Install every packed course into the page, as a reader would.
- * Returns how many were installed; zero when `packed/` is absent.
- */
-export async function installPacked(page, root) {
-  const packed = join(root, "packed");
-  if (!existsSync(packed)) return 0;
-  const files = readdirSync(packed).filter(f => f.endsWith(".course.json")).sort();
-  if (!files.length) return 0;
+/** Install a second course derived entirely from the public demo.
+ *
+ * Browser tests need more than one shelf item to exercise ordering, removal,
+ * and cross-course review. Using packed/ for that made every local user course
+ * a dependency of application development, including half-written ones. This
+ * fixture keeps the same import path while depending only on shipped source. */
+export async function installDemoFixture(page, root) {
+  const files = courseFiles(join(root, "courses", "demo"), message => {
+    throw new Error(`demo fixture: ${message}`);
+  });
+  files["course.yaml"] = files["course.yaml"]
+    .replace(/^code:.*$/m, "code: DEMO 002")
+    .replace(/^title:.*$/m, "title: The Study-Site System — Test Copy")
+    .replace(/^(\s*hue:\s*)\d+/m, (_whole, lead) => lead + "35");
 
-  /* Install lives behind the shelf's plus now, so the dialog is opened the way
-     a reader opens it. Two inputs inside it: a folder picker and a file picker.
-     Packed courses are files, so target that one explicitly rather than by
-     type. */
   await page.locator("#lib-add").click();
-  await page.locator('.modal .cio input[accept*="zip"]').setInputFiles(files.map(f => join(packed, f)));
-  /* One import parses and indexes a whole course; a shelf of them needs room. */
-  await page.waitForTimeout(1000 + files.length * 400);
-  /* The dialog is left open: its own message is what the caller checks, and the
-     caller reloads the library immediately afterwards. */
-  return files.length;
+  await page.locator('.modal .cio input[accept*="zip"]').setInputFiles({
+    name: "test-copy.course.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(files))
+  });
+  await page.waitForTimeout(1400);
+  return 1;
 }

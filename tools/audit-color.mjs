@@ -9,23 +9,21 @@
  * It also gates the grounds' *tint*, which contrast cannot see. See the tint
  * gate below for why a theme can pass every ratio and still be wrong. */
 import { chromium } from "playwright";
-import { readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveDist, installPacked } from "./lib/harness.mjs";
+import { serveDist, installDemoFixture } from "./lib/harness.mjs";
 import { loadCourse } from "./lib/load.mjs";
 import { routesFor } from "./lib/routes.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const { origin: F, close } = await serveDist(ROOT);
 
-/* Every course, not one of them: a course carries its own accent rotation
-   (theme.hue), so sweeping a single course would leave five palettes ungated. */
-const PAGES = ["#/", ...readdirSync(join(ROOT, "courses"), { withFileTypes: true })
-  .filter(d => d.isDirectory() && !d.name.startsWith("_"))
-  .flatMap(d => {
-    const { course } = loadCourse(join(ROOT, "courses", d.name));
-    return routesFor(course).map(r => "#/" + d.name + r);
-  })];
+/* Sweep the public demo and a second hue imported from that same source. User
+   courses are runtime data; their validity and palette must not decide whether
+   the application itself passes development checks. */
+const { course: demo } = loadCourse(join(ROOT, "courses", "demo"));
+const routes = routesFor(demo);
+const PAGES = ["#/", ...routes.map(r => "#/demo" + r),
+                      ...routes.map(r => "#/test-copy" + r)];
 
 const lum = c => { const [r,g,b] = c.map(v => { v/=255; return v<=.03928 ? v/12.92 : Math.pow((v+.055)/1.055,2.4); }); return .2126*r+.7152*g+.0722*b; };
 const ratio = (a,b) => { const L1=lum(a),L2=lum(b); const [hi,lo]=L1>L2?[L1,L2]:[L2,L1]; return (hi+.05)/(lo+.05); };
@@ -33,11 +31,10 @@ const ratio = (a,b) => { const L1=lum(a),L2=lum(b); const [hi,lo]=L1>L2?[L1,L2]:
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1500, height: 950 } });
 
-/* Private courses are not deployed, so they are installed the way a reader
-   installs their own — otherwise every palette but the demo's goes ungated. */
+/* Exercise the import path and a second accent without reading user data. */
 await p.goto(F + "/");
 await p.waitForTimeout(600);
-await installPacked(p, ROOT);
+await installDemoFixture(p, ROOT);
 
 /* Dark has two independent paths — the reader's OS setting and the in-page
    toggle — and they are separate CSS blocks. A stale copy of the palette once

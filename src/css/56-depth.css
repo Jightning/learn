@@ -327,6 +327,16 @@
 
 /* ------------------------------------------------------------------ explore */
 .explore{max-width:100%}
+.xhead{display:flex;align-items:end;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.xhead h1{margin-bottom:0}
+.xviews{display:flex;align-items:center;border-bottom:1px solid var(--rule)}
+.xviews a{
+  display:flex;align-items:center;gap:.35rem;padding:.45rem .65rem;
+  font-family:var(--ui);font-size:var(--fs-small);color:var(--ink-3);
+  text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.xviews a:hover{color:var(--ink)}
+.xviews a.cur{color:var(--dc-ink);border-bottom-color:var(--dc);font-weight:600}
 .xbar{display:flex;gap:.5rem;align-items:center;margin:var(--sp-2) 0}
 .xq{
   flex:1 1 auto;min-width:0;font:inherit;font-size:.95rem;
@@ -369,11 +379,73 @@
 .xrow .glead,.xrow .bhtml{margin-left:0;margin-top:.3rem}
 .xrow .gmeta{margin-left:0;margin-top:.35rem}
 
+/* Saved is a view within Explore, not another navigation destination. The
+   section headers restore the context that a flat pile of annotations loses. */
+.saved-view{margin-top:var(--sp-2)}
+.saved-bar{
+  display:flex;align-items:center;gap:.6rem 1rem;flex-wrap:wrap;
+  padding:.65rem 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+}
+.saved-bar>p{margin:0;flex:1 1 22rem;color:var(--ink-2);font-size:var(--fs-small)}
+.saved-bar .xcount{margin:0}
+.saved-filter{
+  font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-3);
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  padding:.35rem .6rem;cursor:pointer;
+}
+.saved-filter:hover{color:var(--ink);border-color:var(--rule-2)}
+.saved-filter.cur{color:var(--dc-ink);border-color:var(--dc);background:color-mix(in srgb,var(--dc) 8%,var(--surface))}
+.saved-filter:focus-visible,.saved-toggle:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.saved-empty{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:var(--sp-4) var(--sp-2);color:var(--ink-3);
+}
+.saved-empty svg{width:22px;height:22px;color:var(--dc-ink);margin-bottom:.5rem}
+.saved-empty p{margin:0 0 .2rem;color:var(--ink);font-weight:600}
+.saved-empty span{font-size:var(--fs-small)}
+.saved-group{padding-top:var(--sp-3)}
+.saved-group>header{border-bottom:1px solid var(--rule);padding-bottom:.45rem;margin-bottom:.25rem}
+.saved-group>header span{
+  display:block;font-family:var(--mono);font-size:var(--fs-micro);
+  text-transform:uppercase;letter-spacing:.1em;color:var(--dc-ink);margin-bottom:.2rem;
+}
+.saved-group>header h2{font-family:var(--display);font-size:1.3rem;margin:0}
+.saved-list{display:flex;flex-direction:column}
+.saved-card{padding:.8rem 0;border-bottom:1px solid var(--rule-2)}
+.saved-card.is-marker{
+  padding-left:.7rem;border-left:2px solid color-mix(in srgb,var(--dc) 55%,var(--rule));
+}
+.saved-card-h{display:flex;align-items:start;gap:.7rem}
+.saved-card-h>div{display:flex;flex-direction:column;gap:.15rem;min-width:0;flex:1 1 auto}
+.saved-card-h a{font-family:var(--mono);font-size:.9rem;font-weight:600;color:var(--ink);text-decoration:none}
+.saved-card-h a:hover{color:var(--dc-ink)}
+.saved-at{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3)}
+.saved-toggle{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  width:30px;height:30px;padding:0;border:0;background:none;color:var(--dc-ink);cursor:pointer;
+}
+.saved-claim{font-size:var(--fs-small);line-height:1.55;color:var(--ink-2);margin-top:.45rem;max-width:var(--measure)}
+.saved-claim p{margin:0}
+.saved-note{
+  max-width:var(--measure);margin-top:.55rem;padding:.55rem .7rem;
+  border-left:2px solid var(--dc);background:color-mix(in srgb,var(--dc) 5%,var(--surface));
+  color:var(--ink-2);font-size:var(--fs-small);line-height:1.55;
+}
+.saved-note p{margin:0 0 .35rem}.saved-note>:last-child{margin-bottom:0}
+.saved-note ul,.saved-note ol{margin:.2rem 0;padding-left:1.2rem}
+.saved-marker-label{
+  margin:.45rem 0 0;font-family:var(--ui);font-size:var(--fs-meta);
+  color:var(--dc-ink);font-style:italic;
+}
+
 @media (max-width:52em){
   .gkind{width:2.5rem}
   .glead,.gmeta,.depth-index .gmeta{margin-left:0}
   .xfacets .xcount{margin-left:0;flex:1 1 100%}
   .catpractice{margin-left:0}
+  .xhead{align-items:start;flex-direction:column;gap:.7rem}
+  .xviews{width:100%}.xviews a{flex:1 1 50%;justify-content:center}
+  .saved-bar .xcount{flex:1 1 100%}
 }
 
 /* T5. The edge, the header's × and the open body all say the same thing at

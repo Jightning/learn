@@ -15,10 +15,10 @@
  * was made. Keeping a couple for rollback is reasonable; keeping all of them
  * means the oldest mistake is the one still online.
  *
- * **Verify.** The production alias is checked for a course that should not be
- * there. This catches a stale `dist/` — uploading a folder built before a
- * course was made private looks exactly like a successful deploy, and the only
- * symptom is material being readable by anyone.
+ * **Verify.** The production alias is checked for every course deliberately
+ * emitted by the build. Private workspace courses are never enumerated here:
+ * `tools/build.mjs` gates `dist/courses/` against the closed public allowlist
+ * before Wrangler sees it.
  *
  * The production URL never changes. Each deployment gets an immutable hash
  * address, and `<project>.pages.dev` is an alias that always points at the
@@ -109,22 +109,16 @@ if (!origin) { console.log("\nno production URL to check."); process.exit(unprun
 const shipped = existsSync(join(ROOT, "dist", "courses"))
   ? readdirSync(join(ROOT, "dist", "courses")).map(f => f.replace(/\.json$/, ""))
   : [];
-const priv = readdirSync(join(ROOT, "courses"), { withFileTypes: true })
-  .filter(d => d.isDirectory() && !d.name.startsWith("_"))
-  .map(d => d.name)
-  .filter(id => !shipped.includes(id));
 
 console.log(`\nchecking ${origin}`);
 console.log(`  public:  ${shipped.join(", ") || "(none)"}`);
 
-/* Pages answers a missing file with index.html and HTTP 200, so status alone
-   proves nothing — a course is present only if the response is actually JSON.
- *
- * And a course can be absent from the deployment yet still served from
- * Cloudflare's edge cache, which holds `/courses/*` for seven days and has no
- * purge API on pages.dev. The two are told apart by asking twice: a
- * cache-busting query reaches the deployment, the plain URL reaches the public.
- * Re-deploying fixes one and cannot touch the other. */
+/* Verify what the build deliberately shipped, without discovering or reading
+   private workspace courses. The build has already compared dist/courses/
+   against the closed PUBLIC allowlist; deployment verification is therefore
+   about proving that each resulting public asset reached the production alias.
+   Pages answers a missing file with index.html and HTTP 200, so status alone
+   proves nothing — a course is present only if the response is actually JSON. */
 const present = async url => {
   try {
     const res = await fetch(url, { method: "GET" });
@@ -132,25 +126,17 @@ const present = async url => {
   } catch { return false; }
 };
 
-const inDeploy = [], inCache = [];
-for (const id of priv) {
+const missing = [];
+for (const id of shipped) {
   const url = `${origin}/courses/${id}.json`;
-  if (await present(`${url}?nocache=${Date.now()}`)) inDeploy.push(id);
-  else if (await present(url)) inCache.push(id);
+  if (!await present(`${url}?nocache=${Date.now()}`)) missing.push(id);
 }
 
-if (inDeploy.length) {
-  console.error(`\n  ✗ IN THE DEPLOYMENT: ${inDeploy.join(", ")}`);
-  console.error(`    The uploaded dist/ was not the one just built. Re-run this command.`);
+if (missing.length) {
+  console.error(`\n  ✗ MISSING FROM PRODUCTION: ${missing.join(", ")}`);
+  console.error("    The production alias is not serving the public courses just built.");
 }
-if (inCache.length) {
-  console.error(`\n  ! STILL IN CLOUDFLARE'S CACHE: ${inCache.join(", ")}`);
-  console.error(`    Not in this deployment, but the edge cached them while they were`);
-  console.error(`    public and holds /courses/* for 7 days. There is no purge API for`);
-  console.error(`    pages.dev. They expire on their own; deleting and recreating the`);
-  console.error(`    project under a new name is the only way to drop them sooner.`);
-}
-if (inDeploy.length) process.exit(1);
-if (!inCache.length) console.log(`  private: ${priv.length} course(s), none reachable ✓`);
+if (missing.length) process.exit(1);
+console.log("  private: not inspected; excluded by the build allowlist ✓");
 console.log(`\nlive at ${origin}`);
 process.exit(unpruned ? 1 : 0);

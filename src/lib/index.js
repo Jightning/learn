@@ -36,6 +36,7 @@ export function conceptOf(C, q, sub) {
 
 export function buildIndex(C) {
   const SUBS = {}, CUSE = {}, XIN = {}, QALL = [], SEARCH = [], CQ = {}, BLOCKS = {};
+  const ANNOTATIONS = [];
 
   C.sections.forEach(s => {
     /* Kept in the case it was written in. The index lowercases as it
@@ -48,6 +49,8 @@ export function buildIndex(C) {
     s.subs.forEach((sub, k) => {
       const num = `${s.num}.${k + 1}`;
       SUBS[sub.id] = { sec: s, sub, num };
+      ANNOTATIONS.push({ kind: "sub", id: sub.id, anchor: sub.id, sub, sec: s,
+                         num, title: sub.title });
 
       const txt = textOf(sub);
       for (const m of txt.matchAll(/<c\s+k="([^"]+)"/g)) push(CUSE, m[1], sub.id);
@@ -79,10 +82,12 @@ export function buildIndex(C) {
          exception and carries its cells, because a table is looked up by what
          is inside it — which is the case block addressing exists for. */
       (sub.blocks || []).forEach((b, i) => {
+        const id = blockId(sub.id, i);
+        ANNOTATIONS.push({ kind: "block", id, anchor: `${sub.id}#${i}`, b, sub, sec: s,
+                           num, at: i, title: nameOf(b) || b.label || `Item ${i + 1}` });
         if (!b || present(b, "index").mode === "hidden") return;
         const title = nameOf(b);
         if (!title) return;
-        const id = blockId(sub.id, i);
         const cells = b.t === "table"
           ? strip([...(b.head || []), ...(b.rows || []).flat()].join(" ")) : "";
         BLOCKS[id] = { b, sub, sec: s, num, at: i, title };
@@ -98,7 +103,7 @@ export function buildIndex(C) {
                   ctx: "Core concept", cat: C.concepts[k].cat || null,
                   tags: C.concepts[k].tags || [], text: strip(C.concepts[k].body) }));
 
-  return { SUBS, CUSE, XIN, QALL, SEARCH, CQ, BLOCKS,
+  return { SUBS, CUSE, XIN, QALL, SEARCH, CQ, BLOCKS, ANNOTATIONS,
            CAT: indexCats(C), FIG: numberFigures(C) };
 }
 

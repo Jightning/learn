@@ -5,6 +5,9 @@ import { decorate } from "../lib/refs.js";
 import { renderBlock } from "../blocks/index.js";
 import CatChip, { monogram } from "./CatChip.jsx";
 import Dropdown, { Item } from "./Dropdown.jsx";
+import { readNotes, isSaved, setSaved } from "../lib/notes.js";
+import { md } from "../lib/md.js";
+import { IconSaved } from "./Icon.jsx";
 
 /* Explore — search with the facets the overlay deliberately does not have.
  *
@@ -48,6 +51,7 @@ export default function Explore({ ctx, seed }) {
   const [tag, setTag] = useState(seed && seed.tag ? seed.tag : "");
   const [kinds, setKinds] = useState([]);
   const [depth, setDepth] = useState("notes");
+  const savedView = !!(seed && seed.saved);
 
   /* A link into this page carries the facet it meant. Re-seeding on the route
      rather than on mount so following a second tag chip from the results
@@ -86,7 +90,18 @@ export default function Explore({ ctx, seed }) {
 
   return (
     <div class="explore">
-      <h1>Explore</h1>
+      <div class="xhead">
+        <h1>{savedView ? "Saved" : "Explore"}</h1>
+        <nav class="xviews" aria-label="Explore views">
+          <a href={`#/${cid}/explore`} class={!savedView ? "cur" : ""}>Discover</a>
+          <a href={`#/${cid}/explore/saved`} class={savedView ? "cur" : ""}>
+            <IconSaved /> Saved
+          </a>
+        </nav>
+      </div>
+
+      {savedView ? <Saved ctx={ctx} /> : (
+        <>
 
       <div class="xbar">
         <input class="xq" type="search" value={q} placeholder="Search, or leave empty and filter…"
@@ -177,7 +192,101 @@ export default function Explore({ ctx, seed }) {
       <div class="xres">
         {res.map(r => <Row key={r.e.id} r={r} ctx={ctx} depth={depth} />)}
       </div>
+        </>
+      )}
     </div>
+  );
+}
+
+/* Written notes and marker-only saves share one collection. The marker is the
+   blank-note case: it keeps a block without asking the learner to invent text,
+   while real notes keep their prose and sit in the same section grouping. */
+function Saved({ ctx }) {
+  const { cid, C, idx } = ctx;
+  const [markersOnly, setMarkersOnly] = useState(false);
+  const [change, setChange] = useState(0);
+
+  useEffect(() => {
+    const refresh = e => { if (!e.detail || e.detail.cid === cid) setChange(n => n + 1); };
+    addEventListener("learn:saved", refresh);
+    return () => removeEventListener("learn:saved", refresh);
+  }, [cid]);
+
+  const groups = useMemo(() => {
+    const bySection = new Map(C.sections.map(s => [s.id, { section: s, items: [] }]));
+    for (const entry of idx.ANNOTATIONS) {
+      const notes = readNotes(cid, entry.anchor);
+      const marked = entry.kind === "block" && isSaved(cid, entry.anchor);
+      if (!notes.length && !marked) continue;
+      if (markersOnly && (!marked || notes.length)) continue;
+      bySection.get(entry.sec.id).items.push({ ...entry, notes, marked });
+    }
+    return [...bySection.values()].filter(g => g.items.length);
+  }, [C, cid, idx, markersOnly, change]);
+
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+  return (
+    <div class="saved-view">
+      <div class="saved-bar">
+        <p>Notes and blocks you marked for later, kept in their course order.</p>
+        <button type="button" class={"saved-filter" + (markersOnly ? " cur" : "")}
+                aria-pressed={markersOnly ? "true" : "false"}
+                onClick={() => setMarkersOnly(v => !v)}>
+          Markers only
+        </button>
+        <span class="xcount">{total} {total === 1 ? "item" : "items"}</span>
+      </div>
+      {!groups.length && (
+        <div class="saved-empty">
+          <IconSaved />
+          <p>{markersOnly ? "No blank markers yet." : "Nothing saved yet."}</p>
+          <span>Use the small page tab beneath a block, or add a note while reading.</span>
+        </div>
+      )}
+      {groups.map(g => (
+        <section class="saved-group" key={g.section.id}>
+          <header>
+            <span>Section {String(g.section.num).padStart(2, "0")}</span>
+            <h2>{g.section.title}</h2>
+          </header>
+          <div class="saved-list">
+            {g.items.map(item => <SavedItem key={item.anchor} item={item} ctx={ctx} />)}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function SavedItem({ item, ctx }) {
+  const { cid, idx } = ctx;
+  const p = item.b ? present(item.b, "notes") : null;
+  const lead = p && p.lead;
+  const href = `#/${cid}/${item.id}`;
+  const unmark = () => setSaved(cid, item.anchor, false);
+  return (
+    <article class={"saved-card" + (item.marked && !item.notes.length ? " is-marker" : "")}>
+      <div class="saved-card-h">
+        <div>
+          <span class="saved-at">{item.num} {item.sub.title}</span>
+          <a href={href}>{item.title}</a>
+        </div>
+        {item.marked && (
+          <button class="saved-toggle" type="button" aria-label="Remove this block from Saved"
+                  title="Remove from Saved" onClick={unmark}>
+            <IconSaved filled />
+          </button>
+        )}
+      </div>
+      {lead && (
+        <div class="saved-claim bhtml" dangerouslySetInnerHTML={{
+          __html: decorate(lead, cid, idx.FIG.byKey) }} />
+      )}
+      {item.notes.map((note, i) => (
+        <div class="saved-note" key={i} dangerouslySetInnerHTML={{ __html: md(note) }} />
+      ))}
+      {!item.notes.length && <p class="saved-marker-label">Marked for later</p>}
+    </article>
   );
 }
 

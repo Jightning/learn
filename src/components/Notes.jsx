@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "preact/hooks";
-import { readNotes, writeNotes, isFolded, setFolded } from "../lib/notes.js";
+import { readNotes, writeNotes, isFolded, setFolded, isSaved, setSaved } from "../lib/notes.js";
 import { md } from "../lib/md.js";
+import { IconSaved } from "./Icon.jsx";
 
 /* The learner's notes on one block, in two pieces that share one state.
  *
@@ -39,6 +40,7 @@ export function useNotes(cid, anchor) {
   const [editing, setEditing] = useState(-1);       /* index, or -1 */
   const [fold, setFold] = useState(() => (anchor ? isFolded(cid, anchor) : false));
   const [pull, setPull] = useState(0);
+  const [saved, setSavedState] = useState(() => (anchor ? isSaved(cid, anchor) : false));
   const save = useRef(null);
 
   /* The list lives in a ref as well as in state, and every mutator reads the
@@ -55,6 +57,7 @@ export function useNotes(cid, anchor) {
   useEffect(() => {
     apply(anchor ? readNotes(cid, anchor) : []);
     setFold(anchor ? isFolded(cid, anchor) : false);
+    setSavedState(anchor ? isSaved(cid, anchor) : false);
     setEditing(-1); setPull(0);
   }, [cid, anchor]);
 
@@ -66,7 +69,7 @@ export function useNotes(cid, anchor) {
   const open = () => { setFold(false); setFolded(cid, anchor, false); };
 
   return {
-    cid, anchor, list, editing, fold, pull, setPull,
+    cid, anchor, list, editing, fold, pull, saved, setPull,
     /* A new note always goes at the end and opens straight into editing: the
        gesture that asked for it was already the decision to write one. */
     add: () => { open(); setEditing(held.current.length); apply([...held.current, ""]); },
@@ -89,12 +92,13 @@ export function useNotes(cid, anchor) {
       const keep = held.current.filter(t => t && t.trim());
       setEditing(-1); apply(keep); now(keep);
     },
-    toggle: () => setFold(f => { setFolded(cid, anchor, !f); return !f; })
+    toggle: () => setFold(f => { setFolded(cid, anchor, !f); return !f; }),
+    toggleSaved: () => setSavedState(v => { setSaved(cid, anchor, !v); return !v; })
   };
 }
 
 /** The grip at the foot of a block: where a note is started. */
-export function NoteGrip({ n }) {
+export function NoteGrip({ n, savable = false }) {
   const drag = useRef(null);
 
   /* Pointer events rather than mouse plus touch, so one path covers a mouse, a
@@ -139,6 +143,15 @@ export function NoteGrip({ n }) {
               aria-label={n.list.length ? "Add another note here" : "Add a note here"}>
         <span class={"note-grip" + (n.list.length ? " has" : "")} aria-hidden="true" />
       </button>
+      {savable && (
+        <button class={"note-save" + (n.saved ? " is-saved" : "")} type="button"
+                aria-pressed={n.saved ? "true" : "false"}
+                aria-label={n.saved ? "Remove this block from Saved" : "Save this block for later"}
+                title={n.saved ? "Remove from Saved" : "Save for later"}
+                onClick={n.toggleSaved}>
+          <IconSaved filled={n.saved} />
+        </button>
+      )}
     </div>
   );
 }

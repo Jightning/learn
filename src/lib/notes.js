@@ -44,6 +44,32 @@ export function writeNotes(cid, anchor, list) {
   else removeItem(key(cid, anchor));
 }
 
+/* A saved block is deliberately stored beside notes rather than inside their
+   string array. It behaves like the blank note the UI suggests, without a
+   sentinel string that could collide with something the learner actually
+   wrote or be discarded by the existing empty-note cleanup. One compact list
+   per course also makes collecting every saved block a single read. */
+const SAVED = cid => `saved:${cid}`;
+const saved = cid => {
+  try {
+    const list = JSON.parse(getItem(SAVED(cid))) || [];
+    return new Set(list.filter(a => typeof a === "string" && a));
+  } catch { return new Set(); }
+};
+
+export const savedAnchors = cid => [...saved(cid)];
+export const isSaved = (cid, anchor) => !!anchor && saved(cid).has(anchor);
+
+export function setSaved(cid, anchor, on) {
+  if (!anchor) throw new Error("a saved block needs a note anchor");
+  const set = saved(cid);
+  if (on) set.add(anchor); else set.delete(anchor);
+  if (set.size) setItem(SAVED(cid), JSON.stringify([...set]));
+  else removeItem(SAVED(cid));
+  if (typeof dispatchEvent === "function" && typeof CustomEvent === "function")
+    dispatchEvent(new CustomEvent("learn:saved", { detail: { cid, anchor, saved: on } }));
+}
+
 /* Which of a course's notes the reader has folded shut.
  *
  * A note shows expanded by default, so only the exceptions are worth storing —
@@ -70,4 +96,5 @@ export function dropNotes(cid) {
   const pre = key(cid, "");
   for (const k of keys()) if (k.startsWith(pre)) removeItem(k);
   removeItem(FOLD(cid));
+  removeItem(SAVED(cid));
 }

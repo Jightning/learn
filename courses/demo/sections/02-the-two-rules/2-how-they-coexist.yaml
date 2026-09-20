@@ -56,7 +56,7 @@ blocks:
     tier: depth
     source: docs/create_course.md §11.5
     h: |-
-      Links cross course boundaries too. The theory behind a circuits result can point at <a href="#/ma26600/">the differential-equations course</a>; it renders as a plain link, because the other course's index is not built until the reader opens it.
+      Links can cross course boundaries too. An imported circuits course can point at a separately imported differential-equations course with <code>#/&lt;course-id&gt;/</code>; it renders as a plain link because the other course's index is not built until the reader opens it.
 
 quiz:
   - type: Resolve the apparent contradiction

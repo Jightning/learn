@@ -462,9 +462,11 @@ secure context, a server or a model is progressive enhancement and is governed
 by T36.
 
 **T24. Every claim the project makes about itself is enforced by a gate.**
-`npm run check` builds, validates content invariants, runs browser tests,
-sweeps contrast, renders the spine alone, and proves a new course can be created
-from data alone. A claim without a gate is an assumption with a good reputation.
+`npm run check` builds, validates the bundled demo, runs browser tests, sweeps
+contrast, renders the demo spine alone, and proves `_template` can produce an
+importable course from data alone. User courses are runtime inputs and are
+validated explicitly by id; an incomplete one cannot fail engine development.
+A claim without a gate is an assumption with a good reputation.
 
 This binds the claims in §3b as much as the claims about the artefact. "The
 review loop works" is checkable only against T35's log.

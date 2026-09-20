@@ -3,7 +3,7 @@
  *
  * The reader's history is spread over seven stores that each key on the course
  * differently: Loop A on the course *code*, Loop B under a shared `retain:v1`
- * blob, notes and reasons as families of prefixed keys, the lane and the replay
+ * blob, notes, saved markers and reasons as families of prefixed keys, the lane and the replay
  * checkpoint as single keys, and the outcome log as rows. A purge that misses
  * one is worse than no purge at all: the checkpoint alone would refold the log
  * straight back on the next load, and a stale Loop A row would resurface under
@@ -27,7 +27,7 @@ const store = await import("../src/lib/store.js");
 const { keys, logRows } = store;
 const { stateFor, forget } = await import("../src/lib/state.js");
 const R = await import("../src/lib/retention.js");
-const { writeNote, readNote, setFolded, isFolded } = await import("../src/lib/notes.js");
+const { writeNote, readNote, setFolded, isFolded, setSaved, isSaved } = await import("../src/lib/notes.js");
 const { pushWhy, lastWhy } = await import("../src/lib/why.js");
 const { laneFor, setLane } = await import("../src/lib/tiers.js");
 const { hueFor, setHue } = await import("../src/lib/theme.js");
@@ -50,6 +50,7 @@ function live(C) {
   R.answer(C.id, "concept-2", { itemId: "d2", correct: false, conf: "guess" });
   writeNote(C.id, "s1-1", "what the lecture actually said");
   writeNote(C.id, "s1-2#3", "a note anchored to one block");
+  setSaved(C.id, "s1-2#4", true);           /* a blank-note marker */
   setFolded(C.id, "s1-1", true);          /* the fold set is a key of its own */
   pushWhy(C.id, "q1", { text: "because the coefficient is constant", correct: true });
   setLane(C.id, "all");
@@ -68,6 +69,7 @@ const held = C => ({
   retain: !!R.get(C.id, "concept-1"),
   note: readNote(C.id, "s1-1"),
   note2: readNote(C.id, "s1-2#3"),
+  saved: isSaved(C.id, "s1-2#4"),
   fold: isFolded(C.id, "s1-1"),
   why: !!lastWhy(C.id, "q1"),
   lane: laneFor(C.id),
@@ -78,7 +80,7 @@ const held = C => ({
 
 const beforeA = held(A), beforeB = held(B);
 check("the fixture actually wrote something",
-      beforeA.study && beforeA.retain && beforeA.note && beforeA.why &&
+      beforeA.study && beforeA.retain && beforeA.note && beforeA.saved && beforeA.why &&
       beforeA.fold && beforeA.lane === "all" && beforeA.hue === 135 &&
       beforeA.ckpt && beforeA.rows === 2,
       JSON.stringify(beforeA));
@@ -92,6 +94,7 @@ check("Loop A ratings are gone",        afterA.study === false);
 check("Loop B schedule is gone",        afterA.retain === false);
 check("the subsection note is gone",    afterA.note === "");
 check("the block-anchored note is gone", afterA.note2 === "");
+check("the saved marker is gone",        afterA.saved === false);
 check("the stated reason is gone",      afterA.why === false);
 /* The fold set is a separate key beside the note bodies, so a prefix sweep of
    the bodies alone would leave it behind. */

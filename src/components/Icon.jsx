@@ -20,6 +20,12 @@ export function IconReview()   { return <svg {...P}><circle cx="8" cy="8" r="5.8
 export function IconIndex()    { return <svg {...P}><path d="M3 2.5h8.5v11H3z"/><path d="M11.5 5h2M11.5 8h2M11.5 11h2"/><path d="M5.2 5.4h4M5.2 8h4M5.2 10.6h2.4"/></svg>; }
 /* Explore: the search lens with a filter under it. */
 export function IconExplore()  { return <svg {...P}><circle cx="6.6" cy="6.6" r="4.1"/><path d="M9.6 9.6 14 14"/><path d="M3.4 13.6h4"/></svg>; }
+/* Saved: a page tab/bookmark, kept intentionally quieter than a star. */
+export function IconSaved({ filled = false }) {
+  return <svg {...P} fill={filled ? "currentColor" : "none"}>
+    <path d="M4 2.3h8v11.4L8 11l-4 2.7z" />
+  </svg>;
+}
 
 /* The grab handle: the two columns of dots every reorderable row in every
    toolkit wears. It is a learned shape rather than a described one, which is

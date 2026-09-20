@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /* Proves the central claim continuously: a new subject needs no code.
- * Scaffolds a throwaway course from courses/_template, rebuilds the shared
- * page (which then holds two courses, exercising the library view), validates
- * and tests it, then removes the probe and rebuilds clean.
+ * Scaffolds a throwaway course from courses/_template, validates it, packs it
+ * into the same file map the browser imports, then removes the probe. The app
+ * build deliberately ignores it: user courses are runtime data, not source.
  */
 import { rmSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -32,12 +32,8 @@ const run = (f, a = []) => execFileSync(process.execPath, [join(ROOT, "tools", f
  * on the scaffold's own title and not the name prefix alone, so no real course
  * can be caught by it.
  *
- * `packed/` is swept for the same reason. A `pack.mjs --private` run while a
- * probe was planted bundles it like any other private course, and every gate
- * that calls installPacked() then installs it as a real subject — three had
- * accumulated there, showing up as three "Cloneability Probe" cards in the
- * library the suite tests against. The scaffold leaks into two places, so both
- * are cleaned.
+ * `packed/` is swept too because this check creates an import bundle after the
+ * scaffold. An interrupted run must not leave that generated probe behind.
  */
 function sweep() {
   for (const n of readdirSync(join(ROOT, "courses"))) {
@@ -64,13 +60,13 @@ let ok = false, detail = "";
 try {
   run("new-course.mjs", [name, TITLE]);
   const built = run("build.mjs");
-  if (!new RegExp(name + "[\\s\\S]*?no code").test(built))
-    throw new Error("probe course required custom code");
-  run("validate.mjs", [name]);
-  const tested = run("test-ui.mjs");
-  if (!/^ok/m.test(tested)) throw new Error("probe course failed UI checks:\n" + tested);
-  const m = /(\d+) course\(s\)/.exec(tested);
-  detail = m ? ` · library exercised with ${m[1]} courses` : "";
+  if (built.includes(name)) throw new Error("the app build inspected the user-course probe");
+  if (existsSync(join(dir, "blocks.js"))) throw new Error("probe course required custom code");
+  run("validate.mjs", ["--isolated", name]);
+  const packed = run("pack.mjs", [name]);
+  if (!packed.includes(`packed/${name}.course.json`))
+    throw new Error("probe course did not produce an importable bundle");
+  detail = " · import bundle produced";
   ok = true;
 } catch (e) {
   console.error("FAIL template  a new subject could not be created from data alone");
@@ -81,4 +77,4 @@ try {
   sweep();
   try { run("build.mjs"); } catch { /* reported above */ }
 }
-if (ok) console.log(`ok   template  scaffold → build → validate → test · no code required${detail}`);
+if (ok) console.log(`ok   template  scaffold → validate → pack · no code required${detail}`);

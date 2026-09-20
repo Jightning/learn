@@ -2,7 +2,7 @@
 /* Validates course data. Reads the source folder, not the built page, so
  * failures name something you can actually open and fix.
  *
- *   node tools/validate.mjs [course …]
+ *   node tools/validate.mjs [--isolated] [course …]
  *
  * Invariants (the id is the rule in code_truth.md / material_truth.md):
  *   1. every <c k="…"> concept reference resolves to a definition       (M14)
@@ -72,7 +72,9 @@ const COURSES = COURSES_DIR;
 const coreBlocks = readFileSync(join(ROOT, "src/blocks/index.js"), "utf8");
 const KNOWN = new Set([...[...coreBlocks.matchAll(/\bR\("([a-z]+)"/g)].map(m => m[1]), ...INTERACTIVE]);
 
-const wanted = process.argv.slice(2);
+const args = process.argv.slice(2);
+const isolated = args.includes("--isolated");
+const wanted = args.filter(a => !a.startsWith("--"));
 const courses = existsSync(COURSES)
   ? readdirSync(COURSES, { withFileTypes: true }).filter(d => d.isDirectory() && !d.name.startsWith("_")).map(d => d.name)
       .filter(n => !wanted.length || wanted.includes(n))
@@ -80,7 +82,7 @@ const courses = existsSync(COURSES)
 
 /* ids of every course on disk (not just the ones being validated), so
    cross-course links resolve even when validating a single course */
-const allCourseIds = existsSync(COURSES)
+const allCourseIds = isolated ? courses : existsSync(COURSES)
   ? readdirSync(COURSES, { withFileTypes: true })
       .filter(d => d.isDirectory() && !d.name.startsWith("_")).map(d => d.name)
   : [];

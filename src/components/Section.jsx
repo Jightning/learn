@@ -34,7 +34,7 @@ function usePair() {
 
 /* One reading row: content on the left, its references immediately to the
  * right. */
-function ReadingRow({ html, notes, noteAt, noteLabel, apart, follow, ctx, id, children }) {
+function ReadingRow({ html, notes, noteAt, noteLabel, savable, apart, follow, ctx, id, children }) {
   const pair = usePair();
   /* The row owns the note because the note is in two of its zones: the grip at
      the foot of the block, and the card in the margin beside it. */
@@ -52,7 +52,7 @@ function ReadingRow({ html, notes, noteAt, noteLabel, apart, follow, ctx, id, ch
           : children}
         {/* Where a note is started: a grip on the block's own bottom edge,
             shown only while there is nothing to show in the margin. */}
-        <NoteGrip n={note} />
+        <NoteGrip n={note} savable={savable} />
       </div>
       <aside class="bside">
         {notes}
@@ -198,13 +198,13 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
     const at = `${sub.id}#${i}`;
     if (INTERACTIVE.includes(b.t))
       return (
-        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
+        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at} savable
                     follow={follow}>
           <Attempt b={b} cid={cid} anchor={`${sub.id}#${i}@attempt`} />
         </ReadingRow>
       );
     return (
-      <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
+      <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at} savable
                   apart={isApart(b.t)} follow={follow}
                   html={renderBlock(b, { fignum: idx.FIG.numOf(b),
                                         prevSource: prevSourceOf(sub.blocks, i) })} />

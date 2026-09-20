@@ -31,7 +31,7 @@ const COURSES = "courses";
 const FLUSH_MS = 400;
 
 /* localStorage keys this owns, for the one-time migration. */
-const MINE = [/^study:/, /^retain:v1$/, /^log:v1$/, /^note:/, /^why:/, /^lane:/,
+const MINE = [/^study:/, /^retain:v1$/, /^log:v1$/, /^note:/, /^saved:/, /^why:/, /^lane:/,
               /^contentZoom$/, /^tuckSidebar$/];
 
 let db = null;

@@ -10,8 +10,7 @@
  * reader imports, edits and syncs. src/lib/parse.js reads the same files in
  * the browser, so what an author writes is what the app runs.
  *
- * Courses are read here only to fail early with a file-level message, and to
- * derive the library index in vite.config.js.
+ * Bundled courses are read here only to fail early with a file-level message.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
@@ -24,17 +23,17 @@ import { PUBLIC } from "./lib/files.mjs";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = join(ROOT, "courses");
 
-const ids = readdirSync(COURSES, { withFileTypes: true })
-  .filter(d => d.isDirectory() && !d.name.startsWith("_"))
-  .map(d => d.name);
+/* Building the application is an engine operation, not a validation pass over
+ * whatever courses happen to be in this workspace. User courses reach the app
+ * through import/sync and may be incomplete while they are being authored;
+ * only the deliberately bundled set is allowed to affect a build. */
+const ids = [...PUBLIC].sort();
 if (!ids.length) {
-  console.error(`no courses found in ${COURSES}`);
-  console.error("A course is a folder there; `_`-prefixed ones are skipped.");
-  console.error("If they have gone missing, git and packed/ both hold copies.");
+  console.error("no public courses configured in tools/lib/files.mjs");
   process.exit(1);
 }
 
-let bad = 0, privateCount = 0;
+let bad = 0;
 const totals = { sections: 0, subs: 0, questions: 0 };
 for (const id of ids) {
   let C, errors;
@@ -46,17 +45,11 @@ for (const id of ids) {
   const subs = C.sections.reduce((n, s) => n + s.subs.length, 0);
   const qs = C.sections.reduce((n, s) => n + s.subs.reduce((m, u) => m + (u.quiz || []).length, 0), 0);
   totals.sections += C.sections.length; totals.subs += subs; totals.questions += qs;
-  /* Whether a subject needed a bespoke renderer. Courses are meant to be data
-     alone; tools/check-template.mjs reads this line to prove a freshly
-     scaffolded one still is. */
+  /* Whether a bundled subject needs a bespoke renderer. */
   const custom = existsSync(join(COURSES, id, "blocks.js")) ? "custom blocks" : "no code";
-  /* Only the courses in PUBLIC reach dist/. The rest are validated here and
-     then left alone — they belong to the author, not to the deployment. */
-  const where = PUBLIC.has(id) ? "public" : "private";
-  if (where === "private") privateCount++;
   console.log(`  ${id.padEnd(12)} ${String(C.sections.length).padStart(2)} sections · ` +
     `${String(subs).padStart(3)} subsections · ${String(qs).padStart(4)} questions · ` +
-    `${custom} · ${where}`);
+    `${custom} · public`);
 }
 if (bad) process.exit(1);
 
@@ -105,8 +98,8 @@ function dirBytes(dir) {
    way and YAML compresses hard. */
 const kb = n => `${(n / 1024).toFixed(0)}KB`;
 const shell = dirBytes(dist) - dirBytes(join(dist, "courses"));
-console.log(`\nbuilt dist/  ${ids.length - privateCount} public · ${privateCount} private ` +
-  `(kept out of dist/) · ${totals.sections} sections · ${totals.questions} questions`);
+console.log(`\nbuilt dist/  ${ids.length} public · ${totals.sections} sections · ` +
+  `${totals.questions} questions`);
 console.log(`  shell        ${kb(shell).padStart(7)}`);
 
 if (!pub.length) console.log("  (no public courses — every course is private)");

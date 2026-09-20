@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import preact from "@preact/preset-vite";
-import { readdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { join, sep } from "node:path";
 import { loadCourse } from "./tools/lib/load.mjs";
 import { courseFiles, PUBLIC } from "./tools/lib/files.mjs";
 
@@ -40,29 +40,43 @@ function indexOf(course, id) {
 function coursesPlugin() {
   const VID = "virtual:courses";
   const RESOLVED = "\0" + VID;
+  const BLOCKS_VID = "virtual:course-blocks";
+  const BLOCKS_RESOLVED = "\0" + BLOCKS_VID;
   const dir = join(process.cwd(), "courses");
+  const publicIds = [...PUBLIC].sort();
+  const publicRoots = publicIds.map(id => join(dir, id) + sep);
   let serving = false;
 
   return {
     name: "courses",
     configResolved(cfg) { serving = cfg.command === "serve"; },
-    resolveId: id => (id === VID ? RESOLVED : null),
+    resolveId(id) {
+      if (id === VID) return RESOLVED;
+      if (id === BLOCKS_VID) return BLOCKS_RESOLVED;
+      return null;
+    },
     load(id) {
+      /* Only bundled courses contribute executable code. An imported course is
+         data, and a blocks.js beside one on the author's machine must never be
+         pulled into the application merely because Vite can see the folder. */
+      if (id === BLOCKS_RESOLVED) {
+        const imports = [], names = [];
+        publicIds.forEach((courseId, i) => {
+          const file = join(dir, courseId, "blocks.js");
+          if (!existsSync(file)) return;
+          const name = `courseBlocks${i}`;
+          imports.push(`import * as ${name} from ${JSON.stringify(file)};`);
+          names.push(name);
+        });
+        return `${imports.join("\n")}\nexport default [${names.join(",")}];`;
+      }
       if (id !== RESOLVED) return null;
-      const ids = readdirSync(dir, { withFileTypes: true })
-        .filter(d => d.isDirectory() && !d.name.startsWith("_"))
-        .map(d => d.name);
 
       const index = {}, order = [];
-      for (const c of ids) {
+      for (const c of publicIds) {
+        if (!existsSync(join(dir, c))) this.error(`public course ${c} does not exist`);
         const { course, errors } = loadCourse(join(dir, c));
         if (errors.length) this.error(`${c}: ${errors.join("; ")}`);
-
-        /* Absence is privacy. The deployment holds only the courses named in
-           PUBLIC; everything else stays on the author's machine and reaches
-           their devices by import. A course cannot opt itself in — there is no
-           setting for it — so no edit to course.yaml can expose material. */
-        if (!PUBLIC.has(c)) continue;
 
         index[c] = indexOf(course, c);
         order.push(c);
@@ -83,15 +97,15 @@ function coursesPlugin() {
          far from its cause. */
       server.middlewares.use((req, res, next) => {
         const m = /^\/courses\/([\w-]+)\.json$/.exec((req.url || "").split("?")[0]);
-        if (!m || !existsSync(join(dir, m[1]))) return next();
+        if (!m || !PUBLIC.has(m[1]) || !existsSync(join(dir, m[1]))) return next();
         res.setHeader("content-type", "application/json");
         res.setHeader("cache-control", "no-store");
         res.end(JSON.stringify(courseFiles(join(dir, m[1]), console.error)));
       });
 
-      server.watcher.add(dir);
+      publicRoots.forEach(root => server.watcher.add(root));
       server.watcher.on("all", (_e, file) => {
-        if (!file.startsWith(dir)) return;
+        if (!publicRoots.some(root => file.startsWith(root))) return;
         const mod = server.moduleGraph.getModuleById(RESOLVED);
         if (mod) server.moduleGraph.invalidateModule(mod);
         server.ws.send({ type: "full-reload" });

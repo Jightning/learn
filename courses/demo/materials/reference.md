@@ -31,7 +31,7 @@ Where each capability is shown, once.
 ## References
 
 `<a href="#s2-2">` subsection, `<c k="tier">` concept, `<f k="loop-machine"/>`
-figure, `<a href="#/ma26600/">` cross-course.
+figure, `<a href="#/<course-id>/">` cross-course.
 
 ## Tiers
 
