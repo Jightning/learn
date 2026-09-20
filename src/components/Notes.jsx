@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "preact/hooks";
-import { readNotes, writeNotes, isFolded, setFolded, isSaved, setSaved } from "../lib/notes.js";
+import { readNotes, writeNotes, isFolded, setFolded } from "../lib/notes.js";
 import { md } from "../lib/md.js";
-import { IconSaved } from "./Icon.jsx";
 
 /* The learner's notes on one block, in two pieces that share one state.
  *
@@ -40,7 +39,6 @@ export function useNotes(cid, anchor) {
   const [editing, setEditing] = useState(-1);       /* index, or -1 */
   const [fold, setFold] = useState(() => (anchor ? isFolded(cid, anchor) : false));
   const [pull, setPull] = useState(0);
-  const [saved, setSavedState] = useState(() => (anchor ? isSaved(cid, anchor) : false));
   const save = useRef(null);
 
   /* The list lives in a ref as well as in state, and every mutator reads the
@@ -57,7 +55,6 @@ export function useNotes(cid, anchor) {
   useEffect(() => {
     apply(anchor ? readNotes(cid, anchor) : []);
     setFold(anchor ? isFolded(cid, anchor) : false);
-    setSavedState(anchor ? isSaved(cid, anchor) : false);
     setEditing(-1); setPull(0);
   }, [cid, anchor]);
 
@@ -69,10 +66,15 @@ export function useNotes(cid, anchor) {
   const open = () => { setFold(false); setFolded(cid, anchor, false); };
 
   return {
-    cid, anchor, list, editing, fold, pull, saved, setPull,
+    cid, anchor, list, editing, fold, pull, setPull,
     /* A new note always goes at the end and opens straight into editing: the
        gesture that asked for it was already the decision to write one. */
-    add: () => { open(); setEditing(held.current.length); apply([...held.current, ""]); },
+    add: () => {
+      open();
+      const blank = held.current.findIndex(t => !t.trim());
+      if (blank >= 0) { setEditing(blank); return; }
+      setEditing(held.current.length); apply([...held.current, ""]);
+    },
     edit: i => { open(); setEditing(i); },
     input: (i, v) => {
       const next = held.current.map((t, k) => (k === i ? v : t));
@@ -85,20 +87,18 @@ export function useNotes(cid, anchor) {
       apply(next); setEditing(-1); now(next);
     },
     /* Also written through, because the reader may be navigating away in the
-       same gesture. An empty note is dropped here as well as on the way to
-       storage, or one opened and abandoned would sit in the card as a blank
-       row until the next reload. */
+       same gesture. A blank is intentional: it collapses into the saved-note
+       state instead of being discarded. */
     done: () => {
-      const keep = held.current.filter(t => t && t.trim());
+      const keep = held.current.map(t => t.trim() ? t : "");
       setEditing(-1); apply(keep); now(keep);
     },
-    toggle: () => setFold(f => { setFolded(cid, anchor, !f); return !f; }),
-    toggleSaved: () => setSavedState(v => { setSaved(cid, anchor, !v); return !v; })
+    toggle: () => setFold(f => { setFolded(cid, anchor, !f); return !f; })
   };
 }
 
 /** The grip at the foot of a block: where a note is started. */
-export function NoteGrip({ n, savable = false }) {
+export function NoteGrip({ n }) {
   const drag = useRef(null);
 
   /* Pointer events rather than mouse plus touch, so one path covers a mouse, a
@@ -143,15 +143,6 @@ export function NoteGrip({ n, savable = false }) {
               aria-label={n.list.length ? "Add another note here" : "Add a note here"}>
         <span class={"note-grip" + (n.list.length ? " has" : "")} aria-hidden="true" />
       </button>
-      {savable && (
-        <button class={"note-save" + (n.saved ? " is-saved" : "")} type="button"
-                aria-pressed={n.saved ? "true" : "false"}
-                aria-label={n.saved ? "Remove this block from Saved" : "Save this block for later"}
-                title={n.saved ? "Remove from Saved" : "Save for later"}
-                onClick={n.toggleSaved}>
-          <IconSaved filled={n.saved} />
-        </button>
-      )}
     </div>
   );
 }
@@ -161,6 +152,17 @@ function Note({ n, i, text }) {
   const area = useRef(null);
   const mine = n.editing === i;
   useEffect(() => { if (mine) area.current?.focus(); }, [mine]);
+
+  if (!mine && !text.trim()) return (
+    <div class="note-one note-blank">
+      <button class="note-blank-open" type="button" onClick={() => n.edit(i)}>
+        <span class="note-blank-line" aria-hidden="true" />
+        <span>Saved note</span>
+      </button>
+      <button class="note-blank-drop" type="button" aria-label="Remove saved note"
+              onClick={() => n.drop(i)}>×</button>
+    </div>
+  );
 
   if (!mine) return (
     <div class="note-one">
@@ -199,6 +201,13 @@ export function NoteCard({ n, label = "Note" }) {
      growing an empty card in the margin, a column away on a desktop, showed
      the reader a box with nothing in it. */
   if (!n.anchor || !n.list.length) return null;
+
+  const blank = n.editing < 0 && n.list.every(t => !t.trim());
+  if (blank) return (
+    <div class="mnote is-n is-blank" data-nosnippet>
+      <Note n={n} i={0} text="" />
+    </div>
+  );
 
   return (
     <div class={"mnote is-n" + (n.fold ? " is-shut" : "")} data-nosnippet>

@@ -3,7 +3,7 @@
  *
  * The three checks validate.mjs runs over the structure authors declare
  * inside and between blocks. They live apart from the script so
- * tools/test-structure.mjs can call them on a hand-built course rather than
+ * tests/unit/structure.test.mjs can call them on a hand-built course rather than
  * planting a probe folder under courses/.
  *
  * Each takes the loaded course `C` and pushes strings onto `errs`/`warns`.

@@ -68,10 +68,9 @@ export const hasCore = b => !!(b && b.core);
  * terminates a sentence on `[.;:]` — so it cuts at the colon introducing a
  * list and returns the fragment before it, which is most of the 33% it was
  * charged with. Terminating on `[.!?]` alone and rejecting what is left over
- * yields a usable claim for **93% of ma26600's 182 unclaimed prose blocks**
- * and 82% of demo's 22 (`tools/measure-claims.mjs`). At six words the gate
+ * yields useful claims from ordinary opening sentences. At six words the gate
  * admits "Order is the highest derivative present." — a real claim the
- * eight-word threshold rejected.
+ * previous eight-word threshold rejected.
  *
  * The gate is what keeps the guess honest. A sentence ending on a colon or a
  * semicolon was leading into something that is not here; one under six words is
@@ -293,4 +292,3 @@ export function topicsOf(items) {
   }
   return out.filter(t => t.head || t.items.length);
 }
-

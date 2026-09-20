@@ -34,7 +34,7 @@ unreadable for low-vision users, and it is a legal requirement in most
 jurisdictions this will ever be used in.
 
 **T2. Contrast is verified by walking rendered text, never by sampling.**
-`tools/audit-color.mjs` computes the real ratio for every distinct
+`tests/browser/color-contrast.test.mjs` computes the real ratio for every distinct
 (foreground, effective background) pair across every view of **every** course,
 in all three colour modes: light, the in-page dark toggle, and the reader's OS
 dark setting.
@@ -453,13 +453,10 @@ so is anything T20 names. The source is `src/`, `tools/` and `courses/`.
 **T22. One responsibility per file.** A stylesheet covers one UI element; a
 module covers one job. Findability is the property being protected.
 
-**T23. The page runs with no runtime dependency.** No server, no network, no
-install. A study tool that only works online is unavailable exactly when a
-student is revising on a train.
-
-Opening from `file://` is the canonical delivery. Anything that requires a
-secure context, a server or a model is progressive enhancement and is governed
-by T36.
+**T23. Offline is the normal reading mode.** The first load requires a static
+origin because courses are fetched at runtime; after that, the service worker
+caches the shell and fetched courses while IndexedDB holds reader state. A
+network failure may delay sync, but it cannot block reading or answering.
 
 **T24. Every claim the project makes about itself is enforced by a gate.**
 `npm run check` builds, validates the bundled demo, runs browser tests, sweeps
@@ -471,13 +468,11 @@ A claim without a gate is an assumption with a good reputation.
 This binds the claims in §3b as much as the claims about the artefact. "The
 review loop works" is checkable only against T35's log.
 
-**T30. Content that can be rendered at build time is not rendered at read
-time.** Equations, figures and highlighting are derived from data that cannot
-change between page loads, so deriving them once in the build is strictly
-better: the reader downloads no renderer, and anything that will not compile
-fails a build instead of appearing as an error on a page someone is revising
-from. Read-time work is reserved for what depends on the reader: progress,
-notes, theme, search, scheduling.
+**T30. Authored course files remain the runtime source of truth.** The build
+ships the public course as the same file map that import and sync use, and the
+browser parses every course through the same path. Validation catches malformed
+math, figures, links, and block data before a bundled course ships; imported
+courses use the same parser rather than a second compiled representation.
 
 **Build-time output is still allowed to be compact.** Rendering once does not
 oblige the build to emit the same fragment a thousand times, and reassembling a

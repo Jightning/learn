@@ -2,12 +2,14 @@ import { useState, useMemo, useEffect } from "preact/hooks";
 import { searchRun } from "../lib/search.js";
 import { present } from "../lib/gist.js";
 import { decorate } from "../lib/refs.js";
-import { renderBlock } from "../blocks/index.js";
+import { renderBlock, isApart } from "../blocks/index.js";
+import { INTERACTIVE } from "../blocks/interactive.js";
 import CatChip, { monogram } from "./CatChip.jsx";
 import Dropdown, { Item } from "./Dropdown.jsx";
-import { readNotes, isSaved, setSaved } from "../lib/notes.js";
-import { md } from "../lib/md.js";
+import { readNotes } from "../lib/notes.js";
 import { IconSaved } from "./Icon.jsx";
+import { ReadingRow, NoteRow } from "./Section.jsx";
+import Attempt from "./Attempt.jsx";
 
 /* Explore — search with the facets the overlay deliberately does not have.
  *
@@ -43,7 +45,7 @@ const SHOW = [
   { id: "full",  label: "Everything", hint: "the whole block" }
 ];
 
-export default function Explore({ ctx, seed }) {
+export default function Explore({ ctx, seed, depth: readingDepth = "notes" }) {
   const { C, cid, idx } = ctx;
   const CAT = idx.CAT;
   const [q, setQ] = useState("");
@@ -100,7 +102,7 @@ export default function Explore({ ctx, seed }) {
         </nav>
       </div>
 
-      {savedView ? <Saved ctx={ctx} /> : (
+      {savedView ? <Saved ctx={ctx} depth={readingDepth} /> : (
         <>
 
       <div class="xbar">
@@ -198,95 +200,95 @@ export default function Explore({ ctx, seed }) {
   );
 }
 
-/* Written notes and marker-only saves share one collection. The marker is the
-   blank-note case: it keeps a block without asking the learner to invent text,
-   while real notes keep their prose and sit in the same section grouping. */
-function Saved({ ctx }) {
-  const { cid, C, idx } = ctx;
-  const [markersOnly, setMarkersOnly] = useState(false);
-  const [change, setChange] = useState(0);
-
-  useEffect(() => {
-    const refresh = e => { if (!e.detail || e.detail.cid === cid) setChange(n => n + 1); };
-    addEventListener("learn:saved", refresh);
-    return () => removeEventListener("learn:saved", refresh);
-  }, [cid]);
+/* Saved is one synthetic section made from the course's annotated
+   subsections. It deliberately uses the same rows, note cards and depth rules
+   as the source material instead of inventing a second collection design. */
+function Saved({ ctx, depth }) {
+  const { cid, idx } = ctx;
 
   const groups = useMemo(() => {
-    const bySection = new Map(C.sections.map(s => [s.id, { section: s, items: [] }]));
+    const bySub = new Map();
     for (const entry of idx.ANNOTATIONS) {
       const notes = readNotes(cid, entry.anchor);
-      const marked = entry.kind === "block" && isSaved(cid, entry.anchor);
-      if (!notes.length && !marked) continue;
-      if (markersOnly && (!marked || notes.length)) continue;
-      bySection.get(entry.sec.id).items.push({ ...entry, notes, marked });
+      if (!notes.length) continue;
+      let group = bySub.get(entry.sub.id);
+      if (!group) {
+        group = { sub: entry.sub, sec: entry.sec, num: entry.num,
+                  noted: false, items: [] };
+        bySub.set(entry.sub.id, group);
+      }
+      if (entry.kind === "sub") group.noted = true;
+      else group.items.push(entry);
     }
-    return [...bySection.values()].filter(g => g.items.length);
-  }, [C, cid, idx, markersOnly, change]);
+    return [...bySub.values()];
+  }, [cid, idx]);
 
-  const total = groups.reduce((n, g) => n + g.items.length, 0);
   return (
     <div class="saved-view">
-      <div class="saved-bar">
-        <p>Notes and blocks you marked for later, kept in their course order.</p>
-        <button type="button" class={"saved-filter" + (markersOnly ? " cur" : "")}
-                aria-pressed={markersOnly ? "true" : "false"}
-                onClick={() => setMarkersOnly(v => !v)}>
-          Markers only
-        </button>
-        <span class="xcount">{total} {total === 1 ? "item" : "items"}</span>
-      </div>
       {!groups.length && (
         <div class="saved-empty">
           <IconSaved />
-          <p>{markersOnly ? "No blank markers yet." : "Nothing saved yet."}</p>
-          <span>Use the small page tab beneath a block, or add a note while reading.</span>
+          <p>Nothing saved yet.</p>
+          <span>Add a note while reading; leave it blank to save the block without writing.</span>
         </div>
       )}
-      {groups.map(g => (
-        <section class="saved-group" key={g.section.id}>
-          <header>
-            <span>Section {String(g.section.num).padStart(2, "0")}</span>
-            <h2>{g.section.title}</h2>
-          </header>
-          <div class="saved-list">
-            {g.items.map(item => <SavedItem key={item.anchor} item={item} ctx={ctx} />)}
+      <section class={"saved-section" + (depth === "index" ? " depth-index" : depth === "notes" ? " depth-notes" : "")}>
+        {groups.map(g => (
+          <div class="sub" key={g.sub.id}>
+            <ReadingRow ctx={ctx} noteAt={g.noted ? g.sub.id : null}>
+              <h3>
+                <span class="sid">{g.num}</span>
+                <a class="saved-origin" href={`#/${cid}/${g.sub.id}`}>{g.sub.title}</a>
+              </h3>
+            </ReadingRow>
+            {g.items.map(item => (
+              <SavedBlock key={item.anchor} item={item} ctx={ctx} depth={depth} />
+            ))}
           </div>
-        </section>
-      ))}
+        ))}
+      </section>
     </div>
   );
 }
 
-function SavedItem({ item, ctx }) {
+function SavedBlock({ item, ctx, depth }) {
   const { cid, idx } = ctx;
-  const p = item.b ? present(item.b, "notes") : null;
-  const lead = p && p.lead;
-  const href = `#/${cid}/${item.id}`;
-  const unmark = () => setSaved(cid, item.anchor, false);
-  return (
-    <article class={"saved-card" + (item.marked && !item.notes.length ? " is-marker" : "")}>
-      <div class="saved-card-h">
-        <div>
-          <span class="saved-at">{item.num} {item.sub.title}</span>
-          <a href={href}>{item.title}</a>
-        </div>
-        {item.marked && (
-          <button class="saved-toggle" type="button" aria-label="Remove this block from Saved"
-                  title="Remove from Saved" onClick={unmark}>
-            <IconSaved filled />
-          </button>
-        )}
+  const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(false), [depth]);
+  const b = item.b;
+  let p = present(b, open ? "full" : depth);
+  if (p.mode === "hidden") p = { ...p, mode: "closed", name: item.title };
+  const full = open || p.mode === "full";
+  const prev = item.sub.blocks[item.at - 1];
+
+  if (full) {
+    const row = (
+      <ReadingRow ctx={ctx} noteAt={item.anchor} apart={isApart(b.t)}>
+      {INTERACTIVE.includes(b.t)
+        ? <Attempt b={b} cid={cid} anchor={`${item.sub.id}#${item.at}@attempt`} />
+        : <div class="bhtml" dangerouslySetInnerHTML={{ __html: decorate(
+            renderBlock(b, { fignum: idx.FIG.numOf(b),
+                             prevSource: prev && prev.source ? prev.source : null }),
+            cid, idx.FIG.byKey) }} />}
+      </ReadingRow>
+    );
+    if (!open) return row;
+    return (
+      <div class="nopen">
+        <button class="nopen-h" type="button" aria-expanded="true"
+                title="Close this block" onClick={() => setOpen(false)}>
+          {item.title}
+        </button>
+        {row}
       </div>
-      {lead && (
-        <div class="saved-claim bhtml" dangerouslySetInnerHTML={{
-          __html: decorate(lead, cid, idx.FIG.byKey) }} />
-      )}
-      {item.notes.map((note, i) => (
-        <div class="saved-note" key={i} dangerouslySetInnerHTML={{ __html: md(note) }} />
-      ))}
-      {!item.notes.length && <p class="saved-marker-label">Marked for later</p>}
-    </article>
+    );
+  }
+
+  return (
+    <ReadingRow ctx={ctx} noteAt={item.anchor}>
+      <NoteRow b={b} p={p} ctx={ctx} refs={[]} showCat={false} runIn
+               open={false} onToggle={() => setOpen(true)} />
+    </ReadingRow>
   );
 }
 

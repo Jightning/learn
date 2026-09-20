@@ -87,3 +87,13 @@ npm run build  # for dist/
 npm run deploy  # builds, publishes to Cloudflare Pages, and keeps 2 newest deployments
 npm run check  # engine checks against demo and _template; user courses are not read
 ```
+
+Testing:
+
+```sh
+npm run test  # full testing
+
+npm run test:unit
+npm run test:integration
+npm run test:browser
+```

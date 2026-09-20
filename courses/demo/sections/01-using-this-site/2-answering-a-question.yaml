@@ -70,7 +70,7 @@ quiz:
     a: |-
       No. The confident miss is recruited into spaced review and drilled straight away; the hesitant miss is left to ordinary practice.
     why: |-
-      <p>A hesitant miss is a known gap. You already know to go back. A confident miss is a belief that is wrong, and beliefs do not correct themselves by being contradicted once, which is why that case gets the extra retrieval immediately.</p>
+      <p>A hesitant miss is a known gap, so that reader can return to the material. A confident miss is a belief that is wrong, and beliefs do not correct themselves by being contradicted once, which is why that case gets the extra retrieval immediately.</p>
     why_prompt: Which of the two readers already knows they have a problem?
     verified: 2026-09-06
 

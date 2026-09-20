@@ -41,7 +41,7 @@
  * Safari, so the two are always separated by a turn of the event loop.
  *
  * The synth is injected rather than reached for, which is what lets the state
- * machine be tested in node against a fake (tools/test-speech.mjs). Every
+ * machine be tested in node against a fake (tests/unit/speech.test.mjs). Every
  * platform bug listed above is a behaviour, and a behaviour nothing exercises
  * is a behaviour that regresses.
  * ==========================================================================*/

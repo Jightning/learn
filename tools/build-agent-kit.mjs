@@ -82,13 +82,12 @@ const fill = (vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`
 
 const repoVars = {
   AUTHOR: "node tools/author.mjs", NEW: 'npm run new --', PACK: "node tools/pack.mjs",
-  WHERE: "Run them from the repository root.", DELEGATE: DELEGATE.codex, LOG: LOG.any
+  WHERE: "From the repository root,", DELEGATE: DELEGATE.codex, LOG: LOG.any
 };
 const pluginVars = a => ({
   AUTHOR: `node "${a}/scripts/author.mjs"`, NEW: `node "${a}/scripts/new-course.mjs"`,
   PACK: `node "${a}/scripts/pack.mjs"`,
-  WHERE: "Run them from the folder the author is working in: that folder's `courses/` and `.author/` " +
-    "hold the course and its progress.",
+  WHERE: "From the author's working folder,",
   DELEGATE: DELEGATE.claude, LOG: LOG.claude
 });
 const anyVars = a => ({ ...pluginVars(a),
@@ -120,7 +119,7 @@ const generated = {
   ...Object.fromEntries(["course-drafter", "course-researcher"].map(name =>
     [`.codex/agents/${name}.toml`, readFileSync(join(ROOT, "tools/agent", `${name}.toml`), "utf8")])),
   "AGENTS.md": `# ${pkg.name}\n\nThis repository builds study courses and the site that reads them. ` +
-    "To create, continue or revise a course, follow the workflow below. For anything else, read " +
+    "Follow the workflow below for course work; otherwise read " +
     "`README.md` and `docs/`.\n\n" + fill(repoVars)
 };
 

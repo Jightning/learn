@@ -34,7 +34,7 @@ function usePair() {
 
 /* One reading row: content on the left, its references immediately to the
  * right. */
-function ReadingRow({ html, notes, noteAt, noteLabel, savable, apart, follow, ctx, id, children }) {
+export function ReadingRow({ html, notes, noteAt, noteLabel, apart, follow, ctx, id, children }) {
   const pair = usePair();
   /* The row owns the note because the note is in two of its zones: the grip at
      the foot of the block, and the card in the margin beside it. */
@@ -52,7 +52,7 @@ function ReadingRow({ html, notes, noteAt, noteLabel, savable, apart, follow, ct
           : children}
         {/* Where a note is started: a grip on the block's own bottom edge,
             shown only while there is nothing to show in the margin. */}
-        <NoteGrip n={note} savable={savable} />
+        <NoteGrip n={note} />
       </div>
       <aside class="bside">
         {notes}
@@ -78,7 +78,7 @@ function ReadingRow({ html, notes, noteAt, noteLabel, savable, apart, follow, ct
  * and the reader who opened it to check one thing has no way back to the view
  * they were reading in.
  */
-function NoteRow({ b, p, ctx, refs, open, onToggle, showCat, runIn }) {
+export function NoteRow({ b, p, ctx, refs, open, onToggle, showCat, runIn }) {
   const points = leadList(p.lead);
   const body = p.mode === "lead";
   /* An authored label is context the claim does not carry — "The split trap"
@@ -198,13 +198,13 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
     const at = `${sub.id}#${i}`;
     if (INTERACTIVE.includes(b.t))
       return (
-        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at} savable
+        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
                     follow={follow}>
           <Attempt b={b} cid={cid} anchor={`${sub.id}#${i}@attempt`} />
         </ReadingRow>
       );
     return (
-      <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at} savable
+      <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
                   apart={isApart(b.t)} follow={follow}
                   html={renderBlock(b, { fignum: idx.FIG.numOf(b),
                                         prevSource: prevSourceOf(sub.blocks, i) })} />

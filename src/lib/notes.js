@@ -10,6 +10,35 @@ import { getItem, setItem, removeItem, keys } from "./store.js";
 /** `anchor` is a subsection id, optionally suffixed with #<block index> */
 const key = (cid, anchor) => `note:${cid}:${anchor}`;
 
+/* Compatibility with the first saved-block implementation. Those markers
+   lived in a separate course-wide list; reading one as a blank note preserves
+   it, and the next write to that anchor removes it from the legacy list. */
+const LEGACY_SAVED = cid => `saved:${cid}`;
+const legacySaved = cid => {
+  try { return new Set(JSON.parse(getItem(LEGACY_SAVED(cid))) || []); }
+  catch { return new Set(); }
+};
+const forgetLegacySaved = (cid, anchor) => {
+  const set = legacySaved(cid);
+  if (!set.delete(anchor)) return;
+  if (set.size) setItem(LEGACY_SAVED(cid), JSON.stringify([...set]));
+  else removeItem(LEGACY_SAVED(cid));
+};
+
+/* Exactly one blank note is meaningful: it is the saved marker. Written notes
+   retain their original whitespace, while abandoned whitespace-only drafts
+   collapse to that one intentional blank. */
+const notesOf = list => {
+  const out = [];
+  let blank = false;
+  for (const t of list || []) {
+    if (typeof t !== "string") continue;
+    if (t.trim()) out.push(t);
+    else if (!blank) { out.push(""); blank = true; }
+  }
+  return out;
+};
+
 /* One anchor, one string. Still used by the pre-question attempt box, which
    holds a single answer and is not a note. */
 export function readNote(cid, anchor) { return getItem(key(cid, anchor)) || ""; }
@@ -29,45 +58,23 @@ export function writeNote(cid, anchor, text) {
  * that distinction; nobody has written one. */
 export function readNotes(cid, anchor) {
   const raw = getItem(key(cid, anchor));
-  if (!raw) return [];
-  try {
-    const v = JSON.parse(raw);
-    if (Array.isArray(v)) return v.filter(t => typeof t === "string" && t.trim());
-  } catch { /* not JSON at all: the legacy shape */ }
-  return [raw];
+  let list = [];
+  if (raw) {
+    try {
+      const v = JSON.parse(raw);
+      list = Array.isArray(v) ? notesOf(v) : [raw];
+    } catch { list = [raw]; /* not JSON at all: the legacy shape */ }
+  }
+  if (legacySaved(cid).has(anchor) && !list.some(t => !t.trim())) list.push("");
+  return list;
 }
 
-/** Empty notes are dropped rather than stored, so "delete" is "clear it". */
+/** An empty array deletes the anchor; an empty string is its saved-note state. */
 export function writeNotes(cid, anchor, list) {
-  const keep = (list || []).filter(t => t && t.trim());
+  const keep = notesOf(list);
+  forgetLegacySaved(cid, anchor);
   if (keep.length) setItem(key(cid, anchor), JSON.stringify(keep));
   else removeItem(key(cid, anchor));
-}
-
-/* A saved block is deliberately stored beside notes rather than inside their
-   string array. It behaves like the blank note the UI suggests, without a
-   sentinel string that could collide with something the learner actually
-   wrote or be discarded by the existing empty-note cleanup. One compact list
-   per course also makes collecting every saved block a single read. */
-const SAVED = cid => `saved:${cid}`;
-const saved = cid => {
-  try {
-    const list = JSON.parse(getItem(SAVED(cid))) || [];
-    return new Set(list.filter(a => typeof a === "string" && a));
-  } catch { return new Set(); }
-};
-
-export const savedAnchors = cid => [...saved(cid)];
-export const isSaved = (cid, anchor) => !!anchor && saved(cid).has(anchor);
-
-export function setSaved(cid, anchor, on) {
-  if (!anchor) throw new Error("a saved block needs a note anchor");
-  const set = saved(cid);
-  if (on) set.add(anchor); else set.delete(anchor);
-  if (set.size) setItem(SAVED(cid), JSON.stringify([...set]));
-  else removeItem(SAVED(cid));
-  if (typeof dispatchEvent === "function" && typeof CustomEvent === "function")
-    dispatchEvent(new CustomEvent("learn:saved", { detail: { cid, anchor, saved: on } }));
 }
 
 /* Which of a course's notes the reader has folded shut.
@@ -96,5 +103,5 @@ export function dropNotes(cid) {
   const pre = key(cid, "");
   for (const k of keys()) if (k.startsWith(pre)) removeItem(k);
   removeItem(FOLD(cid));
-  removeItem(SAVED(cid));
+  removeItem(LEGACY_SAVED(cid));
 }

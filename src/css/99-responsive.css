@@ -89,7 +89,8 @@
  * ------------------------------------------------------------------------ */
 @media (pointer:coarse){
   .tbtn,.cbtn,.gbtn,.dbtn,.lane-b,.qmark,
-  .tstub-b,.dtab,.mn-chip,.pt-run,.pt-toggle,.note-add,.note-edit,.note-save,
+  .tstub-b,.dtab,.mn-chip,.pt-run,.pt-toggle,.note-add,.note-edit,
+  .note-blank-open,.note-blank-drop,
   .lplus,.lop,.modal-x,
   .preq-a,.primer-nav button,.review-nav button,.pnav button{
     min-height:44px;

@@ -19,6 +19,8 @@ blocks:
     tier: depth
     follows: true
     label: Why one renderer, not several
+    core: |-
+      One generic renderer keeps the same effect consistent across courses.
     h: |-
       <p>A renderer written per subject earns its keep once, at review, and charges it again on every course after: the same effect now means reading N implementations instead of one generic renderer plus N small config blocks.</p>
 

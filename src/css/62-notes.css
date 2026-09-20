@@ -18,7 +18,7 @@
 
 .note-pull{
   /* 26px tall because WCAG 2.5.8 sets 24px as the floor for a target, and the
-     grip is hit-tested against that in tools/test-ui.mjs like every other
+     grip is hit-tested against that in tests/browser/app.test.mjs like every other
      control. Entirely below the block's edge, never straddling it: two pixels
      of overlap cost 3px of hit area under a subsection's sticky heading, which
      paints above everything at z-index 4, and leaning further up started
@@ -55,22 +55,6 @@
    first, and says so without a word. */
 .note-grip.has{background:var(--dc);opacity:.5}
 
-/* The page-tab is the blank-note gesture: one press keeps the block without
-   opening an editor. It shares the zero-height rail with the pull grip, so a
-   section pays no vertical cost for offering it on every full block. */
-.note-save{
-  position:absolute;top:0;right:0;z-index:2;
-  display:flex;align-items:center;justify-content:center;
-  width:30px;height:26px;padding:0;
-  background:none;border:0;color:var(--ink-3);opacity:.2;cursor:pointer;
-  transition:opacity .13s ease,color .13s ease;
-}
-.note-save svg{width:14px;height:14px}
-.brow:hover .note-save,.note-save:hover,.note-save:focus-visible{opacity:.72;color:var(--dc-ink)}
-.note-save.is-saved{opacity:.9;color:var(--dc-ink)}
-.note-save:focus-visible{outline:2px solid var(--focus);outline-offset:1px;border-radius:3px}
-@media (hover:none){.note-save{opacity:.4}.note-save.is-saved{opacity:.9}}
-
 /* ------------------------------------------------------- the note card ---- */
 
 .mnote.is-n{border-left-color:var(--dc)}
@@ -85,6 +69,26 @@
 }
 .note-ops{display:flex;gap:12px;align-items:baseline;margin-top:6px}
 .note-drop{color:var(--wn-ink)}
+
+/* An intentionally blank note is the saved state. It folds down to one quiet
+   strip rather than reserving an empty card body; opening the strip turns it
+   back into the ordinary editor, and × removes it. */
+.mnote.is-n.is-blank{padding:5px 7px}
+.note-one.note-blank{display:flex;align-items:center;gap:5px}
+.note-blank-open{
+  display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 auto;
+  padding:3px 2px;background:none;border:0;color:var(--dc-ink);cursor:pointer;
+  font-family:var(--mono);font-size:var(--fs-meta);text-align:left;
+}
+.note-blank-line{width:18px;height:2px;border-radius:2px;background:var(--dc);flex:none}
+.note-blank-drop{
+  width:24px;height:24px;padding:0;background:none;border:0;color:var(--ink-3);
+  font:inherit;font-size:1rem;line-height:1;cursor:pointer;border-radius:3px;
+}
+.note-blank-drop:hover{color:var(--wn-ink)}
+.note-blank-open:focus-visible,.note-blank-drop:focus-visible{
+  outline:2px solid var(--focus);outline-offset:1px;
+}
 
 /* The header is the fold control, so the whole label is the target rather than
    a caret the thumb has to hunt for. It keeps .mn-k's type, since it is the

@@ -17,7 +17,7 @@
  * This module is that arbitration and nothing else — a fold over state that
  * already exists into one ranked list. It is pure, it takes `now` as an
  * argument like the scheduler does, and it touches no DOM, so the ordering can
- * be tested without a browser (`tools/test-next.mjs`).
+ * be tested without a browser (`tests/unit/next-action.test.mjs`).
  *
  * ## Why this order
  *
