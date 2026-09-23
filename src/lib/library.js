@@ -17,6 +17,9 @@ import { imported, importedIndex } from "./courses.js";
 import { ordered } from "./order.js";
 import { getItem } from "./store.js";
 import { setPref } from "./prefs.js";
+import { setBundledCourses } from "./bundled.js";
+
+setBundledCourses(BUILTIN);
 
 /* Built-in courses the reader has dismissed.
  *
@@ -71,7 +74,10 @@ export async function get(cid) {
   if (inflight[cid]) return inflight[cid];
   if (!INDEX[cid]) return null;
 
-  const own = imported(cid);
+  /* A restored backup can contain an old copy of a bundled id. Bundled bytes
+     are the site's source of truth, so never let an IndexedDB copy shadow the
+     current demo or another shipped course. */
+  const own = BUILTIN[cid] ? null : imported(cid);
   if (own) return use(cid, own.files);
 
   inflight[cid] = fetch(`courses/${cid}.json`)
@@ -91,8 +97,13 @@ export async function getAll(cids) {
 
 /** After an import, a delete, or a dismissal, so the next read sees the set. */
 export function refresh() {
-  const own = importedIndex();
+  const stored = importedIndex();
+  const own = Object.fromEntries(Object.entries(stored).filter(([id]) => !BUILTIN[id]));
   const gone = readHidden();
+  /* A stale restored copy may already be parsed. Drop that cache entry before
+     the next read, otherwise the precedence rule above would only fix a cold
+     load. */
+  for (const id of Object.keys(stored)) if (BUILTIN[id]) delete cache[id];
   /* Re-importing a course replaces its files in storage. A parsed copy from a
      prior visit must not survive that replacement (or a removal). */
   for (const k of Object.keys(cache)) if (!BUILTIN[k]) delete cache[k];

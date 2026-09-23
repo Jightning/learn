@@ -32,6 +32,7 @@ import { getItem, setItem, removeItem, logRows, mergeRows, markSent, flush } fro
 import { deviceId } from "./device.js";
 import { importCourse, importedIndex, filesOf, versionOf, markSynced,
          removeCourse } from "./courses.js";
+import { bundledCourseIds, bundledCourseIndex, isBundledCourse } from "./bundled.js";
 import { invalidate } from "./replay.js";
 import { purge } from "./purge.js";
 import { deriveKey, seal as sealBytes, open as openBytes, versionOfFiles } from "./seal.js";
@@ -169,6 +170,7 @@ async function pushCourses(listing) {
   const there = new Map(listing.map(c => [c.id, c]));
   const sent = [];
   for (const id of Object.keys(importedIndex())) {
+    if (isBundledCourse(id)) continue;
     const remote = there.get(id);
     /* The cheap path first: the account lists this course at exactly the
        version this device recorded, so there is nothing to hash and nothing to
@@ -206,6 +208,7 @@ async function pullCourses(listing, taken, sent = []) {
   for (const c of listing) {
     if (justSent.has(c.id)) continue;
     const here = versionOf(c.id);
+    if (isBundledCourse(c.id)) continue;
     const holding = !!importedIndex()[c.id];
 
     if (c.deleted) {
@@ -303,7 +306,9 @@ export async function sync({ manual = false } = {}) {
     }
 
     const uploaded = await pushCourses(listing);
-    const taken = { ids: Object.keys(importedIndex()), codes: {} };
+    const taken = { ids: [...bundledCourseIds(), ...Object.keys(importedIndex())], codes: {} };
+    for (const [cid, e] of Object.entries(bundledCourseIndex())) if (e.code) taken.codes[e.code] = cid;
+    for (const [cid, e] of Object.entries(importedIndex())) if (e.code) taken.codes[e.code] = cid;
     const { installed, removed } = await pullCourses(listing, taken, uploaded);
 
     setItem(LAST, String(Date.now()));
@@ -326,10 +331,11 @@ export async function sync({ manual = false } = {}) {
 /** Bring a course back out of the bin. The body is still there until it is purged. */
 export async function restore(cid) {
   if (!configured()) return null;
+  if (isBundledCourse(cid)) return { ok: false, error: "that course is bundled with the site and is restored by deploying the site" };
   try {
     const res = await call("/api/sync", { device: deviceId(), since: Number(getItem(CURSOR)) || 0,
                                           rows: [], deletes: [], restores: [cid] });
-    const taken = { ids: Object.keys(importedIndex()), codes: {} };
+    const taken = { ids: [...bundledCourseIds(), ...Object.keys(importedIndex())], codes: {} };
     const { installed } = await pullCourses((res.courses || []).filter(c => c.id === cid), taken);
     return { ok: true, installed };
   } catch (e) {

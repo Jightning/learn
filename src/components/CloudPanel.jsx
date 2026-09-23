@@ -71,7 +71,7 @@ export default function CloudPanel({ setup = false, onChange }) {
       setBin(b => b.filter(c => c.id !== cid));
       setMsg(`Restored ${cid}.`);
       refresh(); onChange && onChange();
-    } else setMsg("Could not restore that course.");
+    } else setMsg(r?.error || "Could not restore that course.");
   };
 
   const forget = async () => {

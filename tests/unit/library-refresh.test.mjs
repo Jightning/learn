@@ -27,6 +27,18 @@ test("reimporting a course replaces the parsed lesson", async () => {
     courses.removeCourse(id);
     library.refresh();
     assert.equal(library.peek(id), null);
+
+    /* A backup may contain a stale copy of a bundled demo. It must not replace
+       the bytes shipped by the current site, or restoring a device hides new
+       lessons and visual examples. */
+    courses.importCourse("demo", {
+      "course.yaml": "code: DEMO\ntitle: Stale restored copy\n",
+      "sections/01-old/_section.yaml": "title: Old\n"
+    });
+    library.refresh();
+    assert.notEqual(library.INDEX.demo.title, "Stale restored copy");
+    courses.removeCourse("demo");
+    library.refresh();
   } finally {
     await server.close();
   }
