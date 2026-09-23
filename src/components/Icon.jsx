@@ -33,11 +33,9 @@ export function IconSaved({ filled = false }) {
 export function IconGrab()     { return <svg {...P}><path d="M6 3.5h.01M10 3.5h.01M6 8h.01M10 8h.01M6 12.5h.01M10 12.5h.01"/></svg>; }
 
 export function IconTuck({ open }) {
-  return (
-    <svg {...P} width="15" height="15">
-      <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" />
-      <path d={open ? "M6 2.5v11" : "M4.5 2.5v11"} />
-      <path d={open ? "M9.6 6.2 11.8 8l-2.2 1.8" : "M12 6.2 9.8 8l2.2 1.8"} />
-    </svg>
+  return !open ? (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f"><path d="M500-592v224q0 14 12 19t22-5l98-98q12-12 12-28t-12-28l-98-98q-10-10-22-5t-12 19ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z"/></svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f"><path d="M660-368v-224q0-14-12-19t-22 5l-98 98q-12 12-12 28t12 28l98 98q10 10 22 5t12-19ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm120-80v-560H200v560h120Zm80 0h360v-560H400v560Zm-80 0H200h120Z"/></svg>
   );
 }

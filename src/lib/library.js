@@ -93,6 +93,9 @@ export async function getAll(cids) {
 export function refresh() {
   const own = importedIndex();
   const gone = readHidden();
+  /* Re-importing a course replaces its files in storage. A parsed copy from a
+     prior visit must not survive that replacement (or a removal). */
+  for (const k of Object.keys(cache)) if (!BUILTIN[k]) delete cache[k];
   for (const k of Object.keys(INDEX)) if (!BUILTIN[k] && !own[k]) delete INDEX[k];
   Object.assign(INDEX, own);
   /* Only the *listing* drops a dismissed course. Its INDEX entry stays, so a

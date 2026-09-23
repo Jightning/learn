@@ -259,6 +259,9 @@ const titleCase = s => {
 
 /** A line's heading and the prose it runs into, or null when it is not one. */
 function headingOf(line) {
+  // Embedded HTML assets can be megabyte-long lines of base64. They cannot be
+  // headings, and scanning every lower-to-upper pair would grow quadratically.
+  if (line.length > 1000) return null;
   const marked = /^##+\s+(.+?)\s*$/.exec(line);
   if (marked) return { heading: marked[1], rest: "" };
   if (titleCase(line)) return { heading: line.trim(), rest: "" };
@@ -276,9 +279,27 @@ function headingOf(line) {
 
 const bare = s => s.replace(/^\d+(\.\d+)*\s+/, "").replace(/\s+/g, " ").trim();
 
+function readableHtml(html) {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<img\b[^>]*>/gi, " ")
+    .replace(/<h1\b[^>]*>/gi, "\n# ")
+    .replace(/<h[2-6]\b[^>]*>/gi, "\n## ")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<\/(?:p|li|section|div)>/gi, "\n\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(?:nbsp|#160);/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(?:39|x27);/gi, "'");
+}
+
 /** Text split into the topics its headings name. Text before any heading
     belongs to the `# ` title, or to "(untitled)". */
 export function topics(md) {
+  if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
   const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
   const out = [{ heading: title, lines: [] }];
   for (const line of md.replace(/^#\s.*$/m, "").replace(/<!--[\s\S]*?-->/g, "").split("\n")) {
