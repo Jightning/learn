@@ -109,7 +109,7 @@ blocks:
     source: src/figures/circuit.js
     spec:
       w: 6
-      h: 3
+      h: 2
       wires:
         - {from: [0, 1], to: [1, 1]}
         - {from: [2, 1], to: [3, 1]}
