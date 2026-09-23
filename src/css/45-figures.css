@@ -146,3 +146,12 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
 .fnum,figcaption .fnum{font-family:var(--mono);font-size:.95em;
   font-weight:600;color:var(--hi-ink);letter-spacing:.02em}
 .xr-miss{color:var(--dc-ink);border-bottom:1px dotted var(--dc)}
+
+/* Data drawn diagrams share the book's ink and accent rather than carrying
+ * their own palette. Circuit wires and symbols stay crisp at any zoom. */
+.fx-circuit,.fx-drawing{min-width:0}
+.fx-circuit .fx-c-wire,.fx-circuit .fx-c-part path,.fx-circuit .fx-c-part circle{fill:none;stroke:var(--ink-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fx-c-dot{fill:var(--ink-2)}
+.fx-cl{font-size:13px;font-weight:600;fill:var(--ink)}
+.fx-cv{font-size:12px;fill:var(--ink-2)}
+.fx-d-label{font-size:12px}

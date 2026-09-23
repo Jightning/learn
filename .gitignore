@@ -10,7 +10,7 @@ packed/
 .env.*
 .wrangler/
 
-.scratch
+.scratch/*
 .sync
 
 

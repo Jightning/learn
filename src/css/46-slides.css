@@ -1,0 +1,29 @@
+/* A slide deck has the same quiet figure frame, with the navigation outside
+ * the visual so its controls never cover a diagram on a narrow screen. */
+.slides{container-type:inline-size;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);
+  border-radius:4px;background:var(--surface);padding:16px;outline:none;touch-action:pan-y}
+.slides:focus-within{border-color:var(--hi)}
+.slides .fcap{display:block;color:var(--ink-3);font-family:var(--sans);font-size:var(--fs-small);margin-bottom:14px}
+.slides-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.slides-count{flex:none;font:600 var(--fs-meta) var(--mono);color:var(--hi-ink)}
+.slides-progress{height:3px;flex:1;background:var(--rule-2);border-radius:3px;overflow:hidden}
+.slides-progress i{display:block;height:100%;background:var(--hi);transition:width .2s ease}
+.slides-frame{min-height:230px;display:flex;flex-direction:column;justify-content:center;gap:14px;
+  padding:22px;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:3px}
+.slides-frame h4{margin:0;font:600 1.1rem var(--display);color:var(--ink)}
+.slides-visual{overflow-x:auto}
+.slides-visual svg{margin:auto}
+.slides-image{margin:0;text-align:center}
+.slides-image img{display:block;max-width:100%;max-height:380px;margin:auto;object-fit:contain;border-radius:3px}
+.slides-text{font-family:var(--sans);line-height:1.6;color:var(--ink)}
+.slides-text>*:first-child{margin-top:0}
+.slides-text>*:last-child{margin-bottom:0}
+.slides-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.slides-nav button{border:1px solid var(--rule);border-radius:3px;background:var(--surface);
+  color:var(--ink);font:500 var(--fs-small) var(--ui);padding:8px 12px;cursor:pointer}
+.slides-nav button:hover:not(:disabled),.slides-nav button:focus-visible{border-color:var(--hi);color:var(--hi-ink)}
+.slides-nav button:focus-visible{outline:2px solid var(--hi);outline-offset:2px}
+.slides-nav button:disabled{opacity:.45;cursor:default}
+.slides-hint{font:var(--fs-meta) var(--ui);color:var(--ink-3);text-align:center}
+@container (max-width:27rem){.slides-frame{padding:15px;min-height:190px}.slides-hint{display:none}}
+@media (pointer:coarse){.slides-nav button{min-height:44px;min-width:44px}}

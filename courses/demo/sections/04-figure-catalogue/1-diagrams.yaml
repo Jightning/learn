@@ -101,6 +101,71 @@ blocks:
         - {name: en, wave: "00111100"}
         - {name: out, wave: "00010100"}
 
+  - t: figure
+    cat: figure-kinds
+    id: demo-circuit
+    kind: circuit
+    cap: "circuit: a battery drives a resistor through a closed loop"
+    source: src/figures/circuit.js
+    spec:
+      w: 6
+      h: 3
+      wires:
+        - {from: [0, 1], to: [1, 1]}
+        - {from: [2, 1], to: [3, 1]}
+        - {from: [4, 1], to: [5, 1]}
+      parts:
+        - {type: battery, x: 1.5, y: 1, label: B, value: 9 V}
+        - {type: resistor, x: 3.5, y: 1, label: R, value: 1 kΩ}
+      junctions: [[0, 1], [5, 1]]
+
+  - t: figure
+    cat: figure-kinds
+    id: demo-drawing
+    kind: drawing
+    cap: "drawing: an annotated arrow makes direction explicit"
+    source: src/figures/drawing.js
+    spec:
+      w: 420
+      h: 140
+      alt: An input box points to an output box with a labelled arrow
+      shapes:
+        - {type: rect, x: 24, y: 44, w: 110, h: 48, label: input}
+        - {type: arrow, points: [[145, 68], [270, 68]], accent: 0, label: direction}
+        - {type: rect, x: 282, y: 44, w: 110, h: 48, accent: 1, label: output}
+        - {type: text, x: 174, y: 48, text: transform, accent: 0}
+
+  - t: slides
+    cat: figure-kinds
+    id: demo-algorithm
+    cap: "slides: one algorithm state per frame"
+    source: src/components/Slides.jsx
+    frames:
+      - title: Read
+        text: <p>Read the current item and compare it with the target.</p>
+        figure:
+          kind: drawing
+          spec:
+            w: 420
+            h: 120
+            alt: Three boxes with the middle box highlighted
+            shapes:
+              - {type: rect, x: 35, y: 35, w: 90, h: 45}
+              - {type: rect, x: 165, y: 35, w: 90, h: 45, accent: 0}
+              - {type: rect, x: 295, y: 35, w: 90, h: 45}
+      - title: Narrow
+        text: <p>Discard the half that cannot contain the target.</p>
+        figure:
+          kind: drawing
+          spec:
+            w: 420
+            h: 120
+            alt: An arrow points from the middle box toward the remaining range
+            shapes:
+              - {type: rect, x: 35, y: 35, w: 90, h: 45}
+              - {type: arrow, points: [[175, 58], [280, 58]], accent: 1}
+              - {type: rect, x: 295, y: 35, w: 90, h: 45, accent: 1}
+
   - t: note
     tier: depth
     source: src/figures/graph.js

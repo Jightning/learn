@@ -56,6 +56,7 @@ import { tex } from "./lib/math.mjs";
 import { COURSES as COURSES_DIR } from "./lib/paths.mjs";
 import { INTERACTIVE } from "../src/blocks/interactive.js";
 import { checkFigure } from "./lib/figures.mjs";
+import { checkSlides } from "./lib/slides.mjs";
 import { TIERS, tierOf } from "../src/lib/tiers.js";
 import { NOTES_MODES, present, leadOf } from "../src/lib/gist.js";
 import { checkRunInLists, checkFollows, checkAsides } from "./lib/structure.mjs";
@@ -507,7 +508,7 @@ for (const id of courses) {
   for (const s2 of C.sections) {
     for (const u of s2.subs) {
       for (const b of u.blocks || []) {
-        if (!b || (b.t !== "figure" && b.t !== "image") || !b.id) continue;
+        if (!b || !["figure", "image", "slides"].includes(b.t) || !b.id) continue;
         if (figIds.has(b.id)) errs.push(`${u.id}: two figures both claim id "${b.id}"`);
         figIds.add(b.id);
       }
@@ -526,6 +527,7 @@ for (const id of courses) {
            than validating, so a key it has never heard of draws nothing and
            says nothing. lib/figures.mjs holds the whole check. */
         if (b.t === "figure") checkFigure(b, where, errs);
+        if (b.t === "slides") checkSlides(b, where, errs);
         if (b.tier && !TIERS.includes(b.tier))
           errs.push(`${where}: unknown tier "${b.tier}" — one of ${TIERS.join(", ")}`);
         /* `notes:` overrides how this block behaves at a closed depth. A value
@@ -542,6 +544,14 @@ for (const id of courses) {
         /* M19: a figure nobody can read is not a learning aid */
         if (b.t === "image" && !String(b.alt || "").trim())
           errs.push(`${where}: image "${b.src}" has no alt text`);
+        const images = b.t === "image" ? [b] : b.t === "slides"
+          ? (Array.isArray(b.frames) ? b.frames : []).map(frame => frame?.image).filter(Boolean) : [];
+        for (const image of images)
+          if (typeof image.src !== "string" || !image.src.trim() ||
+              !image.src.startsWith("assets/") || image.src.split("/").includes("..") ||
+               image.src.includes("\\") ||
+               !existsSync(join(COURSES, id, image.src)))
+            errs.push(`${where}: missing image asset "${image.src}"`);
 
         if (b.t === "math") {
           if (!String(b.tex || "").trim()) errs.push(`${where}: a math block has no "tex"`);
@@ -604,6 +614,8 @@ for (const id of courses) {
         for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
         for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
         if (Array.isArray(b.items)) b.items.forEach(v => checkHtml(v, `${where} ${b.t} item`));
+        if (b.t === "slides" && Array.isArray(b.frames))
+          b.frames.forEach((frame, i) => checkHtml(frame?.text, `${where} slide ${i + 1} text`));
         if (b.asides && typeof b.asides === "object")
           for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
       }

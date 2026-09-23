@@ -142,12 +142,19 @@ export function parseCourse(files) {
      after the first paint, and a figure must not 404 on the way to being right. */
   const assets = {};
   for (const p of Object.keys(files)) if (p.startsWith("assets/")) assets[p] = files[p];
-  if (Object.keys(assets).length) {
-    for (const s of C.sections)
-      for (const u of s.subs)
-        for (const b of u.blocks)
-          if (b && b.t === "image" && assets[b.src]) b.src = assets[b.src];
-  }
+  const resolveImage = (image, where) => {
+    if (!image || !image.src) return;
+    if (assets[image.src]) image.src = assets[image.src];
+    else errors.push(`${where}: missing image asset "${image.src}"`);
+  };
+  for (const s of C.sections)
+    for (const u of s.subs)
+      for (const b of u.blocks) {
+        if (b?.t === "image") resolveImage(b, u.id);
+        if (b?.t === "slides")
+          for (const [i, frame] of (Array.isArray(b.frames) ? b.frames : []).entries())
+            resolveImage(frame?.image, `${u.id} slide ${i + 1}`);
+      }
 
   return { course: C, errors };
 }

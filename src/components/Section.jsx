@@ -13,6 +13,7 @@ import { DepthTab } from "./TierStub.jsx";
 import Attempt from "./Attempt.jsx";
 import CatChip from "./CatChip.jsx";
 import Asides from "./Asides.jsx";
+import Slides from "./Slides.jsx";
 import { isFollow } from "../lib/follows.js";
 import { renderAnchors, asidesOf, anchorKeys } from "../lib/asides.js";
 
@@ -201,6 +202,13 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
         <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
                     follow={follow}>
           <Attempt b={b} cid={cid} anchor={`${sub.id}#${i}@attempt`} />
+        </ReadingRow>
+      );
+    if (b.t === "slides")
+      return (
+        <ReadingRow key={i} id={blockId(sub.id, i)} ctx={ctx} notes={notes} noteAt={at}
+                    apart={true} follow={follow}>
+          <Slides b={b} ctx={ctx} fignum={idx.FIG.numOf(b)} />
         </ReadingRow>
       );
     return (

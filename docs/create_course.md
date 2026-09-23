@@ -198,7 +198,8 @@ surface: a reader-facing behaviour you want is here.
 | `review: true` | The concept enters Loop B: criterion tracking, spaced relearning |
 | Any `<a href="#s…">` or `<c k>` | An edge on the dependency map at `#/<id>/map` |
 | Every block's text | An entry in the search index |
-| `t: figure` | A rendered diagram, plot, chart, grid or timing trace (§10.1) |
+| `t: figure` | A rendered diagram, plot, chart, circuit, drawing or timing trace (§10.1) |
+| `t: slides` | A reader-stepped sequence of text and visuals (§10.1) |
 | `retention.target` | How hard the schedule holds the course (§4) |
 | `state.enabled: false` | A stateless reference: no quiz history, no review loop |
 | `cap:` on a `figure`/`table`/`image` | The caption, and the only part read aloud (§2.2) |
@@ -984,11 +985,13 @@ generalise to the rest of the section.
 
 ### 10.1 Figures
 
-`{t: figure, kind, cap, id, spec}`. Nine kinds, with their `spec` fields in full.
+`{t: figure, kind, cap, id, spec}`. Eleven kinds, with their `spec` fields in full.
 
 | `kind` | For | `spec` |
 |---|---|---|
 | `graph` | State machines, block diagrams | `nodes:[{id, label, x, y, note, title, accent, state, here}]`, `edges:[{from, to, label, curve, self}]`, `layout: circle \| row \| layered \| manual`, `r`, `w`, `h` |
+| `circuit` | Circuit schematics | `w`, `h` (grid size), `wires:[{from:[x,y], to:[x,y]}]`, `parts:[{type, x, y, dir, label, value}]`, `junctions:[[x,y],…]` |
+| `drawing` | Annotated shapes and arrows | `w`, `h`, `alt`, `shapes:[{type, x, y, w, h, points, text, label, accent}]` |
 | `plot` | Functions or measured series | `series:[{label, fn \| points, from, to, dash, samples}]`, `xlabel`, `ylabel`, `xrange`, `yrange`, `ticks`, `legend`, `xfmt`, `yfmt`, `w`, `h` |
 | `flow` | Processes and pipelines | `steps:[{label, note}]`, `dir: row \| col` |
 | `grid` | Labelled 2-D grids with highlighted groups | `rowVars`, `colVars`, `rowLabels`, `colLabels`, `cells`, `index: binary`, `groups:[{label, cells:[[r,c],…]}]` |
@@ -1001,6 +1004,61 @@ generalise to the rest of the section.
 `grid` cells take the course's `valueStyles`; `groups` draw in three rotating
 colours. A `plot` series' `fn` is JavaScript in `x`, compiled and sampled by
 `validate.mjs`, so one that will not parse or has no finite value fails the build.
+
+For `circuit`, coordinates are grid points. Parts are centred at `(x,y)` and
+extend half a grid unit on each side; wires end at those terminals.
+`dir: v` rotates a symbol vertically (horizontal is the default). Supported
+parts: `resistor`, `capacitor`, `battery`, `switch`, `diode`, `lamp`, `source`.
+Use `junctions` to mark connected crossings; a crossing without a dot is not a
+connection. For `drawing`, coordinates are pixels in the viewBox. Supported
+shapes: `line`, `arrow`, `path` (a polyline), `rect`, `ellipse`, and `text`.
+Lines, arrows and paths use `points:[[x,y],…]`. Rectangles and ellipses use
+`x`, `y`, `w`, `h`; text uses `x`, `y`, `text`. An `accent` from 0–3 uses the
+course palette. Write descriptive `alt` text for a drawing.
+
+```yaml
+- t: figure
+  kind: circuit
+  id: simple-loop
+  cap: The resistor limits current from the battery
+  spec:
+    w: 5
+    h: 3
+    wires:
+      - {from: [0, 1], to: [1, 1]}
+      - {from: [2, 1], to: [3, 1]}
+      - {from: [4, 1], to: [5, 1]}
+    parts:
+      - {type: battery, x: 1.5, y: 1, label: B, value: 9 V}
+      - {type: resistor, x: 3.5, y: 1, label: R, value: 1 kΩ}
+```
+
+Use `slides` when understanding depends on seeing a state change one step at a
+time, such as an algorithm trace. A frame can have `title`, HTML `text`, and
+one visual: `figure:{kind,spec}` or `image:{src,alt}`. The slide block has one
+numbered `cap` and optional `id`; inner visuals are not separately numbered.
+Readers use Previous/Next, left/right arrow keys, or a horizontal swipe. Keep
+the essential conclusion in prose outside the deck too, so a reader scanning
+the page or using review mode can find it.
+
+```yaml
+- t: slides
+  id: binary-search-trace
+  cap: Binary search narrows the candidate range
+  frames:
+    - title: Start
+      text: <p>Compare the target with the middle item.</p>
+      figure:
+        kind: drawing
+        spec:
+          alt: Three candidate boxes with the middle one highlighted
+          shapes:
+            - {type: rect, x: 20, y: 40, w: 90, h: 50}
+            - {type: rect, x: 130, y: 40, w: 90, h: 50, accent: 0}
+            - {type: rect, x: 240, y: 40, w: 90, h: 50}
+    - title: Narrow
+      text: <p>Discard the half that cannot contain the target.</p>
+```
 
 **A `spec` may only contain keys the engine reads** (`src/figures/schema.js`);
 anything else fails the build, because a renderer silently ignores what it does
@@ -1058,7 +1116,7 @@ mentioned in passing.
   width: 460
 ```
 
-Embedded at build. PNG, JPEG, GIF, WebP, SVG; the build fails on a missing path
+Embedded at build, including images inside slides. PNG, JPEG, GIF, WebP, SVG; the build fails on a missing path
 or a total over 8MB. **`alt` is required** [M19]; prefer a `figure` wherever the
 content can be described as data [M18].
 
@@ -1267,9 +1325,10 @@ The shapes a capable model produces by default.
 
 ## 15. When data is not enough — `blocks.js`
 
-Almost never: first check that a `figure` kind, a `table` with `map:`, or a
-`def`/`key`/`ex` cannot express it. The exception is a renderer about *shape*
-rather than data — circuit schematics are topology and symbols.
+Almost never: first check that a `figure` kind (including `circuit` and
+`drawing`), `slides`, a `table` with `map:`, or a `def`/`key`/`ex` cannot express
+it. Use custom code only when the built-in visual vocabulary cannot represent
+the subject accurately.
 
 ```js
 export default function (Blocks, U) {

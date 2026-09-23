@@ -62,7 +62,8 @@ const FIELDS = new Set([
   "cat",       /* lib/cats.js    — principal category */
   "tags",      /* lib/cats.js    — secondary memberships */
   "verified",  /* validate.mjs   — the re-derivation date */
-  "alt"        /* blocks/index.js image alt text */
+  "alt",       /* blocks/index.js image alt text */
+  "frames"     /* Slides.jsx — sequenced visual frames */
 ]);
 
 let fail = 0;

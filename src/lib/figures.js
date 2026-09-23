@@ -18,7 +18,7 @@
  * reader expects them counted, and merging them would renumber every figure in
  * a section when a table is inserted above it.
  */
-const KINDS = { figure: "Figure", image: "Figure", table: "Table" };
+const KINDS = { figure: "Figure", image: "Figure", slides: "Figure", table: "Table" };
 
 export function numberFigures(C) {
   const byBlock = new WeakMap(), byKey = {};

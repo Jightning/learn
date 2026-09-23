@@ -29826,9 +29826,62 @@ function timing(spec) {
 	}).join("") + "</div>";
 }
 //#endregion
+//#region src/figures/circuit.js
+function circuit(spec) {
+	const unit = 48, pad = 42;
+	const w = Math.max(2, Number(spec.w) || 8), h = Math.max(2, Number(spec.h) || 5);
+	const X = (x) => pad + x * unit, Y = (y) => pad + y * unit;
+	const line = (a, b, cls = "fx-c-wire") => `<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}" class="${cls}"/>`;
+	const wires = (spec.wires || []).map((v) => line(v.from, v.to)).join("");
+	const parts = (spec.parts || []).map((p) => {
+		const x = X(p.x), y = Y(p.y), turn = p.dir === "v" ? " transform=\"rotate(90)\"" : "";
+		return `<g class="fx-c-part"><title>${esc$1([p.label, p.value].filter(Boolean).join(" · ") || p.type)}</title><g transform="translate(${x} ${y})"><g${turn}>${{
+			resistor: "<path d=\"M-24 0h5l4-9 8 18 7-18 7 18 8-18 4 9h5\"/>",
+			capacitor: "<path d=\"M-24 0h16m0-13v26m16-26v26M8 0h16\"/>",
+			battery: "<path d=\"M-24 0h16m0-14v28M6-9v18M6 0h18\"/>",
+			switch: "<path d=\"M-24 0h10m28 0h10M-14 0L11-13\"/><circle cx=\"-14\" r=\"2\"/><circle cx=\"14\" r=\"2\"/>",
+			diode: "<path d=\"M-24 0h12m24 0h12M-12-13v26l24-13zM12-13v26\"/>",
+			lamp: "<path d=\"M-24 0h8m32 0h8\"/><circle r=\"16\"/><path d=\"M-11-11L11 11M11-11L-11 11\"/>",
+			source: "<path d=\"M-24 0h8m32 0h8\"/><circle r=\"16\"/><path d=\"M-9 0q5-10 9 0t9 0\"/>"
+		}[p.type] || ""}</g></g>` + (p.label ? txt(x, y - 30, p.label, "fx-cl") : "") + (p.value ? txt(x, y + 38, p.value, "fx-cv") : "") + "</g>";
+	}).join("");
+	const dots = (spec.junctions || []).map((p) => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" class="fx-c-dot"/>`).join("");
+	return `<svg class="fx fx-circuit" viewBox="0 0 ${X(w) + pad} ${Y(h) + pad}" role="img" aria-label="Circuit diagram">${wires}${parts}${dots}</svg>`;
+}
+//#endregion
+//#region src/figures/drawing.js
+function drawing(spec) {
+	const w = Number(spec.w) || 640, h = Number(spec.h) || 320;
+	const shapes = (spec.shapes || []).map((s) => {
+		const color = s.accent == null ? "var(--ink-2)" : tone(s.accent);
+		const common = `stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
+		const points = (s.points || []).map((p) => p.join(",")).join(" ");
+		let body = "";
+		if (s.type === "line" || s.type === "arrow") {
+			const [a, b] = s.points || [];
+			if (a && b) {
+				body = `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" ${common}/>`;
+				if (s.type === "arrow") {
+					const angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
+					const wing = (sign) => [b[0] - 12 * Math.cos(angle + sign * .5), b[1] - 12 * Math.sin(angle + sign * .5)];
+					const l = wing(1), r = wing(-1);
+					body += `<polyline points="${l.join(",")} ${b.join(",")} ${r.join(",")}" fill="none" ${common}/>`;
+				}
+			}
+		} else if (s.type === "path") body = `<polyline points="${points}" fill="none" ${common}/>`;
+		else if (s.type === "rect") body = `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="3" fill="var(--surface-2)" ${common}/>`;
+		else if (s.type === "ellipse") body = `<ellipse cx="${s.x}" cy="${s.y}" rx="${s.w / 2}" ry="${s.h / 2}" fill="var(--surface-2)" ${common}/>`;
+		else if (s.type === "text") body = `<text x="${s.x}" y="${s.y}" class="fx-t fx-d-label" style="fill:${color}">${esc$1(s.text || "")}</text>`;
+		return `<g>${s.label ? `<title>${esc$1(s.label)}</title>` : ""}${body}</g>`;
+	}).join("");
+	return `<svg class="fx fx-drawing" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc$1(spec.alt || "Annotated drawing").replace(/"/g, "&quot;")}">${shapes}</svg>`;
+}
+//#endregion
 //#region src/figures/index.js
 const Figures = {
 	bar,
+	circuit,
+	drawing,
 	flow,
 	graph,
 	grid,
@@ -29849,6 +29902,45 @@ const CHART = [
 	"ticks"
 ];
 const SPEC = {
+	circuit: {
+		keys: [
+			"w",
+			"h",
+			"wires",
+			"parts",
+			"junctions"
+		],
+		items: {
+			wires: ["from", "to"],
+			parts: [
+				"type",
+				"x",
+				"y",
+				"dir",
+				"label",
+				"value"
+			]
+		}
+	},
+	drawing: {
+		keys: [
+			"w",
+			"h",
+			"alt",
+			"shapes"
+		],
+		items: { shapes: [
+			"type",
+			"x",
+			"y",
+			"w",
+			"h",
+			"points",
+			"text",
+			"label",
+			"accent"
+		] }
+	},
 	graph: {
 		keys: [
 			"nodes",
@@ -29991,6 +30083,63 @@ function checkPlotFns(spec, where, errs) {
 		else if (!finite) errs.push(`${where}: plot fn "${ser.fn}" has no finite value on [${from}, ${to}] — the chart renders empty`);
 	}
 }
+const finite = (x) => typeof x === "number" && Number.isFinite(x);
+const point = (p) => Array.isArray(p) && p.length === 2 && p.every(finite);
+function checkDiagram(kind, spec, where, errs) {
+	for (const key of ["w", "h"]) if (spec[key] != null && (!finite(spec[key]) || spec[key] <= 0)) errs.push(`${where}: figure ${kind} ${key} must be a positive number`);
+	if (kind === "circuit") {
+		for (const field of [
+			"wires",
+			"parts",
+			"junctions"
+		]) if (spec[field] != null && !Array.isArray(spec[field])) errs.push(`${where}: circuit ${field} must be a list`);
+		if (!(spec.wires || []).length && !(spec.parts || []).length) errs.push(`${where}: circuit needs wires or parts`);
+		for (const wire of Array.isArray(spec.wires) ? spec.wires : []) if (!point(wire?.from) || !point(wire?.to)) errs.push(`${where}: circuit wire needs two [x, y] points`);
+		for (const part of Array.isArray(spec.parts) ? spec.parts : []) {
+			if (!part || ![
+				"resistor",
+				"capacitor",
+				"battery",
+				"switch",
+				"diode",
+				"lamp",
+				"source"
+			].includes(part.type)) errs.push(`${where}: unknown circuit part "${part?.type}"`);
+			if (!finite(part?.x) || !finite(part?.y)) errs.push(`${where}: circuit part needs numeric x and y`);
+			if (part?.dir != null && !["h", "v"].includes(part.dir)) errs.push(`${where}: circuit part dir must be h or v`);
+		}
+		for (const p of Array.isArray(spec.junctions) ? spec.junctions : []) if (!point(p)) errs.push(`${where}: circuit junction needs [x, y]`);
+	} else {
+		if (!String(spec.alt || "").trim()) errs.push(`${where}: drawing needs alt text`);
+		if (!Array.isArray(spec.shapes) || !spec.shapes.length) errs.push(`${where}: drawing needs shapes`);
+		for (const shape of Array.isArray(spec.shapes) ? spec.shapes : []) {
+			if (!shape || ![
+				"line",
+				"arrow",
+				"path",
+				"rect",
+				"ellipse",
+				"text"
+			].includes(shape.type)) {
+				errs.push(`${where}: unknown drawing shape "${shape?.type}"`);
+				continue;
+			}
+			if ([
+				"line",
+				"arrow",
+				"path"
+			].includes(shape.type) && (!Array.isArray(shape.points) || shape.points.length < 2 || !shape.points.every(point))) errs.push(`${where}: drawing ${shape.type} needs at least two [x, y] points`);
+			if ([
+				"rect",
+				"ellipse",
+				"text"
+			].includes(shape.type) && (!finite(shape.x) || !finite(shape.y))) errs.push(`${where}: drawing ${shape.type} needs numeric x and y`);
+			if (["rect", "ellipse"].includes(shape.type) && (!finite(shape.w) || shape.w <= 0 || !finite(shape.h) || shape.h <= 0)) errs.push(`${where}: drawing ${shape.type} needs positive w and h`);
+			if (shape.type === "text" && !String(shape.text || "").trim()) errs.push(`${where}: drawing text needs text`);
+			if (shape.accent != null && (!Number.isInteger(shape.accent) || shape.accent < 0 || shape.accent > 3)) errs.push(`${where}: drawing accent must be 0–3`);
+		}
+	}
+}
 /** Check one `{t:"figure", kind, spec}` block. `where` names the subsection. */
 function checkFigure(b, where, errs) {
 	const s = SPEC[b.kind];
@@ -30015,6 +30164,49 @@ function checkFigure(b, where, errs) {
 		if (it && typeof it === "object" && !Array.isArray(it)) checkKeys(it, allowed, `${where}: figure ${b.kind} ${field}[${i + 1}]`, errs);
 	});
 	if (b.kind === "plot") checkPlotFns(spec, where, errs);
+	if (b.kind === "circuit" || b.kind === "drawing") checkDiagram(b.kind, spec, where, errs);
+}
+//#endregion
+//#region tools/lib/slides.mjs
+/** Validate the data a slide component reads, including each nested visual. */
+function checkSlides(b, where, errs) {
+	if (!Array.isArray(b.frames) || !b.frames.length) {
+		errs.push(`${where}: slides needs at least one frame`);
+		return;
+	}
+	for (const [i, frame] of b.frames.entries()) {
+		const at = `${where}: slide ${i + 1}`;
+		if (!frame || typeof frame !== "object" || Array.isArray(frame)) {
+			errs.push(`${at} must be a mapping`);
+			continue;
+		}
+		for (const key of Object.keys(frame)) if (![
+			"title",
+			"text",
+			"figure",
+			"image"
+		].includes(key)) errs.push(`${at}: unknown key "${key}"`);
+		if (!frame.title && !frame.text && !frame.figure && !frame.image) errs.push(`${at} is empty`);
+		if (frame.figure && frame.image) errs.push(`${at} can have one visual, figure or image`);
+		if (frame.figure) {
+			if (typeof frame.figure !== "object" || Array.isArray(frame.figure)) errs.push(`${at}: figure must be a mapping`);
+			else {
+				for (const key of Object.keys(frame.figure)) if (!["kind", "spec"].includes(key)) errs.push(`${at}: figure has unknown key "${key}"`);
+				checkFigure({
+					t: "figure",
+					...frame.figure
+				}, at, errs);
+			}
+		}
+		if (frame.image) {
+			if (typeof frame.image !== "object" || Array.isArray(frame.image)) errs.push(`${at}: image must be a mapping`);
+			else {
+				for (const key of Object.keys(frame.image)) if (!["src", "alt"].includes(key)) errs.push(`${at}: image has unknown key "${key}"`);
+				if (!String(frame.image.src || "").trim()) errs.push(`${at}: image has no src`);
+				if (!String(frame.image.alt || "").trim()) errs.push(`${at}: image has no alt text`);
+			}
+		}
+	}
 }
 //#endregion
 //#region src/lib/follows.js
@@ -30311,6 +30503,14 @@ R("figure", {
 		const cap = U.caption(env.fignum, b.cap);
 		return `<div class="figure">${cap ? `<span class="fcap">${cap}</span>` : ""}${body}</div>`;
 	}
+});
+R("slides", {
+	holds: "structure",
+	apart: true,
+	notes: "open",
+	defaultLabel: "Slides",
+	name: (b) => b.cap,
+	render: () => ""
 });
 R("image", {
 	holds: "structure",
@@ -30822,7 +31022,11 @@ for (const id of courses) {
 	let qCount = 0;
 	const figIds = /* @__PURE__ */ new Set();
 	for (const s2 of C.sections) for (const u of s2.subs) for (const b of u.blocks || []) {
-		if (!b || b.t !== "figure" && b.t !== "image" || !b.id) continue;
+		if (!b || ![
+			"figure",
+			"image",
+			"slides"
+		].includes(b.t) || !b.id) continue;
 		if (figIds.has(b.id)) errs.push(`${u.id}: two figures both claim id "${b.id}"`);
 		figIds.add(b.id);
 	}
@@ -30836,11 +31040,14 @@ for (const id of courses) {
 			}
 			if (!KNOWN.has(b.t) && !extraBlocks.has(b.t)) errs.push(`${where}: unknown block type "${b.t}"`);
 			if (b.t === "figure") checkFigure(b, where, errs);
+			if (b.t === "slides") checkSlides(b, where, errs);
 			if (b.tier && !TIERS.includes(b.tier)) errs.push(`${where}: unknown tier "${b.tier}" — one of ${TIERS.join(", ")}`);
 			if (b.notes && !NOTES_MODES.includes(b.notes)) errs.push(`${where}: unknown notes: "${b.notes}" — one of ${NOTES_MODES.join(", ")}`);
 			if (b.t === "attempt" && u.blocks.indexOf(b) !== 0) errs.push(`${where}: an "attempt" block may only be the first block of a subsection`);
 			if (b.t === "def" && b.term) namedTerms++;
 			if (b.t === "image" && !String(b.alt || "").trim()) errs.push(`${where}: image "${b.src}" has no alt text`);
+			const images = b.t === "image" ? [b] : b.t === "slides" ? (Array.isArray(b.frames) ? b.frames : []).map((frame) => frame?.image).filter(Boolean) : [];
+			for (const image of images) if (typeof image.src !== "string" || !image.src.trim() || !image.src.startsWith("assets/") || image.src.split("/").includes("..") || image.src.includes("\\") || !existsSync(join(COURSES, id, image.src))) errs.push(`${where}: missing image asset "${image.src}"`);
 			if (b.t === "math") {
 				if (!String(b.tex || "").trim()) errs.push(`${where}: a math block has no "tex"`);
 				else try {
@@ -30894,6 +31101,7 @@ for (const id of courses) {
 			for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
 			for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
 			if (Array.isArray(b.items)) b.items.forEach((v) => checkHtml(v, `${where} ${b.t} item`));
+			if (b.t === "slides" && Array.isArray(b.frames)) b.frames.forEach((frame, i) => checkHtml(frame?.text, `${where} slide ${i + 1} text`));
 			if (b.asides && typeof b.asides === "object") for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
 		}
 		for (const item of u.quiz || []) for (const k of HTML_FIELDS) if (item[k] != null) checkHtml(item[k], `${where} quiz "${item.type}".${k}`);

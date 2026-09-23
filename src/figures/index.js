@@ -8,6 +8,8 @@ import { plot } from "./plot.js";
 import { scatter } from "./scatter.js";
 import { svg } from "./svg.js";
 import { timing } from "./timing.js";
+import { circuit } from "./circuit.js";
+import { drawing } from "./drawing.js";
 
-export const Figures = { bar, flow, graph, grid, matrix, plot, scatter, svg, timing };
+export const Figures = { bar, circuit, drawing, flow, graph, grid, matrix, plot, scatter, svg, timing };
 export const KINDS = Object.keys(Figures);

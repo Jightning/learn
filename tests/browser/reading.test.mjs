@@ -30,7 +30,12 @@ const fixture = {
     { t: 'key', label: 'Long passage', core: 'Long passages must keep their actual reading line.', h: html },
     { t: 'key', label: 'After the passage', h: html },
     { t: 'key', core: 'A long review claim can also wrap across many lines. '.repeat(50), h: '<p>Further development.</p>' },
-    { t: 'key', core: 'More reading after the claim. '.repeat(100), h: html }
+    { t: 'key', core: 'More reading after the claim. '.repeat(100), h: html },
+    { t: 'slides', cap: 'A small algorithm', frames: [
+      { title: 'Input', text: '<p>Start with a value.</p>', figure: { kind: 'drawing', spec: { alt: 'Input box', shapes: [{ type: 'rect', x: 10, y: 10, w: 100, h: 50 }] } } },
+      { title: 'Transform', text: '<p>Apply the rule.</p>', figure: { kind: 'flow', spec: { steps: [{ label: 'Read' }, { label: 'Change' }] } } },
+      { title: 'Output', text: '<p>Return the result.</p>' }
+    ] }
   ] })
 };
 try {
@@ -94,6 +99,14 @@ try {
 
   await page.setViewportSize({ width: 1600, height: 1000 });
   await mode('Study');
+  const deck = row(12).locator('.slides');
+  check('slide starts on its first visual', await deck.locator('.slides-frame h4').innerText() === 'Input' && await deck.locator('svg.fx-drawing').count() === 1);
+  await deck.getByRole('button', { name: 'Next slide' }).click();
+  check('slide navigation replaces the visual and explanation', await deck.locator('.slides-frame h4').innerText() === 'Transform' && await deck.locator('.fx-flow').count() === 1);
+  await deck.getByRole('button', { name: 'Next slide' }).press('ArrowRight');
+  check('arrow keys advance slides and disable the last next button', await deck.locator('.slides-frame h4').innerText() === 'Output' && await deck.getByRole('button', { name: 'Next slide' }).isDisabled());
+  await deck.getByRole('button', { name: 'Previous slide' }).click();
+  check('previous slide returns to the prior frame', await deck.locator('.slides-frame h4').innerText() === 'Transform');
   await page.waitForTimeout(1000);
   // Save a live character in the middle of a long text node. Comparing its
   // position catches intra-block drift that checking the block top cannot.

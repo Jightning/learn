@@ -344,6 +344,10 @@ R("figure", { holds: "structure", apart: true, notes: "open", defaultLabel: "Fig
   return `<div class="figure">${cap ? `<span class="fcap">${cap}</span>` : ""}${body}</div>`;
 } });
 
+/* Slides render as a component in Section.jsx because navigation owns state. */
+R("slides", { holds: "structure", apart: true, notes: "open", defaultLabel: "Slides",
+              name: b => b.cap, render: () => "" });
+
 /* Per-course renderers are registered by ./custom.js, which main.jsx imports.
  * They live there rather than here because `import.meta.glob` is a bundler
  * feature and this module is also read by the Node tools — validate.mjs and

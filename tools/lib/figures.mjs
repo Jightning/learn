@@ -63,6 +63,51 @@ function checkPlotFns(spec, where, errs) {
   }
 }
 
+const finite = x => typeof x === "number" && Number.isFinite(x);
+const point = p => Array.isArray(p) && p.length === 2 && p.every(finite);
+
+function checkDiagram(kind, spec, where, errs) {
+  for (const key of ["w", "h"])
+    if (spec[key] != null && (!finite(spec[key]) || spec[key] <= 0))
+      errs.push(`${where}: figure ${kind} ${key} must be a positive number`);
+  if (kind === "circuit") {
+    for (const field of ["wires", "parts", "junctions"])
+      if (spec[field] != null && !Array.isArray(spec[field]))
+        errs.push(`${where}: circuit ${field} must be a list`);
+    if (!(spec.wires || []).length && !(spec.parts || []).length)
+      errs.push(`${where}: circuit needs wires or parts`);
+    for (const wire of Array.isArray(spec.wires) ? spec.wires : [])
+      if (!point(wire?.from) || !point(wire?.to)) errs.push(`${where}: circuit wire needs two [x, y] points`);
+    for (const part of Array.isArray(spec.parts) ? spec.parts : []) {
+      if (!part || !["resistor", "capacitor", "battery", "switch", "diode", "lamp", "source"].includes(part.type))
+        errs.push(`${where}: unknown circuit part "${part?.type}"`);
+      if (!finite(part?.x) || !finite(part?.y)) errs.push(`${where}: circuit part needs numeric x and y`);
+      if (part?.dir != null && !["h", "v"].includes(part.dir)) errs.push(`${where}: circuit part dir must be h or v`);
+    }
+    for (const p of Array.isArray(spec.junctions) ? spec.junctions : [])
+      if (!point(p)) errs.push(`${where}: circuit junction needs [x, y]`);
+  } else {
+    if (!String(spec.alt || "").trim()) errs.push(`${where}: drawing needs alt text`);
+    if (!Array.isArray(spec.shapes) || !spec.shapes.length) errs.push(`${where}: drawing needs shapes`);
+    for (const shape of Array.isArray(spec.shapes) ? spec.shapes : []) {
+      if (!shape || !["line", "arrow", "path", "rect", "ellipse", "text"].includes(shape.type)) {
+        errs.push(`${where}: unknown drawing shape "${shape?.type}"`); continue;
+      }
+      if (["line", "arrow", "path"].includes(shape.type) &&
+          (!Array.isArray(shape.points) || shape.points.length < 2 || !shape.points.every(point)))
+        errs.push(`${where}: drawing ${shape.type} needs at least two [x, y] points`);
+      if (["rect", "ellipse", "text"].includes(shape.type) &&
+          (!finite(shape.x) || !finite(shape.y))) errs.push(`${where}: drawing ${shape.type} needs numeric x and y`);
+      if (["rect", "ellipse"].includes(shape.type) &&
+          (!finite(shape.w) || shape.w <= 0 || !finite(shape.h) || shape.h <= 0))
+        errs.push(`${where}: drawing ${shape.type} needs positive w and h`);
+      if (shape.type === "text" && !String(shape.text || "").trim()) errs.push(`${where}: drawing text needs text`);
+      if (shape.accent != null && (!Number.isInteger(shape.accent) || shape.accent < 0 || shape.accent > 3))
+        errs.push(`${where}: drawing accent must be 0–3`);
+    }
+  }
+}
+
 /** Check one `{t:"figure", kind, spec}` block. `where` names the subsection. */
 export function checkFigure(b, where, errs) {
   const s = SPEC[b.kind];
@@ -101,4 +146,5 @@ export function checkFigure(b, where, errs) {
     });
 
   if (b.kind === "plot") checkPlotFns(spec, where, errs);
+  if (b.kind === "circuit" || b.kind === "drawing") checkDiagram(b.kind, spec, where, errs);
 }

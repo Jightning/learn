@@ -13,3 +13,10 @@ export function swipeIntent(dx, dy) {
 export function opensSidebar(dx, dy) {
   return dx >= OPEN_DISTANCE && dx >= Math.abs(dy) * HORIZONTAL_RATIO;
 }
+
+/** Direction for a slide deck: horizontal intent must be clear before a
+ * vertical page scroll can change frames. */
+export function slideSwipe(dx, dy) {
+  if (Math.abs(dx) < OPEN_DISTANCE || Math.abs(dx) <= Math.abs(dy) * HORIZONTAL_RATIO) return null;
+  return dx < 0 ? "next" : "previous";
+}

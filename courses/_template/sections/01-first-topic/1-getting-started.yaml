@@ -102,6 +102,10 @@ blocks:
         - {from: B, to: C, label: step}
         - {from: C, to: A, label: back}
 
+  # Compact visual data is usually cheaper to author and revise than an image.
+  # `circuit` and `drawing` examples, plus `slides` for state changes, are in
+  # docs/create_course.md §10.1. Every visual still needs a descriptive cap.
+
   # `depth` answers "why" and "what if". Nothing examinable belongs here: a
   # depth block is a promise that collapsing it costs the reader nothing on the
   # exam. Length is not the test; examinability is.
