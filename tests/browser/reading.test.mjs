@@ -20,11 +20,11 @@ const fixture = {
   'course.json': JSON.stringify({ code: 'DEMO', title: 'Reading tests' }),
   'sections/01-reading/_section.json': JSON.stringify({ title: 'Reading tests' }),
   'sections/01-reading/1-content.json': JSON.stringify({ title: 'Anchors and depth', blocks: [
-    note('First', 'First development.'), note('Second', 'Second development.'),
+    note('First', 'First development. See <f k="optional-drawing"/>.'), note('Second', 'Second development.'),
     { t: 'key', core: 'This claim has an explanation in the development.', h: '<p>Here is <n k="hidden">the hidden sentence</n> with more detail.</p>', asides: { hidden: 'Help for the hidden sentence.' } },
     { t: 'p', h: '<p>Unfamiliar <n k="prose">prose</n> can have a note too.</p>', asides: { prose: 'Help with this prose.' } },
     { t: 'ex', title: 'Optional worked case', tier: 'depth', follows: true, h: '<ol><li>Take the input.</li><li>Work out the answer.</li></ol>' },
-    { t: 'figure', tier: 'depth', follows: true, kind: 'svg', cap: 'Optional drawing', spec: { viewBox: '0 0 100 30', body: '<circle cx="15" cy="15" r="10" />' } },
+    { t: 'figure', id: 'optional-drawing', tier: 'depth', follows: true, kind: 'svg', cap: 'Optional drawing', spec: { viewBox: '0 0 100 30', body: '<circle cx="15" cy="15" r="10" />' } },
     { t: 'table', tier: 'depth', follows: true, cap: 'Optional table', split: 2, head: ['a','b','c'], rows: [['1','2','3'],['4','5','6']] },
     { t: 'code', tier: 'depth', follows: true, src: 'const x = 1;', lang: 'js' },
     { t: 'key', label: 'Long passage', core: 'Long passages must keep their actual reading line.', h: html },
@@ -57,8 +57,23 @@ try {
   await page.route('**/courses/demo.json', r => r.fulfill({ json: fixture }));
   await page.goto(server.origin + '/#/demo/s1-1');
   await page.locator('.nref').first().waitFor();
+  const citation = page.locator('[id="s1-1~0"] a.xr');
+  check('figure citation names the addressed block', await citation.getAttribute('href') === '#/demo/s1-1~5');
+  await citation.click();
+  await page.waitForTimeout(600);
+  check('figure citation reveals its collapsed tier', await rowFigure().isVisible());
+  const figureSeat = await rowFigure().evaluate(el => ({
+    top: el.getBoundingClientRect().top,
+    clear: document.querySelector('.topbar').getBoundingClientRect().bottom
+  }));
+  check('figure citation lands at the figure below the toolbar',
+    figureSeat.top >= figureSeat.clear - 8 && figureSeat.top < figureSeat.clear + 90,
+    JSON.stringify(figureSeat));
+  await page.locator('.pill.on').click();
+  await page.waitForTimeout(400);
   const mode = async label => { await page.locator('.modesw-b:visible', { hasText: label }).first().click(); await page.waitForTimeout(350); };
   const row = i => page.locator(`[id="s1-1~${i}"]`);
+  function rowFigure() { return page.locator('[id="s1-1~5"] .figure'); }
   for (const label of ['Study','Review','Names']) {
     await mode(label);
     const first = row(0), second = row(1);

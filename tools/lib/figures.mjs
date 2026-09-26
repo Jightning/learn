@@ -145,6 +145,11 @@ export function checkFigure(b, where, errs) {
         checkKeys(it, allowed, `${where}: figure ${b.kind} ${field}[${i + 1}]`, errs);
     });
 
+  if (b.kind === "grid")
+    for (const field of ["rowVars", "colVars", "rowLabels", "colLabels", "cells", "groups"])
+      if (spec[field] != null && !Array.isArray(spec[field]))
+        errs.push(`${where}: figure grid ${field} must be a list`);
+
   if (b.kind === "plot") checkPlotFns(spec, where, errs);
   if (b.kind === "circuit" || b.kind === "drawing") checkDiagram(b.kind, spec, where, errs);
 }

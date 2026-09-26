@@ -286,8 +286,6 @@ export default function App() {
   useEffect(() => {
     setMenuOpen(false);
     setSearchOpen(false);
-    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const behavior = calm ? "auto" : "smooth";
     /* A return goes back to the sentence, not to the heading above it. Every
        other arrival still lands on the subsection's own top, which is what a
        link to a subsection means. */
@@ -307,9 +305,9 @@ export default function App() {
          top of the screen. */
       land(el, Math.min(home.into, el.offsetHeight));
     } else if (el) {
-      el.scrollIntoView({ block: "start", behavior });
+      el.scrollIntoView({ block: "start", behavior: "instant" });
     } else if (!subId && scrollY > 0) {
-      scrollTo({ top: 0, behavior });
+      scrollTo({ top: 0, behavior: "instant" });
     }
     /* `section` is in the deps because of the split build: peek() returns
        nothing on a cold load, so the first pass of this effect runs before the
@@ -371,6 +369,19 @@ export default function App() {
     const sub = a.closest(".sub");
     nav.go(href, inProse,
            sub ? { id: sub.id, into: -sub.getBoundingClientRect().top } : null);
+  };
+
+  const onSidebarNavigate = e => {
+    setMenuOpen(false);
+    const href = e.currentTarget.getAttribute("href");
+    if (href !== location.hash) return;
+    const id = href.split("/").pop();
+    const target = document.getElementById(id);
+    if (!target) return;
+    /* A same-route link has no hashchange, so give the reader a fresh landing
+       even after they have scrolled away from the heading. */
+    e.preventDefault();
+    target.scrollIntoView({ block: "start", behavior: "instant" });
   };
 
   /* The one control on the site that can lose work. It lives on the
@@ -481,7 +492,7 @@ export default function App() {
       <div class={"shell" + (tucked ? " tucked" : "") + (course ? "" : " solo")}>
         {course && !tucked && (
           <Sidebar course={course} cid={cid} rest={rest} here={reading}
-                   open={menuOpen} onNavigate={() => setMenuOpen(false)}
+                   open={menuOpen} onNavigate={onSidebarNavigate}
                    onTuck={toggleTuck}
                    lane={lane} onLane={onLane}
                    due={dueHere} zoom={zoom} onZoomReset={() => setZoom(1)}

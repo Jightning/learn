@@ -4,6 +4,7 @@ import { drawing } from "../../src/figures/drawing.js";
 import { checkFigure } from "../../tools/lib/figures.mjs";
 import { checkSlides } from "../../tools/lib/slides.mjs";
 import { numberFigures } from "../../src/lib/figures.js";
+import { decorate } from "../../src/lib/refs.js";
 import { parseCourse } from "../../src/lib/parse.js";
 import { slideSwipe } from "../../src/lib/swipe.js";
 
@@ -61,6 +62,9 @@ assert.deepEqual(parseErrors, []);
 const block = course.sections[0].subs[0].blocks[0];
 assert.equal(block.frames[0].image.src, files["assets/step.png"]);
 assert.equal(numberFigures(course).numOf(block), "1.1");
+assert.equal(numberFigures(course).byKey.sequence.at, 0);
+assert.match(decorate('<f k="sequence"/>', "demo", numberFigures(course).byKey),
+  /href="#\/demo\/s1-1~0"/);
 const missing = { ...files };
 delete missing["assets/step.png"];
 assert.ok(parseCourse(missing).errors.some(e => e.includes('missing image asset "assets/step.png"')));

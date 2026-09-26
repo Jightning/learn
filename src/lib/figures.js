@@ -25,12 +25,12 @@ export function numberFigures(C) {
 
   (C.sections || []).forEach(s => {
     const n = { Figure: 0, Table: 0 };
-    (s.subs || []).forEach(sub => (sub.blocks || []).forEach(b => {
+    (s.subs || []).forEach(sub => (sub.blocks || []).forEach((b, at) => {
       if (!b || !KINDS[b.t]) return;
       const kind = KINDS[b.t];
       const num = `${s.num}.${++n[kind]}`;
       byBlock.set(b, num);
-      if (b.id) byKey[b.id] = { num, kind, subId: sub.id, cap: b.cap || b.alt || "" };
+      if (b.id) byKey[b.id] = { num, kind, subId: sub.id, at, cap: b.cap || b.alt || "" };
     }));
   });
 

@@ -126,8 +126,5 @@ npm run test:browser
 
 - Different questions answer functionalities (numeric allows for validated number input within a certain tolerance, multiple choice with any amount of answer choices, multiple select, etc.)
 - Better general quiz system. Currently it feels to confusing with very little customizability.
-- Big delay in mobile when selecting a section (sometimes requires clicking twice). Same applies to sub-sections.
-- Render error in ECE27000 4.3
-- Links to figures go to the top of the section rather than the exact figure.
 - Ability to save entire subsections from within the sidebar
 - Allow for bolding, italicization, highlighting, etc. (inline customization of block text)

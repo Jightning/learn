@@ -191,7 +191,14 @@ const ck = (name, ok, detail = "") => {
   one("a misspelt top-level key is caught", "bar", { bars: [], baselne: 0 }, 'unknown key "baselne"');
   one("so is one nested in a list item", "graph", { nodes: [{ id: "a", labe: "x" }] },
       'unknown key "labe"');
+  one("a scalar grid rowVars value is caught", "grid", { rowVars: "X" },
+      "figure grid rowVars must be a list");
+  one("a scalar grid colVars value is caught", "grid", { colVars: "YZ" },
+      "figure grid colVars must be a list");
   one("an unregistered kind is caught", "sankey", {}, 'unknown figure kind "sankey"');
+
+  ck("a grid with axis variable lists passes",
+     errsFor("grid", { rowVars: ["X"], colVars: ["Y", "Z"] }).length === 0);
 
   ck("a valid spec raises nothing",
      errsFor("graph", { layout: "row", nodes: [{ id: "a", label: "A", note: "n" }],

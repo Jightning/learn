@@ -240,6 +240,29 @@ export async function testCourseShell(ctx, cid) {
      JSON.stringify(narrow.queue));
   if (narrow.queue.length) ctx.sawQueueRow = true;
 
+  /* The active destination must still be a destination after the reader has
+     scrolled away. A same-hash anchor cannot trigger the router by itself. */
+  await go(`#/${cid}/${secIds[0]}`);
+  const firstSub = await page.locator('.sec.active .subs a').first().getAttribute('href');
+  const seat = id => page.evaluate(id => {
+    const el = document.getElementById(id);
+    return el ? el.getBoundingClientRect().top : null;
+  }, id);
+  await page.evaluate(() => scrollTo({ top: 1000, behavior: 'instant' }));
+  await page.locator('.mobnav').click();
+  await page.locator('.sec.active .sec-btn').click();
+  ck(P('one tap on the current section returns to its heading'),
+     (await seat(secIds[0])) < 140);
+  await page.locator('.mobnav').click();
+  await page.locator(`.sec.active .subs a[href="${firstSub}"]`).click();
+  ck(P('one tap opens a subsection on mobile'),
+     await page.evaluate(() => location.hash) === firstSub);
+  await page.evaluate(() => scrollTo({ top: 1000, behavior: 'instant' }));
+  await page.locator('.mobnav').click();
+  await page.locator(`.sec.active .subs a[href="${firstSub}"]`).click();
+  ck(P('one tap on the current subsection returns to its heading'),
+     (await seat(firstSub.split('/').pop())) < 140);
+
   /* The drawer opens from an intentional touch swipe, not from a vertical
      scroll whose finger happens to drift right or from a short adjustment. */
   await swipe([[30, 180], [42, 210], [95, 300]]);

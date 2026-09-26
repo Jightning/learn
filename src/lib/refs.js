@@ -4,6 +4,7 @@
 import { M } from "./math.js";
 import { textOf, strip, clip } from "./util.js";
 import { dropAnchors } from "./asides.js";
+import { blockId } from "./index.js";
 
 export function previewSub(SUBS, id) {
   const e = SUBS[id];
@@ -66,7 +67,7 @@ export const decorate = (html, cid, figs) =>
     .replace(/<f\s+k="([^"]+)"\s*\/?>/g, (_, k) => {
       const f = figs && figs[k];
       if (!f) return `<span class="xr-miss">figure “${k}”?</span>`;
-      return `<a class="xr" data-xr="${f.subId}" href="#/${cid}/${f.subId}">${f.kind || "Figure"} ${f.num}</a>`;
+      return `<a class="xr" data-xr="${f.subId}" href="#/${cid}/${blockId(f.subId, f.at)}">${f.kind || "Figure"} ${f.num}</a>`;
     });
 
 /** dependency edges between sections, for the map */
