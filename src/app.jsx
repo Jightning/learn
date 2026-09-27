@@ -165,13 +165,9 @@ export default function App() {
     return () => { live = false; };
   }, [cid]);
 
-  /* The cross-course due badge, from the index rather than from the courses.
-     queue.dueConcepts reads only `drills.keys` and the retention target, so
-     counting what is due never needs a course body — which is what lets the
-     badge be correct on first paint in a split build. */
-  const books = useMemo(() => ORDER
-    .map(c => ({ cid: c, C: INDEX[c], drills: { keys: (INDEX[c] || {}).drillKeys || [] } }))
-    .filter(b => b.drills.keys.length), []);
+  /* Count due concepts from saved learner state without fetching course bodies,
+     so the cross-course badge is ready on first paint. */
+  const books = useMemo(() => ORDER.map(c => ({ cid: c, C: INDEX[c] })), []);
   const due = books.length ? dueCount(books) : null;
   /* The same count narrowed to the open course, for the row in its own rail.
      A row that goes to this course's review must not report another course's
@@ -403,7 +399,7 @@ export default function App() {
     : rest === "explore" || rest.startsWith("explore/") ? "<b>Explore</b>"
     : rest.startsWith("cat/")
       ? `<b>Index</b>  ›  ${((course.cats || {})[rest.slice(4)] || {}).name || rest.slice(4)}`
-    : rest === "calibration" ? "<b>Calibration</b>"
+    : rest === "calibration" ? "<b>Practice history</b>"
     : rest === "map" || rest.startsWith("map/") ? "<b>Dependency map</b>"
     : rest.startsWith("primer/") ? "<b>Before you start</b>"
     : rest.startsWith("c/")
@@ -437,7 +433,7 @@ export default function App() {
   else if (rest === "practice") view = <Practice ctx={ctx} />;
   else if (rest.startsWith("practice/"))
     view = <Practice ctx={ctx} cat={rest.slice(9)} />;
-  else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} drills={drills} />;
+  else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} />;
   else if (rest === "explore") view = <Explore ctx={ctx} seed={null} />;
   else if (rest === "explore/saved")
     view = <Explore ctx={ctx} seed={{ saved: true }} depth={depth} />;

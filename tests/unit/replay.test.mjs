@@ -14,7 +14,7 @@ const check = (name, cond, extra = "") => {
   else { console.log(`  FAIL  ${name} ${extra}`); fail.push(name); }
 };
 
-const { step } = await import("../../src/lib/retention.js");
+const { step, phase } = await import("../../src/lib/retention.js");
 const { rateStep } = await import("../../src/lib/state.js");
 const { fold } = await import("../../src/lib/replay.js");
 
@@ -91,6 +91,15 @@ console.log("sanity");
 check("stability grew across reviews", replayed.retain.sep.s > 0);
 check("criterion tracked distinct items", replayed.retain.sep.items.length >= 2);
 check("a due date exists", replayed.retain.sep.dueAt > T0);
+
+/* New unified cards record the number of authored variants available for a
+ * concept. Replay must retain that bound, or a one-question concept becomes
+ * permanently stuck below the old three-item criterion after sync. */
+const solo = fold([{ id: "dev:solo", ts: T0, course: "c", loop: "Q", concept: "solo",
+  itemId: "solo:q1", correct: true, criterion: 1 }], cfg);
+check("Q rows replay an adaptive one-item criterion",
+  solo.retain.solo.criterion === 1 && phase(solo.retain.solo) === "criterion",
+  JSON.stringify(solo.retain.solo));
 
 console.log(fail.length ? `\n${fail.length} failing` : "\nall passing");
 process.exit(fail.length ? 1 : 0);

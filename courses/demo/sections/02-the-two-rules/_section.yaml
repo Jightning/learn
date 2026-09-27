@@ -13,4 +13,4 @@ primer:
     answer: |-
       No, they are separate decisions
     why: |-
-      <p>Promotion is forced by non-redundancy once an idea is used in three or more places, and costs one file and a link. Review is a scope choice that costs three drill items per concept. A course can promote widely and review narrowly.</p>
+      <p>Promotion is forced by non-redundancy once an idea is used in three or more places, and costs one file and a link. Review is a scope choice over answered concepts. A course can promote widely and review narrowly.</p>

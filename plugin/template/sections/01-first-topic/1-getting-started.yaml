@@ -194,25 +194,29 @@ blocks:
   #   cap: Where it came from
 
 quiz:
-  # One question per distinct question type; the validator rejects duplicates.
-  # The target is coverage of the question surface, not volume. Repetition for
-  # fluency belongs in drills/. Test two labels for distinctness by asking
-  # whether a reader could answer one and fail the other.
+  # One question per distinct skill; the validator rejects duplicates.
+  # The target is coverage of the question surface, not volume. Add a
+  # practice/<concept>.yaml bank only when another surface is useful.
   - type: Recall
-    concept: example-concept          # the identity a confident miss recruits
+    concept: example-concept
     q: What does this course examine first?
-    a: The first topic
-    why: <p>Explain the reasoning, and why the tempting wrong answer is tempting.</p>
-    why_prompt: What told you it was that one and not the other?
-    verified: 2026-01-01              # the date you last re-derived this answer
+    response:
+      kind: single
+      choices:
+        - {text: The first topic, why: It is the opening topic.}
+        - {text: The final topic, why: It appears later in the sequence.}
+      correct: 1
+    why: <p>The first topic is introduced before later dependencies.</p>
+    verified: true
 
   - type: Apply
     concept: example-concept
     q: Given a situation, what do you do?
-    a: The procedure
+    response:
+      kind: self
+      model: State the procedure and explain why its first step applies.
     why: <p>Show the steps so the answer is reusable.</p>
-    why_prompt: Which step is the one that decides the result?
-    verified: 2026-01-01
+    verified: true
 
   # A procedural subsection also carries an error-spotting item: correct
   # procedure first in an `ex` block, then a worked solution with one error the
@@ -220,7 +224,8 @@ quiz:
   # - type: Spot the error
   #   concept: example-concept
   #   q: <p>A student does this. Which step is wrong, and what is correct?</p>
-  #   a: Step 2, because …
+  #   response:
+  #     kind: self
+  #     model: Identify the incorrect step, explain the error, and correct it.
   #   why: <p>Why that read is tempting.</p>
-  #   why_prompt: Which quantity actually changed between those steps?
-  #   verified: 2026-01-01
+  #   verified: true

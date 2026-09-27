@@ -11,7 +11,7 @@ meta: Institution, Textbook
 theme:
   hue: 0
 
-# Learner state: spaced review, mastery, confidence tracking (localStorage).
+# Learner state: review and mastery tracking (localStorage).
 # Set enabled:false for a purely stateless reference site. That also gives up
 # the review loop, so only do it where a reference is all you want.
 state:
@@ -22,9 +22,8 @@ state:
 # pass lands and the course can never regress past what it has reached.
 audit:
   unsourced: 1      # claims (def/key/trap) whose source: is absent or ungrounded
-  unverified: 1     # answers with no verified: re-derivation date
-  unprompted: 1     # questions with no why_prompt
-  unrouted: 1       # questions that resolve to no concept in the drill bank
+  unverified: 1     # answers or variants without verified: true
+  unrouted: 1       # questions that resolve to no concept in the concept set
 
 # Optional: how table/grid cell values are coloured. Keys are cell contents,
 # values are CSS class names you define in `styles` below.

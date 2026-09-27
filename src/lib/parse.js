@@ -62,10 +62,11 @@ export function parseCourse(files) {
 
   const meta = read(metaPath) || {};
   const C = Object.assign(
-    { code: "", title: "", tagline: "", meta: "", concepts: {}, drills: {}, sections: [] },
+    { code: "", title: "", tagline: "", meta: "", concepts: {}, drills: {}, practice: {}, sections: [] },
     meta);
   C.concepts = Object.assign({}, meta.concepts || {});
   C.drills = {};
+  C.practice = {};
   C.cats = Object.assign({}, meta.cats || {});
 
   /* Categories are declared, never inferred (the M31 shape): one file per
@@ -89,6 +90,12 @@ export function parseCourse(files) {
     if (!body || typeof body !== "object") { errors.push(`${p}: not a mapping`); continue; }
     const key = body.concept || stem(p);
     C.drills[key] = { concept: key, items: body.items || [] };
+  }
+  for (const p of listing(files, "practice/")) {
+    const body = read(p);
+    if (!body || typeof body !== "object") { errors.push(`${p}: not a mapping`); continue; }
+    const key = body.concept || stem(p);
+    C.practice[key] = { concept: key, items: body.items || [] };
   }
 
   const cal = calibration(files["materials/expectations.md"]);
@@ -148,13 +155,22 @@ export function parseCourse(files) {
     else errors.push(`${where}: missing image asset "${image.src}"`);
   };
   for (const s of C.sections)
-    for (const u of s.subs)
+    for (const u of s.subs) {
       for (const b of u.blocks) {
         if (b?.t === "image") resolveImage(b, u.id);
         if (b?.t === "slides")
           for (const [i, frame] of (Array.isArray(b.frames) ? b.frames : []).entries())
             resolveImage(frame?.image, `${u.id} slide ${i + 1}`);
       }
+      for (const q of u.quiz) if (q.stimulus?.t === "image")
+        resolveImage(q.stimulus, `${u.id} question`);
+    }
+  for (const bank of Object.values(C.practice))
+    for (const item of bank.items) if (item.stimulus?.t === "image")
+      resolveImage(item.stimulus, `practice/${bank.concept}`);
+  for (const bank of Object.values(C.drills))
+    for (const item of bank.items) if (item.stimulus?.t === "image")
+      resolveImage(item.stimulus, `drills/${bank.concept}`);
 
   return { course: C, errors };
 }

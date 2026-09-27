@@ -1,7 +1,7 @@
 import { forCourse, toJSON, usage, fromJSON, all } from "../lib/log.js";
 import { invalidate } from "../lib/replay.js";
 import { useState } from "preact/hooks";
-import { confidenceBands, confidentMisses, modelBands } from "../lib/calibrate.js";
+import { modelBands } from "../lib/calibrate.js";
 import PrivacyNote from "./PrivacyNote.jsx";
 
 const pct = x => `${Math.round(x * 100)}%`;
@@ -10,17 +10,15 @@ const Bar = ({ v, label }) => (
   <span class="cal-bar" role="img" aria-label={label}><i style={`width:${Math.round(v * 100)}%`} /></span>
 );
 
-
-/* Where the site's claims about the reader and the model's claims about the
- * reader can both be checked. Every number here comes from the outcome log,
- * so nothing on this page is an argument from literature. */
+/* Compare scheduled predictions with recorded outcomes. */
 export default function Calibration({ ctx, onReset }) {
   const { cid } = ctx;
   const [note, setNote] = useState("");
   const rows = forCourse(cid);
-  const conf = confidenceBands(rows);
   const model = modelBands(rows);
-  const missed = confidentMisses(rows);
+  const answers = rows.filter(r => r.correct != null);
+  const misses = answers.filter(r => !r.correct).length;
+  const selfChecked = answers.filter(r => r.selfChecked).length;
 
   const save = () => {
     const url = URL.createObjectURL(new Blob([toJSON()], { type: "application/json" }));
@@ -43,48 +41,18 @@ export default function Calibration({ ctx, onReset }) {
 
   return (
     <div class="chub cal">
-      <h1>Calibration</h1>
+      <h1>Practice history</h1>
 
-      {/* What this page knows, said once.
-       *
-       * It opened on eight stat chips, seven of them reading 0 on a course
-       * nobody had answered in yet — a dashboard for an empty database, and the
-       * same deficit framing the course home used to lead with. Calibration has
-       * exactly one finding and it is the gap between what the reader believed
-       * and what happened; everything else here is a fold over the same rows
-       * and is already drawn in the two tables below.
-       *
-       * So the chips are gone and the finding is a sentence. Before there is
-       * anything to say, the page says that instead of saying it in zeros. */}
-      {rows.length === 0 ? (
+      {answers.length === 0 ? (
         <p class="cal-lede">
-          Nothing to calibrate yet. Answer a few questions. Predicting before you
-          reveal is what this page measures.
+          No answers recorded yet. Answer a few questions to see how your practice is going.
         </p>
       ) : (
         <p class="cal-lede">
-          {missed > 0
-            ? <>You were <b class="cal-miss">sure and wrong {missed} time{missed === 1 ? "" : "s"}</b> out
-              of {rows.length} answered. Those are the ones worth going back to: a confident
-              miss is the only error you cannot feel.</>
-            : <>{rows.length} answered, and nothing you were sure about turned out
-              wrong. Your confidence is tracking your accuracy.</>}
+          {answers.length} answered; {misses} marked for more work.
+          {selfChecked > 0 && <> {selfChecked} {selfChecked === 1 ? "answer was" : "answers were"} self-checked against a model answer.</>}
         </p>
       )}
-
-      <h2 class="cal-h">Confidence against correctness</h2>
-      <table class="cal-t">
-        <tbody>
-          {conf.map(r => (
-            <tr key={r.label}>
-              <th>{r.label}</th>
-              <td class="cal-c">{r.n}</td>
-              <td><Bar v={r.rate} label={`${pct(r.rate)} correct`} /></td>
-              <td class="cal-v">{r.n ? pct(r.rate) + " correct" : " "}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
 
       <h2 class="cal-h">Predicted against observed</h2>
       {model.length ? (

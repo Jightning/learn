@@ -1,0 +1,22 @@
+concept: non-redundancy
+items:
+  - q: Two subsections need the same idea. What does non-redundancy require?
+    response:
+      kind: self
+      model: Define the idea once and link to that definition from the other subsection.
+    why: One source prevents the copies from drifting out of agreement.
+    verified: 2026-09-02
+  - q: Which kinds of repetition does non-redundancy permit or prohibit?
+    response:
+      kind: multi
+      choices:
+        - {text: Repeat applications in practice, why: Repeated retrieval builds fluency.}
+        - {text: Repeat the full explanation in several places, why: Multiple sources can drift.}
+        - {text: Link to one definition from several places, why: Links provide access without copies.}
+      correct: [1, 3]
+    why: The rule governs explanatory sources; practice repetition serves retention.
+    verified: 2026-09-02
+  - q: An idea is used in four places. How many full definitions should the course keep?
+    response: {kind: number, value: 1, tolerance: 0, unit: definition}
+    why: Promote it to a concept and replace the other copies with links.
+    verified: 2026-09-02

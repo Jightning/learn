@@ -107,7 +107,8 @@ export function digest(dir) {
       term: c.term || key,
       review: !!c.review,
       body: !!c.body,
-      drills: (read(join(dir, "drills", `${key}.yaml`)).items || []).length
+      variants: (read(join(dir, "practice", `${key}.yaml`)).items ||
+        read(join(dir, "drills", `${key}.yaml`)).items || []).length
     };
   });
 
@@ -122,8 +123,8 @@ export function digest(dir) {
   const text = [
     sections.length ? "SECTIONS AND SUBSECTIONS (id, title, coverage)" : "",
     ...sections.map(s => [`${s.id} ${s.title}`, ...s.subs.map(u => "  " + u.line)].join("\n")),
-    concepts.length ? "\nCONCEPTS (key, term, review, drill items)" : "",
-    ...concepts.map(c => `  ${c.key} — ${c.term}${c.review ? " [review]" : ""} — ${c.drills} drills`),
+    concepts.length ? "\nCONCEPTS (key, term, practice variants)" : "",
+    ...concepts.map(c => `  ${c.key} — ${c.term} — ${c.variants} variants`),
     cats.length ? "\nCATEGORIES (key — name — boundary) — tag into these, never beside them" : "",
     ...cats.map(c => `  ${c.key} — ${c.name} — ${c.boundary.replace(/\s+/g, " ").trim()}`)
   ].filter(Boolean).join("\n");

@@ -54,7 +54,7 @@
 .ix-row:hover{background:var(--surface-2);box-shadow:0 0 0 6px var(--surface-2)}
 .ix-name{font-size:.97rem;font-weight:600;color:var(--ink);flex:0 1 auto;min-width:0}
 .ix-row:hover .ix-name{color:var(--hi-ink)}
-/* Retention phase, where the concept has a drill bank. Named in text rather
+/* Retention phase for an attempted concept. Named in text rather
    than by colour, which is why it is a word and not a dot. */
 .ix-badge{
   font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);flex:none;

@@ -2,24 +2,24 @@ import { useState } from "preact/hooks";
 import * as R from "../lib/retention.js";
 import { whyFor } from "../lib/why.js";
 import { ago } from "../lib/util.js";
-import Drill from "./Drill.jsx";
+import QuestionCard from "./QuestionCard.jsx";
 
 /* Where M13's unit and M27's unit meet: the concept is the thing with one
  * definition site, and it is also the thing the scheduler tracks. This is the
  * page a reader revises one idea from. */
 export default function ConceptState({ ctx, k }) {
-  const { C, cid, idx, drills } = ctx;
+  const { C, cid, idx } = ctx;
   const [item, setItem] = useState(null);
-  const items = drills.byConcept[k];
-  if (!items) return null;
+  const items = [...idx.QALL, ...idx.PALL].filter(q => q.concept === k);
+  if (!items.length) return null;
 
   const c = R.get(cid, k);
-  const near = (C.concepts[k].confusable_with || []).filter(x => drills.byConcept[x]);
-  const ids = [...items.map(d => d.id),
-               ...Object.keys(idx.CQ).filter(q => idx.CQ[q] === k)];
+  const near = (C.concepts[k].confusable_with || []).filter(x =>
+    [...idx.QALL, ...idx.PALL].some(q => q.concept === x));
+  const ids = items.map(d => d.id);
   const reasons = whyFor(cid, ids).slice(0, 5);
 
-  const start = () => { R.contact(cid, k); setItem(drills.pick(k, (c && c.items) || [])); };
+  const start = () => setItem(items.find(q => !(c?.items || []).includes(q.id)) || items[0]);
 
   return (
     <div class="cstate">
@@ -39,9 +39,9 @@ export default function ConceptState({ ctx, k }) {
       )}
 
       {item
-        ? <Drill cid={cid} C={C} item={item} onDone={() => setItem(null)} />
+        ? <QuestionCard item={item} ctx={ctx} onContinue={() => setItem(null)} />
         : <button class="dbtn" id="c-drill" onClick={start}>
-            Drill this<i class="sep" aria-hidden="true" />{items.length} item{items.length === 1 ? "" : "s"} →
+            Practice this<i class="sep" aria-hidden="true" />{items.length} question{items.length === 1 ? "" : "s"} →
           </button>}
 
       {reasons.length > 0 && (
@@ -53,7 +53,6 @@ export default function ConceptState({ ctx, k }) {
                 <q>{r.text}</q>
                 <span class="creason-m">
                   {ago(r.ts)}{r.correct === false ? ", wrong" : r.correct ? ", right" : ""}
-                  {r.conf === "sure" ? ", confident" : ""}
                 </span>
               </li>
             ))}

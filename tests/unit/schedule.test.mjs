@@ -84,9 +84,13 @@ const ck = (name, ok, detail = "") => {
   ck("a miss revokes durable", R.phase(R.get("c", "k")) !== "durable");
 
   store.clear();
-  R.recruit("c", "x");
-  const rec = R.get("c", "x");
-  ck("a recruit is due within a day", rec.dueAt - Date.now() <= DAY + 1000);
+  R.answer("c", "solo", { itemId: "solo:q1", correct: true, conf: null,
+    criterion: 1, now: t0 });
+  const solo = R.get("c", "solo");
+  ck("one available question can reach its criterion", R.phase(solo) === "criterion",
+     R.label(solo));
+  ck("the reduced criterion is retained for later review", solo.criterion === 1 && solo.dueAt > t0,
+     JSON.stringify(solo));
 }
 
 console.log(failed ? `\n${failed} failed` : "\nscheduler ok");

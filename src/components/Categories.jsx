@@ -4,7 +4,7 @@ import { present } from "../lib/gist.js";
 import { decorate } from "../lib/refs.js";
 import { renderBlock } from "../blocks/index.js";
 import { monogram } from "./CatChip.jsx";
-import { dueCount } from "../lib/queue.js";
+import { dueKeys } from "../lib/retention.js";
 
 /* One category's page. The hub that used to sit above it is now the Kinds band
  * of the index (components/Index.jsx), which also says why.
@@ -57,7 +57,7 @@ function Member({ r, ctx, depth }) {
   );
 }
 
-export function CatDetail({ ctx, k, drills }) {
+export function CatDetail({ ctx, k }) {
   const { C, cid, idx } = ctx;
   const v = catView(C, idx.CAT, k);
   /* Reading the whole category at once is the lookup case this page exists
@@ -65,12 +65,8 @@ export function CatDetail({ ctx, k, drills }) {
   const [depth, setDepth] = useState("notes");
   if (!v) return null;
 
-  /* buildQueue and dueCount read only `keys`, `pick` and `cluster`, so a
-     category scopes the queue by handing them a narrower key list. Derived
-     from the concepts in this category — never authored on the drill item,
-     which already names its concept (M27). */
-  const due = v.drills.length && drills && drills.has
-    ? dueCount([{ cid, C, drills: { ...drills, keys: v.drills } }]) : 0;
+  /* Only encountered concepts in this category contribute to its due count. */
+  const due = dueKeys(cid).filter(k => v.drills.includes(k)).length;
 
   return (
     <div class="cdet catdet">

@@ -1,0 +1,24 @@
+concept: confidence
+items:
+  - q: What happens after a learner answers or skips a question?
+    response:
+      kind: self
+      model: Immediate feedback appears, the result is recorded, and Continue advances the session.
+    why: The unified flow gives feedback before the learner moves on.
+    verified: 2026-09-06
+  - q: Which outcome puts a concept into Review?
+    response:
+      kind: single
+      choices:
+        - {text: Any answered concept, why: Answered concepts enter Review automatically.}
+        - {text: Reading alone, why: Reading does not create an answer history.}
+        - {text: Only a missed answer, why: Misses receive more weight but are not the only enrollment path.}
+      correct: 1
+    why: Review enrollment follows answered concepts; selection later weights misses and challenging outcomes.
+    verified: 2026-09-06
+  - q: What does Needs work do on a self-check card?
+    response:
+      kind: self
+      model: It records a challenging outcome, so the concept receives more weight in later Review.
+    why: Self-check feedback supplies a learner-reported challenge signal without a confidence prompt.
+    verified: 2026-09-06

@@ -1,4 +1,4 @@
-/* Learner state: confidence calibration and spaced review, per course. */
+/* Per-question outcomes for coverage and later practice. */
 import { getItem, setItem, removeItem } from "./store.js";
 const DAY = 864e5;
 const cache = {};
@@ -13,12 +13,13 @@ export const keyFor = (id, code) => "study:" + String(code || id).replace(/\s+/g
    is the only reason two devices can be merged without losing either. */
 export function rateStep(prev, conf, got, now = Date.now()) {
   const r = prev ? { ...prev } : { reps: 0, ease: 2.3, iv: 0, due: 0 };
-  if (conf != null) r.conf = conf ? 1 : 0;
+  if (conf === null) delete r.conf;
+  else if (conf != null) r.conf = conf ? 1 : 0; /* old imported rows */
   if (got != null) {
     r.got = got ? 1 : 0; r.reps++;
     if (got) {
       r.iv = r.iv ? Math.round(r.iv * r.ease) : 1;
-      r.ease = Math.min(3, r.ease + (r.conf ? 0.05 : 0.12));
+      r.ease = Math.min(3, r.ease + (r.conf === 1 ? 0.05 : 0.12));
     } else {
       r.iv = 0; r.ease = Math.max(1.4, r.ease - 0.25);
     }
@@ -47,7 +48,7 @@ export function stateFor(id, course) {
   return (cache[id] = {
     on,
     get: qi => d.q[qi],
-    /* conf: predicted success before revealing.  got: actual outcome. */
+    /* `conf` is accepted only for replaying legacy rows. */
     rate(qi, conf, got) {
       d.q[qi] = rateStep(d.q[qi], conf, got);
       save(); return d.q[qi];
@@ -57,27 +58,23 @@ export function stateFor(id, course) {
        library shows it before a course is fetched, and the ids live in the
        course. Unanswered questions are due by definition, so the two agree. */
     summary(total) {
-      const s = { seen: 0, got: 0, missed: 0, over: 0, under: 0, due: 0, total };
+      const s = { seen: 0, got: 0, missed: 0, due: 0, total };
       for (const r of Object.values(d.q)) {
         if (!r || r.got == null) continue;
         s.seen++;
         if (r.got) s.got++; else s.missed++;
-        if (r.conf === 1 && !r.got) s.over++;
-        if (r.conf === 0 && r.got) s.under++;
         if (r.due <= Date.now()) s.due++;
       }
       s.due += Math.max(0, total - s.seen);
       return s;
     },
     stats(ids) {
-      const s = { seen: 0, got: 0, missed: 0, over: 0, under: 0, due: 0, total: ids.length };
+      const s = { seen: 0, got: 0, missed: 0, due: 0, total: ids.length };
       ids.forEach(qi => {
         const r = d.q[qi];
         if (!r || r.got == null) { s.due++; return; }
         s.seen++;
         if (r.got) s.got++; else s.missed++;
-        if (r.conf === 1 && !r.got) s.over++;      /* the useful signal */
-        if (r.conf === 0 && r.got) s.under++;
         if (r.due <= Date.now()) s.due++;
       });
       return s;

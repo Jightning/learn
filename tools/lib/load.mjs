@@ -6,7 +6,8 @@
  *   courses/<id>/
  *     course.yaml                metadata, theme, state, syntax, styles
  *     concepts/<key>.yaml        one file per recurring concept
- *     drills/<key>.yaml          one file per concept: the retention pool
+ *     practice/<key>.yaml        optional question variants for a concept
+ *     drills/<key>.yaml          older course format, adapted at read time
  *     materials/expectations.md  front matter: the exam, and the review-set basis
  *     sections/NN-slug/
  *       _section.yaml            title + blurb for the section
@@ -78,11 +79,12 @@ export function loadCourse(dir) {
 
   const meta = parseFile(metaPath) || {};
   const C = Object.assign(
-    { code: "", title: "", tagline: "", meta: "", concepts: {}, drills: {}, sections: [] },
+    { code: "", title: "", tagline: "", meta: "", concepts: {}, drills: {}, practice: {}, sections: [] },
     meta
   );
   C.concepts = Object.assign({}, meta.concepts || {});
   C.drills = {};
+  C.practice = {};
   C.cats = Object.assign({}, meta.cats || {});
 
   /* ---- categories: one file per category, key from the filename ---- */
@@ -110,6 +112,13 @@ export function loadCourse(dir) {
     const body = parseFile(join(ddir, f));
     if (!body || typeof body !== "object") { errors.push(`drills/${f}: not a mapping`); continue; }
     C.drills[body.concept || key] = { concept: body.concept || key, items: body.items || [] };
+  }
+  const pdir = join(dir, "practice");
+  for (const f of dataFiles(pdir)) {
+    const key = basename(f, extname(f));
+    const body = parseFile(join(pdir, f));
+    if (!body || typeof body !== "object") { errors.push(`practice/${f}: not a mapping`); continue; }
+    C.practice[body.concept || key] = { concept: body.concept || key, items: body.items || [] };
   }
 
   /* ---- calibration: the exam aimed at, and why the review set is what it is ---- */

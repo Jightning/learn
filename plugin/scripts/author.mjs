@@ -2778,7 +2778,7 @@ function digest(dir) {
 			term: c.term || key,
 			review: !!c.review,
 			body: !!c.body,
-			drills: (read(join(dir, "drills", `${key}.yaml`)).items || []).length
+			variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
 		};
 	});
 	const cats = dataFiles(join(dir, "categories")).map((f) => {
@@ -2798,8 +2798,8 @@ function digest(dir) {
 		text: [
 			sections.length ? "SECTIONS AND SUBSECTIONS (id, title, coverage)" : "",
 			...sections.map((s) => [`${s.id} ${s.title}`, ...s.subs.map((u) => "  " + u.line)].join("\n")),
-			concepts.length ? "\nCONCEPTS (key, term, review, drill items)" : "",
-			...concepts.map((c) => `  ${c.key} — ${c.term}${c.review ? " [review]" : ""} — ${c.drills} drills`),
+			concepts.length ? "\nCONCEPTS (key, term, practice variants)" : "",
+			...concepts.map((c) => `  ${c.key} — ${c.term} — ${c.variants} variants`),
 			cats.length ? "\nCATEGORIES (key — name — boundary) — tag into these, never beside them" : "",
 			...cats.map((c) => `  ${c.key} — ${c.name} — ${c.boundary.replace(/\s+/g, " ").trim()}`)
 		].filter(Boolean).join("\n")
@@ -3084,6 +3084,7 @@ const titleCase = (s) => {
 };
 /** A line's heading and the prose it runs into, or null when it is not one. */
 function headingOf(line) {
+	if (line.length > 1e3) return null;
 	const marked = /^##+\s+(.+?)\s*$/.exec(line);
 	if (marked) return {
 		heading: marked[1],
@@ -3103,9 +3104,13 @@ function headingOf(line) {
 	return null;
 }
 const bare = (s) => s.replace(/^\d+(\.\d+)*\s+/, "").replace(/\s+/g, " ").trim();
+function readableHtml(html) {
+	return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<img\b[^>]*>/gi, " ").replace(/<h1\b[^>]*>/gi, "\n# ").replace(/<h[2-6]\b[^>]*>/gi, "\n## ").replace(/<\/h[1-6]>/gi, "\n").replace(/<\/(?:p|li|section|div)>/gi, "\n\n").replace(/<[^>]+>/g, " ").replace(/&(?:nbsp|#160);/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&#(?:39|x27);/gi, "'");
+}
 /** Text split into the topics its headings name. Text before any heading
 belongs to the `# ` title, or to "(untitled)". */
 function topics(md) {
+	if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
 	const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
 	const out = [{
 		heading: title,
@@ -3407,7 +3412,7 @@ const DRAFTER = {
 		],
 		mt: ["4*"]
 	},
-	drills: {
+	variants: {
 		cc: [
 			"0",
 			"1*",
@@ -3492,7 +3497,7 @@ const warn = (text) => {
 function pointer(p) {
 	if (!p.courseDone) return `Next: steps 0-4 above, then \`author write ${id}\`.`;
 	const u = p.todo[0];
-	if (!u) return `Next: the drills, then \`author finish ${id}\`.`;
+	if (!u) return `Next: add useful practice variants, then \`author finish ${id}\`.`;
 	const sec = p.d.sections.find((s) => s.subs.includes(u));
 	return [
 		`Next: ${u.id} ${u.title}  (${p.done.length}/${p.d.subs.length} done)`,
@@ -3509,7 +3514,7 @@ function briefText(which, reader) {
 		"1. materials/expectations.md: every source topic taught, bridged, or under Skip with a reason.",
 		"2. sections/NN-slug/_section.yaml for each section, and for each subsection a sections/NN-slug/N-slug.yaml holding only its title.",
 		"3. categories/<key>.yaml, or none if the material has no such kinds.",
-		`4. The concept set: ideas used in three or more places, and which of them are the review set. course-drafter writes each concepts/<key>.yaml (rules: .author/${id}/rules-concepts.md).`,
+		`4. The concept set: ideas used in three or more places. course-drafter writes each concepts/<key>.yaml (rules: .author/${id}/rules-concepts.md).`,
 		`Then \`author write ${id}\`, which gives you the writing rules and the first subsection.`
 	] : [
 		"For each subsection, finished before the next begins:",
@@ -3519,7 +3524,7 @@ function briefText(which, reader) {
 		"    A source topic you do not teach gets a YAML comment at the top of the file: `# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",
 		confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",
 		`  - \`author done ${id} <sN-M> <source>...\` records it and names the next one. Its warnings are advice, not gates: fix what is worth fixing and carry on.`,
-		`When none are left: course-drafter writes drills/<key>.yaml for each review concept (rules: .author/${id}/rules-drills.md)` + (confident ? ", whose answers you then check" : "") + `, then \`author finish ${id}\`.`
+		`When none are left: add practice/<key>.yaml variants where another surface is needed (rules: .author/${id}/rules-variants.md)` + (confident ? ", then independently check their answers" : "") + `; then \`author finish ${id}\`.`
 	];
 	return [
 		`# ${which === "course" ? "Steps 0-4: the shape of the course" : "Steps 5-7: writing it"}${lean ? " (lean)" : ""}. Today is ${today}.`,
@@ -3565,7 +3570,7 @@ const commands = {
 			say(outline(roots$1, files) || "(none)");
 			say("");
 		} else say("## Sources\n\nNone. Research them (course-researcher), rerun with --source PATH, or write from what you know and mark every def, key and trap `source: generated`.\n");
-		say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-drills.md\n`);
+		say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-variants.md\n`);
 		if (p.courseDone || p.d.subs.length) {
 			say(`The course already has its sections. \`author write ${id}\` for the writing rules.`);
 			if (!p.courseDone) warn("steps 0-4 were never recorded; `author write` records them");
@@ -3613,8 +3618,6 @@ const commands = {
 		const run = (name, ...a) => spawnSync(process.execPath, [script(name), ...a], { encoding: "utf8" });
 		const p = progress();
 		if (p.todo.length) warn(`not written yet: ${p.todo.map((u) => u.id).join(", ")}`);
-		const noDrills = p.d.concepts.filter((c) => c.review && !c.drills).map((c) => c.key);
-		if (noDrills.length) warn(`review concepts with no drills: ${noDrills.join(", ")}`);
 		const g = run("gen-materials", id);
 		say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
 		const errs = (run("validate", id).stdout || "").split("\n").filter((l) => /✗/.test(l));

@@ -15,7 +15,7 @@ A course is the specific thing you want to learn/study (like a class, or certain
 3. Click on the course to enter. There'll be a sidebar with all the course sections, and the different features:
     - **Index** provides and overview of the course concepts and categories.
     - **Mixed Practice** is for practice questions. [Questions](#questions) explains the practice types.
-    - **Review** pulls questions from, concepts you've drilled, and question types you were confident in but missed.
+    - **Review** pulls questions from concepts you've attempted, including optional practice variants.
     - **Dependency Map** demonstrates how sections connect to each other.
     - **Explore**
         - The Discover section allow you to quickly find needed information.
@@ -32,9 +32,16 @@ A course is the specific thing you want to learn/study (like a class, or certain
 
 ### Questions
 
-**Drills**: These are question variations. They are meant for repeat practice to ensure something sticks. The questions are provided in a given format with distinct answer choices.
+**Practice variants**: These are optional question variations in
+`practice/<concept>.yaml`. Add them when a skill needs another surface, context,
+or difficulty; a quiz can stand alone.
 
-**Question Types**: These are the unique questions you may encounter in a test. The thought behind these, is that a given test is usually limited in what types of questions can appear. They help ensure understanding what was taught, and appear after each sub-section.
+**Questions**: Each subsection has one item per distinct skill. Questions use a
+typed `response:` mapping: single choice, multiple choice, number, or self
+response. Subsection questions appear one at a time with arrows below the card.
+After a choice answer, the same card highlights the correct options and explains
+each choice. Review considers all attempted concepts, and Mixed Practice can be
+limited to a subsection range.
 
 ## Writing a course
 
@@ -124,7 +131,5 @@ npm run test:browser
 
 ## Todo
 
-- Different questions answer functionalities (numeric allows for validated number input within a certain tolerance, multiple choice with any amount of answer choices, multiple select, etc.)
-- Better general quiz system. Currently it feels to confusing with very little customizability.
 - Ability to save entire subsections from within the sidebar
 - Allow for bolding, italicization, highlighting, etc. (inline customization of block text)

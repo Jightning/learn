@@ -89,7 +89,7 @@ export default function IndexPage({ ctx }) {
               return (
                 <Row key={k} href={`#/${cid}/c/${k}`}
                      name={C.concepts[k].term || k}
-                     badge={drills.byConcept[k] ? phaseLabel(get(cid, k)) : null}
+                     badge={get(cid, k) ? phaseLabel(get(cid, k)) : null}
                      at={at.length
                        ? at.slice(0, 6).join("  ") + (at.length > 6 ? "  +" + (at.length - 6) : "")
                        : "not yet cited"} />

@@ -150,8 +150,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
             const c = courses[id];
             const st = stateFor(id, c);
             const s = st.on ? st.summary(c.questions) : null;
-            const keys = c.drillKeys || [];
-            const due = keys.length ? counts(id, keys).due : 0;
+            const due = counts(id).due;
             /* Removal means "delete" for a course this device installed and
                "hide" for one bundled with the site — the demo is a guide, and a
                guide you have finished should not be permanent furniture. */

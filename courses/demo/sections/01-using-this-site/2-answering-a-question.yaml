@@ -3,95 +3,103 @@ blocks:
   - t: attempt
     label: Before you read this
     core: |-
-      Predicting and explaining both cost time, and neither is graded.
+      Answering or skipping is quick; feedback appears immediately and Continue moves you on.
     h: |-
-      <p>The quiz below this text asks how confident you are before it shows you anything, and then asks you to type why. Both cost you time, and neither is graded.</p>
+      <p>Every question follows one flow: answer or skip, see immediate feedback, then press <b>Continue</b>. A self-check question shows its model answer and asks whether you got it or need work. The recorded <c k="confidence">answer outcome</c> supports later Review; there is no confidence gate and no reason field to complete before feedback.</p>
 
   - t: def
     cat: retrieval-surfaces
     source: docs/code_truth.md T18
-    term: Confidence
+    term: Immediate feedback
     label: The step before the answer
     core: |-
-      Every question asks you to predict, in one tap, whether you will get it right, before the answer is reachable.
+      Every question reports its result immediately after an answer or skip.
     h: |-
-      <p>The prediction is never graded. It is stored beside the outcome so the two can be compared, and the comparison is the point: <b>a wrong answer you were sure about</b> is a different problem from one you knew you were guessing at.</p>
+      <p>Immediate feedback keeps the learner moving: a graded response shows whether it was correct, while a self-check reveals the model answer. The outcome is recorded so Review can weight missed and challenging concepts later.</p>
 
   - t: key
     source: docs/code_truth.md T32
-    label: Then you say why
+    label: Then you continue
     cat: retrieval-surfaces
     core: |-
-      The reveal is gated behind a reason in your own words.
+      Feedback is visible before the learner continues.
     h: |-
-      <p>Typing it is retrieval: you produce the idea instead of recognising it, and recognition is what makes re-reading feel like learning when it is not. The text stays on this device. Nothing reads it but you.</p>
+      <p>Pressing <b>Continue</b> records the result and advances the queue. A skipped item remains an honest miss for later weighting; a self-check offers <b>Got it</b> and <b>Needs work</b> after its model answer.</p>
 
   - t: trap
     source: docs/code_truth.md T15
-    label: Peeking costs the whole exercise
+    label: Skipping is allowed
     core: |-
-      The answer is hidden not to be strict, but because seeing it first replaces the one event that builds memory.
+      You may skip when you cannot answer; the result still becomes part of the learning history.
     h: |-
-      <p>If you genuinely cannot produce anything, say so with a low-confidence answer and let the miss route the concept into review. That beats a revealed answer you nodded along to.</p>
+      <p>If you cannot produce anything, press <b>Skip</b>. The card gives immediate feedback and Continue keeps the session moving. Self-check cards show their model answer and let you choose <b>Got it</b> or <b>Needs work</b>.</p>
 
   - t: ex
     source: docs/architecture.md §3e
     title: What one answer sets in motion
     core: |-
-      One confident miss records a failed type, enrols the concept, drills it, and adds to your overconfident count.
+      Every answered concept is eligible for Review, with misses and challenging items weighted more heavily.
     h: |-
       <ol>
-        <li>You mark <b>high confidence</b> and answer.</li>
-        <li>You get it wrong. The subsection records the question type as attempted and failed.</li>
-        <li>Because you were confident, the concept behind it is pulled into spaced review and drilled before you leave the page.</li>
-        <li>The calibration page adds one to your overconfident count, the number worth studying by.</li>
+        <li>You answer, or press <b>Skip</b>.</li>
+        <li>Immediate feedback appears and the result is recorded.</li>
+        <li>The concept becomes eligible for Review; missed and challenging items receive more weight.</li>
+        <li>Press <b>Continue</b> to move to the next card.</li>
       </ol>
 
   - t: p
     tier: apply
     source: docs/architecture.md §2
     h: |-
-      The same shape appears in mixed practice and in review: predict, answer, say why, see the result. Learning one interaction is enough for every surface in the site.
+      The same shape appears in <b>Mixed Practice</b> and in <b>Review</b>: answer or skip, see feedback, press Continue. Learning one interaction is enough for every surface in the site.
 
   - t: note
     tier: depth
     source: docs/code_truth.md T18
     label: Why the prediction is worth a tap
     core: |-
-      Only the disagreement between confidence and correctness is diagnostic.
+      Review weighting uses the recorded outcome and challenge signals.
     h: |-
-      <p>Confidence and correctness are different quantities, and only their <em>disagreement</em> is diagnostic. A reader who is right and knew it needs nothing; a reader who is wrong and knew it needs practice; a reader who is wrong and sure needs to be interrupted. Without the prediction, the third case is invisible and looks exactly like the second.</p>
+      <p>A miss is useful feedback, not a reason to stop. Review automatically enrolls answered concepts, then gives extra weight to missed and challenging items so the queue stays focused.</p>
 
 quiz:
-  - type: Interpret a confidence outcome
+  - type: Interpret immediate feedback
     concept: confidence
     q: |-
-      Two readers both miss the same question. One marked high confidence, the other low. Should the site treat them the same?
-    a: |-
-      No. The confident miss is recruited into spaced review and drilled straight away; the hesitant miss is left to ordinary practice.
+      A reader skips a question. What happens next?
+    response:
+      kind: single
+      choices:
+        - text: Immediate feedback appears, the result is recorded, and Continue advances the session.
+          why: Skip is a valid response and still supplies a result for later Review weighting.
+        - text: The question disappears without a record.
+          why: Skips remain part of the learning history.
+        - text: The learner must complete an extra prediction step before continuing.
+          why: The current flow goes directly from response to feedback and Continue.
+      correct: 1
     why: |-
-      <p>A hesitant miss is a known gap, so that reader can return to the material. A confident miss is a belief that is wrong, and beliefs do not correct themselves by being contradicted once, which is why that case gets the extra retrieval immediately.</p>
+      <p>A skipped or incorrect response is still recorded. Review uses missed and challenging outcomes to prioritize later retrieval.</p>
     why_prompt: Which of the two readers already knows they have a problem?
     verified: 2026-09-06
 
   - type: Explain a design rule
     concept: confidence
     q: |-
-      Why is the worked answer hidden until you have typed a reason?
+      What does a self-check question show after the learner responds?
     a: |-
       Because producing the idea from memory is what builds it; reading a correct answer produces recognition, which feels like knowing and is not.
     why: |-
-      <p>The gate is cheap and the effect is large: the reason prompt is the site's single strongest lever on transferring what you learn to a question you have not seen.</p>
+      <p>A self-check reveals its model answer and offers Got it or Needs work, so the learner can record an honest outcome without a fake confidence step.</p>
     why_prompt: What is the difference between recognising an answer and producing one?
     verified: 2026-09-06
 
   - type: Spot the error
     concept: confidence
     q: |-
-      A reader decides to always mark low confidence, "to be safe". What does that cost them?
+      A reader selects Needs work after seeing a self-check model answer. What does that do?
     a: |-
-      The overconfidence count goes to zero and the recruitment seam stops firing, so the site can no longer tell them which beliefs are wrong.
+      It records a challenging outcome, so the concept receives more weight in later Review.
     why: |-
-        <p>The tempting reading is that confidence is a score to protect. It is an input, not a grade: understating it destroys the only signal that separates a gap you know about from one you do not.</p>
-    why_prompt: What is the confidence tap actually measuring, if not how well you are doing?
+        <p>Needs work is an honest self-check result. It helps the queue focus on material that still needs retrieval.</p>
+    why_prompt: Which Review items receive more weight?
     verified: 2026-09-06

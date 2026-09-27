@@ -8,9 +8,9 @@ const idOf = (key, i) => `${key}:d${i + 1}`;
 
 export function indexDrills(C) {
   const byConcept = {};
-  for (const [key, file] of Object.entries(C.drills || {})) {
+  for (const [key, file] of Object.entries({ ...(C.drills || {}), ...(C.practice || {}) })) {
     const items = (file.items || []).map((it, i) =>
-      ({ ...it, id: idOf(key, i), concept: key }));
+      ({ ...it, id: C.practice?.[key] ? `${key}:p${i + 1}` : idOf(key, i), concept: key }));
     if (items.length) byConcept[key] = items;
   }
   const keys = Object.keys(byConcept);

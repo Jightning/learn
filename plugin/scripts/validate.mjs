@@ -2672,10 +2672,12 @@ function loadCourse(dir) {
 		meta: "",
 		concepts: {},
 		drills: {},
+		practice: {},
 		sections: []
 	}, meta);
 	C.concepts = Object.assign({}, meta.concepts || {});
 	C.drills = {};
+	C.practice = {};
 	C.cats = Object.assign({}, meta.cats || {});
 	const catdir = join(dir, "categories");
 	for (const f of dataFiles(catdir)) {
@@ -2706,6 +2708,19 @@ function loadCourse(dir) {
 			continue;
 		}
 		C.drills[body.concept || key] = {
+			concept: body.concept || key,
+			items: body.items || []
+		};
+	}
+	const pdir = join(dir, "practice");
+	for (const f of dataFiles(pdir)) {
+		const key = basename(f, extname(f));
+		const body = parseFile(join(pdir, f));
+		if (!body || typeof body !== "object") {
+			errors.push(`practice/${f}: not a mapping`);
+			continue;
+		}
+		C.practice[body.concept || key] = {
 			concept: body.concept || key,
 			items: body.items || []
 		};
@@ -30163,6 +30178,16 @@ function checkFigure(b, where, errs) {
 	for (const [field, allowed] of Object.entries(s.items || {})) (Array.isArray(spec[field]) ? spec[field] : []).forEach((it, i) => {
 		if (it && typeof it === "object" && !Array.isArray(it)) checkKeys(it, allowed, `${where}: figure ${b.kind} ${field}[${i + 1}]`, errs);
 	});
+	if (b.kind === "grid") {
+		for (const field of [
+			"rowVars",
+			"colVars",
+			"rowLabels",
+			"colLabels",
+			"cells",
+			"groups"
+		]) if (spec[field] != null && !Array.isArray(spec[field])) errs.push(`${where}: figure grid ${field} must be a list`);
+	}
 	if (b.kind === "plot") checkPlotFns(spec, where, errs);
 	if (b.kind === "circuit" || b.kind === "drawing") checkDiagram(b.kind, spec, where, errs);
 }
@@ -30784,6 +30809,14 @@ function checkAsides(C, errs, warns) {
 	}
 }
 //#endregion
+//#region src/lib/index.js
+function conceptOf(C, q, sub) {
+	const concepts = C.concepts || {};
+	if (q.concept) return concepts[q.concept] ? q.concept : null;
+	const seen = [...new Set([...textOf(sub).matchAll(/<c\s+k="([^"]+)"/g)].map((m) => m[1]))].filter((k) => concepts[k]);
+	return seen.length === 1 ? seen[0] : null;
+}
+//#endregion
 //#region tools/validate.mjs
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = COURSES$1;
@@ -30824,6 +30857,79 @@ const FORMATS = /* @__PURE__ */ new Set([
 	"numeric"
 ]);
 const DRILL_MIN = 3;
+function checkResponse(item, where, errs) {
+	const r = item.response;
+	if (!r) return;
+	if (![
+		"single",
+		"multi",
+		"number",
+		"self"
+	].includes(r.kind)) {
+		errs.push(`${where}: response.kind must be single, multi, number, or self`);
+		return;
+	}
+	if (r.kind === "single" || r.kind === "multi") {
+		if (!Array.isArray(r.choices) || r.choices.length < 2) {
+			errs.push(`${where}: response needs at least two choices`);
+			return;
+		}
+		r.choices.forEach((choice, i) => {
+			if (!String(choice.text || "").trim() || !String(choice.why || "").trim()) errs.push(`${where}: choice ${i + 1} needs text and why`);
+		});
+		const correct = r.kind === "single" ? [r.correct] : r.correct;
+		if (!Array.isArray(correct) || !correct.length || correct.some((n) => !Number.isInteger(n) || n < 1 || n > r.choices.length) || new Set(correct).size !== correct.length) errs.push(`${where}: correct must name valid 1-based choice numbers`);
+	}
+	if (r.kind === "number" && (r.value == null || String(r.value).trim() === "" || !Number.isFinite(Number(r.value)) || !Number.isFinite(Number(r.tolerance ?? 0)) || Number(r.tolerance ?? 0) < 0)) errs.push(`${where}: numeric response needs a finite value and nonnegative tolerance`);
+	if (r.kind === "self" && !String(r.model || "").trim()) errs.push(`${where}: self-check response needs a model answer`);
+}
+function checkStimulus(item, where, errs, courseId) {
+	const s = item.stimulus;
+	if (!s) return;
+	if (s.t === "figure") checkFigure(s, where, errs);
+	else if (s.t === "image") {
+		if (!String(s.alt || "").trim()) errs.push(`${where}: stimulus image needs alt text`);
+		if (typeof s.src !== "string" || !s.src.startsWith("assets/") || s.src.split("/").includes("..") || !existsSync(join(COURSES, courseId, s.src))) errs.push(`${where}: missing stimulus image asset "${s.src}"`);
+	} else if (s.t === "passage") {
+		if (!String(s.text || "").trim() || !String(s.source || "").trim()) errs.push(`${where}: passage needs text and source`);
+	} else errs.push(`${where}: stimulus must be a figure, image, or passage`);
+}
+function checkQuestionHtml(item, where, errs) {
+	const fields = [
+		item.q,
+		item.why,
+		item.response?.model,
+		item.stimulus?.text,
+		item.stimulus?.source,
+		...(item.response?.choices || []).flatMap((c) => [c.text, c.why])
+	];
+	const bare = /<\/?(?!(?:a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul)[\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]/;
+	for (let field of fields) {
+		if (typeof field !== "string") continue;
+		for (const m of field.matchAll(/<m>([\s\S]*?)<\/m>/g)) try {
+			tex(m[1], false);
+		} catch (e) {
+			errs.push(`${where}: invalid math: ${e.message}`);
+		}
+		field = field.replace(/<m>[\s\S]*?<\/m>/g, " ");
+		if (bare.test(field)) errs.push(`${where}: invalid HTML in question field`);
+	}
+}
+function checkPractice(C, errs, courseId) {
+	for (const [key, bank] of Object.entries(C.practice || {})) {
+		const where = `practice/${key}`;
+		if (!C.concepts[key]) errs.push(`${where}: concept is not defined`);
+		if (!(bank.items || []).length) errs.push(`${where}: no question variants`);
+		(bank.items || []).forEach((item, i) => {
+			const at = `${where} item ${i + 1}`;
+			if (!String(item.q || "").trim()) errs.push(`${at}: no q`);
+			if (!item.response) errs.push(`${at}: no response`);
+			checkResponse(item, at, errs);
+			checkStimulus(item, at, errs, courseId);
+			checkQuestionHtml(item, at, errs);
+		});
+	}
+}
 function checkDrills(C, errs, warns) {
 	const bank = C.drills || {};
 	if (!Object.keys(bank).length) return;
@@ -30856,7 +30962,7 @@ function checkDrills(C, errs, warns) {
 }
 function checkReviewSet(C, errs, warns) {
 	const reviewed = Object.entries(C.concepts || {}).filter(([, c]) => c && c.review).map(([k]) => k);
-	for (const key of reviewed) if (!C.drills[key]) errs.push(`concepts/${key}: review: true with no drills/${key}.yaml — a reviewed concept owes ${DRILL_MIN} worked items`);
+	for (const key of reviewed) if (!C.drills[key] && !C.practice?.[key]) warns.push(`concepts/${key}: review: true has no practice variants; the subsection question can still be reviewed, but repetition will be narrow`);
 	for (const key of Object.keys(C.drills)) if (C.concepts[key] && !C.concepts[key].review) warns.push(`drills/${key}: the concept is not marked review: true — the drill bank and the declared review set disagree`);
 	if (reviewed.length && !C.reviewBasis) errs.push(`materials/expectations.md: ${reviewed.length} concept(s) are marked for review but no review.basis says on what grounds — an undeclared set cannot be revised`);
 }
@@ -31071,12 +31177,12 @@ for (const id of courses) {
 			}
 			if (seenType.has(t)) errs.push(`${where}: repeats question type "${item.type}"`);
 			seenType.add(t);
-			for (const k of [
-				"q",
-				"a",
-				"why"
-			]) if (!item[k] || !String(item[k]).trim()) errs.push(`${where}: question "${item.type}" missing "${k}"`);
+			if (!String(item.q || "").trim()) errs.push(`${where}: question "${item.type}" missing "q"`);
+			if (!item.response && (!String(item.a || "").trim() || !String(item.why || "").trim())) errs.push(`${where}: legacy question "${item.type}" needs a and why`);
+			checkResponse(item, `${where} question "${item.type}"`, errs);
+			checkStimulus(item, `${where} question "${item.type}"`, errs, id);
 			if (item.concept && !defined.has(item.concept)) errs.push(`${where}: question "${item.type}" names concept "${item.concept}", which no concepts/ file defines`);
+			if (item.response && !conceptOf(C, item, u)) errs.push(`${where}: question "${item.type}" needs a resolvable concept for Review`);
 		}
 		const HTML_FIELDS = [
 			"h",
@@ -31104,7 +31210,16 @@ for (const id of courses) {
 			if (b.t === "slides" && Array.isArray(b.frames)) b.frames.forEach((frame, i) => checkHtml(frame?.text, `${where} slide ${i + 1} text`));
 			if (b.asides && typeof b.asides === "object") for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
 		}
-		for (const item of u.quiz || []) for (const k of HTML_FIELDS) if (item[k] != null) checkHtml(item[k], `${where} quiz "${item.type}".${k}`);
+		for (const item of u.quiz || []) {
+			for (const k of HTML_FIELDS) if (item[k] != null) checkHtml(item[k], `${where} quiz "${item.type}".${k}`);
+			for (const choice of item.response?.choices || []) {
+				checkHtml(choice.text, `${where} choice text`);
+				checkHtml(choice.why, `${where} choice why`);
+			}
+			checkHtml(item.response?.model, `${where} model answer`);
+			checkHtml(item.stimulus?.text, `${where} passage text`);
+			checkHtml(item.stimulus?.source, `${where} passage source`);
+		}
 		const text = textOf(u);
 		for (const m of text.matchAll(/<m>([\s\S]*?)<\/m>/g)) try {
 			tex(m[1], false);
@@ -31141,6 +31256,7 @@ for (const id of courses) {
 	checkCats(C, errs, warns);
 	checkReviewSet(C, errs, warns);
 	checkDrills(C, errs, warns);
+	checkPractice(C, errs, id);
 	checkExaminableInSpine(C, warns);
 	checkClusters(C, errs);
 	checkPrimers(C, errs);

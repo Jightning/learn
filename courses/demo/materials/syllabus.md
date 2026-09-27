@@ -7,8 +7,8 @@ works that way and what it can render.
 | § | Title | For | Features shown |
 |---|---|---|---|
 | 1.1 | [What a course is](#s1-1) | readers | `p` `def` `key` `note` `list`, sections and subsections |
-| 1.2 | [Answering a question](#s1-2) | readers | `attempt` opener, `def` `key` `trap` `ex`, confidence and the reason prompt |
-| 1.3 | [Review and drills](#s1-3) | readers | plain `table`, `trap`, how a concept enters the schedule |
+| 1.2 | [Answering a question](#s1-2) | readers | `attempt` opener, `def` `key` `trap` `ex`, immediate feedback and Continue |
+| 1.3 | [Mixed Practice and Review](#s1-3) | readers | plain `table`, `trap`, automatic Review enrollment and weighted selection |
 | 1.4 | [How much of a page you have to read](#s1-4) | readers | tiers, the lane selector, `mono` table with split, a live stub |
 | 1.5 | [Finding your way around](#s1-5) | readers | margin cards, concept links, search and keyboard, install and sync |
 | 2.1 | [Completeness and non-redundancy](#s2-1) | authors | the two rules, concept links, subsection cross-ref |

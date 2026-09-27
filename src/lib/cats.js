@@ -77,7 +77,7 @@ export function indexCats(C) {
   const drillsOf = key => {
     const out = [];
     for (const row of members[key] || [])
-      if (row.kind === "concept" && (C.drills || {})[row.key])
+      if (row.kind === "concept")
         out.push(row.key);
     return out;
   };

@@ -12,7 +12,7 @@ Course flow: `begin`, `write`, `done` for each subsection, then `finish`.
 1. `node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" begin <id> [--source PATH]...` reports status, sources, and rules for steps 0–4. Follow them to write `materials/expectations.md`, section/subsection files, categories, and the concept set. If no course exists, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/new-course.mjs" <id> "Title"`; sources may be anywhere except unsafe paths.
 2. `node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" write <id>` gives the writing rules and first subsection.
 3. For each subsection, read only what it needs, write it in one operation, then run `node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It names the next subsection.
-4. After the subsections, write the drills and run `node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" finish <id>`. Act on its report or explain why not, including what was written, skipped, or unsourced.
+4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" finish <id>`. Every encountered question can enter Review, so a variant bank is optional. Act on the report or explain what was written, skipped, or unsourced.
 
 ## Cost
 
@@ -27,10 +27,10 @@ Model requests process conversation context; cached input is cheaper but not fre
 
 Use the cheapest model that meets correctness and teaching requirements; do not trade away depth, source checks, answer verification, or validation. Give each agent one bounded deliverable, relevant rules/sources, an acceptance checklist, and explicit file ownership. Agents must not revert others' edits.
 
-- `course-drafter` (Haiku): writes one concept card or one drill bank. Give it the file to write, the rules file `.author/<id>/rules-concepts.md` or `rules-drills.md`, and the course files to read.
+- `course-drafter` (Haiku): writes one concept card or one practice variant bank. Give it the file to write, the rules file `.author/<id>/rules-concepts.md` or `rules-variants.md`, and the course files to read.
 - `course-researcher`: reads widely and returns or saves condensed notes with citations. Use it for a repository's subsystem, a long document you need only part of, or web research.
 
-Check every result against its sources and rules, including independent drill-answer checks. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
+Check every result against its sources and rules, including independent answer checks for practice variants. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
 
 ## Revising and resuming
 

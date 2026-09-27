@@ -7,7 +7,7 @@ Course flow: `begin`, `write`, `done` for each subsection, then `finish`.
 1. `{{AUTHOR}} begin <id> [--source PATH]...` reports status, sources, and rules for steps 0–4. Follow them to write `materials/expectations.md`, section/subsection files, categories, and the concept set. If no course exists, run `{{NEW}} <id> "Title"`; sources may be anywhere except unsafe paths.
 2. `{{AUTHOR}} write <id>` gives the writing rules and first subsection.
 3. For each subsection, read only what it needs, write it in one operation, then run `{{AUTHOR}} done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It names the next subsection.
-4. After the subsections, write the drills and run `{{AUTHOR}} finish <id>`. Act on its report or explain why not, including what was written, skipped, or unsourced.
+4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `{{AUTHOR}} finish <id>`. Every encountered question can enter Review, so a variant bank is optional. Act on the report or explain what was written, skipped, or unsourced.
 
 ## Cost
 
@@ -24,7 +24,7 @@ Use the cheapest model that meets correctness and teaching requirements; do not 
 
 {{DELEGATE}}
 
-Check every result against its sources and rules, including independent drill-answer checks. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
+Check every result against its sources and rules, including independent answer checks for practice variants. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
 
 ## Revising and resuming
 

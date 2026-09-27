@@ -3,7 +3,7 @@ blocks:
   - t: p
     source: docs/architecture.md §3
     h: |-
-      A course is a subject you want to hold: a class, a textbook, a topic you keep failing to remember. It arrives as a folder of data files, the site renders it, and everything you do with it stays in this browser: answers, confidence, schedule. This course is a course about the site itself, so every page you are about to read is also an example of the thing it describes.
+      A course is a subject you want to hold: a class, a textbook, a topic you keep failing to remember. It arrives as a folder of data files, the site renders it, and everything you do with it stays in this browser: answers, feedback, and review history. This course is a course about the site itself, so every page you are about to read is also an example of the thing it describes.
 
   - t: def
     source: docs/architecture.md §3
@@ -20,7 +20,7 @@ blocks:
     core: |-
       There is no subsection you can finish by reading alone.
     h: |-
-      <p>The quiz is not a checkpoint the author added if they felt like it: the build refuses a subsection without one. Reading something and being able to produce it are different states, and only one of them survives the week.</p>
+      <p>The quiz is not a checkpoint the author added if they felt like it: the build refuses a subsection without one. Each question uses the same flow as practice and review: answer or skip, see immediate feedback, then press <b>Continue</b>. Self-check questions reveal a model answer and offer <b>Got it</b> or <b>Needs work</b>. Reading something and being able to produce it are different states, and only one of them survives the week.</p>
 
   - t: note
     source: docs/deploy.md
@@ -39,7 +39,7 @@ blocks:
       # Quoted, all three: an unquoted ": " makes YAML read the line as a
       # mapping and the reader gets [object Object]. See create_course §13.4a.
       - 'the <b>index</b>: every idea the course reuses and every kind of thing it sorts material into'
-      - '<b>mixed practice</b>: questions drawn across the whole course'
+      - '<b>Mixed Practice</b>: quiz questions drawn across a chosen scope'
       - 'the <b>dependency map</b>: which section needs which'
 
   - t: p

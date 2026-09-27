@@ -1,0 +1,11 @@
+# Optional variants for a concept. Add this file only when another surface,
+# context, or difficulty helps the learner transfer the skill.
+concept: example-concept
+items:
+  - q: Apply the concept in a new context.
+    response:
+      kind: self
+      model: State the essential reasoning and the condition that makes it valid.
+    why: Explain the reasoning and the tempting wrong path.
+    difficulty: challenging
+    verified: true

@@ -1,19 +1,19 @@
-title: Review and drills
+title: Mixed Practice and Review
 blocks:
   - t: p
     source: docs/architecture.md §3c
     h: |-
-      Quizzes ask whether you can produce an answer today. Review asks whether you still can in six weeks, and it is the half of the site that decides what you see rather than waiting for you to choose. The <b>Review</b> row in the sidebar carries the count of what is due across every course you have installed, and <code>r</code> opens it.
+      Quizzes ask whether you can produce an answer today. <b>Mixed Practice</b> lets you request more quiz questions from a chosen scope now. <b>Review</b> asks whether you still can later and serves only what the schedule says is due. The <b>Review</b> row in the sidebar carries the count of what is due across every course you have installed, and <code>r</code> opens it.
 
   - t: def
     cat: retrieval-surfaces
     source: docs/architecture.md §3c
-    term: Drill
+    term: Practice item
     label: What review serves you
     core: |-
-      A short retrieval item attached to a <b>concept</b>, not to a subsection.
+      A short retrieval item attached to a <b>concept</b>, available to practice and review.
     h: |-
-      <p>A concept's drill bank holds several, so the same idea comes back wearing a different surface each time; the schedule decides when, and the criterion is three correct recalls on three <em>different</em> items, followed by three sessions on separate days.</p>
+      <p>A concept's practice bank holds several items, so the same idea comes back wearing a different surface each time. Mixed Practice lets you choose a subsection range and count; Review serves scheduled items. Answered concepts enter Review automatically, and misses or challenging outcomes receive more weight.</p>
 
   - t: key
     source: src/lib/retention.js
@@ -22,7 +22,7 @@ blocks:
     core: |-
       Two doors let a concept into the review schedule, and reading is neither of them.
     h: |-
-      <p>Either you open a concept from the <b>index</b> and press <b>Drill this</b>, or you miss a quiz question you were <c k="confidence">confident</c> about and the seam enrols it for the next day. An untouched course therefore has nothing due, and that is the system working, not an empty page.</p>
+      <p>Any answered concept can enter Review automatically. You can also start Mixed Practice by choosing a subsection range and item count. An untouched course therefore has nothing due, and that is the system working, not an empty page.</p>
 
   - t: table
     # A three-way comparison is already the compact form: it puts the surfaces
@@ -34,16 +34,16 @@ blocks:
     head: [Surface, Asks, Chooses items by]
     rows:
       - [Subsection quiz, Can I produce this now?, one per question type in that subsection]
-      - [Mixed practice, Can I still do these mixed together?, your scope and count, drawn across the course]
+      - [Mixed Practice, Can I still do these mixed together?, your subsection range and count, weighted toward missed/due/challenging items]
       - [Review, Do I still hold this?, what the schedule says is due, across every course]
 
   - t: trap
     source: docs/architecture.md §3c
     label: Nothing due does not mean nothing to do
     core: |-
-      An empty review queue means no concept has reached its next scheduled date, usually because none have been enrolled yet.
+      An empty review queue means no concept has reached its next scheduled date yet.
     h: |-
-      <p>Mixed practice is available at any time and draws from the quiz pool, so "nothing is due" is never a reason to close the tab.</p>
+      <p>Mixed Practice is available at any time. Choose a subsection range and count; the selector weights missed, due, and challenging items so "nothing is due" is never a reason to close the tab.</p>
 
   - t: p
     tier: depth
@@ -59,9 +59,9 @@ blocks:
       Criterion met in four sessions across three days, then the interval starts stretching.
     h: |-
       <ol>
-        <li>Monday: you miss a confident question. The concept is enrolled and drilled once immediately.</li>
-        <li>Tuesday: it is due. You recall it correctly. That is one distinct item down.</li>
-        <li>Thursday, then the following week: two more items, two more days. The criterion is met, and the interval starts stretching.</li>
+        <li>Monday: you answer a question and miss it. The concept enters Review automatically.</li>
+        <li>Tuesday: it is due. You answer it correctly and press Continue.</li>
+        <li>Thursday, then the following week: later items return according to the schedule, with challenging items receiving extra weight.</li>
       </ol>
 
 quiz:
@@ -70,18 +70,26 @@ quiz:
     q: |-
       A reader has read three sections and answered every quiz correctly. The review count says 0. Why?
     a: |-
-      Nothing has been enrolled: they made no confident misses and drilled no concept by hand. Reading and answering correctly do not put a concept into the schedule.
+      Nothing is due yet. Answered concepts enter the schedule automatically, but the first due date may still be later; reading alone does not create an answer history.
     why: |-
-      <p>Enrolment is deliberately narrow. If reading enrolled concepts, day one of any course would be a queue of everything in it, and the queue is the part that has to stay believable.</p>
-    why_prompt: What are the only two things that enrol a concept?
+      <p>The schedule starts from answered items, so it has evidence about what the learner encountered. It does not fill with every concept merely because a course was opened.</p>
+    why_prompt: What puts a concept into Review?
     verified: 2026-09-06
 
   - type: Choose the right surface
     concept: tier
     q: |-
       You want twenty questions on one procedure, right now, before an exam tomorrow. Where do you go?
-    a: |-
-      Mixed practice, with the scope set to that section. Review only ever serves what is due today.
+    response:
+      kind: multi
+      choices:
+        - text: Mixed Practice with the subsection range and count selected.
+          why: Mixed Practice is the on-demand surface and weights missed, due, and challenging items.
+        - text: Review, which serves only items due today.
+          why: Review follows the schedule rather than an on-demand count.
+        - text: Reading controls, which change the page depth.
+          why: Reading controls do not ask retrieval questions.
+      correct: [1]
     why: |-
       <p>The two are not interchangeable: review protects the long interval that makes memory durable, so it will not hand you twenty items because you asked. Practice exists for exactly the case where you want volume now.</p>
     why_prompt: Why will review not simply give you more items when you ask for them?

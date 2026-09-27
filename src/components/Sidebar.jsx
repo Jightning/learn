@@ -74,9 +74,8 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
        goes where a count goes in a table of contents: the far edge.
 
        Scoped to this course, and so is the count. A rail belongs to one course
-       and a row in it that drilled every other course was the reason the page
-       needed a frame of its own; the cross-course queue is on the dashboard.
-       Absent entirely until this course has a drill bank. */
+       and a row in it that covered every other course was confusing; the
+       cross-course queue is on the dashboard. */
     ...(due != null ? [["review", "Review", IconReview,
                         rest === "review", due]] : []),
     ["map", "Dependency map", IconMap, rest === "map" || rest.startsWith("map/")],

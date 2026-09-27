@@ -4,6 +4,7 @@ import { collect, textOf, strip, qid } from "./util.js";
 import { numberFigures } from "./figures.js";
 import { nameOf, leadOf, present } from "./gist.js";
 import { indexCats } from "./cats.js";
+import { normalizeQuestion, practiceItems } from "./questions.js";
 
 /* A block's address. Positional, like every other id in the system, so an
    author never writes one. `~` rather than `#` because the router splits a
@@ -21,16 +22,13 @@ const push = (map, k, v) => {
   if (!map[k].includes(v)) map[k].push(v);
 };
 
-/* Which concept a quiz item exercises, for the one seam between the loops: a
- * confident miss in Loop A recruits that concept into Loop B. Quiz items are
- * keyed by type (M9), so the concept is declared where it matters and inferred
- * where the subsection leaves no doubt — exactly one of its mentions has a
- * drill file. Anything else stays unrouted and simply never recruits. */
+/* Resolve an item's retention concept. An explicit key wins; otherwise a
+ * subsection that mentions exactly one known concept is unambiguous. */
 export function conceptOf(C, q, sub) {
-  const bank = C.drills || {};
-  if (q.concept) return bank[q.concept] ? q.concept : null;
+  const concepts = C.concepts || {};
+  if (q.concept) return concepts[q.concept] ? q.concept : null;
   const seen = [...new Set([...textOf(sub).matchAll(/<c\s+k="([^"]+)"/g)].map(m => m[1]))]
-    .filter(k => bank[k]);
+    .filter(k => concepts[k]);
   return seen.length === 1 ? seen[0] : null;
 }
 
@@ -59,7 +57,8 @@ export function buildIndex(C) {
       (sub.quiz || []).forEach(q => {
         const id = qid(sub.id, q.type);
         CQ[id] = conceptOf(C, q, sub);
-        QALL.push({ id, q, subId: sub.id, num, subTitle: sub.title });
+        QALL.push({ ...normalizeQuestion(q, { id, subId: sub.id, concept: CQ[id] }),
+          num, subTitle: sub.title });
       });
 
       /* The owning section title is searchable from the subsection, so
@@ -103,7 +102,8 @@ export function buildIndex(C) {
                   ctx: "Core concept", cat: C.concepts[k].cat || null,
                   tags: C.concepts[k].tags || [], text: strip(C.concepts[k].body) }));
 
-  return { SUBS, CUSE, XIN, QALL, SEARCH, CQ, BLOCKS, ANNOTATIONS,
+  const PALL = practiceItems(C).map(q => ({ ...q, subId: q.subId || null }));
+  return { SUBS, CUSE, XIN, QALL, PALL, SEARCH, CQ, BLOCKS, ANNOTATIONS,
            CAT: indexCats(C), FIG: numberFigures(C) };
 }
 

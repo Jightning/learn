@@ -1,43 +1,71 @@
 export async function testLearning(ctx, state) {
   const { page, ck, go, shot } = ctx;
   const { cid, P, nSections, secIds, last } = state;
-  /* quiz + state: predict, state a reason, then reveal */
+  /* Subsection checks use the same answer-first card as every practice route.
+     The course data here has legacy self-check questions, which makes this a
+     useful migration check as well as a reader-facing flow check. */
   await go(`#/${cid}/${secIds[0]}`);
-  /* No AI affordance precedes an attempt. The browser's assistant is not ours
-     to gate, but our own pointer to help is. */
-  ck(P("no help control before a prediction"), await page.locator(".qstuck").count() === 0);
-  const conf = page.locator(".q .cbtn[data-conf='1']").first();
-  if (await conf.count()) {
-    await conf.click(); await page.waitForTimeout(250);
-    ck(P("the reveal stays inert until a reason is stated"),
-       await page.locator(".q.open").count() === 0 && await page.locator(".q .why-in").count() === 1);
-    await page.locator(".q .why-in").first().fill("stating the reason before looking");
-    await page.locator(".q .why-nav .cbtn").first().click(); await page.waitForTimeout(250);
-    ck(P("a stated reason reveals the answer"), await page.locator(".q.open").first().isVisible());
-    const missed = page.locator(".q.open .gbtn[data-got='0']").first();
-    if (await missed.count()) {
-      await missed.click(); await page.waitForTimeout(250);
-      const note = await page.locator(".gnote").first().innerText();
-      /* The note names what actually happened, and the three outcomes it can
-         report are three different events rather than one word for all of
-         them. A confident miss on a concept with a bank is drilled on the
-         spot; without one there is nothing to drill and the note must not
-         claim otherwise. */
-      ck(P("a confident miss says what follows from it"),
-         /drilling it now|worth another look/i.test(note), note);
-      /* a confident miss on a concept with a bank is corrected in place */
-      const drilled = await page.locator(".recruit .drill").count();
-      if (drilled) ck(P("a confident miss recruits a drill"), drilled === 1);
+  const quiz = page.locator(".quiz").first();
+  if (await quiz.count()) {
+    const previous = quiz.getByRole("button", { name: "Previous question" });
+    const next = quiz.getByRole("button", { name: "Next question" });
+    const visibleCard = () => quiz.locator(":scope > div:visible .q");
+    ck(P("a subsection shows one card at a time"), await visibleCard().count() === 1);
+    ck(P("the Questions heading omits the redundant type count"), await quiz.locator(".quiz-h .ct").count() === 0);
+    ck(P("question arrows sit under the card"), await quiz.evaluate(el => {
+      const nav = el.querySelector(".qslides"), card = el.querySelector(".q:not([hidden])");
+      return !!nav && !!card && nav.getBoundingClientRect().top >= card.getBoundingClientRect().bottom;
+    }));
+    if (await next.isEnabled()) {
+      await next.click(); await page.waitForTimeout(150);
+      ck(P("question navigation changes the visible card"),
+         (await quiz.locator(".qposition").innerText()).startsWith("Question 2 of ") && await visibleCard().count() === 1);
+      await previous.click(); await page.waitForTimeout(100);
     }
-    /* The reason comes back beside the question the next time it is met.
-       The round trip leaves the section rather than reloading it, so a
-       single-section course exercises the same path as any other. */
-    await go(`#/${cid}`);
-    await go(`#/${cid}/${secIds[0]}`);
-    await page.locator(".q .cbtn[data-conf='1']").first().click(); await page.waitForTimeout(250);
-    ck(P("the reader's previous reason returns"),
-       await page.locator(".q .why-prior").count() >= 1);
+    const card = visibleCard();
+    ck(P("a card asks for an answer before feedback"), await card.locator(".qentry textarea").count() === 1);
+    ck(P("the retired confidence gate is absent"), await card.locator("[data-conf], .why-in, .why-nav").count() === 0);
+    const check = card.getByRole("button", { name: "Check answer" });
+    ck(P("an empty answer cannot be checked"), await check.isDisabled());
+    await card.locator("textarea").fill("my attempted answer");
+    await check.click(); await page.waitForTimeout(150);
+    ck(P("a self-check immediately shows the model answer"), await card.locator(".ans").count() === 1);
+    ck(P("a self-check asks the reader to compare their answer"), await card.getByText("Compared with your answer:").count() === 1);
+    await card.getByRole("button", { name: "Needs work" }).click(); await page.waitForTimeout(150);
+    ck(P("a completed card gives immediate graded feedback"), /Needs work/.test(await card.locator(".qresult").innerText()));
+    ck(P("an answered card continues the run"), await card.getByRole("button", { name: /Continue/ }).count() === 1);
   }
+
+  /* The demo also supplies authored choice questions. Their feedback must
+     explain every alternative, rather than only marking the selected answer. */
+  let choiceChecked = false;
+  for (const subId of secIds) {
+    await go(`#/${cid}/${subId}`);
+    const choice = page.locator(".quiz > div:visible .q").filter({ has: page.locator(".qchoices") }).first();
+    if (!(await choice.count())) continue;
+    const card = page.locator(`.q[data-qid="${await choice.getAttribute("data-qid")}"]`).first();
+    const choices = choice.locator(".qchoice");
+    const choiceCount = await choices.count();
+    ck(P("choice controls align with their first text line"), await choices.evaluateAll(rows =>
+      rows.every(row => {
+        const input = row.querySelector("input").getBoundingClientRect();
+        const text = row.querySelector(".qchoice-content").getBoundingClientRect();
+        const line = parseFloat(getComputedStyle(row.querySelector(".qchoice-content")).lineHeight);
+        return Math.abs(input.top + input.height / 2 - (text.top + line / 2)) <= 2;
+      })));
+    await choices.first().click();
+    await choice.getByRole("button", { name: "Check answer" }).click(); await page.waitForTimeout(150);
+    const reasons = card.locator(".qchoice-why");
+    ck(P("choice feedback explains every answer inline"), await reasons.count() === choiceCount);
+    ck(P("the answer choices remain visible after grading"), await card.locator(".qchoice").count() === choiceCount);
+    ck(P("correct choices are highlighted"), await card.locator(".qchoice.is-right").count() >= 1);
+    ck(P("every choice has a reason after grading"), await reasons.evaluateAll(rows =>
+      rows.every(row => row.textContent.replace(/Correct\.|Not correct\./g, "").trim().length > 12)));
+    choiceChecked = true;
+    break;
+  }
+  ck(P("the course has a choice question for feedback coverage"), choiceChecked);
+  await go(`#/${cid}/${secIds[0]}`);
 
   /* The context record: course content in, answers and reader content out.
      It is what the browser's own assistant reads, and it is invisible. */

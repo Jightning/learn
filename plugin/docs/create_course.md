@@ -8,7 +8,7 @@ follow them; read the entry only if one seems wrong.
 ```sh
 npm run new -- <id> "Course Title"   # scaffold courses/<id>/
 npm run validate -- <id>             # structure and references for this course
-npm run audit -- <id>                # sourcing, verification, routing, drills
+npm run audit -- <id>                # sourcing, verification, routing, practice
 npm run pack -- <id>                 # bundle for browser import and inspection
 ```
 
@@ -17,7 +17,7 @@ npm run pack -- <id>                 # bundle for browser import and inspection
 ## 0. Operating rules
 
 **0.1 A finished course.** A reader holding the §1 prerequisites, having read
-the spine and cleared the drills, can (a) state every idea, (b) apply it to an
+the spine and cleared any targeted practice, can (a) state every idea, (b) apply it to an
 unseen problem, (c) say why each rule holds and where it stops, (d) construct
 something the course never showed them. (d) separates a course from a reference
 and is the one that gets dropped.
@@ -120,14 +120,14 @@ Seven defaults. Where a switch is off, the entry inverts rather than disappears.
 | | Switched on by | Default | Because |
 |---|---|---|---|
 | **D1** | schema acquisition **not** a failure | `apply` is added where the passage earns it (§6.3), not by quota | Worked-example support reverses with expertise [material_truth Trade-offs]. Off: more worked instances |
-| **D2** | discrimination **not** a failure | `confusable_with` only where the confusion is real | Interleaving pays on confusable pairs, costs on unrelated ones [T16]. Off: declare and interleave every pair they mix up |
+| **D2** | discrimination **not** a failure | add a variant only where it exposes a real confusion | Interleaving pays on confusable pairs, costs on unrelated ones [T16]. |
 | **D3** | `onboarding` asks for a concrete anchor | Open concrete, then fade it | Concrete-first-and-stay-concrete is the worst sequence tested [M10]. Off: formal statement opens |
 | **D4** | transfer is a failure | `attempt` blocks ON for conceptual subsections | Problem solving before instruction beats the reverse on transfer, d = 0.36 [material_truth] |
-| **D5** | transfer is a failure | `why_prompt` on every quiz item | Prompted self-explanation returns g = 0.55 [M6, T32] |
+| **D5** | transfer is a failure | include a `why` explanation on quiz items | Explanation makes retrieval reusable [M6, T32] |
 | **D6** | execution is a failure | Every procedural subsection: an execution trap **and** an error-spotting item | Slips are a detection problem, not a comprehension one |
-| **D7** | detail retention is a failure | Every specific value gets a drill item | Detail loss is a retention failure at item grain [M33] |
+| **D7** | detail retention is a failure | Add a practice variant for a value only when it needs another retrieval surface | Detail loss is a retention failure at item grain [M33] |
 
-D4 decides how a subsection opens, D5 what every question asks after it.
+D4 decides how a subsection opens. Explanations in `why` make answers reusable.
 
 ### 1.2 Goal and priorities
 
@@ -138,12 +138,12 @@ Mastery is the default. Four things change when `goal` names an exam.
 | Section order | Dependency order | The institution's order [M15]; deviate only on a real dependency violation, and say why in the blurb |
 | `exam.format` (§11.1) | Formats a mastered reader must be fluent in; include `derivation` | The formats the exam uses |
 | `exam.dates` | Empty | The real dates, so the schedule aims at them [T17] |
-| `review.basis` (§5.1) | What later sections depend on, plus what is error-prone | That, plus everything the exam can test |
+| practice scope | Skills that need another surface | Same, plus skills that the exam presents in a distinct format |
 
 `priorities` breaks ties. For a ranking with retention first and read speed
-last: `drills/` is required; `expectations.md` must carry `exam.format` and
-`review.basis`; ambiguous spine-vs-depth → `depth`; spare effort goes to the
-drill bank, not a fourth explanatory paragraph.
+last: `expectations.md` must carry the exam format; ambiguous spine-vs-depth →
+`depth`; spare effort goes to a small practice bank when a skill genuinely
+needs another surface, not a fourth explanatory paragraph.
 
 ---
 
@@ -154,7 +154,7 @@ courses/<id>/
   course.yaml              identity, theme, state, retention, audit, highlighting
   concepts/<key>.yaml      one per recurring idea (M13; no cap)
   categories/<key>.yaml    one per declared category (M35; optional)
-  drills/<key>.yaml        one per *reviewed* concept (M31)
+  practice/<key>.yaml      optional variants for a concept that needs them
   sections/01-<slug>/
     _section.yaml          title, blurb, primer prequestions
     1-<slug>.yaml          one subsection: blocks + quiz
@@ -190,12 +190,11 @@ surface: a reader-facing behaviour you want is here.
 | `<a href="#/other-course/s6-1">…</a>` | A plain link into another course |
 | `<f k="fig-id"/>` | A numbered, section-scoped figure citation |
 | `<m>…</m>` | Inline maths |
-| A `quiz:` entry | A click-to-reveal question, a type badge, a coverage slot |
-| A `drills/<key>.yaml` item | A slot in `#/review`, criterion tracking, mixed practice |
+| A `quiz:` entry | An answer-first question in the subsection slideshow, a type badge, a coverage slot |
+| A `practice/<key>.yaml` item | An optional variant in Review and Mixed Practice |
 | `primer:` in `_section.yaml` | A relation prequestion with forced correction |
-| `why_prompt:` + the reader's confidence | The calibration report: the confident-and-wrong list |
-| `confusable_with:` | A cluster in mixed practice at `#/<id>/practice` |
-| `review: true` | The concept enters Loop B: criterion tracking, spaced relearning |
+| A quiz `response:` | The answer control and checking rule for that question |
+| An attempted concept | A candidate for Review; later review draws from all attempted concepts |
 | Any `<a href="#s…">` or `<c k>` | An edge on the dependency map at `#/<id>/map` |
 | Every block's text | An entry in the search index |
 | `t: figure` | A rendered diagram, plot, chart, circuit, drawing or timing trace (§10.1) |
@@ -229,8 +228,7 @@ In order; do not start a phase until the previous stop condition holds.
 
 **1 — Calibrate.** `materials/expectations.md`, front matter first (§11.1):
 what is assumed known (the `background` list, verbatim), bridged, taught, and
-skipped. *Stop: every topic in exactly one of skip / bridge / teach, and
-`review.basis` recorded.*
+skipped. *Stop: every topic is in exactly one of skip / bridge / teach.*
 
 **2 — Sequence.** `sections/NN-slug/` with `_section.yaml` titles and blurbs
 only; 2–5 subsections each; the blurb answers "why here?". *Stop: no forward
@@ -238,8 +236,8 @@ reference survives [M14]; every section rests only on sections above it and on
 `background`.*
 
 **3 — Concepts.** `concepts/<key>.yaml` for every idea used in 3+ places (§5),
-then mark the review set. *Stop: every idea you would re-explain in three
-sections has a file, and the review set matches its declared basis.*
+then use those concepts in quizzes where they are tested. *Stop: every idea you
+would re-explain in three sections has a file.*
 
 **3a — Taxonomy.** `categories/<key>.yaml` for the kinds this course sorts
 material into (§5a) — before the spine, since a block can only tag into a
@@ -253,14 +251,15 @@ all). Every `def`, `key` and `trap` declares `core:` or `gist:` (§6.6) and join
 a category where it has one. *Stop: the spine alone teaches the whole course;
 reading only its `core:` lines gives a correct, terse account.*
 
-**5 — Quizzes.** One item per distinct question type per subsection (§7), plus
-the section's synthesis item (§7.1). *Stop: full type coverage, an
-error-spotting item in every procedural subsection, and every item carries
-`why_prompt`, a resolvable `concept:` and `verified:`.*
+**5 — Quizzes.** One item per distinct skill per subsection (§7), plus a
+section synthesis item when the material composes. *Stop: each item has one
+`type`, a resolvable `concept:`, a typed `response:`, and a `why` where an
+explanation helps the learner.*
 
-**6 — Drills.** `drills/<key>.yaml` for every reviewed concept: three items, two
-formats, one exam-format match (§8). *Stop: every specific value in a reviewed
-concept's `key` blocks has an item (D7, M33).*
+**6 — Practice variants (optional).** Add `practice/<key>.yaml` only when a
+skill benefits from another surface, context, or difficulty. Do not make a
+variant for every quiz item. *Stop: each variant has a distinct question,
+the same concept, a valid `response:`, and a `verified:` date after checking.*
 
 **7 — Depth and apply.** Now add `tier: depth` and `tier: apply`. Last,
 deliberately: written earlier, spine material gets absorbed into digressions.
@@ -268,7 +267,7 @@ Every `key` whose derivation did not fit the spine gets it here (§6.3).
 *Stop: `npm run validate -- <id>` passes, then the imported course reads
 correctly in Spine mode.*
 
-**8 — Verify.** Re-derive every worked answer and drill solution; re-reading is
+**8 — Verify.** Re-derive every worked answer and practice solution; re-reading is
 not verifying [M22]. Set `verified:` dates, run §12,
 `npm run validate -- <id>`, and `npm run audit -- <id>`.
 
@@ -323,8 +322,6 @@ term: Initial-value problem
 body: |-
   <p>A differential equation coupled with an initial value.</p>
 src: Defined in §4.1
-review: true                             # in the review set; owes a drill file
-confusable_with: [general-solution]      # only where readers actually confuse them
 ```
 
 One sentence: a concept card is met in the margin of somebody else's paragraph.
@@ -340,18 +337,18 @@ the link. **Never write "recall from §3 that…" followed by a restatement**: t
 link renders a margin card, feeds the prerequisite list and draws a dependency
 edge [M16].
 
-### 5.1 Promotion and review are two decisions
+### 5.1 Concepts and review
 
 | Decision | Rule | Cost | Cap |
 |---|---|---|---|
 | Promote to a concept | used in 3+ places [M13] | one file, one link | none |
-| Mark `review: true` | declared, not inferred [M31] | three drill items [M26] | your judgement |
+| Attempt a concept in a quiz | recorded from learner activity | eligible for Review | automatic |
 
-Promotion is forced by non-redundancy; review is a scope choice. Choose the
-review set from `review.basis` (§1.2) and record that basis in
-`expectations.md`. The build enforces both halves: `review: true` with no drill
-file fails, a drill file for an unmarked concept warns, a non-empty review set
-with no basis fails, and `confusable_with` must be declared both ways (D2).
+Promotion is forced by non-redundancy. Review is activity based: it draws from
+all concepts the reader has attempted, so authors do not declare a review set
+or maintain a second review list. Add a practice bank only for skills
+where another surface helps; a concept can be complete with its subsection
+quiz alone.
 
 ---
 
@@ -409,7 +406,7 @@ get a facet in Explore.
   inferred (M35).
 - Every category needs at least one member, and `siblings:` must name each other.
 - Tags are slugs: lowercase, digits, single hyphens.
-- Categories go on **blocks and concepts only**. A drill inherits its concept's;
+- Categories go on **blocks and concepts only**. A practice item inherits its concept's;
   a quiz item has none, because `type` is its identity (M9).
 - Do not categorise everything: a chip on every block signals nothing (T13).
 
@@ -698,7 +695,7 @@ order. "Be careful with signs" is a mood, not a trap.
 
 **There is no `err` block.** An erroneous example only works if the reader is
 asked to detect, explain and correct it, and the quiz already has a reveal gate,
-a `why`, a `why_prompt` and a badge. Route it through an error-spotting item in
+a `why` and a badge. Route it through an error-spotting item in
 the subsection that taught the procedure, plus an execution trap naming the slip:
 
 ```yaml
@@ -708,12 +705,13 @@ the subsection that taught the procedure, plus an execution trap naming the slip
     <p>A student solves <m>y' = y(1-y)</m> by separating and integrating, and
     reports the family as the general solution. Which solutions has the method
     dropped, and at which step should they have been caught?</p>
-  a: <m>y = 0</m> and <m>y = 1</m>. At step 1, before dividing.
+  response:
+    kind: self
+    model: The answer identifies y = 0 and y = 1 and says they were lost before dividing.
   why: |-
     <p>Dividing by <m>g(y)</m> is what makes separation work and what discards
     the roots of <m>g</m>, which is why the check comes before the division.</p>
-  why_prompt: What does dividing by <m>g(y)</m> assume about <m>g(y)</m>?
-  verified: 2026-09-13
+  verified: true
 ```
 
 One such item per procedural subsection: a desirable difficulty, and those work
@@ -818,7 +816,7 @@ assertion, target one line.
 | Instead of | Write |
 |---|---|
 | "It is worth noting that a course you install exists only in this browser." | "Nothing is uploaded: a course lives in this browser and nowhere else." |
-| "This example walks through what happens when you answer one question confidently and get it wrong." | "One confident miss records a failed type, enrols the concept, and drills it." |
+| "This example walks through what happens when you answer one question and get it wrong." | "A miss records the attempted concept for later review." |
 | "Some notes about the other layouts a graph block will accept." | "A graph also takes `row` and `manual`; layered is the default past five nodes." |
 
 A `label:` shows as a run-in with the claim after it — "▌ Common slip. Dividing
@@ -841,36 +839,47 @@ reading (§2.2).
 
 ## 7. Questions
 
-**One question per distinct question type. Never repeat a type** [M5]. The target
-is coverage of the question *surface*; volume belongs in the drill bank. Ask what
+**One question per distinct skill. Never repeat a skill** [M5]. The target
+is coverage of the question *surface*; volume belongs in optional practice variants. Ask what
 can be asked about this subsection: apply forwards, apply backwards, identify the
 case, compute, **spot the error** (required for procedural subsections, D6),
 explain why the rule holds, judge a boundary case.
 
 ```yaml
 - type: Recognise a separable equation    # names a skill, never a number
-  concept: separable-equation             # the retention identity
+  concept: separable-equation
   q: Is <m>y' = x + y</m> separable? Say why or why not.
-  a: No                                   # the bare answer, no reasoning
+  response:
+    kind: single
+    choices:
+      - {text: Yes, why: It can be factored into a product.}
+      - {text: No, why: It is a sum and cannot be written as f(x)g(y).}
+    correct: 2
   why: |-
     <p>Separable means writable as <m>y' = f(x)g(y)</m>, a product. A sum does
     not factor into one…</p>
-  why_prompt: What would <m>f</m> and <m>g</m> have to be for a sum to factor?
-  verified: 2026-09-08
+  verified: true
 ```
 
-Every field is required [M6]:
+Each item has a unique `type`, `concept`, `q`, `response`, and `verified` [M6]:
 
 - **`type`** is the identity used for coverage [M9]: a skill name, not a number.
-- **`concept:`** is the identity used for retention — what lets a confident miss
-  pull the concept into review [T18]. Inferred where the subsection cites exactly
-  one concept with a drill file; declare it wherever there is a choice. One
-  naming no concept file fails the build; one resolving to nothing is counted as
-  `unrouted`.
-- **`why_prompt:`** is the specific question the reader answers before the
-  reveal, on every item (D5). It turns retrieval into elaborated retrieval.
-- **`why`** explains the reasoning **and why the wrong path is tempting** [M7].
-- **`verified:`** is the date you last **re-derived** the answer [M22].
+- **`concept:`** is the concept the skill tests; review later considers every
+  concept the reader has attempted.
+- **`response:`** is a mapping with `kind: single|multi|number|self`.
+  `single` and `multi` use `choices: [{text, why}, ...]` and a 1-based integer
+  or integer array in `correct`; `number` uses `value`, nonnegative `tolerance`,
+  and optional `unit`; `self` uses `model`.
+- **`why`** explains the reasoning and may explain the tempting wrong path.
+- **`verified:`** is `true` after the answer has been checked.
+- Optional `stimulus:` supplies a figure, image, or passage when the question
+  needs one; keep its schema the same as other course stimuli.
+
+```yaml
+stimulus: {t: passage, text: A short excerpt to interpret., source: Handbook §2}
+# Or: {t: image, src: assets/example.png, alt: A labeled diagram, cap: Diagram}
+# Or: {t: figure, kind: graph, spec: {layout: circle}, cap: A graph}
+```
 
 ### 7.1 The synthesis item
 
@@ -889,69 +898,63 @@ section blurb.
     positive counterpart. Both follow from the same asymmetry. Describe a
     fixed-width signed encoding that removes the second anomaly, and say what it
     costs.</p>
-  a: |-
-    <p>A good answer names the asymmetry (2ⁿ patterns cannot split evenly around
-    a single zero), proposes one coherent alternative, and prices it.</p>
+  response:
+    kind: self
+    model: A good answer names the asymmetry, proposes one coherent alternative, and prices it.
   why: |-
     <p>There is no single right answer. What is tested is whether the reader sees
     the encoding as a set of trade-offs rather than a rule…</p>
-  why_prompt: How many patterns does n bits give, and how many values must a
-    symmetric signed range contain?
-  verified: 2026-09-08
+  verified: true
 ```
 
-`a` states **the criteria a good answer meets**, not an answer.
+`model` states **the criteria a good answer meets**, not an answer.
 
 ---
 
-## 8. The drill bank — `drills/<concept-key>.yaml`
+## 8. Optional practice variants — `practice/<concept-key>.yaml`
 
-One file per reviewed concept. The quiz covers the surface once per type; the
-bank runs the same procedure until it is fast, and it is the pool `#/review`
-draws from. Loop A is the quiz, keyed by `type`; Loop B is the bank, keyed by
-concept. A confident miss in A recruits B; a B success never marks a type covered
-[code_truth §3b].
+Add a bank only when a skill needs another surface, context, or difficulty. A
+bank may be omitted. Review draws from all concepts the reader has answered;
+answering a concept enrolls it in Review. Mixed Practice selects a subsection
+range.
 
 ```yaml
 concept: separable-equation       # must match a concepts/<key>.yaml
 items:
-  - format: short-answer          # multiple-choice | short-answer | cued-recall
-                                  # | derivation | numeric
-    stem: Solve <m>y' = y(1-y)</m>, giving every solution.
-    answer: The logistic family, plus the constants <m>y = 0</m> and <m>y = 1</m>
-    steps:
-      - "g(y) = y(1-y) is zero at y = 0 and y = 1, so both are constant solutions."
-      - "Away from those, separate and integrate."
+  - q: Solve <m>y' = y(1-y)</m>, giving every solution.
+    response:
+      kind: self
+      model: The logistic family plus the constant solutions y = 0 and y = 1.
     why: |-
       <p>Reporting only the family is the tempting wrong answer: the solutions it
       drops are the ones the division removed.</p>
-    verified: 2026-09-13
+    difficulty: challenging
+    verified: true
 ```
 
-The build checks **three** items minimum (three different items is what stops
-memorising one), **two** formats with **one** matching `exam.format`, no shared
-answers, no stem containing its answer, and `steps` on every item [M11, M26]. A
-higher criterion is not better [T31]: three items, then spend the rest on §8.2.
+Each item uses the same response schema as a quiz and may add `type`, `why`,
+`stimulus`, and `difficulty: challenging`. Set `verified: true` only after
+checking it. Add variants when they create a useful transfer or discrimination
+opportunity; a short bank is enough, and one strong quiz can be enough when it
+already covers the skill.
 
-### 8.1 Surface variation, fixed answer
+### 8.1 When to add a variant
 
-At least one item per reviewed concept has a surface **unlike** the worked
-example [M32] — but **vary the surface, hold the response**. Wrong: the example
-computes a delay in nanoseconds and the drill asks for a qualitative comparison.
-Right: the example computes a delay through a 3-gate chain, the drill through a
-mixed chain given a datasheet.
+Add a variant when the subsection quiz cannot expose a likely transfer error,
+discrimination problem, or exam context. Vary the surface while preserving the
+skill being tested. Do not add variants just to reach a count.
 
-### 8.2 Every specific value gets an item
+### 8.2 Values and stimuli
 
-Scan every `key` block: a constant, threshold, sign convention, ordering,
-boundary or named condition belonging to a reviewed concept needs a
-`cued-recall` item [M33, D7].
+Scan `key` blocks for constants, thresholds, sign conventions, orderings,
+boundaries, or named conditions that a learner must retrieve. Add a number or
+self-response variant only when the quiz does not already test that retrieval.
 
 ```yaml
-  - format: cued-recall
-    stem: In n-bit two's complement, what is the most negative representable value?
-    answer: −2^(n−1)
-    steps: ["The range is asymmetric: one more negative value than positive."]
+  - q: In 8-bit two's complement, what is the most negative representable value?
+    response: {kind: number, value: -128, tolerance: 0}
+    difficulty: challenging
+    verified: true
 ```
 
 The test: could the reader lose a mark by forgetting this exact thing while
@@ -1147,11 +1150,11 @@ in **kind**, each linking in by anchor rather than restating.
 
 | File | Holds | Status |
 |---|---|---|
-| `expectations.md` | Calibration, prerequisites, exam format and dates, review basis | **required** (M3) |
+| `expectations.md` | Calibration, prerequisites, exam format and dates | **required** (M3) |
 | `syllabus.md` | Official topic sequence, textbook, prerequisites | optional; high value |
 | `schedule.md` | Week-by-week, deep-linked to section anchors | optional |
 | `reference.md` | Formula card: symbols only, no prose | optional; high value |
-| `problems.md` | Drill problems | **generated** |
+| `problems.md` | Practice problems | **generated** |
 | `checklist.md` | "Can I do this?" self-audit | **generated** |
 
 `npm run materials` writes the generated two; editing them by hand fails the
@@ -1164,17 +1167,13 @@ build [T20, T21].
 exam:
   format: [short-answer, derivation]
   dates: []      # empty under goal: mastery; real dates under an exam overlay
-review:
-  basis: >-
-    Everything later sections depend on, plus the sign conventions, which are
-    error-prone under time pressure.
 ---
 ```
 
-`format` drives the drill-format check and is required under either goal.
+`format` records the formats a mastered reader should handle and is required
+under either goal.
 `dates` turn the scheduler around to aim at a deadline [T17]; leave them blank
-rather than guessing. `review.basis` records why the review set is what it is
-[M31], and the build fails without it once anything is marked for review.
+rather than guessing. Review is populated from attempted concepts at runtime.
 
 ### 11.2 Calibrating depth
 
@@ -1197,7 +1196,7 @@ list because it was the natural tool.
 
 - [ ] Every `<c k="…">`, `#s…` and `<f k>` resolves
 - [ ] At least one quiz item, no repeated `type`, every item has `type`, `q`,
-      `a`, `why`, and any `concept:` resolves
+      `response`, and any `concept:` resolves
 - [ ] `attempt` only as the first block (M10)
 - [ ] No "(1) … (2) …" run into prose; steps are in `items:` (§6.1)
 - [ ] Every `follows:` has a block above it, and no spine block follows a
@@ -1214,15 +1213,14 @@ list because it was the natural tool.
 - [ ] Every authored HTML field escapes a bare `<` or `&`
 - [ ] Every `image` has `alt`; every `plot` `fn` parses and is finite
 
-**Per reviewed concept**
+- **Per practice bank**
 
-- [ ] `drills/<key>.yaml` with ≥3 items, ≥2 formats, ≥1 exam-format
-- [ ] No two items share an answer; no stem contains its answer; every item has
-      `steps`; `confusable_with` is declared both ways
+- [ ] `practice/<key>.yaml` has a matching concept and valid response items
+- [ ] Items are genuinely useful variants, and `verified: true` follows a check
 
 **Per course**
 
-- [ ] `expectations.md` has `exam.format` and `review.basis`
+- [ ] `expectations.md` has `exam.format`
 - [ ] `code` and `theme.hue` are not shared with another course
 - [ ] Spine-only reading resolves every reference (M23, T33)
 - [ ] `npm run audit` is inside every ceiling `course.yaml` declares
@@ -1258,12 +1256,10 @@ No script decides any of these.
 - [ ] **Every composing section has a synthesis item**; every exempt one says
       why in its blurb (§7.1).
 - [ ] **Recurring ideas are concepts** (M13); sections run 2–5 subsections.
-- [ ] **One drill item varies the surface** while asking the same response (§8.1).
-- [ ] **Every specific value in a reviewed concept's `key` blocks has a
-      cued-recall item** (§8.2) — the audit warns on numerals, but a sign
-      convention or an ordering no script catches.
-- [ ] **`confusable_with` pairs are real confusions** (D2); **no `apply` block
-      re-explains** (M24).
+- [ ] **Every practice variant earns its place** by adding a useful surface,
+      context, or difficulty (§8.1).
+- [ ] **Practice variants target real transfer or discrimination needs** (D2);
+      **no `apply` block re-explains** (M24).
 - [ ] **Nothing marked `source:` with an origin was written from memory**;
       **every `verified:` date is a re-derivation**, not a re-reading (M22).
 - [ ] **The prose does not read as generated**: no em dashes or interpuncts,
@@ -1282,8 +1278,8 @@ npm run pack -- <id>      # import it and look at both depths
 from `def`; (2) use it, from `key` + `ex`; (3) see why it holds, from the
 derivation; (4) recognise where it goes wrong, from `trap` + the error-spotting
 item; (5) answer every distinct question type; and (6) still do it in six weeks,
-from `drills/`. A finished *section* also lets them build something the course
-never showed them (§7.1). The last two get skipped.
+from its quiz and any targeted practice variants. A finished *section* also lets
+them build something the course never showed them (§7.1).
 
 ---
 
@@ -1312,8 +1308,8 @@ The shapes a capable model produces by default.
 | **14.10** | **Confident fabrication of institutional fact.** | Do not (0.5). |
 | **14.11** | **Manufactured confusability.** | Only pairs readers actually mix up (D2). |
 | **14.12** | **The unearned example.** A second and third instance because the topic felt hard. | Name the gap first (§6.3), then choose the needed asides, depth and examples. Combine them when they address different gaps. |
-| **14.13** | **Skipping Phase 6.** | A course that stops after Phase 5 has no retention loop. |
-| **14.14** | **Marking everything for review.** | Choose the review set by the stated learning goal (§5.1). |
+| **14.13** | **Repeating only one surface.** | Add a targeted practice variant where an important skill would otherwise repeat the identical question (§8). |
+| **14.14** | **An unrouted question.** | Give each question a resolvable concept so its outcome can enter Review (§7). |
 | **14.15** | **Coverage mistaken for mastery.** | The synthesis item (§7.1). |
 | **14.16** | **Density drift.** By the fortieth subsection the `key` blocks are half again as long. | Check whether each sentence and block serves a distinct learning need; length alone is not a reason to cut it. |
 | **14.17** | **The run-in procedure.** | `items:` with `ordered: true` (§6.1). |

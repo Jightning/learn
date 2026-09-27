@@ -3,14 +3,14 @@
 # DEMO 001: Mastery checklist
 
 Every line is something you must be able to do, phrased so the honest answer is
-yes or no. Question types come from the site's quizzes; concepts come from the
-drill bank, where a tick means durable rather than answered once.
+yes or no. Question types come from subsection checks; concepts can return
+through Review, where a tick means durable rather than answered once.
 
 ## 1 Using this site
 
 - [ ] Locate a course's boundary, [1.1](../index.html#s1-1)
 - [ ] Predict the structure, [1.1](../index.html#s1-1)
-- [ ] Interpret a confidence outcome, [1.2](../index.html#s1-2)
+- [ ] Interpret immediate feedback, [1.2](../index.html#s1-2)
 - [ ] Explain a design rule, [1.2](../index.html#s1-2)
 - [ ] Spot the error, [1.2](../index.html#s1-2)
 - [ ] Diagnose an empty queue, [1.3](../index.html#s1-3)
@@ -62,7 +62,7 @@ drill bank, where a tick means durable rather than answered once.
 
 ## Concepts held over time
 
-- [ ] Completeness: durable, not merely answered ([drill](../index.html#/demo/c/completeness))
-- [ ] Confidence: durable, not merely answered ([drill](../index.html#/demo/c/confidence))
-- [ ] Non-redundancy: durable, not merely answered ([drill](../index.html#/demo/c/non-redundancy))
-- [ ] Tier: durable, not merely answered ([drill](../index.html#/demo/c/tier))
+- [ ] Completeness: durable, not merely answered ([practice](../index.html#/demo/c/completeness))
+- [ ] Answer outcome: durable, not merely answered ([practice](../index.html#/demo/c/confidence))
+- [ ] Non-redundancy: durable, not merely answered ([practice](../index.html#/demo/c/non-redundancy))
+- [ ] Tier: durable, not merely answered ([practice](../index.html#/demo/c/tier))

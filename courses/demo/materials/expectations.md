@@ -7,13 +7,12 @@ review:
     Four ideas are scheduled, and they are the four a reader has to hold to use
     the site at all: completeness and non-redundancy, because they explain why
     material is where it is; the tier split, because it decides how much of a
-    page you read; and confidence, because it is what turns an answer into a
-    diagnosis. The two-loop design and retrieval practice are explained but not
-    scheduled. Knowing they exist is enough, and drilling them would spend
-    three items each on something no reader acts on directly.
+    page you read; and answer outcomes, because they feed automatic Review
+    scheduling. The two-loop design and retrieval practice are explained but not
+    separately reviewed as concepts.
 
     Six questions name one of those two unscheduled concepts, so they resolve
-    to a concept file and to no drill bank and never recruit. `npm run audit`
+    to a concept file and to no practice bank. `npm run audit`
     counts them as unrouted, and the ceiling in `course.yaml` is set to admit
     exactly those six. Routing them to a reviewed concept would make the
     number better and the label wrong.

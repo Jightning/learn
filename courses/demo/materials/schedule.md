@@ -6,7 +6,7 @@ introduces.
 
 | Sitting | Read | Site | Concept cards |
 |---|---|---|---|
-| 1 | How the site works, end to end | [§1.1](../index.html#s1-1) [§1.2](../index.html#s1-2) [§1.3](../index.html#s1-3) | Section and subsection, Confidence, Drill |
+| 1 | How the site works, end to end | [§1.1](../index.html#s1-1) [§1.2](../index.html#s1-2) [§1.3](../index.html#s1-3) | Section and subsection, answer outcomes, Mixed Practice and Review |
 | 2 | Reading depth, and finding your way | [§1.4](../index.html#s1-4) [§1.5](../index.html#s1-5) | Tier, Margin card |
 | 3 | The two rules and the reference system | [§2.1](../index.html#s2-1) [§2.2](../index.html#s2-2) | Completeness, Non-redundancy |
 | 4 | The research: two loops, then tiers | [§3.1](../index.html#s3-1) [§3.2](../index.html#s3-2) | The two loops, Retrieval practice, The coherence principle |

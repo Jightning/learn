@@ -4,49 +4,10 @@
  *
  *   node tools/validate.mjs [--isolated] [course …]
  *
- * Invariants (the id is the rule in code_truth.md / material_truth.md):
- *   1. every <c k="…"> concept reference resolves to a definition       (M14)
- *   2. every href="#…" cross-link resolves to a section or subsection   (M14)
- *   3. every subsection has at least one question                       (M4)
- *   4. no question type repeats inside a subsection                     (M5)
- *   5. every question has type, q, a and why                           (M6)
- *   6. a question's `concept:` names a concept the course defines       (M6)
- *   7. every block declares a type the engine can render                (T19)
- *   8. every subsection names at least one term with a def block        (M8)
- *   9. every image carries alt text                                     (M19)
- *  10. concepts defined but never referenced are reported (warning)     (M13)
- *  11. every <f k="…"> resolves to a figure declaring that id           (M14)
- *  12. figure ids are unique within a course                            (M14)
- *  13. every section declares a title and a blurb of its own            (M15)
- *  14. every <m>…</m> and every math block parses as TeX                (T30)
- *  15. no <m> inside a table whose cells are escaped (mono/map tables)  (T30)
- *  16. every authored HTML field escapes a bare < or & as an entity     (T25)
- *  17. every plot series function compiles and yields a finite point    (T30)
- *  18. no two courses share a `code` (learner state is keyed on it)     (T25)
- *  19. no two courses share a `theme.hue` (warning — they look alike)   (T27)
- *  20. every block declares a tier the lane selector knows              (M23)
- *  21. an `attempt` block only ever opens a subsection                  (M10)
- *  22. every figure a spine block cites is declared by a spine block    (M23, T33)
- *  23. every concept marked `review: true` owns a drill file            (M31)
- *  24. a drill file whose concept is not marked for review (warning)    (M31)
- *  25. a non-empty review set declares its basis in expectations.md     (M31, M3)
- *  26. every reviewed concept carries three items in two formats        (M26)
- *  27. drill answers are distinct within a concept, and not in the stem (M26)
- *  28. every drill item names a concept that resolves                   (M27)
- *  29. a reviewed concept cited only outside the spine (warning)        (M25)
- *  30. `confusable_with` resolves, and is symmetric                     (T16)
- *  31. every primer prequestion asks something and answers it          (M29)
- *  32. no course is named `review` — the review route owns that id      (architecture §2)
- *  33. every figure spec key, enum value and format is one the engine reads (T30)
- *  34. a block declares `core:` or `gist:`, never both                  (M34)
- *  35. a `core:` is not repeated inside its own `h:`                    (M34, M1)
- *  36. every `cat:` names a category the course declares                (M35)
- *  37. every declared category owns a boundary and at least one member  (M35)
- *  38. category `siblings:` resolve and name each other                 (M35, T16)
- *  39. tags are slugs, so the tag index cannot fragment on case         (T25)
- *  40. every block can yield a name for its index row (warning)         (T10)
- *  41. a block's `notes:` names a depth behaviour the engine knows        (T42)
- *  42. a claim does not close an enumeration inside its own body (warning)(T42)
+ * Checks include course structure and links, figure and block schemas,
+ * question response shapes and grading keys, stimuli and assets, concept
+ * routing, math, source metadata, and printable material consistency. Legacy
+ * free-response questions and drill files remain loadable for old courses.
  */
 import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -61,6 +22,7 @@ import { TIERS, tierOf } from "../src/lib/tiers.js";
 import { NOTES_MODES, present, leadOf } from "../src/lib/gist.js";
 import { checkRunInLists, checkFollows, checkAsides } from "./lib/structure.mjs";
 import { textOf } from "../src/lib/util.js";
+import { conceptOf } from "../src/lib/index.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = COURSES_DIR;
@@ -128,11 +90,83 @@ function checkSpineStandsAlone(C, errs) {
 }
 
 const FORMATS = new Set(["multiple-choice", "short-answer", "cued-recall", "derivation", "numeric"]);
-const DRILL_MIN = 3;   /* the criterion count: fewer and the reader learns one question */
+const DRILL_MIN = 3;   /* legacy bank validation only */
+
+function checkResponse(item, where, errs) {
+  const r = item.response;
+  if (!r) return; /* legacy free-response item */
+  if (!["single", "multi", "number", "self"].includes(r.kind)) {
+    errs.push(`${where}: response.kind must be single, multi, number, or self`); return;
+  }
+  if (r.kind === "single" || r.kind === "multi") {
+    if (!Array.isArray(r.choices) || r.choices.length < 2) {
+      errs.push(`${where}: response needs at least two choices`); return;
+    }
+    r.choices.forEach((choice, i) => {
+      if (!String(choice.text || "").trim() || !String(choice.why || "").trim())
+        errs.push(`${where}: choice ${i + 1} needs text and why`);
+    });
+    const correct = r.kind === "single" ? [r.correct] : r.correct;
+    if (!Array.isArray(correct) || !correct.length ||
+        correct.some(n => !Number.isInteger(n) || n < 1 || n > r.choices.length) ||
+        new Set(correct).size !== correct.length)
+      errs.push(`${where}: correct must name valid 1-based choice numbers`);
+  }
+  if (r.kind === "number" && (r.value == null || String(r.value).trim() === "" || !Number.isFinite(Number(r.value)) ||
+      !Number.isFinite(Number(r.tolerance ?? 0)) || Number(r.tolerance ?? 0) < 0))
+    errs.push(`${where}: numeric response needs a finite value and nonnegative tolerance`);
+  if (r.kind === "self" && !String(r.model || "").trim())
+    errs.push(`${where}: self-check response needs a model answer`);
+}
+
+function checkStimulus(item, where, errs, courseId) {
+  const s = item.stimulus;
+  if (!s) return;
+  if (s.t === "figure") checkFigure(s, where, errs);
+  else if (s.t === "image") {
+    if (!String(s.alt || "").trim()) errs.push(`${where}: stimulus image needs alt text`);
+    if (typeof s.src !== "string" || !s.src.startsWith("assets/") ||
+        s.src.split("/").includes("..") || !existsSync(join(COURSES, courseId, s.src)))
+      errs.push(`${where}: missing stimulus image asset "${s.src}"`);
+  } else if (s.t === "passage") {
+    if (!String(s.text || "").trim() || !String(s.source || "").trim())
+      errs.push(`${where}: passage needs text and source`);
+  } else errs.push(`${where}: stimulus must be a figure, image, or passage`);
+}
+
+function checkQuestionHtml(item, where, errs) {
+  const fields = [item.q, item.why, item.response?.model,
+    item.stimulus?.text, item.stimulus?.source,
+    ...(item.response?.choices || []).flatMap(c => [c.text, c.why])];
+  const bare = /<\/?(?!(?:a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul)[\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]/;
+  for (let field of fields) {
+    if (typeof field !== "string") continue;
+    for (const m of field.matchAll(/<m>([\s\S]*?)<\/m>/g))
+      try { tex(m[1], false); } catch (e) { errs.push(`${where}: invalid math: ${e.message}`); }
+    field = field.replace(/<m>[\s\S]*?<\/m>/g, " ");
+    if (bare.test(field)) errs.push(`${where}: invalid HTML in question field`);
+  }
+}
+
+function checkPractice(C, errs, courseId) {
+  for (const [key, bank] of Object.entries(C.practice || {})) {
+    const where = `practice/${key}`;
+    if (!C.concepts[key]) errs.push(`${where}: concept is not defined`);
+    if (!(bank.items || []).length) errs.push(`${where}: no question variants`);
+    (bank.items || []).forEach((item, i) => {
+      const at = `${where} item ${i + 1}`;
+      if (!String(item.q || "").trim()) errs.push(`${at}: no q`);
+      if (!item.response) errs.push(`${at}: no response`);
+      checkResponse(item, at, errs);
+      checkStimulus(item, at, errs, courseId);
+      checkQuestionHtml(item, at, errs);
+    });
+  }
+}
 
 function checkDrills(C, errs, warns) {
   const bank = C.drills || {};
-  if (!Object.keys(bank).length) return;   /* no bank yet: Loop B simply hides */
+  if (!Object.keys(bank).length) return;   /* no legacy bank */
   const examFormats = new Set((C.exam || {}).format || []);
 
   for (const [key, file] of Object.entries(bank)) {
@@ -164,21 +198,17 @@ function checkDrills(C, errs, warns) {
   }
 }
 
-/* M31: the review set is declared, never inferred. `review: true` is the
-   declaration and a drill file is what it costs (M26), so the two are one fact
-   and are checked against each other. The basis is the third part — without it
-   the set is the author guessing about six weeks from now, unrecorded. */
+/* Keep legacy review metadata internally consistent, but neither the flag nor
+   a separate bank is needed for a concept to enter the current review queue. */
 function checkReviewSet(C, errs, warns) {
   const reviewed = Object.entries(C.concepts || {}).filter(([, c]) => c && c.review).map(([k]) => k);
 
   for (const key of reviewed)
-    if (!C.drills[key])
-      errs.push(`concepts/${key}: review: true with no drills/${key}.yaml — ` +
-        `a reviewed concept owes ${DRILL_MIN} worked items`);
+    if (!C.drills[key] && !C.practice?.[key])
+      warns.push(`concepts/${key}: review: true has no practice variants; ` +
+        `the subsection question can still be reviewed, but repetition will be narrow`);
 
-  /* The converse is a warning rather than an error: an undeclared bank is a
-     course whose review set drifted out of its own record, which is worth
-     saying, but the bank still works and no reader sees the discrepancy. */
+  /* Older courses declared a review set separately from their banks. */
   for (const key of Object.keys(C.drills))
     if (C.concepts[key] && !C.concepts[key].review)
       warns.push(`drills/${key}: the concept is not marked review: true — ` +
@@ -578,13 +608,16 @@ for (const id of courses) {
         if (!t) { errs.push(`${where}: a question has no type`); continue; }
         if (seenType.has(t)) errs.push(`${where}: repeats question type "${item.type}"`);
         seenType.add(t);
-        for (const k of ["q", "a", "why"])
-          if (!item[k] || !String(item[k]).trim()) errs.push(`${where}: question "${item.type}" missing "${k}"`);
-        /* The retention identity (M6). A key that names nothing never recruits,
-           and nothing on the page says so — audit-content.mjs counts items that
-           resolve to no concept; this catches the ones that are simply typos. */
+        if (!String(item.q || "").trim()) errs.push(`${where}: question "${item.type}" missing "q"`);
+        if (!item.response && (!String(item.a || "").trim() || !String(item.why || "").trim()))
+          errs.push(`${where}: legacy question "${item.type}" needs a and why`);
+        checkResponse(item, `${where} question "${item.type}"`, errs);
+        checkStimulus(item, `${where} question "${item.type}"`, errs, id);
+        /* A concept key must resolve so an outcome can enter Review. */
         if (item.concept && !defined.has(item.concept))
           errs.push(`${where}: question "${item.type}" names concept "${item.concept}", which no concepts/ file defines`);
+        if (item.response && !conceptOf(C, item, u))
+          errs.push(`${where}: question "${item.type}" needs a resolvable concept for Review`);
       }
 
       /* Authored fields are injected as HTML, so a bare `<` swallows the rest
@@ -620,7 +653,16 @@ for (const id of courses) {
           for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
       }
       for (const item of u.quiz || [])
-        for (const k of HTML_FIELDS) if (item[k] != null) checkHtml(item[k], `${where} quiz "${item.type}".${k}`);
+        {
+          for (const k of HTML_FIELDS) if (item[k] != null) checkHtml(item[k], `${where} quiz "${item.type}".${k}`);
+          for (const choice of item.response?.choices || []) {
+            checkHtml(choice.text, `${where} choice text`);
+            checkHtml(choice.why, `${where} choice why`);
+          }
+          checkHtml(item.response?.model, `${where} model answer`);
+          checkHtml(item.stimulus?.text, `${where} passage text`);
+          checkHtml(item.stimulus?.source, `${where} passage source`);
+        }
 
       const text = textOf(u);
       for (const m of text.matchAll(/<m>([\s\S]*?)<\/m>/g)) {
@@ -660,6 +702,7 @@ for (const id of courses) {
   checkCats(C, errs, warns);
   checkReviewSet(C, errs, warns);
   checkDrills(C, errs, warns);
+  checkPractice(C, errs, id);
   checkExaminableInSpine(C, warns);
   checkClusters(C, errs);
   checkPrimers(C, errs);

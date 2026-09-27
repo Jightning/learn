@@ -38,7 +38,7 @@ export default function Desk({ ctx }) {
   /* Loop B, stated once. The strip used to print three counts beside three
      more; what a reader can act on is how many are due, and the rest is
      answered on the calibration page by someone who went looking for it. */
-  const b = drills.has ? counts(cid, drills.keys) : null;
+  const b = counts(cid);
 
   return (
     <div class="desk">
@@ -119,7 +119,7 @@ export default function Desk({ ctx }) {
         <a href={H("index")}>Index</a>
         <a href={H("map")}>Dependency map</a>
         <a href={H("calibration")}>
-          Calibration{b && b.seen ? ` (${b.durable}/${b.total} durable)` : ""}
+          Practice history{b && b.seen ? ` (${b.durable}/${b.total} durable)` : ""}
         </a>
       </div>
     </div>

@@ -335,8 +335,7 @@ export async function testDiscovery(ctx, state) {
   await go(`#/${cid}/map/${last}`);
   ck(P("map rings the section you came from"),
      await page.locator(`.fx-node.is-here[data-node="${last}"]`).count() === 1);
-  /* the drill bank: a concept enters Loop B on contact, never before, and the
-     concept page is one of the three places contact can happen */
+  /* A concept page launches the same question card used everywhere else. */
   await go(`#/${cid}/index`);
   const banked = await page.evaluate(() => {
     const row = [...document.querySelectorAll(".ix-row")].find(c => c.querySelector(".ix-badge"));
@@ -347,17 +346,9 @@ export async function testDiscovery(ctx, state) {
     ck(P("a banked concept names its state in words"),
        (await page.locator(".cstate-box b").first().innerText()).length > 3);
     await page.locator("#c-drill").click(); await page.waitForTimeout(300);
-    ck(P("the concept page drills its own concept"), await page.locator(".drill").count() === 1);
-    ck(P("a drill withholds its answer until the reader commits"),
-       await page.locator(".drill .drill-a").count() === 0);
-    await page.locator(".drill .cbtn[data-conf='sure']").click(); await page.waitForTimeout(200);
-    await page.locator(".drill .why-in").fill("stating it first");
-    await page.locator(".drill .why-nav .cbtn").click(); await page.waitForTimeout(250);
-    ck(P("a stated reason reveals the worked solution"),
-       await page.locator(".drill .drill-steps li").count() > 0);
-    await page.locator(".drill .gbtn[data-got='1']").click(); await page.waitForTimeout(250);
-    ck(P("a graded drill reports the concept's new state"),
-       /learning|criterion|durable/.test(await page.locator(".drill .gnote").innerText()));
+    ck(P("the concept page opens one shared question card"), await page.locator(".q").count() === 1);
+    ck(P("the card starts with an answer field, not a confidence choice"),
+       await page.locator(".q .qentry, .q .qchoices").count() === 1 && await page.locator(".q [data-conf]").count() === 0);
     await shot(cid + "-drill");
   }
 

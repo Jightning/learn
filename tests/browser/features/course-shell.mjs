@@ -350,13 +350,11 @@ export async function testCourseShell(ctx, cid) {
        flow.page + "px of page overflow");
   }
 
-  /* Questions are separate cards, not one wall of text. */
-  const qGap = await page.evaluate(() => {
-    const q = document.querySelectorAll(".q");
-    if (q.length < 2) return null;
-    return Math.round(q[1].getBoundingClientRect().top - q[0].getBoundingClientRect().bottom);
-  });
-  if (qGap !== null) ck(P("questions are spaced apart"), qGap >= 12, qGap + "px");
+  /* Each subsection shows one question at a time; hidden slides must take no space. */
+  const shown = await page.evaluate(() => [...document.querySelectorAll(".quiz")]
+    .every(quiz => [...quiz.querySelectorAll(":scope > div > .q")]
+      .filter(card => card.getBoundingClientRect().height > 0).length <= 1));
+  ck(P("question slides occupy one card at a time"), shown);
 
   /* A margin stack is a margin, not a second column of prose. */
   const stack = await page.evaluate(() =>
@@ -442,7 +440,7 @@ export async function testCourseShell(ctx, cid) {
   const align = await page.evaluate(() => {
     const off = [];
     for (const r of document.querySelectorAll(".brow")) {
-      const side = r.querySelector(".bside > *"), main = r.querySelector(".bmain > div > *");
+      const side = r.querySelector(".bside > *"), main = r.querySelector(".bmain > *");
       if (!side || !main) continue;
       const sb = side.getBoundingClientRect(), mb = main.getBoundingClientRect();
       /* only meaningful while the card is actually beside the block; below a

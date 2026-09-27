@@ -74,7 +74,7 @@ for (const [name, spec, ids] of [["create_course", CC, idsIn("cc")], ["material_
 ck("§1 carries the reader form", /reader:/.test(CC.pick(["1"])));
 
 /* A heading that owns numbered subsections carries its rules in them, not in
-   its own preamble: §1's D1-D7 table is §1.1, the drill bank's two hardest
+   its own preamble: §1's D1-D7 table is §1.1, the practice-variant bank's two hardest
    instructions are §8.1 and §8.2. `pick("8")` returns the preamble alone, so a
    phase naming the parent alone silently ships a prompt with those rules
    missing — the build still passes and the course is simply worse. Naming a
@@ -115,8 +115,9 @@ try {
   ck("begin indexes a relative --source and lists its headings",
      /src\/notes\.md|notes\.md/.test(b.stdout) && /- Alpha Topic/.test(b.stdout), b.stdout);
   ck("begin remembers the sources", readFileSync(join(state, "roots.txt"), "utf8").includes(join(tmp, "src")));
-  ck("begin writes the drafter's rules", existsSync(join(state, "rules-drills.md")) &&
-     /^## 8\. The drill bank/m.test(readFileSync(join(state, "rules-drills.md"), "utf8")));
+  ck("begin writes the concept and optional-variant drafter rules",
+     existsSync(join(state, "rules-concepts.md")) && existsSync(join(state, "rules-variants.md")) &&
+     /^## 8\./m.test(readFileSync(join(state, "rules-variants.md"), "utf8")));
 
   const brief = author("write", cid), lean = author("write", cid, "--lean");
   ck("write carries the writing rules, the reader and the spec",
@@ -159,8 +160,8 @@ try {
      odd.status === 0 && /warning: sources should be absolute/.test(odd.stdout), odd.stdout);
 
   const fin = author("finish", cid);
-  ck("finish reports and records, and never blocks",
-     fin.status === 0 && /review concepts with no drills: idea/.test(fin.stdout) &&
+  ck("finish does not require optional practice variants",
+     fin.status === 0 && !/review concepts with no drills|practice variants/.test(fin.stdout) &&
      /Recorded as finished/.test(fin.stdout) && existsSync(join(state, "finish.done")), fin.stdout.slice(0, 400));
 
   const redo = author("redo", cid, "s1-1");
@@ -185,7 +186,7 @@ try {
      !existsSync(join(ROOT, "courses/away")));
   const ab = away("begin", "away");
   ck("its progress lives beside it, not in the repository",
-     ab.status === 0 && existsSync(join(ws, ".author/away/rules-drills.md")) &&
+     ab.status === 0 && existsSync(join(ws, ".author/away/rules-variants.md")) &&
      !existsSync(join(ROOT, ".author/away")), ab.stdout + ab.stderr);
   ck("and the spec still comes from the engine", /## The spec/.test(away("begin", "away").stdout));
 

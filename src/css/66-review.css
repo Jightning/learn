@@ -36,7 +36,6 @@
 .review-n{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3)}
 .review h1{font-size:1.4rem;margin:0 0 .5rem}
 .review-nav{display:flex;gap:8px;margin-top:1.2rem;flex-wrap:wrap}
-.review .drill{margin-bottom:1rem}
 
 /* The dots are the first thing to go when the bar runs out of room: the count
    beside them says the same thing in words. */

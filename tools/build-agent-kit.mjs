@@ -56,16 +56,16 @@ const DOCS = ["create_course.md", "material_truth.md", "writing.md"];
 const workflow = readFileSync(join(ROOT, "tools/agent/workflow.md"), "utf8");
 
 const DELEGATE = {
-  codex: "- In Codex, use `gpt-5.6-luna` with medium reasoning for routine concept cards, drill banks based on established worked examples, and focused source extraction. These are the defaults in `.codex/agents/course-drafter.toml` and `course-researcher.toml`. Reassess against the models available in the session; never silently inherit the parent's expensive model.\n" +
-    "- `course-drafter` owns one concept card or drill bank. Supply `.author/<id>/rules-concepts.md` or `rules-drills.md` and only the relevant course files. `course-researcher` returns concise cited notes for a bounded question.\n" +
+  codex: "- In Codex, use `gpt-5.6-luna` with medium reasoning for routine concept cards, practice variants based on established worked examples, and focused source extraction. These are the defaults in `.codex/agents/course-drafter.toml` and `course-researcher.toml`. Reassess against the models available in the session; never silently inherit the parent's expensive model.\n" +
+    "- `course-drafter` owns one concept card or practice variant bank. Supply `.author/<id>/rules-concepts.md` or `rules-variants.md` and only the relevant course files. `course-researcher` returns concise cited notes for a bounded question.\n" +
     "- For harder synthesis or derivations, select the cheapest capable stronger model (for example `gpt-5.6-terra`, then `gpt-5.6-sol`); reserve Astra for work that needs it. The cheap custom roles pin their model: use a `default` worker with the relevant role instructions and an explicit model and reasoning effort when escalating.\n" +
     "- When `spawn_agent` exposes `fork_turns`, set `fork_turns=\"none\"` and explicitly select model and reasoning effort; provide a self-contained task. A full-history fork can inherit the parent's model and prevent an override. Check the returned configuration when available. If a requested model is unavailable or ignored, report it and select a supported suitable model explicitly; do not silently launch an expensive worker.",
-  claude: "- `course-drafter` (Haiku): writes one concept card or one drill bank. Give it the file to " +
-    "write, the rules file `.author/<id>/rules-concepts.md` or `rules-drills.md`, and the course files to read.\n" +
+  claude: "- `course-drafter` (Haiku): writes one concept card or one practice variant bank. Give it the file to " +
+    "write, the rules file `.author/<id>/rules-concepts.md` or `rules-variants.md`, and the course files to read.\n" +
     "- `course-researcher`: reads widely and returns or saves condensed notes with citations. Use it for " +
     "a repository's subsystem, a long document you need only part of, or web research.",
-  any: "- If your CLI can run subagents or spawn a cheaper model, hand it one concept card or one drill " +
-    "bank at a time, with the rules file `.author/<id>/rules-concepts.md` or `rules-drills.md` and the " +
+  any: "- If your CLI can run subagents or spawn a cheaper model, hand it one concept card or one practice variant " +
+    "bank at a time, with the rules file `.author/<id>/rules-concepts.md` or `rules-variants.md` and the " +
     "course files to read; and hand it wide reading (a repository's subsystem, a long document, web " +
     "research) so the raw material stays out of this conversation.\n" +
     "- If it cannot, do that work yourself, but read narrowly: search for what you need instead of " +

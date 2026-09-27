@@ -18,39 +18,19 @@ export async function testPracticeAndNotes(ctx, state) {
 
   const pcfg = page.locator(".pcfg > summary");
   if (await pcfg.count()) { await pcfg.click(); await page.waitForTimeout(200); }
-  const drillMode = await page.locator("#p-source").count() > 0;
-
-  /* A scope the reader cannot see is a scope they cannot change: the control is
-     disabled in drill mode, so it must not hold a section from before the
-     switch and hand it back on the way out. */
-  if (drillMode) {
-    /* Drills are the default where a bank exists, and the scope control is
-       disabled there — so the trap is set from the other side, exactly as a
-       reader sets it: pick a section under Question types, then switch. */
-    await page.selectOption("#p-source", "types"); await page.waitForTimeout(150);
-    await page.selectOption("#p-scope", { index: 1 });
-    const picked = await page.inputValue("#p-scope");
-    await page.selectOption("#p-source", "drills"); await page.waitForTimeout(150);
-    const after = await page.inputValue("#p-scope");
-    ck(P("switching to drills resets the scope"), after === "all",
-       `${picked} -> ${after}`);
-    await page.selectOption("#p-source", "types"); await page.waitForTimeout(150);
-    ck(P("the scope comes back usable"),
-       await page.inputValue("#p-scope") === "all" &&
-       !(await page.locator("#p-scope").isDisabled()));
-    await page.selectOption("#p-source", "drills"); await page.waitForTimeout(150);
+  ck(P("Mixed Practice chooses a subsection range"),
+     await page.locator("#p-from").count() === 1 && await page.locator("#p-to").count() === 1);
+  ck(P("Mixed Practice has no drill source or confidence mode"),
+     await page.locator("#p-source, #p-scope, #p-timed, [data-conf]").count() === 0);
+  if (await page.locator("#p-from option").count() > 1) {
+    await page.selectOption("#p-from", { index: 1 });
+    ck(P("the selected range is reflected in the available pool"),
+       /available/.test(await page.locator(".pinfo").innerText()));
   }
 
   await page.locator("#p-start").click(); await page.waitForTimeout(400);
-  ck(P("practice serves an item"),
-     await page.locator(drillMode ? "#p-run .drill" : "#p-run .q").count() === 1 ||
-     await page.locator(".pempty").count() === 1);
-  /* Nothing due is the normal state of an unanswered course, so the empty
-     drill queue has to say that rather than blame a scope that is not in play. */
-  if (drillMode && await page.locator(".pempty").count() === 1) {
-    ck(P("an empty drill queue explains itself"),
-       /nothing is due/i.test(await page.locator(".pempty").innerText()));
-  }
+  ck(P("practice serves one unified question card"), await page.locator("#p-run .q").count() === 1);
+  ck(P("practice reports position in its run"), /Question 1 of/.test(await page.locator("#p-run .pmeta").innerText()));
   await shot(cid + "-practice");
 
   /* T6-adjacent: the library is where courses are installed and removed, so a
@@ -79,7 +59,7 @@ export async function testPracticeAndNotes(ctx, state) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(200);
 
-  /* calibration reports on the log rather than on the literature */
+  /* Calibration reports the answer log, including self-checked outcomes. */
   await go(`#/${cid}/calibration`);
   /* The page's one finding, in words.
    *
@@ -92,9 +72,7 @@ export async function testPracticeAndNotes(ctx, state) {
   ck(P("calibration leads with a finding from the log"), await lede.count() === 1);
   const ledeText = (await lede.innerText()).trim();
   ck(P("and states it in words, not in counts"), ledeText.split(/\s+/).length >= 8, ledeText);
-  /* On a course with no history it must say so rather than say it in zeros. */
-  ck(P("an empty log is named, not counted"),
-     /nothing to calibrate/i.test(ledeText) || /\d/.test(ledeText), ledeText);
+  ck(P("the attempt is counted from the new card flow"), /answered|recorded/i.test(ledeText), ledeText);
   ck(P("the zero dashboard is gone"), await page.locator(".cal .dash .dstat").count() === 0);
 
   /* The one control that can lose work lives here, beside the log it erases and
@@ -102,8 +80,8 @@ export async function testPracticeAndNotes(ctx, state) {
      thumb-width from Search. */
   ck(P("reset is not in the toolbar"),
      await page.evaluate(() => !/reset/i.test(document.querySelector(".topbar").innerText)));
-  ck(P("confidence is reported against correctness"),
-     await page.locator(".cal-t").first().locator("tr").count() > 0);
+  ck(P("calibration does not ask for retired confidence labels"),
+     !/sure|unsure|guess/i.test(await page.locator(".cal").innerText()));
   ck(P("the model's prediction is reported against the outcome"),
      await page.locator(".cal-t").count() === 2 ||
      await page.locator(".cal-empty").count() === 1);

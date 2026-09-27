@@ -190,59 +190,39 @@ if (ids.includes("ma26600")) {
 }
 
 /* ---------------------------------------------------------------------------
- * Grading a quiz question is one answer, not a repeatable action.
- *
- * The buttons used to stay live, and every extra press was folded in as
- * another recall: `rateStep` multiplies the interval by the ease factor each
- * time, so pressing "Got it" five times on a question answered once pushed the
- * next review out by a fortnight and wrote five rows into the log everything
- * else is a fold over.
+ * Every route records one outcome for one completed card. A self-check is an
+ * attempt when the reader chooses its outcome, rather than when the model
+ * answer is revealed. The resulting missed card is eligible for Review.
  * ------------------------------------------------------------------------ */
 {
-  const cid = ids[0];
-  const first = await page.evaluate(async c => {
-    location.hash = "#/" + c;
-    await new Promise(r => setTimeout(r, 600));
-    return (document.querySelector(".toc a[href]") || {}).hash || "";
-  }, cid);
-  await go(first);
-  const q = page.locator(".q").first();
-  if (await q.count() && await q.locator('.cbtn[data-conf="1"]').count()) {
-    await q.scrollIntoViewIfNeeded();
-    await q.locator('.cbtn[data-conf="1"]').click(); await page.waitForTimeout(200);
-    const skip = q.locator("button", { hasText: /^skip$/i });
-    if (await skip.count()) { await skip.click(); await page.waitForTimeout(300); }
-    const ok = q.locator(".gbtn.ok");
-    if (await ok.count()) {
-      /* An earlier check in this run already missed this question, and a missed
-         question's interval is zero — so it is legitimately due again and this
-         is a second answer. Only the rows written from here on are this test's. */
-      const t0 = await page.evaluate(() => Date.now());
-      await ok.click({ force: true }); await page.waitForTimeout(400);
-      const once = await page.evaluate(() =>
-        document.querySelector(".q .gnote").innerText);
-      for (let i = 0; i < 4; i++) { await ok.click({ force: true }); await page.waitForTimeout(100); }
-      await page.waitForTimeout(400);
-      const after = await page.evaluate(() => {
-        const g = document.querySelector(".q .qgrade");
-        return { note: g.querySelector(".gnote").innerText,
-                 inert: g.querySelector(".gbtn.ok").disabled && g.querySelector(".gbtn.no").disabled };
-      });
-      ck("an answered question stops taking answers", after.inert);
-      ck("pressing Got it again does not move the review date",
-         after.note === once, `"${once}" -> "${after.note}"`);
-      const qid = await q.getAttribute("data-qid");
-      const rows = await page.evaluate(([id, since]) => new Promise(res => {
-        const r = indexedDB.open("learn");
-        r.onsuccess = () => {
-          const g = r.result.transaction("log").objectStore("log").getAll();
-          g.onsuccess = () => res(g.result.filter(
-            x => x.loop === "A" && x.itemId === id && x.correct != null && x.ts >= since).length);
-        };
-      }), [qid, t0]);
-      ck("and writes one row, not five", rows === 1, rows + " outcome rows for " + qid);
-    }
-  }
+  const rows = await page.evaluate(() => new Promise(res => {
+    const r = indexedDB.open("learn");
+    r.onsuccess = () => {
+      const g = r.result.transaction("log").objectStore("log").getAll();
+      g.onsuccess = () => res(g.result.filter(x => x.loop === "Q" && x.correct != null));
+    };
+  }));
+  const byItem = rows.reduce((out, row) => {
+    const key = `${row.course}:${row.itemId}`;
+    out[key] = (out[key] || 0) + 1;
+    return out;
+  }, {});
+  ck("each completed card writes one outcome row", rows.length > 0 && Object.values(byItem).every(n => n === 1),
+     JSON.stringify(byItem));
+  ck("question outcomes carry correctness without a confidence gate",
+     rows.every(row => row.conf == null && row.correct != null), JSON.stringify(rows[0] || {}));
+
+  await go("#/review"); await page.waitForTimeout(500);
+  const scheduled = await page.evaluate(() => new Promise(res => {
+    const r = indexedDB.open("learn");
+    r.onsuccess = () => {
+      const g = r.result.transaction("kv").objectStore("kv").get("retain:v1");
+      g.onsuccess = () => res(JSON.parse(g.result || "{}"));
+    };
+  }));
+  ck("attempted concepts enter the Review schedule",
+    rows.some(row => row.concept && scheduled[row.course]?.[row.concept]?.reps > 0));
+  ck("Review shows a card or the next due state", await page.locator(".review .q, .review .review-bar").count() > 0);
 }
 
 /* A row of flow steps gives each note a measure rather than a share of the

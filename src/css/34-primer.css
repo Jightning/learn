@@ -29,13 +29,7 @@
 .primer-done h3{margin:0 0 6px;font-size:1.1rem}
 .primer-done p{margin:0 0 18px;color:var(--ink-2)}
 
-/* The prequestion is the primer's retrieval step: the reader commits a guess
-   before the answer exists on screen (T15, T32). Its three parts carried no
-   rule at all — the box the reader types into rendered at the browser default
-   inside a designed card, the only unstyled text input in the app — while the
-   identical mechanism in the drill (`.why-in`, `.why-prior` in 64-drill.css)
-   was fully dressed. These mirror it, so one mechanism looks like itself in
-   both places. */
+/* A prequestion asks for a tentative answer before revealing its model. */
 .preq-q{font-size:1.05rem;font-weight:600;line-height:1.5;margin:0 0 14px}
 .preq-in{
   display:block;width:100%;font:inherit;font-size:.86rem;
@@ -43,8 +37,7 @@
   background:var(--surface-2);color:var(--ink);resize:vertical;
 }
 .preq-in:focus{outline:2px solid var(--hi);outline-offset:1px}
-/* The reader's own words are learner content, so they never wear the styling
-   the material wears — the rule `.why-prior` states in 64-drill.css. */
+/* The reader's own words are learner content and stay visually distinct. */
 .preq-mine{
   margin:14px 0 0;border-left:2px solid var(--dc);border-radius:0 3px 3px 0;
   background:color-mix(in srgb,var(--dc) 7%,transparent);

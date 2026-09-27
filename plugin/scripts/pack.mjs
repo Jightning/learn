@@ -2673,10 +2673,12 @@ function loadCourse(dir) {
 		meta: "",
 		concepts: {},
 		drills: {},
+		practice: {},
 		sections: []
 	}, meta);
 	C.concepts = Object.assign({}, meta.concepts || {});
 	C.drills = {};
+	C.practice = {};
 	C.cats = Object.assign({}, meta.cats || {});
 	const catdir = join(dir, "categories");
 	for (const f of dataFiles(catdir)) {
@@ -2707,6 +2709,19 @@ function loadCourse(dir) {
 			continue;
 		}
 		C.drills[body.concept || key] = {
+			concept: body.concept || key,
+			items: body.items || []
+		};
+	}
+	const pdir = join(dir, "practice");
+	for (const f of dataFiles(pdir)) {
+		const key = basename(f, extname(f));
+		const body = parseFile(join(pdir, f));
+		if (!body || typeof body !== "object") {
+			errors.push(`practice/${f}: not a mapping`);
+			continue;
+		}
+		C.practice[body.concept || key] = {
 			concept: body.concept || key,
 			items: body.items || []
 		};

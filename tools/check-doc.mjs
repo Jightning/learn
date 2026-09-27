@@ -88,7 +88,11 @@ function blocks(v, out = []) {
   if (Array.isArray(v)) v.forEach(x => blocks(x, out));
   else if (v && typeof v === "object") {
     if (typeof v.t === "string") out.push(v);
-    Object.values(v).forEach(x => blocks(x, out));
+    Object.entries(v).forEach(([key, x]) => {
+      /* A question stimulus shares `t` with lesson blocks, but has its own
+         figure/image/passage schema and is checked by validate.mjs. */
+      if (key !== "stimulus") blocks(x, out);
+    });
   }
   return out;
 }

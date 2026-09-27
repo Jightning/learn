@@ -3,7 +3,7 @@
  * One question, asked of one concept: what is the probability this reader
  * recalls it right now? An interval is whatever holds that probability at the
  * course's target. An ease factor cannot answer it, which is why this is a DSR
- * model rather than the Leitner-shaped scheduler Loop A uses for coverage.
+ * model rather than a fixed interval ladder.
  *
  * ts-fsrs owns the fitted parameters; this file owns everything the site needs
  * that a card scheduler does not model — target retention per course, and
@@ -19,7 +19,7 @@ const algo = target =>
   (cache[target] ||= new FSRSAlgorithm(
     generatorParameters({ request_retention: target, enable_fuzz: false })));
 
-/** FSRS grades a recall 1-4. Confidence is already captured, so it is used. */
+/** FSRS grades a recall 1-4. Old log rows may carry a confidence hint. */
 export function grade(correct, conf) {
   if (!correct) return 1;
   return conf === "sure" ? 4 : conf === "guess" ? 2 : 3;

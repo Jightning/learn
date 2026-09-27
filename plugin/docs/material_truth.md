@@ -16,8 +16,7 @@ name their control condition and come from meta-analyses where one exists.
 an idea, one defines it and the other references it. A second copy drifts.
 
 M1 governs *explanation*. A second application is a different reader activity on
-the same idea, and repetition for fluency lives in the drill bank, where M26
-requires it.
+the same idea; practice variants repeat the skill without copying its prose.
 
 **A `core:` is not a second copy; a `gist:` is.** `core:` holds a block's opening
 claim in its own field and `h:` holds only what develops it — one paragraph split
@@ -42,7 +41,7 @@ obvious, which is the thing this rule exists to overrule.
 
 **M3. The calibration is written down.** `materials/expectations.md` records what
 is assumed, bridged, taught and skipped, the exam format and dates, and the basis
-for the review set (M31). Whether a worked example helps or *hurts* depends on
+for the practice scope (M31). Whether a worked example helps or *hurts* depends on
 the reader's expertise (Trade-offs), so a course that has not stated its reader
 cannot know whether its scaffolding is correct. The build reads its front matter.
 
@@ -54,20 +53,19 @@ cannot know whether its scaffolding is correct. The build reads its front matter
 Practice testing beats restudy at g = 0.51 and no activity at g = 0.93 (Adesope
 et al. 2017, 272 effects). M4 guarantees retrieval exists, not that it recurs;
 spacing is where the size comes from (g = 0.74, Latimier et al. 2021), and
-recurrence is guaranteed only by M26 for the review set.
+recurrence is scheduled from every attempted concept.
 
 **M5. One question per distinct question type, and no type repeats.** The target
 is coverage of the question *surface*, not volume. This governs the subsection
-quiz only; the drill bank (M26) has no type-uniqueness constraint. That is the
-Loop A / Loop B boundary in `code_truth.md` §3b.
+quiz only; later practice variants have no type-uniqueness constraint.
 
-**M6. Every question carries `type`, `q`, `a`, `why`, `why_prompt`, and a
-resolvable concept.** An answer without reasoning teaches recognition of that
-answer. `why_prompt` is the specific question asked before the reveal: elaborated
-retrieval adds d = 0.23 to transfer over plain retrieval (Pan & Rickard 2018).
-The concept may be inferred where the subsection cites exactly one reviewed
-concept, but it must resolve — it is the identity a confident miss uses to pull
-the concept into Loop B (T18).
+**M6. Every subsection question carries `type`, `q`, `response`, and a resolvable
+concept.** Structured responses state their grading key; each choice explains
+why it is right or wrong. An optional overall `why` can explain the derivation.
+An open response supplies a model answer for the reader to compare after
+attempting it. The concept may be inferred only when the
+subsection cites exactly one known concept. Older `a` questions are adapted as
+self-check items at read time.
 
 **M7. The `why` explains why the wrong answer is tempting**, not only why the
 right one is right. A misconception survives an explanation that never names it.
@@ -166,7 +164,7 @@ by term and instructor.
 **M22. A worked answer that is wrong is worse than no answer.** Content is
 checked by re-deriving, not re-reading: two errors in this project's history
 survived re-reading and were caught only by working the problem again.
-Re-derivation is recorded — every answer and drill item carries the date.
+Re-derivation is recorded — every answer and practice item carries the date.
 
 ---
 
@@ -182,35 +180,31 @@ restates its concept's definition is an M1 defect, and the fix is a link.
 
 **M25. Nothing examinable lives in `depth`.** A `depth` block promises that
 collapsing it costs nothing examinable. Mechanically: no concept with an
-exam-format drill item may have its only spine coverage inside a `depth` block.
+exam-format practice item may have its only spine coverage inside a `depth` block.
 
 ---
 
-## 8. The review set and the drill bank
+## 8. Review and practice variants
 
-**M31. The review set is declared, never inferred.** Every concept the course
-intends to hold over months is marked `review: true`, and `expectations.md` says
-on what basis. Checked both ways: marked with no drill file fails, a drill file
-for an unmarked concept warns, a non-empty set with no basis fails. A course may
-declare an empty review set and remain correct — it has no Loop B and must not
-claim retention it does not schedule for.
+**M31. Review draws from every attempted concept.** A concept does not need an
+opt-in flag or a separate bank to enter review. Its subsection question remains
+usable. `review: true` on older courses is accepted for compatibility.
 
-**M26. A reviewed concept carries at least three drill items with fully stepped
-solutions (M11), spanning at least two formats, one matching the declared exam
-format.** Three is the criterion count: fewer degrades into memorising one
-question (T31), and a higher floor washes out once relearning happens (Vaughn,
-Dunlosky & Rawson 2016). Mixed-format practice produced the strongest effect in
-the largest analysis (Adesope et al. 2017); the format *ranking* is contested,
-the *match* is not.
+**M26. Where repeated or exam-like work helps, add variants in
+`practice/<concept>.yaml`.** Variants should have worked feedback, distinct
+surfaces, and response formats appropriate to the skill. The initial success
+criterion adapts to the number of available items, up to three, so a course
+without a bank still participates in review. Mixed-format practice has strong
+evidence (Adesope et al. 2017); format must also match the target skill.
 
-**M27. Every drill item names the concept it exercises.**
+**M27. Every practice item names the concept it exercises.**
 
-**M32. At least one drill item per reviewed concept differs in surface from the
+**M32. At least one variant per practiced concept differs in surface from the
 worked example, while asking for the same kind of response.** Varying the surface
 stops item memorisation; holding the response preserves the effect — response
 congruency moved transfer from d = 0.28 to d = 0.58 (Pan & Rickard 2018).
 
-**M33. Every specific value stated in a `key` block has a matching drill item.**
+**M33. Every specific value stated in a `key` block has a matching practice item.**
 A constant, threshold, sign convention, ordering or boundary that is stated and
 never retrieved is a sentence, not a memory. The test: could the reader lose a
 mark by forgetting this exact thing while understanding everything around it?
@@ -266,7 +260,7 @@ which sibling it falls into instead). Comparing cases beats meeting them one at 
 time (d = 0.50; Alfieri, Nokes-Malach & Schunn 2013), and `siblings:` is what
 turns a member list into a comparison, so siblings must name each other.
 
-Scope is narrow: categories attach to **blocks and concepts only**. A drill
+Scope is narrow: categories attach to **blocks and concepts only**. A practice item
 item's category is its concept's (M27), and a quiz item has none, because `type`
 is already its identity (M9).
 
@@ -285,9 +279,9 @@ Legitimate variation: editorial judgement, not defects.
 covers material a learner cannot avoid; opt-in collapsed detail has not been
 tested against a single-density alternative.
 
-**How large the review set is.** Reviewing everything buys retention of what the
-exam never asks; reviewing nothing gives up Loop B. The defensible middle is what
-the exam can test plus what the author expects to be error-prone.
+**Which concepts recur most often.** Review eligibility comes from attempts;
+priority is determined by due time and past outcomes. Mixed Practice also favors
+misses and challenging items in the selected subsection range.
 
 **Depth per course.** A one-credit seminar and a four-credit core course should
 not have the same density. Padding violates M1 directly.
@@ -308,13 +302,11 @@ among older STEM learners, reversing for young learners and domain-general skill
 
 **Subsections per section.** Two to five is a band, not a rule.
 
-**Concepts per course.** No cap: M13 follows from M1. The cost sits in the review
-set — thirty concepts is a navigation question, thirty reviewed concepts is
-ninety drill items.
+**Concepts per course.** No cap: M13 follows from M1. A large concept set
+needs clear navigation, but does not require a fixed number of authored variants.
 
-**Question count beyond type coverage.** A second question of an existing type is
-wrong in the quiz and right in the drill bank: a routing decision, not a
-judgement about volume.
+**Question count beyond type coverage.** Subsection checks show one question per
+type. Add further variants to the practice pool when repetition will help.
 
 **Which `materials/` files to write.** `expectations.md` is required (M3);
 `syllabus.md` and `reference.md` are optional and high value; `schedule.md` is

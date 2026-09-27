@@ -2719,7 +2719,7 @@ function digest(dir) {
 			term: c.term || key,
 			review: !!c.review,
 			body: !!c.body,
-			drills: (read(join(dir, "drills", `${key}.yaml`)).items || []).length
+			variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
 		};
 	});
 	const cats = dataFiles(join(dir, "categories")).map((f) => {
@@ -2739,8 +2739,8 @@ function digest(dir) {
 		text: [
 			sections.length ? "SECTIONS AND SUBSECTIONS (id, title, coverage)" : "",
 			...sections.map((s) => [`${s.id} ${s.title}`, ...s.subs.map((u) => "  " + u.line)].join("\n")),
-			concepts.length ? "\nCONCEPTS (key, term, review, drill items)" : "",
-			...concepts.map((c) => `  ${c.key} — ${c.term}${c.review ? " [review]" : ""} — ${c.drills} drills`),
+			concepts.length ? "\nCONCEPTS (key, term, practice variants)" : "",
+			...concepts.map((c) => `  ${c.key} — ${c.term} — ${c.variants} variants`),
 			cats.length ? "\nCATEGORIES (key — name — boundary) — tag into these, never beside them" : "",
 			...cats.map((c) => `  ${c.key} — ${c.name} — ${c.boundary.replace(/\s+/g, " ").trim()}`)
 		].filter(Boolean).join("\n")
@@ -2979,6 +2979,7 @@ const titleCase = (s) => {
 };
 /** A line's heading and the prose it runs into, or null when it is not one. */
 function headingOf(line) {
+	if (line.length > 1e3) return null;
 	const marked = /^##+\s+(.+?)\s*$/.exec(line);
 	if (marked) return {
 		heading: marked[1],
@@ -2998,9 +2999,13 @@ function headingOf(line) {
 	return null;
 }
 const bare = (s) => s.replace(/^\d+(\.\d+)*\s+/, "").replace(/\s+/g, " ").trim();
+function readableHtml(html) {
+	return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<img\b[^>]*>/gi, " ").replace(/<h1\b[^>]*>/gi, "\n# ").replace(/<h[2-6]\b[^>]*>/gi, "\n## ").replace(/<\/h[1-6]>/gi, "\n").replace(/<\/(?:p|li|section|div)>/gi, "\n\n").replace(/<[^>]+>/g, " ").replace(/&(?:nbsp|#160);/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&#(?:39|x27);/gi, "'");
+}
 /** Text split into the topics its headings name. Text before any heading
 belongs to the `# ` title, or to "(untitled)". */
 function topics(md) {
+	if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
 	const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
 	const out = [{
 		heading: title,

@@ -74,7 +74,7 @@ const WRITING_STEPS = {
    handed the whole brief. */
 const DRAFTER = {
   concepts:  { cc: ["0", "1*", "5*"], mt: ["4*"] },
-  drills:    { cc: ["0", "1*", "8*"], mt: ["8*"] }
+  variants:  { cc: ["0", "1*", "8*"], mt: ["8*"] }
 };
 const LEAN_DROPS = new Set(["12*", "14"]);
 
@@ -171,7 +171,7 @@ const warn = text => {
 function pointer(p) {
   if (!p.courseDone) return `Next: steps 0-4 above, then \`author write ${id}\`.`;
   const u = p.todo[0];
-  if (!u) return `Next: the drills, then \`author finish ${id}\`.`;
+  if (!u) return `Next: add useful practice variants, then \`author finish ${id}\`.`;
   const sec = p.d.sections.find(s => s.subs.includes(u));
   return [
     `Next: ${u.id} ${u.title}  (${p.done.length}/${p.d.subs.length} done)`,
@@ -197,7 +197,7 @@ function briefText(which, reader) {
     "2. sections/NN-slug/_section.yaml for each section, and for each subsection a " +
       "sections/NN-slug/N-slug.yaml holding only its title.",
     "3. categories/<key>.yaml, or none if the material has no such kinds.",
-    "4. The concept set: ideas used in three or more places, and which of them are the review set. " +
+    "4. The concept set: ideas used in three or more places. " +
       `course-drafter writes each concepts/<key>.yaml (rules: .author/${id}/rules-concepts.md).`,
     `Then \`author write ${id}\`, which gives you the writing rules and the first subsection.`
   ] : [
@@ -211,9 +211,10 @@ function briefText(which, reader) {
     confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",
     `  - \`author done ${id} <sN-M> <source>...\` records it and names the next one. Its warnings are ` +
       "advice, not gates: fix what is worth fixing and carry on.",
-    "When none are left: course-drafter writes drills/<key>.yaml for each review concept (rules: " +
-      `.author/${id}/rules-drills.md)` + (confident ? ", whose answers you then check" : "") +
-      `, then \`author finish ${id}\`.`
+    "When none are left: add practice/<key>.yaml variants where another surface is needed " +
+      `(rules: .author/${id}/rules-variants.md)` +
+      (confident ? ", then independently check their answers" : "") +
+      `; then \`author finish ${id}\`.`
   ];
   return [
     `# ${which === "course" ? "Steps 0-4: the shape of the course" : "Steps 5-7: writing it"}` +
@@ -270,7 +271,7 @@ const commands = {
       say("## Sources\n\nNone. Research them (course-researcher), rerun with --source PATH, or write " +
         "from what you know and mark every def, key and trap `source: generated`.\n");
     }
-    say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-drills.md\n`);
+    say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-variants.md\n`);
     if (p.courseDone || p.d.subs.length) {
       say(`The course already has its sections. \`author write ${id}\` for the writing rules.`);
       if (!p.courseDone) warn("steps 0-4 were never recorded; `author write` records them");
@@ -330,8 +331,6 @@ const commands = {
     const run = (name, ...a) => spawnSync(process.execPath, [script(name), ...a], { encoding: "utf8" });
     const p = progress();
     if (p.todo.length) warn(`not written yet: ${p.todo.map(u => u.id).join(", ")}`);
-    const noDrills = p.d.concepts.filter(c => c.review && !c.drills).map(c => c.key);
-    if (noDrills.length) warn(`review concepts with no drills: ${noDrills.join(", ")}`);
     const g = run("gen-materials", id);
     say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
     const v = run("validate", id);

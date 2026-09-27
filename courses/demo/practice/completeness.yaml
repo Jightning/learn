@@ -1,0 +1,22 @@
+concept: completeness
+items:
+  - q: A subsection uses a term the calibration does not list, and never defines it. Which rule is broken?
+    response:
+      kind: self
+      model: Completeness; the reader on record does not know the term, so leaving it undefined omits a needed step.
+    why: Completeness is measured against the written calibration, not the author's sense of what is obvious.
+    verified: 2026-09-02
+  - q: Completeness is measured against which source?
+    response:
+      kind: single
+      choices:
+        - {text: The author's judgement, why: The author's intuition is not the reader record.}
+        - {text: The written calibration, why: The calibration records what the reader already knows.}
+        - {text: The official syllabus, why: A syllabus does not state the reader's prerequisites.}
+      correct: 2
+    why: Every obviousness decision is checked against the written calibration.
+    verified: 2026-09-02
+  - q: A reader stays in the Spine lane and expands no stubs. How many complete courses have they read?
+    response: {kind: number, value: 1, tolerance: 0, unit: course}
+    why: The spine alone contains every required step; depth and apply add optional detail.
+    verified: 2026-09-02

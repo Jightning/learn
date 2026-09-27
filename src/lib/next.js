@@ -89,7 +89,7 @@ export function nextUp({ C, cid, idx, state, drills, place = null, now = Date.no
   const stats = ids => (state && state.on ? state.stats(ids) : null);
 
   /* ---- 1. what is decaying ---------------------------------------------- */
-  const due = drills && drills.has ? counts(cid, drills.keys).due : 0;
+  const due = counts(cid).due;
   if (due >= DUE_FLOOR) {
     out.push({
       kind: "review", href: "#/review", count: due,

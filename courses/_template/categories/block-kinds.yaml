@@ -1,5 +1,4 @@
-# A category is declared, never inferred: the same shape M31 uses for the
-# review set, and for the same reason: an undeclared grouping is the author
+# A category is declared, never inferred. An undeclared grouping is the author
 # guessing, unrecorded, and it cannot be checked or revised.
 #
 # What makes this a category rather than a label: a label names one block, and

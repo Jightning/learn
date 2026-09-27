@@ -10,42 +10,42 @@ blocks:
     term: The two loops
     cat: retrieval-surfaces
     core: |-
-      Two retrieval loops run over the same material and never mix: the subsection quiz, keyed by question type, and the drill bank, keyed by concept.
+      Two retrieval pools use the same material: the subsection quiz is keyed by question type, while Mixed Practice and Review draw concept keyed items.
     h: |-
-      <p>One item per type: can you derive this on the spot? <b>Loop B</b> is the drill bank, keyed by <em>concept</em>. Many items, spaced: do you still hold it?</p>
+      <p>The quiz asks one item per type: can you derive this on the spot? Mixed Practice gives you more items on request, while Review serves scheduled concept items: do you still hold it?</p>
 
   - t: key
     source: docs/create_course.md §8
     label: The seam runs one way
     core: |-
-      A confident miss in Loop A pulls that concept into Loop B; a Loop B success never marks a Loop A type as covered.
+      Any answered concept enters Review; success in Mixed Practice or Review never marks a quiz type as covered.
     h: |-
       <p><c k="retrieval-practice">Retrieval practice</c> is the shared mechanism of <c k="two-loops">the two loops</c>; the one-way direction is what keeps coverage and retention from being confused for each other.</p>
 
   - t: math
-    label: What Loop B schedules against
+    label: What Review schedules against
     tex: R(t) = e^{-t/S}
     note: Recall probability R decays with time t since the last review; S is memory stability, which each successful spaced retrieval increases. The scheduler places the next review where R would fall to a fixed target.
 
   - t: ex
     source: docs/create_course.md §8
-    title: A confident miss, routed
+    title: An answered concept, routed
     core: |-
-      High confidence is what fires the seam; the same miss while unsure would not.
+      Answering is what makes a concept eligible for Review; misses and challenging outcomes receive extra weight.
     h: |-
       <ol>
-        <li>A reader answers a "separate the variables" quiz item, marks high confidence, and gets the sign wrong.</li>
-        <li>Loop A records the type as attempted-and-failed. Because confidence was high, the seam fires.</li>
-        <li>The concept <code>separable-equation</code> is recruited into Loop B, and its drill items enter the schedule within a day.</li>
+        <li>A reader answers a "separate the variables" quiz item and gets the sign wrong.</li>
+        <li>The quiz records the type as attempted-and-failed, and the concept enters Review.</li>
+        <li>The concept <code>separable-equation</code> is recruited into Review, and its practice items enter the schedule within a day.</li>
       </ol>
 
   - t: trap
     source: docs/material_truth.md M5
     label: Volume belongs in one loop only
     core: |-
-      A second question of a type already covered is wrong in the quiz and right in the drill bank.
+      A second question of a type already covered is wrong in the quiz and right in Review.
     h: |-
-      <p>A fifth “solve a linear IVP” question in a subsection quiz is a repeated type and the validator rejects it. Its place is the concept's drill file, which carries no type-uniqueness rule and is scheduled rather than read.</p>
+      <p>A fifth “solve a linear IVP” question in a subsection quiz is a repeated type and the validator rejects it. Its place is the concept's practice bank, which carries no type-uniqueness rule and is available to Mixed Practice or scheduled Review.</p>
 
   - t: metric
     notes: open
@@ -65,32 +65,39 @@ quiz:
   - type: Route a quiz result
     concept: two-loops
     q: |-
-      A reader answers a quiz item correctly but marks low confidence. Does anything enter Loop B?
+      A reader answers a quiz item correctly. Does its concept enter Review?
+    stimulus:
+      t: image
+      src: assets/gallery.svg
+      alt: Three bars labelled spine, depth, and apply
     a: |-
-      No. The seam fires on a confident <em>miss</em>, not on a hesitant hit.
+      Yes. Any answered concept enters Review; the scheduler can still weight missed items more heavily.
     why: |-
-      <p>Low-confidence correct answers are the calibration report's business, not the scheduler's. Recruiting on every uncertain answer would flood Loop B with concepts the reader actually knows.</p>
-    why_prompt: What exact combination of outcome and confidence triggers recruitment?
+      <p>Correct answers still create an answer history. Review weighting distinguishes outcomes without asking the learner for a confidence prediction.</p>
+    why_prompt: What makes a concept eligible for Review?
     verified: 2026-09-02
 
   - type: Choose the loop for more volume
     concept: two-loops
     q: |-
       An author wants ten practice problems on one procedure. Which loop takes them, and why not the other?
-    a: |-
-      Loop B, the drill bank. Loop A allows only one item per question type, so nine of the ten would be rejected as duplicates.
+    response:
+      kind: number
+      value: 9
+      tolerance: 0
+      unit: rejected quiz items
     why: |-
-      <p>Loop A exists for coverage of the question surface; Loop B exists for fluency through spaced repetition. The constraint on each is what keeps them from collapsing into one undifferentiated pile.</p>
-    why_prompt: What rule in Loop A blocks the other nine problems?
+      <p>The subsection quiz exists for coverage of question types; Mixed Practice and Review provide fluency through repeated retrieval. The constraints keep coverage and retention useful without forcing different interactions on the learner.</p>
+    why_prompt: What rule in the subsection quiz blocks the other nine problems?
     verified: 2026-09-02
 
   - type: Spot the error
     concept: two-loops
     q: |-
-      A course design doc says: "When a reader completes all three drill items for a concept, mark every quiz question that touches that concept as passed." What is wrong with this?
+      A course design doc says: "When a reader completes all three practice items for a concept, mark every quiz question that touches that concept as passed." What is wrong with this?
     a: |-
-      It reverses the seam. Loop B → Loop A feedback does not exist; a drill success says nothing about whether the reader can handle each distinct question type.
+      It reverses the seam. Practice and Review success do not mark quiz types as covered; a successful concept item says nothing about whether the reader can handle each distinct question type.
     why: |-
       <p>The tempting idea is that mastering the concept should discharge the questions about it. But the quiz tracks <em>types</em>: forwards, backwards, boundary, error-spotting. Holding the concept in memory is not the same as being fluent in every form the examiner can use.</p>
-    why_prompt: Which identity does Loop A track that Loop B does not?
+    why_prompt: Which identity does the subsection quiz track that practice does not?
     verified: 2026-09-02

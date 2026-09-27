@@ -126,7 +126,6 @@ const HOOKS = {
   "katex-mathml": "not emitted — KaTeX's own class, named by a regex in lib/util.js strip()",
   "lplus-w":    "Library.jsx text span inside the dressed .lplus button",
   preq:         "Prequestion.jsx modifier on .primer-card; the .preq-* parts are dressed",
-  prun:         "Practice.jsx run container; .pbar/.pmeta are dressed",
   rv:           "Topbar.jsx hook on a dressed .tbtn, the library's copy of the queue;\n                 in a course it is the sidebar's .rv-row instead. Either way #rv-open",
   "dtab-t":     "TierStub.jsx label span inside the rail disclosure button"
 };

@@ -75,7 +75,7 @@ blocks:
         - {label: Calibrate, note: write expectations.md first}
         - {label: Sequence, note: "sections and blurbs, no content"}
         - {label: Spine, note: only tier-spine blocks}
-        - {label: Loops, note: "quizzes, then drills"}
+        - {label: Practice, note: "answer, feedback, Continue"}
         - {label: Verify, note: re-derive every answer}
 
   - t: figure
@@ -87,7 +87,7 @@ blocks:
       dir: col
       steps:
         - {label: Phase 1–3, note: "calibrate, sequence, concepts"}
-        - {label: Phase 4–6, note: "spine, quizzes, drills"}
+        - {label: Phase 4–6, note: "spine, quizzes, practice"}
         - {label: Phase 7–8, note: "depth and apply, then verify"}
 
   - t: figure

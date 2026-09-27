@@ -43,7 +43,13 @@ export function fold(rows, cfg, start = { retain: {}, study: {} }) {
     if (r.ts < last) continue;
     last = r.ts;
 
-    if (r.loop === "B" && r.concept) {
+    if (r.loop === "Q") {
+      if (r.itemId) study[r.itemId] = rateStep(study[r.itemId] || null, null, r.correct, r.ts);
+      if (r.concept) retain[r.concept] = retentionStep(retain[r.concept] || null, {
+        itemId: r.itemId, correct: r.correct, conf: null, criterion: r.criterion,
+        target: cfg.target, deadline: cfg.deadline, now: r.ts
+      });
+    } else if (r.loop === "B" && r.concept) {
       retain[r.concept] = retentionStep(retain[r.concept] || null, {
         itemId: r.itemId, correct: r.correct, conf: r.confidence,
         target: cfg.target, deadline: cfg.deadline, now: r.ts

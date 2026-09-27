@@ -111,18 +111,12 @@ quiz:
     concept: confidence
     q: |-
       <p>You read a course end to end in the Spine lane, answer every quiz item
-      on the first try, and mark high confidence each time. Your review queue
+      on the first try. Your review queue
       stays empty the whole way. Six weeks later most of it is gone.</p>
       <p>Which part of the design let that happen, and what would you change
       about it? Say what your change would cost.</p>
     a: |-
-      <p>A good answer names the mechanism: enrolment is driven by confident
-      misses and by drilling a concept from its own entry, so a reader who never
-      misses never enrols anything. It then picks a side. Auto-enrolling every
-      concept on first read buys retention and costs the reader a queue they
-      did not ask for, full of items about things they already hold. Leaving it
-      manual keeps the queue honest and puts the work of noticing on the
-      reader.</p>
+      <p>A good answer names the mechanism: answered concepts enter Review, while reading alone creates no answer history. It then picks a side. Auto-enrolling every concept on first read buys retention and costs the reader a queue they did not ask for, full of items about things they already hold. The current design waits for an answer before scheduling.</p>
     why: |-
       <p>There is no right answer here, and the trade-off is real rather than a
       teaching device. The site takes the second option on purpose. What is

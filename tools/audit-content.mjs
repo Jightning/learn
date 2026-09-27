@@ -10,9 +10,8 @@
  * standard.
  *
  * So every explanatory claim names where it came from, every worked answer
- * names the date it was re-derived, every question carries the specific prompt
- * the reader answers before the reveal, and every question names the concept a
- * confident miss should recruit. What is missing is counted as a fraction, and
+ * names the date it was re-derived, and every question names the concept its
+ * outcome updates. What is missing is counted as a fraction, and
  * a course fails above the ceiling it declares.
  *
  * The ceiling is per course, in `course.yaml`, and defaults to 1 — report
@@ -52,7 +51,6 @@ const UNSOURCED = new Set(["unverified", "generated"]);
 const METRICS = [
   ["unsourced",  "claims name no source"],
   ["unverified", "answers carry no re-derivation date"],
-  ["unprompted", "questions carry no why_prompt"],
   ["unrouted",   "questions resolve to no concept"],
   ["unclaimed",  "claims declare neither core: nor gist:"],
   ["repeat",     "claims restate themselves in a gist: rather than splitting a core:"],
@@ -79,7 +77,7 @@ function detailsWithoutRecall(C) {
 function audit(id) {
   const { course: C } = loadCourse(join(COURSES, id));
   const n = { claims: 0, answers: 0, quiz: 0 };
-  const miss = { unsourced: 0, unverified: 0, unprompted: 0, unrouted: 0,
+  const miss = { unsourced: 0, unverified: 0, unrouted: 0,
                  unclaimed: 0, repeat: 0, nameonly: 0 };
   let blocks = 0;
 
@@ -120,18 +118,16 @@ function audit(id) {
       for (const q of u.quiz || []) {
         n.quiz++; n.answers++;
         if (!q.verified) miss.unverified++;
-        if (!String(q.why_prompt || "").trim()) miss.unprompted++;
-        /* The seam only fires where a quiz item resolves to a concept with a
-           bank, so a course with no bank has nothing to route to and scores 0
-           rather than 100% (T18, M6). */
-        if (C.drills && Object.keys(C.drills).length && !conceptOf(C, q, u)) miss.unrouted++;
+        if (!conceptOf(C, q, u)) miss.unrouted++;
       }
     }
 
   for (const file of Object.values(C.drills))
     for (const it of file.items || []) { n.answers++; if (!it.verified) miss.unverified++; }
+  for (const file of Object.values(C.practice || {}))
+    for (const it of file.items || []) { n.answers++; if (!it.verified) miss.unverified++; }
 
-  const of = { unsourced: n.claims, unverified: n.answers, unprompted: n.quiz, unrouted: n.quiz,
+  const of = { unsourced: n.claims, unverified: n.answers, unrouted: n.quiz,
                unclaimed: n.claims, repeat: n.claims, nameonly: blocks };
   const ceiling = C.audit || {};
   const rows = METRICS.map(([k, label]) => ({

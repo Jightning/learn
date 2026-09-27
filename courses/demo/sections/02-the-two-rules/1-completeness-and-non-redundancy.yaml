@@ -37,7 +37,7 @@ blocks:
     core: |-
       Non-redundancy governs explanation, not practice.
     h: |-
-      <p>Deleting the drill bank's repeated worked instances "to avoid redundancy" removes exactly the repetition long-term retention needs. The rule forbids restating the <em>definition</em>, nothing else.</p>
+      <p>Deleting the practice bank's repeated worked instances "to avoid redundancy" removes exactly the repetition long-term retention needs. The rule forbids restating the <em>definition</em>, nothing else.</p>
 
   - t: p
     source: docs/architecture.md
@@ -58,8 +58,9 @@ quiz:
     concept: non-redundancy
     q: |-
       A course explains the Wronskian in full in §3.2, then explains it again in full in §5.1 because "readers may have forgotten". Which rule is broken, and what is the fix?
-    a: |-
-      Non-redundancy. §5.1 should link to §3.2 (or the idea should be promoted to a concept, since it is now used in several places).
+    response:
+      kind: self
+      model: Non-redundancy. §5.1 should link to §3.2, or the idea should be promoted to a concept because it is used in several places.
     why: |-
       <p>The second full explanation is a second copy that will drift. A link renders a margin card, feeds the prerequisite list, and draws a dependency edge. One action, several benefits, no duplication.</p>
     why_prompt: What does the reader lose when the two copies eventually disagree?
@@ -79,9 +80,9 @@ quiz:
   - type: Spot the error
     concept: non-redundancy
     q: |-
-      A reviewer flags a drill bank for "repeating the same procedure five times" and asks the author to cut it to one. Is the reviewer right?
+      A reviewer flags a practice bank for "repeating the same procedure five times" and asks the author to cut it to one. Is the reviewer right?
     a: |-
-      No. The drill bank is required to repeat applications, and that repetition is the retention loop. Non-redundancy forbids repeating the <em>explanation</em>, which the drills do not do.
+      No. The practice bank is required to repeat applications, and that repetition is the retention loop. Non-redundancy forbids repeating the <em>explanation</em>, which the practice items do not do.
     why: |-
       <p>The tempting reading is that any repetition is waste. The rule is narrower: one copy of the words that teach the idea. Repeated practice on the idea is a different reader activity, and cutting it removes the only thing that makes the concept stick past the week.</p>
     why_prompt: Which kind of repetition does Rule 2 actually prohibit?

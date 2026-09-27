@@ -138,10 +138,9 @@ all-caps around a tenth slower, which is why signage and interface guidelines
 alike reserve it for short labels.
 
 **The test is the string, not the element: if you would read it aloud as a
-sentence, it is not a label.** A figure caption describes, a `why_prompt` asks,
-a quiz answer states, and a course's `meta` names an institution — every one of
-those was set in caps here, including the prompt that carries the largest
-transfer effect on the site and the line that rendered "Edwards, Penney &
+sentence, it is not a label.** A figure caption describes, a question asks,
+an answer states, and a course's `meta` names an institution — several of
+those were once set in caps here, including the line that rendered "Edwards, Penney &
 Calvis 6e" as "EDWARDS, PENNEY & CALVIS 6E", which is the same string with its
 information removed.
 
@@ -332,107 +331,50 @@ stronger mechanism, and it is covered by T15 and by M29.
 
 ## 3b. The practice loop: large effects
 
-This is where the leverage is. Two loops run over different pools, with
-different units of state, and they never mix.
-
-| | **Loop A, comprehension** | **Loop B, retention** |
-|---|---|---|
-| Asks | Can I derive this on the spot? | Do I still hold this in six weeks? |
-| Pool | The subsection quiz | The drill bank |
-| Unit of state | Subsection, keyed by question `type` | Concept, keyed by concept key |
-| Schedule | Section-level, deadline-driven | Concept-level, criterion then spaced |
-| Governed by | M5, M9 | M26, M27, M31 |
-
-They connect at one seam and it runs one way: a Loop A failure recruits Loop B
-(T18). A Loop B success never marks a Loop A type as covered.
+The same question card handles subsection checks, Mixed Practice, and Review.
+Its answer input comes first. A structured response is graded immediately; an
+open response reveals a model answer and asks the reader to self-check. Skip
+records a miss. Each outcome is logged once and updates both question and
+concept state when the item has a concept.
 
 **T15. Retrieval precedes reveal.** An answer is never visible before an attempt
-is possible. Showing the answer alongside the question converts retrieval into
-re-reading and discards the effect. (Practice testing: g = 0.51 against restudy,
-g = 0.93 against no activity; Adesope et al. 2017, *RER*, 272 effects.)
+is possible. Showing it beside the question converts retrieval into re-reading.
+Practice testing beats restudy at g = 0.51 and no activity at g = 0.93 (Adesope
+et al. 2017, *RER*, 272 effects). This governs every source of an answer,
+including the context record (T38).
 
-This governs every source of an answer, not only the page's own reveal. See
-T38.
-
-**T16. Interleaved practice mixes confusable items.** Mixed practice must be
-reachable, and what it mixes is items a reader actually confuses, declared as
-confusability clusters rather than assembled from arbitrary topics.
-(Overall g = 0.42 against blocked practice; Brunmair & Richter 2019,
-*Psychological Bulletin*, 59 studies, 238 effects.)
-
-The scope is part of the rule. The effect is moderated by between-category
-similarity: g = .67 for high-similarity discriminations, g = .21 and not
-significant for expository text, g = −.39 for words. Blocking can beat
-interleaving when categories are already easy to tell apart, because then the
-work is finding what one category's members share. Mixing unrelated topics is
-not a weaker version of interleaving; it is outside the conditions where the
-effect was found.
+**T16. Mixed Practice combines a learner-selected subsection range with adaptive
+sampling.** It gives extra weight to missed, due, and difficult items while
+keeping a broad sampling component. Similar skills can therefore recur without
+forcing an author to duplicate every item. Interleaving helps most when items
+are genuinely confusable (Brunmair & Richter 2019, *Psychological Bulletin*).
 
 **T17. Spaced review is scheduled by outcome and bounded by the calendar.**
-Missed items return sooner, mastered items return later, and the interval the
-outcome produces is then clamped by two calendar facts: the criterion in T31
-requires distinct dates, and no interval may step over a declared exam date.
-(Spaced retrieval: g = 0.74 against massed retrieval; Latimier et al. 2021,
-*Educational Psychology Review*.)
+Missed concepts return sooner, successful ones later. No interval may step over
+a declared exam date. Spaced retrieval beats massed retrieval at g = 0.74
+(Latimier et al. 2021, *Educational Psychology Review*).
 
-Do not hand-build expanding intervals. The same meta-analysis found no
-advantage for expanding over uniform spacing (g = 0.034). A model that fits
-stability from the review log expands where the data warrants it and nowhere
-else.
+**T31. Review runs to an adaptive criterion, then relearns across days.** The
+initial criterion is the number of distinct authored items for the concept, up
+to three. This allows a single subsection question to enter review without
+forcing a separate bank. Relearning sessions remain spaced across distinct
+calendar dates. The stronger evidence for successive relearning compares it
+against single-session learning (Rawson & Dunlosky 2013; Rawson et al. 2018).
 
-**T31. Loop B retrieval runs to a criterion, then relearns across days.** Three
-correct recalls on three *distinct* items, then at least three relearning
-sessions on three distinct dates. Scheduling by outcome is necessary and not
-sufficient: without a criterion a concept counts as known after one lucky
-answer. (Successive relearning: d = 1.52–4.19 against single-session learning,
-Rawson & Dunlosky 2013; recalling once in each of three spaced sessions beat
-three correct recalls in one session by more than 2x, Rawson et al. 2018.)
+**T32. Feedback explains the answer.** Choice responses explain each option;
+numeric responses reveal the target and tolerance; open responses show a model
+answer and ask the reader to assess their attempt. Authors can add an overall
+`why` for the misconception or derivation. This makes elaboration available
+without placing a mandatory second input before feedback.
 
-Three is a ceiling to respect, not a floor to beat. Rawson & Dunlosky (2011)
-crossed criteria of one to five recalls with one to five relearning sessions and
-prescribe exactly this schedule, and Vaughn, Dunlosky & Rawson (2016) found the
-benefit of a higher initial criterion washing out once relearning happens.
+**T18. An incorrect or skipped answer gets timely another attempt.** Mixed
+Practice and Review prefer missed items and, where another variant exists, can
+bring that variant into the session. The outcome also shortens the next review
+interval. No confidence prompt is required to enroll a concept.
 
-Note the control condition: those large d values are against single-session
-learning, which is a weak comparison. The prescription is what carries, and it
-is stable across a dozen studies.
-
-**T32. Retrieval is elaborated: the reader states a reason before the reveal,
-and that reason returns at the next encounter.** A correct answer for a wrong
-reason and a correct answer for a sound reason are otherwise the same row in
-state. (Prompted self-explanation: g = 0.55 against no prompt, Bisra et al.
-2018, *EPR*, 69 effects. Elaborated retrieval adds d = 0.23 to *transfer* over
-plain retrieval, Pan & Rickard 2018, *Psychological Bulletin*.)
-
-Skipping is one click, and the skip is recorded, because a skipped reason is the
-reader opting out of the largest transfer moderator the site has.
-
-**T18. The reader's confidence is captured before the answer is shown, the gap
-is surfaced, and a confident miss is re-tested in the same session.** Fluency
-while reading is recognition, not recall, and learners systematically
-overestimate it. The site must be able to tell the reader where they were
-confident *and wrong*: that number is the product's single most useful output.
-
-Surfacing the gap is diagnosis. The treatment is the re-test. High-confidence
-errors are corrected more readily than low-confidence ones after feedback (the
-hypercorrection effect, Butterfield & Metcalfe 2001), but at a delay they tend
-to **return** unless a test follows the corrective feedback immediately. So a
-confident miss draws a second item for the same concept from the drill bank
-before the session ends, and that concept is scheduled short. Feedback alone
-does not hold.
-
-The re-test comes from the drill bank, never from the quiz, because M5 forbids
-a second item of the same type in a subsection.
-
-**T35. Every response is logged with the scheduler's predicted retrievability
-before the answer.** The reader's confidence (T18) and the model's predicted
-retrievability are different quantities and are recorded separately. Storing
-both against the same outcome makes the log a calibration dataset twice over:
-it measures the reader's metacognition and the scheduler's honesty on this
-reader's data, which no published benchmark can do.
-
-Without the log, every claim in §3b is an argument from literature rather than a
-measurement, which is the condition T24 exists to prevent.
+**T35. Every response logs the scheduler's predicted retrievability before the
+answer.** Comparing predictions with outcomes lets the practice-history page
+show model calibration without asking the reader to predict their own grade.
 
 ---
 
@@ -485,9 +427,9 @@ answer than the build did; if it cannot, the work is not read-time work.
 `validate.mjs` checks structure and never truth. A confident, well-formatted,
 wrong explanation fails no structural gate, and the reader cannot tell, because
 everything else on the page has been verified to a high standard. `npm run
-audit` measures four fractions per course — claims with no source, answers with
-no re-derivation date, questions with no `why_prompt`, questions that resolve to
-no concept — and fails a course above the ceiling that course declares. Content
+audit` measures course content debt, including claims with no source, answers
+with no re-derivation date, and questions that resolve to no concept; it fails a
+course above the ceiling that course declares. Content
 a model drafted counts as unverified until a human sets a real source (M30).
 
 **The ceiling is per course and declared in `course.yaml`, not global.** These
@@ -546,7 +488,7 @@ Extended to the browser's own assistant: the context record in `<head>` is
 assembled from course data, never from page text.
 
 **T38. AI never precedes an attempt.** No pointer to outside help is reachable
-in a quiz or drill before the reader commits, and no unattempted answer is put
+in a quiz or practice card before the reader commits, and no unattempted answer is put
 anywhere something else could read it, including the context record T37
 describes.
 
@@ -570,7 +512,7 @@ the monitoring to a model reproduces the mechanism it was built to avoid, and it
 degrades T18, which is the site's most useful output.
 
 **T39. Nothing the reader wrote leaves the device unsealed, and for a reader who
-has set nothing up, nothing leaves at all.** Explanations, notes, confidence,
+has set nothing up, nothing leaves at all.** Explanations, notes,
 the outcome log and the calibration report are computed in the page and stored
 in the browser. Export is reader-initiated and explicit. Where the browser's own
 assistant can see them, that is stated once rather than hidden.
@@ -589,31 +531,12 @@ page where the data itself is shown.
 
 ## Unbuilt gates
 
-T25 obliges every mechanical rule to have a gate. These rules are correct and
-currently unenforced, or enforced only in part. Each is a build task, not an
-open question, and each belongs in `npm run check` or `npm run audit`.
-
-| Rule | What is missing | Where |
-|---|---|---|
-| M34 | The structural half is gated (`core:` and `gist:` are mutually exclusive; a `core:` may not reopen its own `h:`). The *fractions* — claims declaring neither, and claims taking the `gist:` escape — are measured by `npm run audit` against a per-course ceiling that every existing course leaves at the default of 1, so they are debt rather than a satisfied rule. | `courses/*/course.yaml` |
-| M36 | A block yielding no name is reported, not failed, because four courses predate the rule and every one of their `p` blocks would trip it. It becomes a gate when a course declares a ceiling. | the row above |
-| M25 | The citation graph is checked: a reviewed concept whose every `<c k>` mention sits outside the spine warns. Actual *coverage* is not, because a concept's definition site is prose (`src: Defined in §10.1`) and no field names it. Making the site a real id would turn the warning into a failure. | `validate.mjs`, `concepts/<key>.yaml` schema |
-| T34 | The audit ceiling exists and is per course, but only `demo` declares one. Five courses sit at the default of 1 — reported, ungated — so their fractions are debt rather than a satisfied rule. | `courses/*/course.yaml` |
-| M6, M22 | `why_prompt`, `verified:` and concept routing are measured, not failed, for the same reason: four courses predate all three. They become gates the moment those courses declare a ceiling. | the row above |
-
-M32 ("a surface unlike the worked example") is author judgement and is not on
-this list. No script can tell whether two stems are meaningfully different.
-
-**Gates built since this table was first written**, listed so that "we check
-that" and "we intend to check that" stay different sentences: M31 both ways (a
-reviewed concept owes a drill file; a drill file whose concept is not marked
-warns; a non-empty review set with no `review.basis` fails), M30/T34
-(`source: generated` counts against the unsourced fraction and renders as its
-own badge), M6 (a `concept:` naming no concept file fails), M33 (a `key` block
-stating a value in a reviewed concept with no cued-recall item warns), and the
-scaffold (`_template` now carries tiers, `drills/`, a primer, `why_prompt`,
-`source:`, `review:` and `verified:`, so `npm run new` no longer contradicts
-`create_course.md`).
+T25 requires mechanical rules to have build checks. Current validation checks
+question response shapes, grading keys, explanations, stimuli, concept routing,
+and asset existence. Semantic differences between a practice variant and a
+worked example still require author review. Some older courses retain legacy
+free-response content; the loader adapts it to self-check cards, and authors can
+migrate it incrementally to `response` and `practice/`.
 
 ## Trade-offs
 
@@ -689,8 +612,7 @@ it keeps the page from moving out from under a reader who switches courses.
 ### State
 
 Learner state unlocks T17, T18, T31, T32 and T35. A course may still disable it
-and remain correct; it simply cannot claim those five properties, and it has no
-Loop B.
+and remain readable; attempts then do not enter the review schedule.
 
 ### Page weight
 

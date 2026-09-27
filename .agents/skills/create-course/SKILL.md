@@ -12,7 +12,7 @@ Course flow: `begin`, `write`, `done` for each subsection, then `finish`.
 1. `node tools/author.mjs begin <id> [--source PATH]...` reports status, sources, and rules for steps 0–4. Follow them to write `materials/expectations.md`, section/subsection files, categories, and the concept set. If no course exists, run `npm run new -- <id> "Title"`; sources may be anywhere except unsafe paths.
 2. `node tools/author.mjs write <id>` gives the writing rules and first subsection.
 3. For each subsection, read only what it needs, write it in one operation, then run `node tools/author.mjs done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It names the next subsection.
-4. After the subsections, write the drills and run `node tools/author.mjs finish <id>`. Act on its report or explain why not, including what was written, skipped, or unsourced.
+4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `node tools/author.mjs finish <id>`. Every encountered question can enter Review, so a variant bank is optional. Act on the report or explain what was written, skipped, or unsourced.
 
 ## Cost
 
@@ -27,12 +27,12 @@ Model requests process conversation context; cached input is cheaper but not fre
 
 Use the cheapest model that meets correctness and teaching requirements; do not trade away depth, source checks, answer verification, or validation. Give each agent one bounded deliverable, relevant rules/sources, an acceptance checklist, and explicit file ownership. Agents must not revert others' edits.
 
-- In Codex, use `gpt-5.6-luna` with medium reasoning for routine concept cards, drill banks based on established worked examples, and focused source extraction. These are the defaults in `.codex/agents/course-drafter.toml` and `course-researcher.toml`. Reassess against the models available in the session; never silently inherit the parent's expensive model.
-- `course-drafter` owns one concept card or drill bank. Supply `.author/<id>/rules-concepts.md` or `rules-drills.md` and only the relevant course files. `course-researcher` returns concise cited notes for a bounded question.
+- In Codex, use `gpt-5.6-luna` with medium reasoning for routine concept cards, practice variants based on established worked examples, and focused source extraction. These are the defaults in `.codex/agents/course-drafter.toml` and `course-researcher.toml`. Reassess against the models available in the session; never silently inherit the parent's expensive model.
+- `course-drafter` owns one concept card or practice variant bank. Supply `.author/<id>/rules-concepts.md` or `rules-variants.md` and only the relevant course files. `course-researcher` returns concise cited notes for a bounded question.
 - For harder synthesis or derivations, select the cheapest capable stronger model (for example `gpt-5.6-terra`, then `gpt-5.6-sol`); reserve Astra for work that needs it. The cheap custom roles pin their model: use a `default` worker with the relevant role instructions and an explicit model and reasoning effort when escalating.
 - When `spawn_agent` exposes `fork_turns`, set `fork_turns="none"` and explicitly select model and reasoning effort; provide a self-contained task. A full-history fork can inherit the parent's model and prevent an override. Check the returned configuration when available. If a requested model is unavailable or ignored, report it and select a supported suitable model explicitly; do not silently launch an expensive worker.
 
-Check every result against its sources and rules, including independent drill-answer checks. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
+Check every result against its sources and rules, including independent answer checks for practice variants. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
 
 ## Revising and resuming
 

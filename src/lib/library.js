@@ -7,9 +7,9 @@
  * writes are the bytes the app runs.
  *
  * `INDEX` is the part that is never lazy: the library card, the accent, and
- * the drill keys and retention target. lib/queue.js decides what is due from
- * drill *keys* alone, never the items, so the cross-course due badge is right
- * on first paint without fetching a single course.
+ * the retention target. lib/queue.js counts due concepts from learner state,
+ * so the cross-course due badge is right on first paint without fetching
+ * course bodies.
  * ==========================================================================*/
 import { INDEX as BUILTIN, ORDER as BUILTIN_ORDER } from "virtual:courses";
 import { parseCourse } from "./parse.js";

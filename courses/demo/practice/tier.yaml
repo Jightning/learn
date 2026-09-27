@@ -1,0 +1,26 @@
+concept: tier
+items:
+  - q: A block is examinable but runs to three paragraphs. Which tier should it use?
+    response:
+      kind: single
+      choices:
+        - {text: Spine, why: Examinability determines spine, regardless of length.}
+        - {text: Depth, why: Depth is for optional detail, not examinable material.}
+        - {text: Apply, why: Apply is for additional use, not the required explanation.}
+      correct: 1
+    why: The spine must contain everything a reader may be examined on.
+    verified: 2026-09-02
+  - q: The mechanical check for examinable material in depth is which condition?
+    response:
+      kind: multi
+      choices:
+        - {text: No depth block exceeds 100 words, why: Length is not the governing test.}
+        - {text: Every examinable concept has spine coverage outside collapsed blocks, why: A Spine reader must still receive it.}
+        - {text: Depth blocks carry no quiz, why: Quizzes do not determine whether coverage is examinable.}
+      correct: [2]
+    why: Examinable coverage must remain in an always-visible block.
+    verified: 2026-09-02
+  - q: A subsection ends with five hidden blocks in one run. How many stubs represent that run in the Spine lane?
+    response: {kind: number, value: 1, tolerance: 0, unit: stub}
+    why: Consecutive hidden blocks are grouped into one stub.
+    verified: 2026-09-02
