@@ -3,7 +3,7 @@ import preact from "@preact/preset-vite";
 import { existsSync } from "node:fs";
 import { join, sep } from "node:path";
 import { loadCourse } from "./tools/lib/load.mjs";
-import { courseFiles, PUBLIC } from "./tools/lib/files.mjs";
+import { courseFiles, PUBLIC, PUBLIC_CATEGORIES } from "./tools/lib/files.mjs";
 
 /* ---------------------------------------------------------------- courses --
  * A course ships as the files it is written in — one JSON per course holding
@@ -75,10 +75,13 @@ function coursesPlugin() {
       const index = {}, order = [];
       for (const c of publicIds) {
         if (!existsSync(join(dir, c))) this.error(`public course ${c} does not exist`);
+        const category = PUBLIC_CATEGORIES.get(c);
+        if (typeof category !== "string" || !category.trim())
+          this.error(`public course ${c} needs a category`);
         const { course, errors } = loadCourse(join(dir, c));
         if (errors.length) this.error(`${c}: ${errors.join("; ")}`);
 
-        index[c] = indexOf(course, c);
+        index[c] = { ...indexOf(course, c), category };
         order.push(c);
         /* emitFile is build-only; the dev server answers the same URLs from
            disk in configureServer below. */

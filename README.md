@@ -11,11 +11,11 @@ A course is the specific thing you want to learn/study (like a class, or certain
 ### Getting started
 
 1. [Make a course](#writing-a-course) for the content you want to learn.
-2. After having a course made, you'll end up with either a folder for the course or a .json. Click `Add a Course` within the site, and select the folder with the course name you want, and it'll add it to the site.
+2. Click `Add Course` to browse the prebuilt library (which starts with DEMO), or import a course folder, .zip, or .course.json file from your device.
 3. Click on the course to enter. There'll be a sidebar with all the course sections, and the different features:
     - **Index** provides and overview of the course concepts and categories.
-    - **Mixed Practice** is for practice questions. [Questions](#questions) explains the practice types.
-    - **Review** pulls questions from concepts you've attempted, including optional practice variants.
+    - **Mixed Practice** is for practice questions.
+    - **Review** pulls questions from concepts you've attempted, including practice variants.
     - **Dependency Map** demonstrates how sections connect to each other.
     - **Explore**
         - The Discover section allow you to quickly find needed information.
@@ -29,19 +29,6 @@ A course is the specific thing you want to learn/study (like a class, or certain
     - **Study** is like reading through a textbook. It shows the most, with the only things hidden being the *In Depth* blocks.
     - **Review** is like going through ones notes. Each block may have a description which is used instead of the full content. Certain blocks are also not hidden. This view is tailored by the course creator.
     - **Names** hides everything, showing the bare minimum.
-
-### Questions
-
-**Practice variants**: These are optional question variations in
-`practice/<concept>.yaml`. Add them when a skill needs another surface, context,
-or difficulty; a quiz can stand alone.
-
-**Questions**: Each subsection has one item per distinct skill. Questions use a
-typed `response:` mapping: single choice, multiple choice, number, or self
-response. Subsection questions appear one at a time with arrows below the card.
-After a choice answer, the same card highlights the correct options and explains
-each choice. Review considers all attempted concepts, and Mixed Practice can be
-limited to a subsection range.
 
 ## Writing a course
 
@@ -128,6 +115,10 @@ npm run test:unit
 npm run test:integration
 npm run test:browser
 ```
+
+### Adding a Public Course
+
+After making a course, it can be made public by adding the course to the gitignore, and including it in `tools/lib/files.mjs` under `PUBLIC_CATEGORIES`.
 
 ## Todo
 

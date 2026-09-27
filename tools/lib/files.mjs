@@ -17,7 +17,9 @@ import { join, extname, relative, sep } from "node:path";
    its reader's devices by import or sync. Adding to this list is a deliberate
    edit to the engine, which is the point. (`_`-prefixed folders, `_template`
    among them, are skipped before this is ever consulted.) */
-export const PUBLIC = new Set(["demo"]);
+/* The category is storefront metadata, not part of an author's course. */
+export const PUBLIC_CATEGORIES = new Map([["demo", "Getting Started"]]);
+export const PUBLIC = new Set(PUBLIC_CATEGORIES.keys());
 
 const MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
                ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml" };
@@ -52,4 +54,3 @@ function courseFiles(dir, fail) {
   if (assetBytes > 8e6) fail(`assets total ${(assetBytes / 1e6).toFixed(1)}MB`);
   return files;
 }
-

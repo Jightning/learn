@@ -99,15 +99,22 @@
 .lempty{color:var(--ink-3);font-size:.9rem}
 
 /* Installing your own courses — the body of the Add dialog. */
+.cio h3,.cio-catalog h3{font-size:1rem;color:var(--ink);margin:0 0 .4rem}
 .cio-foot{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-top:var(--sp-2)}
 .cio-foot label{cursor:pointer}
 .cio-msg{font:400 14px/1.5 var(--sans);margin:var(--sp-2) 0 0;color:var(--ink-3)}
 .cio-msg.bad{color:var(--wn-ink)}
-/* Bringing a dismissed bundled course back, under the install controls it is
-   the counterpart to. */
-.cio-back{margin-top:var(--sp-3);padding-top:var(--sp-2);border-top:1px solid var(--rule);
-  display:flex;flex-direction:column;align-items:flex-start;gap:.5rem}
-.cio-back .cal-cap{margin:0}
+.cio-catalog{margin-top:var(--sp-3);padding-top:var(--sp-2);border-top:1px solid var(--rule)}
+.cio-category{margin-top:var(--sp-2)}
+.cio-category h4{font:600 var(--fs-meta) var(--mono);letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 .65rem}
+.cio-course{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:var(--sp-2) 0;border-bottom:1px solid var(--rule)}
+.cio-course:last-child{border-bottom:0;padding-bottom:0}
+.cio-code{display:block;font:400 var(--fs-meta) var(--mono);color:var(--hi-ink)}
+.cio-course strong{display:block;color:var(--ink)}
+.cio-course p{margin:.2rem 0 0;color:var(--ink-3)}
+.cio-course .dbtn{flex:none}
 /* A standing caution about this device, not the result of an action —
    distinct from .cio-msg so a test cannot mistake one for the other. */
 .cio-warn{font:400 14px/1.5 var(--sans);margin:var(--sp-2) 0 0;color:var(--wn-ink)}

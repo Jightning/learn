@@ -49,8 +49,21 @@ if (single) {
   ck("the shelf carries an add control", await page.locator("#lib-add").count() === 1);
   await page.locator("#lib-add").click(); await page.waitForTimeout(220);
   ck("add opens a dialog", await page.locator("dialog.modal[open]").count() === 1);
+  ck("the dialog names Add Course", await page.locator("dialog.modal h2").innerText() === "Add Course");
+  ck("import is first in Add Course", await page.evaluate(() => {
+    const body = document.querySelector("dialog.modal .modal-body");
+    return body?.firstElementChild?.classList.contains("cio") &&
+      body?.lastElementChild?.classList.contains("cio-catalog");
+  }));
   ck("the dialog holds the install controls",
      await page.locator(".modal .cio-foot .dbtn").count() >= 1);
+  ck("the public library includes DEMO",
+     await page.locator('.cio-catalog .cio-course a[href="#/demo"]').count() === 1);
+  ck("public courses have a category",
+     await page.locator(".cio-category h4").filter({ hasText: "Getting Started" }).count() === 1);
+  ck("prebuilt courses remain simple rows under their category",
+     await page.locator(".cio-category .cio-course strong").count() >= 1 &&
+     await page.locator(".cio-course .cio-stats").count() === 0);
   await shot("library-add");
   await page.keyboard.press("Escape"); await page.waitForTimeout(220);
   ck("escape closes the dialog", await page.locator(".modal").count() === 0);
@@ -285,6 +298,8 @@ if (single) {
     await page.locator("#lib-add").click(); await page.waitForTimeout(250);
     ck("the add dialog offers it back",
        await page.locator('[data-restore="demo"]').count() === 1);
+    ck("a hidden course stays listed in the library",
+       await page.locator(".cio-catalog .cio-course").filter({ hasText: "DEMO" }).count() === 1);
     await page.locator('[data-restore="demo"]').click(); await page.waitForTimeout(300);
     await page.keyboard.press("Escape"); await page.waitForTimeout(200);
     ck("restoring puts it back", await page.locator(".lcard").count() === before);

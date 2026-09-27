@@ -40,6 +40,20 @@ const readHidden = () => {
 /** The bundled courses currently dismissed, in the order the site ships them. */
 export const dismissed = () => BUILTIN_ORDER.filter(id => readHidden().has(id));
 
+/** Public courses available in Add Course without fetching their bodies. */
+export const catalog = () => BUILTIN_ORDER.map(id => ({ id, ...BUILTIN[id] }));
+
+/** Group the public index for the Add Course popup; never fetch course files. */
+export const catalogGroups = () => {
+  const groups = new Map();
+  for (const course of catalog()) {
+    const category = course.category || "Other";
+    if (!groups.has(category)) groups.set(category, []);
+    groups.get(category).push(course);
+  }
+  return [...groups].map(([name, courses]) => ({ name, courses }));
+};
+
 /** Dismiss a bundled course, or bring it back. Imported courses are deleted
  *  outright (lib/courses.js) rather than hidden — there is a copy to delete. */
 export function setDismissed(cid, on) {

@@ -3,7 +3,7 @@ import { clip } from "../lib/util.js";
 import { stateFor } from "../lib/state.js";
 import { counts } from "../lib/retention.js";
 import { importedIndex, filesOf, removeCourse } from "../lib/courses.js";
-import { refresh, dismissed, setDismissed } from "../lib/library.js";
+import { refresh, dismissed, setDismissed, catalogGroups } from "../lib/library.js";
 import { setOrder, move } from "../lib/order.js";
 import { queueDelete } from "../lib/cloud.js";
 import { purge } from "../lib/purge.js";
@@ -134,9 +134,9 @@ export default function Library({ courses, order, loading, error, onChange }) {
       <div class="lhead">
         <h1 onClick={knock}>Courses</h1>
         <button class="lplus" id="lib-add" onClick={() => setAdding(true)}
-                aria-label="Add a course">
+                aria-label="Add Course">
           <span class="lplus-x" aria-hidden="true">+</span>
-          <span class="lplus-w">Add a course</span>
+          <span class="lplus-w">Add Course</span>
         </button>
       </div>
 
@@ -273,21 +273,36 @@ export default function Library({ courses, order, loading, error, onChange }) {
       <CloudPanel onChange={onChange} />
 
       {adding && (
-        <Modal title="Add a course" onClose={() => setAdding(false)}>
+        <Modal title="Add Course" onClose={() => setAdding(false)}>
           <CourseIO onChange={onChange} />
-          {/* Where a hidden guide comes back. It belongs here rather than on a
-              settings page: this dialog is already the answer to "how do I get
-              a course onto this device". */}
-          {dismissed().length > 0 && (
-            <div class="cio-back">
-              {dismissed().map(id => (
-                <button class="dbtn ghost" key={id} data-restore={id}
-                        onClick={() => restore(id)}>
-                  Restore {(courses[id] || {}).title || id} →
-                </button>
-              ))}
-            </div>
-          )}
+          <section class="cio-catalog" aria-label="Course library">
+            <h3>Library</h3>
+            {catalogGroups().map((group, i) => (
+              <section class="cio-category" key={group.name}
+                       aria-labelledby={`cio-category-${i}`}>
+                <h4 id={`cio-category-${i}`}>{group.name}</h4>
+                {group.courses.map(c => {
+                    const hidden = dismissed().includes(c.id);
+                    return (
+                      <div class="cio-course" key={c.id}>
+                        <div>
+                          <span class="cio-code">{c.code || c.id}</span>
+                          <strong>{c.title}</strong>
+                          {c.tagline && <p>{c.tagline}</p>}
+                        </div>
+                        {hidden ? (
+                          <button class="dbtn ghost" data-restore={c.id}
+                                  onClick={() => restore(c.id)}>Add</button>
+                        ) : (
+                          <a class="dbtn ghost" href={`#/${c.id}`}
+                             onClick={() => setAdding(false)}>Open</a>
+                        )}
+                      </div>
+                    );
+                })}
+              </section>
+            ))}
+          </section>
         </Modal>
       )}
 
@@ -303,7 +318,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
             </>
           ) : (
             <>
-              <p>You can add this back through "Add a course".</p>
+              <p>You can add this back through "Add Course".</p>
               <p><b>Your answers are kept</b>, and come back with it.</p>
             </>
           )}
