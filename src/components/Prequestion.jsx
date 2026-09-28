@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
 import { M } from "../lib/math.js";
+import Inline from "./Inline.jsx";
 
 /* A question about a relation the section is about to establish.
  *
@@ -16,7 +17,7 @@ export default function Prequestion({ item, onNext, last }) {
   return (
     <div class="primer-card preq">
       <div class="primer-meta">Before you read</div>
-      <p class="preq-q">{item.ask}</p>
+      <p class="preq-q"><Inline text={item.ask} /></p>
 
       {shown ? (
         <div class="preq-a">

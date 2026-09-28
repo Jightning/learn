@@ -3,6 +3,7 @@ import * as R from "../lib/retention.js";
 import { whyFor } from "../lib/why.js";
 import { ago } from "../lib/util.js";
 import QuestionCard from "./QuestionCard.jsx";
+import Inline from "./Inline.jsx";
 
 /* Where M13's unit and M27's unit meet: the concept is the thing with one
  * definition site, and it is also the thing the scheduler tracks. This is the
@@ -33,7 +34,7 @@ export default function ConceptState({ ctx, k }) {
         <p class="cstate-near">
           Confused with{" "}
           {near.map((x, i) => (
-            <span key={x}>{i ? ", " : ""}<a href={`#/${cid}/c/${x}`}>{C.concepts[x].term}</a></span>
+            <span key={x}>{i ? ", " : ""}<a href={`#/${cid}/c/${x}`}><Inline text={C.concepts[x].term} /></a></span>
           ))}
         </p>
       )}

@@ -1,5 +1,7 @@
 /* Phrase notes leave prose unchanged until the note is hovered or focused. */
-.nref{border-radius:2px;padding:0 1px;margin:0 -1px;
+/* The extra bottom pixel balances the painted highlight around inline code. */
+.nref{border-radius:2px;padding:2px 1px 3px;margin:0 -1px;
+  box-decoration-break:clone;-webkit-box-decoration-break:clone;
   transition:background-color .13s ease,color .13s ease}
 .nref.hot{background:color-mix(in srgb,var(--lo) 18%,transparent);color:var(--lo-ink)}
 

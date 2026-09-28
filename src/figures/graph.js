@@ -1,5 +1,6 @@
 /* Figure kind: graph */
 import { esc, tone, attr, txt } from "./base.js";
+import { placeLabel, textWidth } from "./labels.js";
 
 /* ---------- kind: graph -------------------------------------------------
  * nodes: [{id, label, x?, y?, accent?, here?, state?, note?, title?}]
@@ -7,7 +8,7 @@ import { esc, tone, attr, txt } from "./base.js";
  * layout: "circle" | "row" | "layered" | "manual"
  * Good for state machines, block diagrams, dependency graphs.
  * ----------------------------------------------------------------------*/
-export function graph (spec) {
+export function graph (spec, caption = "") {
   var nodes = spec.nodes || [], edges = spec.edges || [],
       layout = spec.layout || (nodes.length > 5 ? "layered" : "circle"),
       r = spec.r || 27,
@@ -238,14 +239,19 @@ export function graph (spec) {
     vw = Math.max.apply(null, xs) + pad - vx; vh = Math.max.apply(null, ys) + pad - vy;
   }
 
-  /* A graph past a handful of nodes is unreadable once the browser shrinks it
-     to the column width, so it keeps an intrinsic minimum and the figure frame
-     (overflow-x:auto) scrolls instead. Small graphs still scale to fit. */
-  var big = nodes.length >= 8 || vw > 720;
-  var out = '<svg viewBox="' + vx.toFixed(1) + " " + vy.toFixed(1) + " " +
-    vw.toFixed(1) + " " + vh.toFixed(1) + '" class="fx"' +
-    (big ? ' style="min-width:' + Math.min(Math.round(vw), 760) + 'px"' : "") +
-    ' role="img">';
+  /* Edge labels are placed after the nodes have fixed positions. Keep their
+     rectangles away from circles and note chips, then include them in the
+     viewBox so a long transition name cannot be clipped. */
+  var reserved = [];
+  nodes.forEach(function (n) {
+    var p = pos[n.id]; if (!p) return;
+    var rr = radOf(n.id) + (n.here ? 7 : 0);
+    reserved.push({ x: p.x - rr, y: p.y - rr, w: rr * 2, h: rr * 2 });
+    if (NI[n.id]) reserved.push({ x: p.x - NI[n.id].w / 2,
+      y: p.y + radOf(n.id) + NGAP, w: NI[n.id].w, h: NI[n.id].h });
+  });
+  var edgeBoxes = [];
+  var out = "";
   out += '<defs><marker id="fxa" viewBox="0 0 10 10" refX="9" refY="5" ' +
     'markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
     '<path d="M0 0 L10 5 L0 10 z" fill="var(--ink-3)"/></marker></defs>';
@@ -262,11 +268,14 @@ export function graph (spec) {
 
   /* an edge label with a background chip, so it stays readable where it
      crosses a line or sits near another label */
-  function elabel(x, y, s) {
-    var w = String(s).length * 5.4 + 10;
-    return '<rect x="' + (x - w / 2).toFixed(1) + '" y="' + (y - 9).toFixed(1) +
+  function elabel(x, y, s, normal = [0, -1]) {
+    var placed = placeLabel(x, y, s, 10, reserved,
+      [normal, [-normal[0], -normal[1]], [0, -1], [0, 1]], 5);
+    edgeBoxes.push(placed.box);
+    var w = textWidth(s, 10) + 10;
+    return '<rect x="' + (placed.x - w / 2).toFixed(1) + '" y="' + (placed.y - 9).toFixed(1) +
       '" width="' + w.toFixed(1) + '" height="14" rx="3" class="fx-eh"/>' +
-      txt(x, y + 1.5, s, "fx-el");
+      txt(placed.x, placed.y + 1.5, s, "fx-el");
   }
 
   /* the layout centroid, so a self-loop can bulge away from the crowd rather
@@ -311,12 +320,21 @@ export function graph (spec) {
       var mx = (x1 + x2) / 2 - uy * d * bend, my = (y1 + y2) / 2 + ux * d * bend;
       out += '<path d="M' + x1 + " " + y1 + " Q" + mx + " " + my + " " + x2 + " " + y2 +
         '" class="fx-e" marker-end="url(#fxa)"/>';
-      if (e.label) out += elabel(mx, my, e.label);
+      if (e.label) {
+        /* A quadratic curve only reaches halfway to its control point at
+           t=.5. Anchoring the label at the control point leaves it floating
+           far from the branch, especially for a return edge. */
+        var qx = (x1 + 2 * mx + x2) / 4;
+        var qy = (y1 + 2 * my + y2) / 4;
+        var side = bend < 0 ? -1 : 1;
+        out += elabel(qx, qy, e.label, [-uy * side, ux * side]);
+      }
     } else {
       out += '<line ' + attr({ x1: x1, y1: y1, x2: x2, y2: y2 }) +
         ' class="fx-e" marker-end="url(#fxa)"/>';
       /* nudge the label off the line, perpendicular to it */
-      if (e.label) out += elabel((x1 + x2) / 2 - uy * 11, (y1 + y2) / 2 + ux * 11, e.label);
+      if (e.label) out += elabel((x1 + x2) / 2 - uy * 11,
+        (y1 + y2) / 2 + ux * 11, e.label, [-uy, ux]);
     }
   });
 
@@ -342,5 +360,18 @@ export function graph (spec) {
     if (NI[n.id]) out += nlabel(p.x, p.y + rr + NGAP, NI[n.id]);
     out += '</g>';
   });
-  return out + "</svg>";
+  if (edgeBoxes.length) {
+    var right = vx + vw, bottom = vy + vh;
+    vx = Math.min(vx, ...edgeBoxes.map(b => b.x - 10));
+    vy = Math.min(vy, ...edgeBoxes.map(b => b.y - 10));
+    vw = Math.max(right, ...edgeBoxes.map(b => b.x + b.w + 10)) - vx;
+    vh = Math.max(bottom, ...edgeBoxes.map(b => b.y + b.h + 10)) - vy;
+  }
+  /* The figure frame scrolls when the layout needs room; shrinking a dense
+     graph to the reading column would make the labels unreadable. */
+  var name = esc(caption || "Graph diagram").replace(/"/g, "&quot;");
+  return '<svg viewBox="' + vx.toFixed(1) + " " + vy.toFixed(1) + " " +
+    vw.toFixed(1) + " " + vh.toFixed(1) + '" class="fx"' +
+    ' style="min-width:' + Math.min(Math.max(Math.round(vw), 480), 760) + 'px"' +
+    ' role="img" aria-label="' + name + '">' + out + "</svg>";
 }

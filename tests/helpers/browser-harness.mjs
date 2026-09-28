@@ -60,7 +60,7 @@ export async function installDemoFixture(page, root) {
   });
   files["course.yaml"] = files["course.yaml"]
     .replace(/^code:.*$/m, "code: DEMO 002")
-    .replace(/^title:.*$/m, "title: The Study-Site System — Test Copy")
+    .replace(/^title:.*$/m, 'title: The <strong>Study-Site</strong> <mark><em>System</em></mark> — <span class="ink-info">Test Copy</span>')
     .replace(/^(\s*hue:\s*)\d+/m, (_whole, lead) => lead + "35");
 
   await page.locator("#lib-add").click();

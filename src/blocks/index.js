@@ -42,8 +42,7 @@ const UNSOURCED = {
  * an equation is exactly what a worked example's title or a quiz answer wants
  * to be. They are the same trust domain (a file in this repo), so the rule is
  * now the same everywhere, and validate.mjs fails a bare `<` or `&` so the
- * change cannot bite an author who forgets. `term` stays escaped: the primer
- * renders it as text, not markup. */
+ * change cannot bite an author who forgets. */
 export const U = {
   esc, strip, clip,
   /* An empty label renders no label row. A callout whose kind is already
@@ -66,7 +65,7 @@ export const U = {
   },
   cell: (v, map) => {
     const s = String(v).trim();
-    return map && map[s] ? `<span class="${map[s]}">${esc(s)}</span>` : esc(s);
+    return map && map[s] ? `<span class="${map[s]}">${esc(s)}</span>` : s;
   },
   /* Where a claim came from. A claim the author could not ground says so in
      the page, in words rather than by colour, because the reader cannot tell a
@@ -211,7 +210,7 @@ R("p",    { notes: "hidden", render: b => `<p>${b.h}</p>` });
 R("def",  { apart: true, notes: "lead", defaultLabel: "Definition",
             name: b => b.term,
             render: (b, U2, env) => U.box("def", b.label || (b.term ? "" : "Definition"),
-              (b.term ? `<dt>${esc(b.term)}</dt>` : "") + U.body(b) + U.items(b) + U.src(b, env)) });
+              (b.term ? `<dt>${b.term}</dt>` : "") + U.body(b) + U.items(b) + U.src(b, env)) });
 R("key",  { notes: "lead", defaultLabel: "Key rule",
             render: (b, U2, env) => U.box("key", b.label || (b.core || b.gist ? "" : "Key rule"),
                                                               U.body(b) + U.items(b) + U.src(b, env)) });
@@ -339,9 +338,10 @@ R("math", { holds: "structure", apart: true, notes: "open", defaultLabel: "Equat
 R("figure", { holds: "structure", apart: true, notes: "open", defaultLabel: "Figure",
               name: b => b.cap, render: (b, _u, env) => {
   const fn = Figures[b.kind];
-  const body = fn ? fn(b.spec || {}) : `<p class="fx-miss">unknown figure kind: ${esc(b.kind)}</p>`;
+  const body = fn ? fn(b.spec || {}, b.cap || "") : `<p class="fx-miss">unknown figure kind: ${esc(b.kind)}</p>`;
   const cap = U.caption(env.fignum, b.cap);
-  return `<div class="figure">${cap ? `<span class="fcap">${cap}</span>` : ""}${body}</div>`;
+  return `<div class="figure">${cap ? `<span class="fcap">${cap}</span>` : ""}` +
+    `<div class="figure-viewport"><div class="figure-scroll">${body}</div></div></div>`;
 } });
 
 /* Slides render as a component in Section.jsx because navigation owns state. */

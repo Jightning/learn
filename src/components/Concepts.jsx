@@ -1,5 +1,6 @@
 import { decorate } from "../lib/refs.js";
 import ConceptState from "./ConceptState.jsx";
+import Inline from "./Inline.jsx";
 
 /* One concept's entry. The hub that used to sit above it is now the Ideas band
  * of the index (components/Index.jsx), which also says why.
@@ -16,7 +17,7 @@ export function ConceptDetail({ ctx, k }) {
   return (
     <div class="cdet">
       <span class="eyebrow">Core concept</span>
-      <h1>{d.term}</h1>
+      <h1><Inline text={d.term} /></h1>
       <div class="body" dangerouslySetInnerHTML={{ __html: decorate(d.body, cid, idx.FIG.byKey) }} />
 
       <ConceptState ctx={ctx} k={k} />
@@ -30,7 +31,7 @@ export function ConceptDetail({ ctx, k }) {
               <li key={id}>
                 <a href={`#/${cid}/${id}`}>
                   <span class="an">{e ? e.num : ""}</span>
-                  <span class="at">{e ? e.sub.title : id}</span>
+                  <span class="at"><Inline text={e ? e.sub.title : id} /></span>
                 </a>
               </li>
             );
@@ -46,7 +47,7 @@ export function ConceptDetail({ ctx, k }) {
               <li key={x}>
                 <a href={`#/${cid}/c/${x}`}>
                   <span class="an">◈</span>
-                  <span class="at">{((C.concepts || {})[x] || {}).term || x}</span>
+                  <span class="at"><Inline text={((C.concepts || {})[x] || {}).term || x} /></span>
                 </a>
               </li>
             ))}

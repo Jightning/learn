@@ -144,9 +144,21 @@ prerequisite list and draws a map edge.
 improves learning: coherence is subtractive and the largest layout effect
 (g = 0.37–0.41, Sundararajan & Adesope 2020).
 
+When the learner must picture a shape, connection, arrangement, motion, or
+signal path to understand the explanation, include a visual beside that
+explanation. Treat a missing visual as missing instruction, not a prose problem
+to solve with more words. A CMOS pull-up/pull-down network, for example, needs
+a labelled transistor schematic showing the rails, devices, and path to the
+output; prose alone cannot show which nodes connect. The visual must teach a
+relationship or state that the text identifies, not decorate the page. If the
+source does not provide a usable image, make a source-grounded diagram.
+
 **M18. Prefer a declarative figure to a supplied image** where the content is
 describable as data: it stays sharp, follows the theme, and is corrected by
-editing numbers.
+editing numbers. Use an image (including a labelled SVG asset) when the built-in
+figure kinds cannot faithfully show the needed structure. The `circuit` preset
+does not include MOSFET symbols, so do not use its resistor/capacitor symbols as
+a stand-in for a CMOS network.
 
 **M19. Every image has alt text describing what it *shows*.** "Diagram" is not
 alt text.

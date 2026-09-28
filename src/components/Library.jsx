@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "preact/hooks";
-import { clip } from "../lib/util.js";
+import { clip, strip } from "../lib/util.js";
 import { stateFor } from "../lib/state.js";
 import { counts } from "../lib/retention.js";
 import { importedIndex, filesOf, removeCourse } from "../lib/courses.js";
@@ -13,6 +13,7 @@ import { IconGrab } from "./Icon.jsx";
 import CourseIO from "./CourseIO.jsx";
 import Modal from "./Modal.jsx";
 import CloudPanel from "./CloudPanel.jsx";
+import Inline from "./Inline.jsx";
 
 /* `courses` is the index, not the courses: a split build has not fetched any
    of them yet, and every number on a card is a scalar the index carries. */
@@ -72,7 +73,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
      progress. */
   const drop = cid => {
     const c = courses[cid] || {};
-    const name = c.title || cid;
+    const name = strip(c.title || cid);
     const own = !!mine[cid];
     if (own) {
       /* Tell the account, if this device is connected to one: a course removed
@@ -115,6 +116,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
     setDismissed(cid, false);
     onChange && onChange();
     setMsg(null);
+    setAdding(false);
   };
 
   if (error) return (
@@ -180,11 +182,11 @@ export default function Library({ courses, order, loading, error, onChange }) {
                     clickable — so the link is a layer under them rather than a
                     wrapper around them, which is also what keeps a button out
                     of an anchor. */}
-                <a class="lhit" href={`#/${id}`} aria-label={c.title || id} />
+                <a class="lhit" href={`#/${id}`} aria-label={strip(c.title || id)} />
                 <span class="lc">{c.code || id}</span>
                 {due > 0 && <span class="ldue">{due} due</span>}
-                <h3>{c.title || id}</h3>
-                <p>{clip(c.tagline || "", 120)}</p>
+                <h3><Inline text={c.title || id} /></h3>
+                <p>{clip(strip(c.tagline || ""), 120)}</p>
                 {/* State where there is state, inventory where there is not.
                  *
                  * The card used to print "8 sections · 16 parts · 91 questions"
@@ -218,7 +220,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
                  * have to stay reachable there. */}
                 <div class="lops">
                   <button class="lop lmore" aria-expanded={ops === id}
-                          aria-label={`Manage ${c.title || id}`}
+                          aria-label={`Manage ${strip(c.title || id)}`}
                           onClick={() => setOps(v => (v === id ? null : id))}>…</button>
                   {ops === id && (
                     <>
@@ -227,7 +229,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
                           of the three that needs no naming: the dots are the
                           convention, and the other two are verbs. */}
                       <button class="lop lgrab" draggable
-                              aria-label={`Move ${c.title || id}`}
+                              aria-label={`Move ${strip(c.title || id)}`}
                               title="Drag to move this course, or use the arrow keys"
                               onDragStart={e => {
                                 e.dataTransfer.effectAllowed = "move";
@@ -246,10 +248,10 @@ export default function Library({ courses, order, loading, error, onChange }) {
                       </button>
                       {ownIt && (
                         <button class="lop" onClick={() => save(id)}
-                                aria-label={`Export ${c.title || id}`}>Export</button>
+                                aria-label={`Export ${strip(c.title || id)}`}>Export</button>
                       )}
                       <button class="lop warn" onClick={() => setDoomed(id)}
-                              aria-label={`${ownIt ? "Remove" : "Hide"} ${c.title || id}`}>
+                              aria-label={`${ownIt ? "Remove" : "Hide"} ${strip(c.title || id)}`}>
                         {ownIt ? "Remove" : "Hide"}
                       </button>
                     </>
@@ -287,15 +289,14 @@ export default function Library({ courses, order, loading, error, onChange }) {
                       <div class="cio-course" key={c.id}>
                         <div>
                           <span class="cio-code">{c.code || c.id}</span>
-                          <strong>{c.title}</strong>
-                          {c.tagline && <p>{c.tagline}</p>}
+                          <strong><Inline text={c.title} /></strong>
+                          {c.tagline && <p><Inline text={c.tagline} /></p>}
                         </div>
                         {hidden ? (
                           <button class="dbtn ghost" data-restore={c.id}
                                   onClick={() => restore(c.id)}>Add</button>
                         ) : (
-                          <a class="dbtn ghost" href={`#/${c.id}`}
-                             onClick={() => setAdding(false)}>Open</a>
+                          <button class="dbtn ghost" disabled>Added</button>
                         )}
                       </div>
                     );
@@ -308,7 +309,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
 
       {doomed && (
         <Modal danger onClose={() => setDoomed(null)}
-               title={`${mine[doomed] ? "Remove" : "Hide"} ${(courses[doomed] || {}).title || doomed}?`}>
+               title={`${mine[doomed] ? "Remove" : "Hide"} ${strip((courses[doomed] || {}).title || doomed)}?`}>
           {mine[doomed] ? (
             <>
               <p>This action cannot be undone.</p>

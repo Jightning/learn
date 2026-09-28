@@ -2,6 +2,8 @@ import { qid } from "../lib/util.js";
 import { nextUp } from "../lib/next.js";
 import { peek } from "../lib/place.js";
 import { counts } from "../lib/retention.js";
+import Inline from "./Inline.jsx";
+import { strip } from "../lib/util.js";
 
 /* The course's front page: one recommendation, then the shape of the course.
  *
@@ -42,8 +44,8 @@ export default function Desk({ ctx }) {
 
   return (
     <div class="desk">
-      <h1>{C.title}</h1>
-      <p class="lede">{C.tagline}</p>
+      <h1><Inline text={C.title} /></h1>
+      <p class="lede"><Inline text={C.tagline} /></p>
 
       {/* The recommendation. One action, one reason, one button — and it is a
           link rather than a button because it goes somewhere, which is what a
@@ -54,7 +56,7 @@ export default function Desk({ ctx }) {
       <a class={"now" + (lead.kind === "review" ? " now-review" : "")} href={lead.href}>
         <span class="now-txt">
           <span class="now-k">{lead.kind === "resume" ? "Pick up here" : "Next"}</span>
-          <span class="now-h">{lead.title}</span>
+          <span class="now-h"><Inline text={lead.title} /></span>
           <span class="now-w">{lead.why}</span>
         </span>
         <span class="now-go" aria-hidden="true">
@@ -67,7 +69,7 @@ export default function Desk({ ctx }) {
           {rest.map(x => (
             <a class="also-i" href={x.href} key={x.href + x.kind}>
               {x.count != null && <b>{x.count}</b>}
-              <span>{x.count != null ? x.title.replace(/^\d+\s+/, "") : x.title}</span>
+              <span><Inline text={x.count != null ? x.title.replace(/^\d+\s+/, "") : x.title} /></span>
             </a>
           ))}
         </div>
@@ -88,7 +90,7 @@ export default function Desk({ ctx }) {
               <a class={"srow" + (m.cls ? " has" : "")} href={H(s.id)}>
                 <span class="srow-n">{String(s.num).padStart(2, "0")}</span>
                 <span class={"srow-m" + m.cls} aria-hidden="true" />
-                <span class="srow-t">{s.title}</span>
+                <span class="srow-t"><Inline text={s.title} /></span>
                 <span class="srow-c">
                   {ss && ss.total
                     ? <><span class="srow-sr">{m.label}, </span>{ss.got}/{ss.total}</>
@@ -104,7 +106,7 @@ export default function Desk({ ctx }) {
                   <span class="srow-bar"><i style={`width:${pct}%`} /></span>
                 )}
                 <span class="srow-s">
-                  {s.subs.map((u, i) => `${s.num}.${i + 1} ${u.title}`).join(", ")}
+                  {s.subs.map((u, i) => `${s.num}.${i + 1} ${strip(u.title)}`).join(", ")}
                 </span>
               </a>
             </li>

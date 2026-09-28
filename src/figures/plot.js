@@ -1,15 +1,12 @@
 /* Figure kind: plot */
-import { esc, tone, attr, txt, round, fmt } from "./base.js";
-import { leftMargin, tickLabels } from "./axes.js";
+import { esc, tone, round, fmt } from "./base.js";
+import { frame, grid, xTicks, axisLabels, scale, tickLabels } from "./axes.js";
 
 /* ---------- kind: plot --------------------------------------------------
  * series: [{label, points:[[x,y]…]}] or [{label, fn:"x*x", from, to}]
  * ----------------------------------------------------------------------*/
-export function plot (spec) {
-  var W = spec.w || 620, H = spec.h || 300,
-      m = { l: 52, r: 18, t: 16, b: 40 },
-      iw = W - m.l - m.r, ih = H - m.t - m.b,
-      series = (spec.series || []).map(function (s) {
+export function plot (spec, caption = "") {
+  var series = (spec.series || []).map(function (s) {
         if (s.points) return s;
         var from = s.from != null ? s.from : (spec.xrange ? spec.xrange[0] : 0),
             to = s.to != null ? s.to : (spec.xrange ? spec.xrange[1] : 10),
@@ -26,7 +23,7 @@ export function plot (spec) {
 
   var xs = [], ys = [];
   series.forEach(function (s) { s.points.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); }); });
-  if (!xs.length) return '<svg viewBox="0 0 ' + W + " " + H + '" class="fx"></svg>';
+  if (!xs.length) return '<svg viewBox="0 0 620 300" class="fx"></svg>';
   var x0 = spec.xrange ? spec.xrange[0] : Math.min.apply(null, xs),
       x1 = spec.xrange ? spec.xrange[1] : Math.max.apply(null, xs),
       y0 = spec.yrange ? spec.yrange[0] : Math.min.apply(null, ys),
@@ -34,30 +31,15 @@ export function plot (spec) {
   if (x1 === x0) x1 = x0 + 1;
   if (y1 === y0) y1 = y0 + 1;
 
-  /* Now the vertical domain is settled, the left margin can be sized to the
-     tick labels it will draw rather than to a fixed guess — see axes.js. This
-     is also what brings plot onto the same margin as the other chart kinds,
-     which had drifted 4px apart for no reason. */
-  m.l = leftMargin(tickLabels([y0, y1], spec.ticks || 5, yf), spec.ylabel);
-  iw = W - m.l - m.r;
-
-  var px = function (x) { return m.l + ((x - x0) / (x1 - x0)) * iw; },
-      py = function (y) { return m.t + ih - ((y - y0) / (y1 - y0)) * ih; };
-
-  var out = '<svg viewBox="0 0 ' + W + " " + H + '" class="fx" role="img">';
-  var ticks = spec.ticks || 5, i;
-  for (i = 0; i <= ticks; i++) {
-    var gv = y0 + ((y1 - y0) * i) / ticks, gy = py(gv);
-    out += '<line x1="' + m.l + '" y1="' + gy + '" x2="' + (W - m.r) + '" y2="' + gy + '" class="fx-g"/>';
-    out += txt(m.l - 9, gy + 4, yf(gv), "fx-ax", "end");
-  }
-  for (i = 0; i <= ticks; i++) {
-    var xv = x0 + ((x1 - x0) * i) / ticks, gx = px(xv);
-    out += txt(gx, H - m.b + 18, xf(xv), "fx-ax");
-  }
-  out += '<line x1="' + m.l + '" y1="' + (m.t + ih) + '" x2="' + (W - m.r) +
-    '" y2="' + (m.t + ih) + '" class="fx-ax-l"/>';
-  out += '<line x1="' + m.l + '" y1="' + m.t + '" x2="' + m.l + '" y2="' + (m.t + ih) + '" class="fx-ax-l"/>';
+  const ticks = spec.ticks || 5;
+  const f = frame(spec, [y0, y1], ticks, yf, tickLabels([x0, x1], ticks, xf));
+  const px = scale([x0, x1], [f.m.l, f.w - f.m.r]);
+  const py = scale([y0, y1], [f.m.t + f.ih, f.m.t]);
+  var out = `<svg viewBox="0 0 ${f.w} ${f.h}" class="fx" ` +
+    `style="min-width:${Math.min(f.w, 760)}px" role="img" ` +
+    `aria-label="${esc(caption || "Function plot").replace(/"/g, "&quot;")}">`;
+  out += grid(f, [y0, y1], ticks, yf);
+  out += xTicks(f, [x0, x1], ticks, xf);
 
   series.forEach(function (s, k) {
     if (!s.points.length) return;
@@ -67,9 +49,7 @@ export function plot (spec) {
     out += '<path d="' + d + '" class="fx-s" style="stroke:' + tone(k) + '"' +
       (s.dash ? ' stroke-dasharray="5 4"' : "") + "/>";
   });
-  if (spec.xlabel) out += txt(m.l + iw / 2, H - 6, spec.xlabel, "fx-al");
-  if (spec.ylabel) out += '<text transform="translate(13,' + (m.t + ih / 2) +
-    ') rotate(-90)" class="fx-t fx-al" text-anchor="middle">' + esc(spec.ylabel) + "</text>";
+  out += axisLabels(f, spec);
   out += "</svg>";
   if (series.length > 1 || spec.legend) {
     out += '<div class="fx-leg">' + series.map(function (s, k) {

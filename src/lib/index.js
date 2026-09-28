@@ -41,8 +41,8 @@ export function buildIndex(C) {
        tokenises, and the snippet is the reader's own material quoted back at
        them — a lowercased one silently rewrites every symbol and proper noun
        in the course. */
-    SEARCH.push({ kind: "section", id: s.id, num: String(s.num), title: s.title,
-                  ctx: "Section", text: s.title + " " + (s.blurb || "") });
+    SEARCH.push({ kind: "section", id: s.id, num: String(s.num), title: strip(s.title),
+                  ctx: "Section", text: strip(s.title + " " + (s.blurb || "")) });
 
     s.subs.forEach((sub, k) => {
       const num = `${s.num}.${k + 1}`;
@@ -66,8 +66,8 @@ export function buildIndex(C) {
          goes at the end, because a snippet is cut around the match and one
          cut at offset zero opened every result by restating the section the
          result already names beside it. */
-      SEARCH.push({ kind: "sub", id: sub.id, num, title: sub.title, ctx: s.title,
-                    text: strip(txt) + " " + s.title });
+      SEARCH.push({ kind: "sub", id: sub.id, num, title: strip(sub.title), ctx: strip(s.title),
+                    text: strip(txt) + " " + strip(s.title) });
 
       /* One entry per named block, so a hit lands on the thing rather than on
          the thousand-word page holding it.
@@ -90,15 +90,15 @@ export function buildIndex(C) {
         const cells = b.t === "table"
           ? strip([...(b.head || []), ...(b.rows || []).flat()].join(" ")) : "";
         BLOCKS[id] = { b, sub, sec: s, num, at: i, title };
-        SEARCH.push({ kind: "block", id, num, title, ctx: `${num} ${sub.title}`,
+        SEARCH.push({ kind: "block", id, num, title: strip(title), ctx: `${num} ${strip(sub.title)}`,
                       t: b.t, cat: b.cat || null, tags: b.tags || [],
-                      text: [title, strip(leadOf(b) || ""), cells].filter(Boolean).join(" ") });
+                      text: [strip(title), strip(leadOf(b) || ""), cells].filter(Boolean).join(" ") });
       });
     });
   });
 
   Object.keys(C.concepts || {}).forEach(k =>
-    SEARCH.push({ kind: "concept", id: "c/" + k, num: "", title: C.concepts[k].term,
+    SEARCH.push({ kind: "concept", id: "c/" + k, num: "", title: strip(C.concepts[k].term),
                   ctx: "Core concept", cat: C.concepts[k].cat || null,
                   tags: C.concepts[k].tags || [], text: strip(C.concepts[k].body) }));
 

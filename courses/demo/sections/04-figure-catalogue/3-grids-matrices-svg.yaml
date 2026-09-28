@@ -1,12 +1,12 @@
 title: Grids, matrices, and the escape hatch
 blocks:
   - t: p
-    source: docs/create_course.md §11.1
+    source: docs/create_course.md §10.1
     h: |-
-      <b>grid</b> is a labelled 2-D grid with optional highlighted groups: Karnaugh maps, state tables, confusion matrices. <b>matrix</b> is a bracketed array. <b>svg</b> is the last resort when none of the other eight fit.
+      <b>grid</b> is a labelled 2-D grid with optional highlighted groups: Karnaugh maps, state tables, confusion matrices. <b>matrix</b> is a bracketed array. <b>svg</b> is the last resort when none of the other built-in figures fit.
 
   - t: def
-    source: docs/create_course.md §11.1
+    source: docs/create_course.md §10.1
     term: The svg escape hatch
     cat: figure-kinds
     core: |-
@@ -84,7 +84,7 @@ quiz:
     q: |-
       An author wants a bracketed 3×3 matrix of symbols. Reach for svg?
     a: |-
-      No. That is exactly the matrix kind. svg is only for shapes none of the nine declarative kinds cover.
+      No. That is exactly the matrix kind. svg is only for shapes none of the other figure kinds cover.
     why: |-
       <p>The escape hatch trades away theme-awareness, validation, and future maintainability. Using it for something a built-in already does is a strict loss.</p>
     why_prompt: What three things do you give up by dropping to raw svg?

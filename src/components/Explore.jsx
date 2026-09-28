@@ -10,6 +10,7 @@ import { readNotes } from "../lib/notes.js";
 import { IconSaved } from "./Icon.jsx";
 import { ReadingRow, NoteRow } from "./Section.jsx";
 import Attempt from "./Attempt.jsx";
+import Inline from "./Inline.jsx";
 
 /* Explore — search with the facets the overlay deliberately does not have.
  *
@@ -245,7 +246,7 @@ function Saved({ ctx, depth }) {
             <ReadingRow ctx={ctx} noteAt={g.noted ? g.sub.id : null}>
               <h3>
                 <span class="sid">{g.num}</span>
-                <a class="saved-origin" href={`#/${cid}/${g.sub.id}`}>{g.sub.title}</a>
+                <a class="saved-origin" href={`#/${cid}/${g.sub.id}`}><Inline text={g.sub.title} /></a>
               </h3>
             </ReadingRow>
             {g.items.map(item => (
@@ -284,7 +285,7 @@ function SavedBlock({ item, ctx, depth }) {
       <div class="nopen">
         <button class="nopen-h" type="button" aria-expanded="true"
                 title="Close this block" onClick={() => setOpen(false)}>
-          {item.title}
+          <Inline text={item.title} />
         </button>
         {row}
       </div>

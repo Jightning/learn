@@ -277,6 +277,26 @@ export async function testCourseShell(ctx, cid) {
   await page.waitForTimeout(50);
   ck(P("a short right drag does not open the mobile sidebar"),
      await page.locator(".sidebar.open").count() === 0);
+  const partialDrawer = await page.evaluate(() => {
+    const target = document.querySelector("main");
+    const fire = (type, x, y) => target.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, pointerId: 42, pointerType: "touch", isPrimary: true, clientX: x, clientY: y
+    }));
+    fire("pointerdown", 30, 180);
+    fire("pointermove", 115, 190);
+    const rail = document.querySelector(".sidebar");
+    const preview = rail.classList.contains("dragging")
+      && !rail.classList.contains("open")
+      && rail.getBoundingClientRect().left > -rail.getBoundingClientRect().width
+      && rail.getBoundingClientRect().left < 0
+      && document.querySelector(".scrim").classList.contains("dragging");
+    fire("pointerup", 115, 190);
+    return preview;
+  });
+  ck(P("the mobile sidebar follows an unfinished swipe"), partialDrawer);
+  await page.waitForTimeout(250);
+  await page.locator(".scrim.on").click({ position: { x: 350, y: 400 } });
+  await page.waitForTimeout(220);
   await swipe([[30, 180], [50, 186], [90, 205]]);
   await page.waitForTimeout(250);
   ck(P("a diagonal right swipe opens the mobile sidebar"),
@@ -336,8 +356,8 @@ export async function testCourseShell(ctx, cid) {
                  new Set(steps.map(e => Math.round(e.getBoundingClientRect().top))).size === 1,
         /* A figure may be wider than the reading column — a graph past a
            handful of nodes, a row of flow steps each holding a note that needs
-           a measure of its own. `.figure` is overflow-x:auto precisely so it
-           can be, and it carries the shading that says an edge is hiding
+           a measure of its own. `.figure-scroll` holds the horizontal overflow
+           and its edge cues say when more content is hiding,
            something. What must never happen is the *page* growing a second
            axis, which is what an unframed overflow does. */
         page: document.documentElement.scrollWidth - document.documentElement.clientWidth

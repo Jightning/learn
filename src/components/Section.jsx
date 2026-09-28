@@ -14,8 +14,10 @@ import Attempt from "./Attempt.jsx";
 import CatChip from "./CatChip.jsx";
 import Asides from "./Asides.jsx";
 import Slides from "./Slides.jsx";
+import Inline from "./Inline.jsx";
 import { isFollow } from "../lib/follows.js";
 import { renderAnchors, asidesOf, anchorKeys } from "../lib/asides.js";
+import { watchFigureScroll } from "../lib/figure-scroll.js";
 
 /* Pair only within this block: authors may reuse note keys in other blocks.
    Focus gives keyboard and touch readers the same reference as hover. */
@@ -37,6 +39,7 @@ function usePair() {
  * right. */
 export function ReadingRow({ html, notes, noteAt, noteLabel, apart, follow, ctx, id, children }) {
   const pair = usePair();
+  useEffect(() => pair.ref.current ? watchFigureScroll(pair.ref.current) : undefined, [html]);
   /* The row owns the note because the note is in two of its zones: the grip at
      the foot of the block, and the card in the margin beside it. */
   const note = useNotes(ctx.cid, noteAt || null);
@@ -119,7 +122,7 @@ export function NoteRow({ b, p, ctx, refs, open, onToggle, showCat, runIn }) {
                   <span dangerouslySetInnerHTML={{
                     __html: decorate(renderAnchors(p.lead), ctx.cid, ctx.idx.FIG.byKey) }} />
                 </span>)
-          : <span class="nname">{p.name}</span>}
+          : <span class="nname"><Inline text={p.name} /></span>}
       </button>
       {(showCat || refs.length > 0) && (
         <div class="nmeta">
@@ -260,7 +263,7 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
                         onClick={press(() => setOpenBlk(o => {
                           const n = { ...o }; delete n[i]; return n;
                         }))}>
-                  {p.name}
+                  <Inline text={p.name} />
                 </button>
                 {fullRow(it)}
               </div>
@@ -302,7 +305,7 @@ function Blocks({ sub, ctx, lane, depth, expandAll, openAt }) {
                       if (headOpen) delete n[head.i]; else n[head.i] = true;
                       return n;
                     }))}>
-              <h4 class="ntopic-t">{nameOfHead(head.b)}</h4>
+              <h4 class="ntopic-t"><Inline text={nameOfHead(head.b)} /></h4>
             </button>
             {headOpen && fullRow(head)}
             {!headOpen && headP.mode === "lead" && (
@@ -390,8 +393,8 @@ export default function Section({ section, ctx, expandAll, lane, onLane, depth, 
     <section class={"sec-body" + depthClass(depth)} id={section.id}>
       <div class="sec-head">
         <span class="eyebrow">Section {String(section.num).padStart(2, "0")} of {C.sections.length}</span>
-        <h2>{section.title}</h2>
-        <p class="sec-blurb">{section.blurb}</p>
+        <h2><Inline text={section.title} /></h2>
+        <p class="sec-blurb"><Inline text={section.blurb} /></p>
         {prereq.length > 0 && (
           <div class="builds">
             <span class="bl">Builds on</span>
@@ -418,7 +421,7 @@ export default function Section({ section, ctx, expandAll, lane, onLane, depth, 
                 ? <UsedLater id={sub.id} ctx={ctx} />
                 : null}
               noteAt={sub.id}>
-              <h3><span class="sid">{num}</span>{sub.title}</h3>
+              <h3><span class="sid">{num}</span><Inline text={sub.title} /></h3>
             </ReadingRow>
 
             <Blocks sub={sub} ctx={ctx} lane={lane} depth={depth}
@@ -436,10 +439,10 @@ export default function Section({ section, ctx, expandAll, lane, onLane, depth, 
 
       <div class="pager">
         {prev
-          ? <a href={H(prev.id)}><span class="dir">← Previous</span><span class="pt">{prev.title}</span></a>
+          ? <a href={H(prev.id)}><span class="dir">← Previous</span><span class="pt"><Inline text={prev.title} /></span></a>
           : <div class="sp" />}
         {next
-          ? <a class="nx" href={H(next.id)}><span class="dir">Next →</span><span class="pt">{next.title}</span></a>
+          ? <a class="nx" href={H(next.id)}><span class="dir">Next →</span><span class="pt"><Inline text={next.title} /></span></a>
           : <div class="sp" />}
       </div>
     </section>

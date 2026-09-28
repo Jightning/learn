@@ -1,7 +1,7 @@
 title: "Charts: plot, bar, scatter"
 blocks:
   - t: p
-    source: docs/create_course.md §11.1
+    source: docs/create_course.md §10.1
     h: |-
       Three kinds carry magnitude. <b>plot</b> draws functions or measured series against continuous axes, <b>bar</b> compares values across labelled categories, <b>scatter</b> shows how two measured quantities relate. The decay curves are figure <f k="decay"/>.
 

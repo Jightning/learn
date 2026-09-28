@@ -29172,6 +29172,39 @@ function fmt(f, dflt) {
 	return dflt;
 }
 //#endregion
+//#region src/figures/labels.js
+const textWidth = (value, size = 12) => String(value).length * size * .65;
+const textBox = (x, baseline, value, size = 12, pad = 3) => ({
+	x: x - textWidth(value, size) / 2 - pad,
+	y: baseline - size - pad,
+	w: textWidth(value, size) + 2 * pad,
+	h: size + 2 * pad
+});
+const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+/** Move a label away from its anchor until it clears the reserved rectangles. */
+function placeLabel(x, y, value, size, reserved, directions = [[0, -1], [0, 1]], step = size + 7) {
+	for (let distance = 0; distance < 40; distance++) for (const [dx, dy] of directions) {
+		const px = x + dx * distance * step;
+		const py = y + dy * distance * step;
+		const box = textBox(px, py, value, size);
+		if (!reserved.some((other) => overlaps(box, other))) {
+			reserved.push(box);
+			return {
+				x: px,
+				y: py,
+				box
+			};
+		}
+	}
+	const box = textBox(x, y, value, size);
+	reserved.push(box);
+	return {
+		x,
+		y,
+		box
+	};
+}
+//#endregion
 //#region src/figures/axes.js
 const MARGIN = {
 	l: 56,
@@ -29201,12 +29234,19 @@ function scale(domain, range) {
 }
 /** `yDomain` is optional only so a caller with no vertical axis can omit it;
 *  every chart that draws ticks passes it, and gets a margin that fits them. */
-function frame(spec, yDomain, ticks = 5, fmt = round) {
-	const w = spec.w || 640, h = spec.h || 320;
+function frame(spec, yDomain, ticks = 5, fmt = round, xLabels = []) {
 	const m = yDomain ? {
 		...MARGIN,
 		l: leftMargin(tickLabels(yDomain, ticks, fmt), spec.ylabel)
-	} : MARGIN;
+	} : { ...MARGIN };
+	const xWide = Math.max(0, ...xLabels.map((s) => textWidth(s, 10)));
+	if (xWide) {
+		m.l = Math.max(m.l, Math.ceil(xWide / 2) + 8);
+		m.r = Math.max(m.r, Math.ceil(xWide / 2) + 8);
+	}
+	const xNeed = xLabels.length > 1 ? (xLabels.length - 1) * (xWide + 10) : 0;
+	const w = Math.max(spec.w || 640, m.l + m.r + xNeed, m.l + m.r + textWidth(spec.xlabel || "", 11) + 16);
+	const h = Math.max(spec.h || 320, textWidth(spec.ylabel || "", 11) + m.t + m.b + 12);
 	return {
 		w,
 		h,
@@ -29261,36 +29301,59 @@ function padded(values, pad = .08) {
 }
 //#endregion
 //#region src/figures/bar.js
-function bar(spec) {
+function bar(spec, caption = "") {
 	const bars = spec.bars || [];
 	if (!bars.length) return "";
 	const values = bars.map((b) => Number(b.value) || 0);
 	const top = spec.max != null ? spec.max : Math.max(...values, 0);
 	const base = spec.baseline != null ? spec.baseline : Math.min(0, ...values);
-	const dom = [base, top === base ? base + 1 : top];
-	const f = frame(spec, dom, spec.ticks || 5);
-	const py = scale(dom, [f.m.t + f.ih, f.m.t]);
 	const label = fmt(spec.valueFmt, String);
-	const slot = f.iw / bars.length;
+	const rawSpan = top - base || 1;
+	const dom = [base - rawSpan * .1, top + rawSpan * .12];
+	const longestWord = Math.max(0, ...bars.flatMap((b) => String(b.label || "").split(/\s+/).map((w) => textWidth(w, 10))));
+	const longestValue = Math.max(0, ...values.map((v) => textWidth(label(v), 10)));
+	const slotNeed = Math.max(48, longestWord + 12, longestValue + 12);
+	const requested = spec.w || 640;
+	const baseFrame = frame({
+		...spec,
+		w: Math.max(requested, bars.length * slotNeed + 100)
+	}, dom, spec.ticks || 5);
+	const slot = baseFrame.iw / bars.length;
+	const labelLines = (s) => {
+		const words = String(s == null ? "" : s).split(/\s+/).filter(Boolean);
+		const lines = [];
+		for (const word of words) {
+			const last = lines.length - 1;
+			if (last >= 0 && textWidth(lines[last] + " " + word, 10) <= slot - 8) lines[last] += " " + word;
+			else lines.push(word);
+		}
+		return lines.length ? lines : [""];
+	};
+	const maxLines = Math.max(1, ...bars.map((b) => labelLines(b.label).length));
+	const m = {
+		...baseFrame.m,
+		b: Math.max(baseFrame.m.b, 20 + maxLines * 16 + (spec.xlabel ? 16 : 0))
+	};
+	const h = Math.max(baseFrame.h, m.t + m.b + 100);
+	const f = {
+		...baseFrame,
+		h,
+		m,
+		ih: h - m.t - m.b
+	};
+	const py = scale(dom, [f.m.t + f.ih, f.m.t]);
 	const bw = Math.min(slot * .62, 74);
 	const wide = bars.length > 12 || f.w > 720;
-	let out = `<svg viewBox="0 0 ${f.w} ${f.h}" class="fx"` + (wide ? ` style="min-width:${Math.min(Math.round(f.w), 760)}px"` : ``) + ` role="img">`;
+	let out = `<svg viewBox="0 0 ${f.w} ${f.h}" class="fx"` + (wide ? ` style="min-width:${Math.min(Math.round(f.w), 760)}px"` : ` style="min-width:${Math.min(Math.round(f.w), 480)}px"`) + ` role="img" aria-label="${esc$1(caption || "Bar chart").replace(/"/g, "&quot;")}">`;
 	out += grid$1(f, dom, spec.ticks || 5);
-	const labelLines = (s) => {
-		s = String(s == null ? "" : s);
-		const cap = Math.max(6, Math.floor(slot / 6.4));
-		if (s.length <= cap || !s.includes(" ")) return [s];
-		const w = s.split(/\s+/), mid = Math.ceil(w.length / 2);
-		return [w.slice(0, mid).join(" "), w.slice(mid).join(" ")];
-	};
 	bars.forEach((b, i) => {
 		const v = Number(b.value) || 0;
 		const x = f.m.l + slot * i + (slot - bw) / 2;
-		const y = py(v), y0 = py(dom[0]);
+		const y = py(v), y0 = py(base);
 		out += `<rect x="${x.toFixed(1)}" y="${Math.min(y, y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.abs(y0 - y).toFixed(1)}" rx="2" class="fx-bar" style="fill:${tone(b.accent != null ? b.accent : i)}"/>`;
-		out += txt(x + bw / 2, y - 7, label(v), "fx-el");
+		out += txt(x + bw / 2, v >= base ? y - 7 : y + 15, label(v), "fx-el");
 		labelLines(b.label).forEach((ln, li) => {
-			out += txt(x + bw / 2, f.m.t + f.ih + 17 + li * 11, ln, "fx-ax");
+			out += txt(x + bw / 2, f.m.t + f.ih + 17 + li * 16, ln, "fx-ax");
 		});
 	});
 	out += axisLabels(f, spec);
@@ -29306,7 +29369,7 @@ function flow(spec) {
 }
 //#endregion
 //#region src/figures/graph.js
-function graph(spec) {
+function graph(spec, caption = "") {
 	var nodes = spec.nodes || [], edges = spec.edges || [], layout = spec.layout || (nodes.length > 5 ? "layered" : "circle"), r = spec.r || 27, W = spec.w || 640, H = spec.h || (layout === "row" ? 150 : layout === "circle" ? 360 : 320), pos = {};
 	var SIZES = [
 		11,
@@ -29557,8 +29620,26 @@ function graph(spec) {
 		vw = Math.max.apply(null, xs) + pad - vx;
 		vh = Math.max.apply(null, ys) + pad - vy;
 	}
-	var big = nodes.length >= 8 || vw > 720;
-	var out = "<svg viewBox=\"" + vx.toFixed(1) + " " + vy.toFixed(1) + " " + vw.toFixed(1) + " " + vh.toFixed(1) + "\" class=\"fx\"" + (big ? " style=\"min-width:" + Math.min(Math.round(vw), 760) + "px\"" : "") + " role=\"img\">";
+	var reserved = [];
+	nodes.forEach(function(n) {
+		var p = pos[n.id];
+		if (!p) return;
+		var rr = radOf(n.id) + (n.here ? 7 : 0);
+		reserved.push({
+			x: p.x - rr,
+			y: p.y - rr,
+			w: rr * 2,
+			h: rr * 2
+		});
+		if (NI[n.id]) reserved.push({
+			x: p.x - NI[n.id].w / 2,
+			y: p.y + radOf(n.id) + NGAP,
+			w: NI[n.id].w,
+			h: NI[n.id].h
+		});
+	});
+	var edgeBoxes = [];
+	var out = "";
 	out += "<defs><marker id=\"fxa\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0 L10 5 L0 10 z\" fill=\"var(--ink-3)\"/></marker></defs>";
 	function nlabel(x, y, f) {
 		var s = "<rect x=\"" + (x - f.w / 2).toFixed(1) + "\" y=\"" + y.toFixed(1) + "\" width=\"" + f.w + "\" height=\"" + f.h + "\" rx=\"3\" class=\"fx-eh\"/>";
@@ -29567,9 +29648,16 @@ function graph(spec) {
 		});
 		return s;
 	}
-	function elabel(x, y, s) {
-		var w = String(s).length * 5.4 + 10;
-		return "<rect x=\"" + (x - w / 2).toFixed(1) + "\" y=\"" + (y - 9).toFixed(1) + "\" width=\"" + w.toFixed(1) + "\" height=\"14\" rx=\"3\" class=\"fx-eh\"/>" + txt(x, y + 1.5, s, "fx-el");
+	function elabel(x, y, s, normal = [0, -1]) {
+		var placed = placeLabel(x, y, s, 10, reserved, [
+			normal,
+			[-normal[0], -normal[1]],
+			[0, -1],
+			[0, 1]
+		], 5);
+		edgeBoxes.push(placed.box);
+		var w = textWidth(s, 10) + 10;
+		return "<rect x=\"" + (placed.x - w / 2).toFixed(1) + "\" y=\"" + (placed.y - 9).toFixed(1) + "\" width=\"" + w.toFixed(1) + "\" height=\"14\" rx=\"3\" class=\"fx-eh\"/>" + txt(placed.x, placed.y + 1.5, s, "fx-el");
 	}
 	var cenX = 0, cenY = 0, nc = 0;
 	nodes.forEach(function(n) {
@@ -29617,7 +29705,12 @@ function graph(spec) {
 		if (bend) {
 			var mx = (x1 + x2) / 2 - uy * d * bend, my = (y1 + y2) / 2 + ux * d * bend;
 			out += "<path d=\"M" + x1 + " " + y1 + " Q" + mx + " " + my + " " + x2 + " " + y2 + "\" class=\"fx-e\" marker-end=\"url(#fxa)\"/>";
-			if (e.label) out += elabel(mx, my, e.label);
+			if (e.label) {
+				var qx = (x1 + 2 * mx + x2) / 4;
+				var qy = (y1 + 2 * my + y2) / 4;
+				var side = bend < 0 ? -1 : 1;
+				out += elabel(qx, qy, e.label, [-uy * side, ux * side]);
+			}
 		} else {
 			out += "<line " + attr({
 				x1,
@@ -29625,7 +29718,7 @@ function graph(spec) {
 				x2,
 				y2
 			}) + " class=\"fx-e\" marker-end=\"url(#fxa)\"/>";
-			if (e.label) out += elabel((x1 + x2) / 2 - uy * 11, (y1 + y2) / 2 + ux * 11, e.label);
+			if (e.label) out += elabel((x1 + x2) / 2 - uy * 11, (y1 + y2) / 2 + ux * 11, e.label, [-uy, ux]);
 		}
 	});
 	nodes.forEach(function(n) {
@@ -29644,7 +29737,15 @@ function graph(spec) {
 		if (NI[n.id]) out += nlabel(p.x, p.y + rr + NGAP, NI[n.id]);
 		out += "</g>";
 	});
-	return out + "</svg>";
+	if (edgeBoxes.length) {
+		var right = vx + vw, bottom = vy + vh;
+		vx = Math.min(vx, ...edgeBoxes.map((b) => b.x - 10));
+		vy = Math.min(vy, ...edgeBoxes.map((b) => b.y - 10));
+		vw = Math.max(right, ...edgeBoxes.map((b) => b.x + b.w + 10)) - vx;
+		vh = Math.max(bottom, ...edgeBoxes.map((b) => b.y + b.h + 10)) - vy;
+	}
+	var name = esc$1(caption || "Graph diagram").replace(/"/g, "&quot;");
+	return "<svg viewBox=\"" + vx.toFixed(1) + " " + vy.toFixed(1) + " " + vw.toFixed(1) + " " + vh.toFixed(1) + "\" class=\"fx\" style=\"min-width:" + Math.min(Math.max(Math.round(vw), 480), 760) + "px\" role=\"img\" aria-label=\"" + name + "\">" + out + "</svg>";
 }
 //#endregion
 //#region src/figures/grid.js
@@ -29692,13 +29793,8 @@ function matrix(spec) {
 }
 //#endregion
 //#region src/figures/plot.js
-function plot(spec) {
-	var W = spec.w || 620, H = spec.h || 300, m = {
-		l: 52,
-		r: 18,
-		t: 16,
-		b: 40
-	}, iw = W - m.l - m.r, ih = H - m.t - m.b, series = (spec.series || []).map(function(s) {
+function plot(spec, caption = "") {
+	var series = (spec.series || []).map(function(s) {
 		if (s.points) return s;
 		var from = s.from != null ? s.from : spec.xrange ? spec.xrange[0] : 0, to = s.to != null ? s.to : spec.xrange ? spec.xrange[1] : 10, n = s.samples || 80, pts = [], f;
 		try {
@@ -29727,30 +29823,17 @@ function plot(spec) {
 			ys.push(p[1]);
 		});
 	});
-	if (!xs.length) return "<svg viewBox=\"0 0 " + W + " " + H + "\" class=\"fx\"></svg>";
+	if (!xs.length) return "<svg viewBox=\"0 0 620 300\" class=\"fx\"></svg>";
 	var x0 = spec.xrange ? spec.xrange[0] : Math.min.apply(null, xs), x1 = spec.xrange ? spec.xrange[1] : Math.max.apply(null, xs), y0 = spec.yrange ? spec.yrange[0] : Math.min.apply(null, ys), y1 = spec.yrange ? spec.yrange[1] : Math.max.apply(null, ys);
 	if (x1 === x0) x1 = x0 + 1;
 	if (y1 === y0) y1 = y0 + 1;
-	m.l = leftMargin(tickLabels([y0, y1], spec.ticks || 5, yf), spec.ylabel);
-	iw = W - m.l - m.r;
-	var px = function(x) {
-		return m.l + (x - x0) / (x1 - x0) * iw;
-	}, py = function(y) {
-		return m.t + ih - (y - y0) / (y1 - y0) * ih;
-	};
-	var out = "<svg viewBox=\"0 0 " + W + " " + H + "\" class=\"fx\" role=\"img\">";
-	var ticks = spec.ticks || 5, i;
-	for (i = 0; i <= ticks; i++) {
-		var gv = y0 + (y1 - y0) * i / ticks, gy = py(gv);
-		out += "<line x1=\"" + m.l + "\" y1=\"" + gy + "\" x2=\"" + (W - m.r) + "\" y2=\"" + gy + "\" class=\"fx-g\"/>";
-		out += txt(m.l - 9, gy + 4, yf(gv), "fx-ax", "end");
-	}
-	for (i = 0; i <= ticks; i++) {
-		var xv = x0 + (x1 - x0) * i / ticks, gx = px(xv);
-		out += txt(gx, H - m.b + 18, xf(xv), "fx-ax");
-	}
-	out += "<line x1=\"" + m.l + "\" y1=\"" + (m.t + ih) + "\" x2=\"" + (W - m.r) + "\" y2=\"" + (m.t + ih) + "\" class=\"fx-ax-l\"/>";
-	out += "<line x1=\"" + m.l + "\" y1=\"" + m.t + "\" x2=\"" + m.l + "\" y2=\"" + (m.t + ih) + "\" class=\"fx-ax-l\"/>";
+	const ticks = spec.ticks || 5;
+	const f = frame(spec, [y0, y1], ticks, yf, tickLabels([x0, x1], ticks, xf));
+	const px = scale([x0, x1], [f.m.l, f.w - f.m.r]);
+	const py = scale([y0, y1], [f.m.t + f.ih, f.m.t]);
+	var out = `<svg viewBox="0 0 ${f.w} ${f.h}" class="fx" style="min-width:${Math.min(f.w, 760)}px" role="img" aria-label="${esc$1(caption || "Function plot").replace(/"/g, "&quot;")}">`;
+	out += grid$1(f, [y0, y1], ticks, yf);
+	out += xTicks(f, [x0, x1], ticks, xf);
 	series.forEach(function(s, k) {
 		if (!s.points.length) return;
 		var d = s.points.map(function(p, j) {
@@ -29758,8 +29841,7 @@ function plot(spec) {
 		}).join(" ");
 		out += "<path d=\"" + d + "\" class=\"fx-s\" style=\"stroke:" + tone(k) + "\"" + (s.dash ? " stroke-dasharray=\"5 4\"" : "") + "/>";
 	});
-	if (spec.xlabel) out += txt(m.l + iw / 2, H - 6, spec.xlabel, "fx-al");
-	if (spec.ylabel) out += "<text transform=\"translate(13," + (m.t + ih / 2) + ") rotate(-90)\" class=\"fx-t fx-al\" text-anchor=\"middle\">" + esc$1(spec.ylabel) + "</text>";
+	out += axisLabels(f, spec);
 	out += "</svg>";
 	if (series.length > 1 || spec.legend) out += "<div class=\"fx-leg\">" + series.map(function(s, k) {
 		return "<span><i style=\"background:" + tone(k) + "\"></i>" + esc$1(s.label || "series " + (k + 1)) + "</span>";
@@ -29783,17 +29865,17 @@ function fit(points) {
 		b: (sy - m * sx) / n
 	};
 }
-function scatter(spec) {
+function scatter(spec, caption = "") {
 	const series = spec.series || [];
 	const all = series.flatMap((s) => s.points || []);
 	if (!all.length) return "";
 	const xd = spec.xrange || padded(all.map((p) => p[0]));
 	const yd = spec.yrange || padded(all.map((p) => p[1]));
 	const xf = fmt(spec.xfmt, round), yf = fmt(spec.yfmt, round);
-	const f = frame(spec, yd, spec.ticks || 5, yf);
+	const f = frame(spec, yd, spec.ticks || 5, yf, tickLabels(xd, spec.ticks || 5, xf));
 	const px = scale(xd, [f.m.l, f.w - f.m.r]);
 	const py = scale(yd, [f.m.t + f.ih, f.m.t]);
-	let out = `<svg viewBox="0 0 ${f.w} ${f.h}" class="fx" role="img">`;
+	let out = `<svg viewBox="0 0 ${f.w} ${f.h}" class="fx" style="min-width:${Math.min(f.w, 760)}px" role="img" aria-label="${esc$1(caption || "Scatter plot").replace(/"/g, "&quot;")}">`;
 	out += grid$1(f, yd, spec.ticks || 5, yf);
 	out += xTicks(f, xd, spec.ticks || 5, xf);
 	series.forEach((s, i) => {
@@ -29814,8 +29896,8 @@ function scatter(spec) {
 }
 //#endregion
 //#region src/figures/svg.js
-function svg(spec) {
-	return "<svg viewBox=\"" + (spec.viewBox || "0 0 640 320") + "\" class=\"fx\" role=\"img\">" + (spec.body || "") + "</svg>";
+function svg(spec, caption = "") {
+	return "<svg viewBox=\"" + (spec.viewBox || "0 0 640 320") + "\" class=\"fx\" role=\"img\" aria-label=\"" + esc$1(caption || "Diagram").replace(/"/g, "&quot;") + "\">" + (spec.body || "") + "</svg>";
 }
 //#endregion
 //#region src/figures/timing.js
@@ -29842,31 +29924,203 @@ function timing(spec) {
 }
 //#endregion
 //#region src/figures/circuit.js
-function circuit(spec) {
+const SYMBOLS = {
+	resistor: "<path d=\"M-24 0h5l4-9 8 18 7-18 7 18 8-18 4 9h5\"/>",
+	capacitor: "<path d=\"M-24 0h16m0-13v26m16-26v26M8 0h16\"/>",
+	battery: "<path d=\"M-24 0h16m0-14v28M6-9v18M6 0h18\"/>",
+	switch: "<path d=\"M-24 0h10m28 0h10M-14 0L11-13\"/><circle cx=\"-14\" r=\"2\"/><circle cx=\"14\" r=\"2\"/>",
+	diode: "<path d=\"M-24 0h12m24 0h12M-12-13v26l24-13zM12-13v26\"/>",
+	lamp: "<path d=\"M-24 0h8m32 0h8\"/><circle r=\"16\"/><path d=\"M-11-11L11 11M11-11L-11 11\"/>",
+	source: "<path d=\"M-24 0h8m32 0h8\"/><circle r=\"16\"/><path d=\"M-9 0q5-10 9 0t9 0\"/>"
+};
+const HEIGHT = {
+	resistor: [11, 11],
+	capacitor: [15, 15],
+	battery: [16, 16],
+	switch: [15, 4],
+	diode: [15, 15],
+	lamp: [18, 18],
+	source: [18, 18]
+};
+function rectangle(spec) {
+	const sides = spec.sides || {};
+	const top = sides.top || [], right = sides.right || [];
+	const bottom = sides.bottom || [], left = sides.left || [];
+	const w = Math.max(4, Number(spec.w) || 0, 2 + 2 * Math.max(top.length, bottom.length));
+	const h = Math.max(4, Number(spec.h) || 0, 2 + 2 * Math.max(left.length, right.length));
+	const paths = [
+		[
+			"top",
+			top,
+			[1, 1],
+			[w - 1, 1],
+			"h"
+		],
+		[
+			"right",
+			right,
+			[w - 1, 1],
+			[w - 1, h - 1],
+			"v"
+		],
+		[
+			"bottom",
+			bottom,
+			[w - 1, h - 1],
+			[1, h - 1],
+			"h"
+		],
+		[
+			"left",
+			left,
+			[1, h - 1],
+			[1, 1],
+			"v"
+		]
+	];
+	const parts = [], wires = [];
+	for (const [side, items, start, end, dir] of paths) {
+		const at = (t) => [start[0] + (end[0] - start[0]) * t, start[1] + (end[1] - start[1]) * t];
+		const sign = [Math.sign(end[0] - start[0]), Math.sign(end[1] - start[1])];
+		let previous = start;
+		items.forEach((part, i) => {
+			const center = at((i + 1) / (items.length + 1));
+			const before = [center[0] - sign[0] / 2, center[1] - sign[1] / 2];
+			const after = [center[0] + sign[0] / 2, center[1] + sign[1] / 2];
+			wires.push({
+				from: previous,
+				to: before,
+				ref: `${side}-${i + 1}`
+			});
+			const rotation = side === "right" ? 90 : side === "bottom" ? 180 : side === "left" ? -90 : 0;
+			parts.push({
+				...part,
+				x: center[0],
+				y: center[1],
+				dir,
+				rotation
+			});
+			previous = after;
+		});
+		wires.push({
+			from: previous,
+			to: end,
+			ref: `${side}-${items.length + 1}`
+		});
+	}
+	return {
+		w,
+		h,
+		parts,
+		wires,
+		junctions: []
+	};
+}
+/** Manual grid coordinates or an automatically wired rectangular loop. */
+function circuit(spec, caption = "") {
+	const data = spec.layout === "rectangle" ? rectangle(spec) : spec;
 	const unit = 48, pad = 42;
-	const w = Math.max(2, Number(spec.w) || 8), h = Math.max(2, Number(spec.h) || 5);
+	const w = Math.max(2, Number(data.w) || 8), h = Math.max(2, Number(data.h) || 5);
 	const X = (x) => pad + x * unit, Y = (y) => pad + y * unit;
-	const line = (a, b, cls = "fx-c-wire") => `<line x1="${X(a[0])}" y1="${Y(a[1])}" x2="${X(b[0])}" y2="${Y(b[1])}" class="${cls}"/>`;
-	const wires = (spec.wires || []).map((v) => line(v.from, v.to)).join("");
-	const parts = (spec.parts || []).map((p) => {
-		const x = X(p.x), y = Y(p.y), turn = p.dir === "v" ? " transform=\"rotate(90)\"" : "";
-		return `<g class="fx-c-part"><title>${esc$1([p.label, p.value].filter(Boolean).join(" · ") || p.type)}</title><g transform="translate(${x} ${y})"><g${turn}>${{
-			resistor: "<path d=\"M-24 0h5l4-9 8 18 7-18 7 18 8-18 4 9h5\"/>",
-			capacitor: "<path d=\"M-24 0h16m0-13v26m16-26v26M8 0h16\"/>",
-			battery: "<path d=\"M-24 0h16m0-14v28M6-9v18M6 0h18\"/>",
-			switch: "<path d=\"M-24 0h10m28 0h10M-14 0L11-13\"/><circle cx=\"-14\" r=\"2\"/><circle cx=\"14\" r=\"2\"/>",
-			diode: "<path d=\"M-24 0h12m24 0h12M-12-13v26l24-13zM12-13v26\"/>",
-			lamp: "<path d=\"M-24 0h8m32 0h8\"/><circle r=\"16\"/><path d=\"M-11-11L11 11M11-11L-11 11\"/>",
-			source: "<path d=\"M-24 0h8m32 0h8\"/><circle r=\"16\"/><path d=\"M-9 0q5-10 9 0t9 0\"/>"
-		}[p.type] || ""}</g></g>` + (p.label ? txt(x, y - 30, p.label, "fx-cl") : "") + (p.value ? txt(x, y + 38, p.value, "fx-cv") : "") + "</g>";
+	const reserved = (data.parts || []).map((p) => {
+		const vertical = p.dir === "v" || Math.abs(p.rotation || 0) === 90;
+		const height = HEIGHT[p.type] || [18, 18];
+		const [above, below] = p.rotation === 180 ? [...height].reverse() : height;
+		return vertical ? {
+			x: X(p.x) - 19,
+			y: Y(p.y) - 25,
+			w: 38,
+			h: 50
+		} : {
+			x: X(p.x) - 25,
+			y: Y(p.y) - above,
+			w: 50,
+			h: above + below
+		};
+	});
+	const boxes = [{
+		x: X(0),
+		y: Y(0),
+		w: X(w) - X(0),
+		h: Y(h) - Y(0)
+	}];
+	const wires = (data.wires || []).map((v, i) => {
+		const x1 = X(v.from[0]), y1 = Y(v.from[1]), x2 = X(v.to[0]), y2 = Y(v.to[1]);
+		boxes.push({
+			x: Math.min(x1, x2),
+			y: Math.min(y1, y2),
+			w: Math.abs(x2 - x1),
+			h: Math.abs(y2 - y1)
+		});
+		reserved.push({
+			x: Math.min(x1, x2) - 3,
+			y: Math.min(y1, y2) - 3,
+			w: Math.abs(x2 - x1) + 6,
+			h: Math.abs(y2 - y1) + 6
+		});
+		return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="fx-c-wire" data-wire="${esc$1(v.ref || `wire-${i + 1}`)}"/>`;
 	}).join("");
-	const dots = (spec.junctions || []).map((p) => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" class="fx-c-dot"/>`).join("");
-	return `<svg class="fx fx-circuit" viewBox="0 0 ${X(w) + pad} ${Y(h) + pad}" role="img" aria-label="Circuit diagram">${wires}${parts}${dots}</svg>`;
+	const parts = (data.parts || []).map((p) => {
+		const x = X(p.x), y = Y(p.y);
+		const angle = p.rotation ?? (p.dir === "v" ? 90 : 0);
+		const turn = angle ? ` transform="rotate(${angle})"` : "";
+		const title = [p.label, p.value].filter(Boolean).join(" · ") || p.type;
+		const vertical = p.dir === "v" || Math.abs(angle) === 90;
+		const side = spec.layout === "rectangle" && p.x > w / 2 ? 1 : -1;
+		const height = HEIGHT[p.type] || [18, 18];
+		const [above, below] = angle === 180 ? [...height].reverse() : height;
+		const position = (value, size, isValue) => {
+			if (!vertical) return {
+				x,
+				y: y + (isValue ? below + 15 : -above - 10),
+				directions: [[0, isValue ? 1 : -1]]
+			};
+			return {
+				x: x + side * (29 + .65 * size * String(value).length / 2),
+				y: y + (isValue ? 12 : -8),
+				directions: [[side, 0]]
+			};
+		};
+		let labels = "";
+		if (p.label) {
+			const start = position(p.label, 13, false);
+			const pos = placeLabel(start.x, start.y, p.label, 13, reserved, start.directions);
+			boxes.push(pos.box);
+			labels += txt(pos.x, pos.y, p.label, "fx-cl");
+		}
+		if (p.value) {
+			const start = position(p.value, 12, true);
+			const pos = placeLabel(start.x, start.y, p.value, 12, reserved, start.directions);
+			boxes.push(pos.box);
+			labels += txt(pos.x, pos.y, p.value, "fx-cv");
+		}
+		return `<g class="fx-c-part"><title>${esc$1(title)}</title><g transform="translate(${x} ${y})"><g${turn}>${SYMBOLS[p.type] || ""}</g></g>` + labels + "</g>";
+	}).join("");
+	const dots = (data.junctions || []).map((p) => {
+		boxes.push({
+			x: X(p[0]) - 4,
+			y: Y(p[1]) - 4,
+			w: 8,
+			h: 8
+		});
+		return `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" class="fx-c-dot"/>`;
+	}).join("");
+	const minX = Math.min(...boxes.map((b) => b.x)) - 10;
+	const minY = Math.min(...boxes.map((b) => b.y)) - 10;
+	const maxX = Math.max(...boxes.map((b) => b.x + b.w)) + 10;
+	const maxY = Math.max(...boxes.map((b) => b.y + b.h)) + 10;
+	const name = esc$1(caption || "Circuit diagram").replace(/"/g, "&quot;");
+	return `<svg class="fx fx-circuit" viewBox="${minX} ${minY} ${maxX - minX} ${maxY - minY}" style="min-width:${Math.min(Math.max(maxX - minX, 480), 760)}px" role="img" aria-label="${name}">${wires}${parts}${dots}</svg>`;
 }
 //#endregion
 //#region src/figures/drawing.js
-function drawing(spec) {
-	const w = Number(spec.w) || 640, h = Number(spec.h) || 320;
+function drawing(spec, caption = "") {
+	const bounds = [{
+		x: 0,
+		y: 0,
+		w: Number(spec.w) || 640,
+		h: Number(spec.h) || 320
+	}], textBounds = [];
 	const shapes = (spec.shapes || []).map((s) => {
 		const color = s.accent == null ? "var(--ink-2)" : tone(s.accent);
 		const common = `stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
@@ -29875,6 +30129,12 @@ function drawing(spec) {
 		if (s.type === "line" || s.type === "arrow") {
 			const [a, b] = s.points || [];
 			if (a && b) {
+				bounds.push({
+					x: Math.min(a[0], b[0]) - 14,
+					y: Math.min(a[1], b[1]) - 14,
+					w: Math.abs(b[0] - a[0]) + 28,
+					h: Math.abs(b[1] - a[1]) + 28
+				});
 				body = `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" ${common}/>`;
 				if (s.type === "arrow") {
 					const angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
@@ -29883,13 +30143,61 @@ function drawing(spec) {
 					body += `<polyline points="${l.join(",")} ${b.join(",")} ${r.join(",")}" fill="none" ${common}/>`;
 				}
 			}
-		} else if (s.type === "path") body = `<polyline points="${points}" fill="none" ${common}/>`;
-		else if (s.type === "rect") body = `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="3" fill="var(--surface-2)" ${common}/>`;
-		else if (s.type === "ellipse") body = `<ellipse cx="${s.x}" cy="${s.y}" rx="${s.w / 2}" ry="${s.h / 2}" fill="var(--surface-2)" ${common}/>`;
-		else if (s.type === "text") body = `<text x="${s.x}" y="${s.y}" class="fx-t fx-d-label" style="fill:${color}">${esc$1(s.text || "")}</text>`;
+		} else if (s.type === "path") {
+			const ps = s.points || [];
+			if (ps.length) {
+				const xs = ps.map((p) => p[0]), ys = ps.map((p) => p[1]);
+				bounds.push({
+					x: Math.min(...xs) - 3,
+					y: Math.min(...ys) - 3,
+					w: Math.max(...xs) - Math.min(...xs) + 6,
+					h: Math.max(...ys) - Math.min(...ys) + 6
+				});
+			}
+			body = `<polyline points="${points}" fill="none" ${common}/>`;
+		} else if (s.type === "rect") {
+			bounds.push({
+				x: s.x - 3,
+				y: s.y - 3,
+				w: s.w + 6,
+				h: s.h + 6
+			});
+			body = `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="3" fill="var(--surface-2)" ${common}/>`;
+		} else if (s.type === "ellipse") {
+			bounds.push({
+				x: s.x - s.w / 2 - 3,
+				y: s.y - s.h / 2 - 3,
+				w: s.w + 6,
+				h: s.h + 6
+			});
+			body = `<ellipse cx="${s.x}" cy="${s.y}" rx="${s.w / 2}" ry="${s.h / 2}" fill="var(--surface-2)" ${common}/>`;
+		} else if (s.type === "text") {
+			let y = s.y;
+			let box = {
+				x: s.x - 2,
+				y: y - 14,
+				w: textWidth(s.text || "", 12) + 4,
+				h: 17
+			};
+			while (textBounds.some((other) => overlaps(box, other))) {
+				y += 19;
+				box = {
+					...box,
+					y: y - 14
+				};
+			}
+			textBounds.push(box);
+			bounds.push(box);
+			body = `<text x="${s.x}" y="${y}" class="fx-t fx-d-label" style="fill:${color}">${esc$1(s.text || "")}</text>`;
+		}
 		return `<g>${s.label ? `<title>${esc$1(s.label)}</title>` : ""}${body}</g>`;
 	}).join("");
-	return `<svg class="fx fx-drawing" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc$1(spec.alt || "Annotated drawing").replace(/"/g, "&quot;")}">${shapes}</svg>`;
+	const alt = esc$1(spec.alt || caption || "Annotated drawing").replace(/"/g, "&quot;");
+	const minX = Math.min(...bounds.map((b) => b.x)) - 8, minY = Math.min(...bounds.map((b) => b.y)) - 8;
+	const maxX = Math.max(...bounds.map((b) => b.x + b.w)) + 8;
+	const maxY = Math.max(...bounds.map((b) => b.y + b.h)) + 8;
+	const width = maxX - minX;
+	return `<svg class="fx fx-drawing" viewBox="${minX} ${minY} ${width} ${maxY - minY}" style="min-width:${Math.min(Math.max(Math.ceil(width), 480), 760)}px" role="img" aria-label="${alt}">${shapes}</svg>`;
 }
 //#endregion
 //#region src/figures/index.js
@@ -29919,12 +30227,15 @@ const CHART = [
 const SPEC = {
 	circuit: {
 		keys: [
+			"layout",
+			"sides",
 			"w",
 			"h",
 			"wires",
 			"parts",
 			"junctions"
 		],
+		enums: { layout: ["rectangle", "manual"] },
 		items: {
 			wires: ["from", "to"],
 			parts: [
@@ -30076,7 +30387,7 @@ function checkKeys(obj, allowed, what, errs) {
 	for (const [k, v] of Object.entries(obj)) if (!allowed.includes(k)) errs.push(`${what}: unknown key "${k}"${why(v)}`);
 }
 function checkPlotFns(spec, where, errs) {
-	for (const ser of spec.series || []) {
+	for (const ser of Array.isArray(spec.series) ? spec.series : []) {
 		if (!ser || ser.points || ser.fn == null) continue;
 		let f;
 		try {
@@ -30100,16 +30411,66 @@ function checkPlotFns(spec, where, errs) {
 }
 const finite = (x) => typeof x === "number" && Number.isFinite(x);
 const point = (p) => Array.isArray(p) && p.length === 2 && p.every(finite);
+const onWire = (p, wire) => {
+	const [a, b] = [wire.from, wire.to];
+	const dx = b[0] - a[0], dy = b[1] - a[1];
+	return Math.abs((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) < 1e-8 && p[0] >= Math.min(a[0], b[0]) && p[0] <= Math.max(a[0], b[0]) && p[1] >= Math.min(a[1], b[1]) && p[1] <= Math.max(a[1], b[1]);
+};
 function checkDiagram(kind, spec, where, errs) {
-	for (const key of ["w", "h"]) if (spec[key] != null && (!finite(spec[key]) || spec[key] <= 0)) errs.push(`${where}: figure ${kind} ${key} must be a positive number`);
 	if (kind === "circuit") {
+		if (spec.layout === "rectangle") {
+			const sides = spec.sides;
+			if (!sides || typeof sides !== "object" || Array.isArray(sides)) errs.push(`${where}: rectangle circuit needs sides: {top, right, bottom, left}`);
+			else {
+				checkKeys(sides, [
+					"top",
+					"right",
+					"bottom",
+					"left"
+				], `${where}: rectangle circuit sides`, errs);
+				let count = 0;
+				for (const [side, items] of Object.entries(sides)) {
+					if (!Array.isArray(items)) {
+						errs.push(`${where}: rectangle circuit ${side} must be a list`);
+						continue;
+					}
+					count += items.length;
+					for (const part of items) {
+						if (!part || typeof part !== "object" || Array.isArray(part)) {
+							errs.push(`${where}: rectangle circuit ${side} part must be a mapping`);
+							continue;
+						}
+						checkKeys(part, [
+							"type",
+							"label",
+							"value"
+						], `${where}: rectangle circuit ${side} part`, errs);
+						if (![
+							"resistor",
+							"capacitor",
+							"battery",
+							"switch",
+							"diode",
+							"lamp",
+							"source"
+						].includes(part.type)) errs.push(`${where}: unknown circuit part "${part.type}"`);
+					}
+				}
+				if (!count) errs.push(`${where}: rectangle circuit needs at least one part`);
+			}
+			if (spec.wires || spec.parts || spec.junctions) errs.push(`${where}: rectangle circuit draws its own wires and parts; remove manual fields`);
+			return;
+		}
+		if (spec.sides != null) errs.push(`${where}: manual circuit uses wires and parts, not sides`);
 		for (const field of [
 			"wires",
 			"parts",
 			"junctions"
 		]) if (spec[field] != null && !Array.isArray(spec[field])) errs.push(`${where}: circuit ${field} must be a list`);
 		if (!(spec.wires || []).length && !(spec.parts || []).length) errs.push(`${where}: circuit needs wires or parts`);
-		for (const wire of Array.isArray(spec.wires) ? spec.wires : []) if (!point(wire?.from) || !point(wire?.to)) errs.push(`${where}: circuit wire needs two [x, y] points`);
+		const wires = Array.isArray(spec.wires) ? spec.wires : [];
+		for (const wire of wires) if (!point(wire?.from) || !point(wire?.to)) errs.push(`${where}: circuit wire needs two [x, y] points`);
+		else if (wire.from[0] === wire.to[0] && wire.from[1] === wire.to[1]) errs.push(`${where}: circuit wire cannot have zero length`);
 		for (const part of Array.isArray(spec.parts) ? spec.parts : []) {
 			if (!part || ![
 				"resistor",
@@ -30123,7 +30484,13 @@ function checkDiagram(kind, spec, where, errs) {
 			if (!finite(part?.x) || !finite(part?.y)) errs.push(`${where}: circuit part needs numeric x and y`);
 			if (part?.dir != null && !["h", "v"].includes(part.dir)) errs.push(`${where}: circuit part dir must be h or v`);
 		}
-		for (const p of Array.isArray(spec.junctions) ? spec.junctions : []) if (!point(p)) errs.push(`${where}: circuit junction needs [x, y]`);
+		for (const p of Array.isArray(spec.junctions) ? spec.junctions : []) {
+			if (!point(p)) {
+				errs.push(`${where}: circuit junction needs [x, y]`);
+				continue;
+			}
+			if (wires.filter((w) => point(w?.from) && point(w?.to) && onWire(p, w)).length < 2) errs.push(`${where}: circuit junction ${JSON.stringify(p)} must lie on at least two wires`);
+		}
 	} else {
 		if (!String(spec.alt || "").trim()) errs.push(`${where}: drawing needs alt text`);
 		if (!Array.isArray(spec.shapes) || !spec.shapes.length) errs.push(`${where}: drawing needs shapes`);
@@ -30155,6 +30522,64 @@ function checkDiagram(kind, spec, where, errs) {
 		}
 	}
 }
+function checkGeometry(kind, spec, where, errs) {
+	for (const key of ["w", "h"]) if (spec[key] != null && (!finite(spec[key]) || spec[key] <= 0)) errs.push(`${where}: figure ${kind} ${key} must be a positive number`);
+	if (spec.ticks != null && (!Number.isInteger(spec.ticks) || spec.ticks < 1 || spec.ticks > 20)) errs.push(`${where}: figure ${kind} ticks must be an integer from 1 to 20`);
+	for (const key of ["xrange", "yrange"]) if (spec[key] != null && (!Array.isArray(spec[key]) || spec[key].length !== 2 || !spec[key].every(finite) || spec[key][0] >= spec[key][1])) errs.push(`${where}: figure ${kind} ${key} must be two increasing numbers`);
+}
+function checkChart(kind, spec, where, errs) {
+	if (kind === "bar") {
+		if (spec.bars != null && !Array.isArray(spec.bars)) errs.push(`${where}: bar bars must be a list`);
+		for (const b of Array.isArray(spec.bars) ? spec.bars : []) if (!finite(b?.value)) errs.push(`${where}: bar value must be a finite number`);
+		for (const key of ["max", "baseline"]) if (spec[key] != null && !finite(spec[key])) errs.push(`${where}: bar ${key} must be a finite number`);
+		if (finite(spec.max) && finite(spec.baseline) && spec.max <= spec.baseline) errs.push(`${where}: bar max must exceed baseline`);
+		return;
+	}
+	if (spec.series != null && !Array.isArray(spec.series)) errs.push(`${where}: ${kind} series must be a list`);
+	for (const s of Array.isArray(spec.series) ? spec.series : []) {
+		if (!s || typeof s !== "object" || Array.isArray(s)) {
+			errs.push(`${where}: ${kind} series item must be a mapping`);
+			continue;
+		}
+		if (s.points != null && (!Array.isArray(s.points) || !s.points.every(point))) errs.push(`${where}: ${kind} points must be [x, y] finite-number pairs`);
+		if (kind === "plot") {
+			if (s.samples != null && (!Number.isInteger(s.samples) || s.samples < 2 || s.samples > 2e3)) errs.push(`${where}: plot samples must be an integer from 2 to 2000`);
+			if (s.from != null && !finite(s.from) || s.to != null && !finite(s.to)) errs.push(`${where}: plot from and to must be finite numbers`);
+			if (finite(s.from) && finite(s.to) && s.from >= s.to) errs.push(`${where}: plot from must be less than to`);
+		}
+	}
+}
+function checkGraph(spec, where, errs) {
+	if (spec.nodes != null && !Array.isArray(spec.nodes)) errs.push(`${where}: graph nodes must be a list`);
+	if (spec.edges != null && !Array.isArray(spec.edges)) errs.push(`${where}: graph edges must be a list`);
+	const ids = /* @__PURE__ */ new Set();
+	for (const n of Array.isArray(spec.nodes) ? spec.nodes : []) {
+		if (!n || !String(n.id || "").trim()) {
+			errs.push(`${where}: graph node needs id`);
+			continue;
+		}
+		if (ids.has(n.id)) errs.push(`${where}: graph repeats node id "${n.id}"`);
+		ids.add(n.id);
+		if (spec.layout === "manual" && (!finite(n.x) || !finite(n.y))) errs.push(`${where}: manual graph node "${n.id}" needs numeric x and y`);
+	}
+	for (const e of Array.isArray(spec.edges) ? spec.edges : []) if (!ids.has(e?.from) || !ids.has(e?.to)) errs.push(`${where}: graph edge refers to an unknown node`);
+	if (spec.r != null && (!finite(spec.r) || spec.r <= 0)) errs.push(`${where}: graph r must be positive`);
+}
+function checkGrid(spec, where, errs) {
+	if (Array.isArray(spec.cells)) {
+		for (const row of spec.cells) if (!Array.isArray(row)) errs.push(`${where}: grid each cells row must be a list`);
+		if (Array.isArray(spec.rowLabels) && spec.cells.length !== spec.rowLabels.length) errs.push(`${where}: grid cells needs one row per rowLabel`);
+		if (Array.isArray(spec.colLabels)) {
+			for (const row of spec.cells) if (Array.isArray(row) && row.length !== spec.colLabels.length) errs.push(`${where}: grid cells row length must match colLabels`);
+		}
+	}
+	for (const group of Array.isArray(spec.groups) ? spec.groups : []) if (!Array.isArray(group?.cells) || !group.cells.every((p) => Array.isArray(p) && p.length === 2 && p.every(Number.isInteger) && p[0] >= 0 && p[1] >= 0 && (!Array.isArray(spec.rowLabels) || p[0] < spec.rowLabels.length) && (!Array.isArray(spec.colLabels) || p[1] < spec.colLabels.length))) errs.push(`${where}: grid group cells must name existing [row, column] positions`);
+}
+function checkTiming(spec, where, errs) {
+	if (spec.unit != null && (!finite(spec.unit) || spec.unit <= 0)) errs.push(`${where}: timing unit must be positive`);
+	if (spec.signals != null && !Array.isArray(spec.signals)) errs.push(`${where}: timing signals must be a list`);
+	for (const signal of Array.isArray(spec.signals) ? spec.signals : []) if (!/^[01]+$/.test(String(signal?.wave || ""))) errs.push(`${where}: timing wave must contain only 0 and 1`);
+}
 /** Check one `{t:"figure", kind, spec}` block. `where` names the subsection. */
 function checkFigure(b, where, errs) {
 	const s = SPEC[b.kind];
@@ -30168,6 +30593,7 @@ function checkFigure(b, where, errs) {
 		return;
 	}
 	checkKeys(spec, s.keys, `${where}: figure ${b.kind} spec`, errs);
+	checkGeometry(b.kind, spec, where, errs);
 	for (const [k, allowed] of Object.entries(s.enums || {})) if (spec[k] != null && !allowed.includes(spec[k])) errs.push(`${where}: figure ${b.kind} ${k}: "${spec[k]}" is not one of ${allowed.join(", ")} — the renderer ignores it and falls back to "${allowed[0]}"`);
 	for (const k of s.fmts || []) {
 		const f = spec[k];
@@ -30188,8 +30614,16 @@ function checkFigure(b, where, errs) {
 			"groups"
 		]) if (spec[field] != null && !Array.isArray(spec[field])) errs.push(`${where}: figure grid ${field} must be a list`);
 	}
+	if (b.kind === "grid") checkGrid(spec, where, errs);
+	if (b.kind === "timing") checkTiming(spec, where, errs);
 	if (b.kind === "plot") checkPlotFns(spec, where, errs);
 	if (b.kind === "circuit" || b.kind === "drawing") checkDiagram(b.kind, spec, where, errs);
+	if ([
+		"bar",
+		"plot",
+		"scatter"
+	].includes(b.kind)) checkChart(b.kind, spec, where, errs);
+	if (b.kind === "graph") checkGraph(spec, where, errs);
 }
 //#endregion
 //#region tools/lib/slides.mjs
@@ -30367,7 +30801,7 @@ const U = {
 	},
 	cell: (v, map) => {
 		const s = String(v).trim();
-		return map && map[s] ? `<span class="${map[s]}">${esc(s)}</span>` : esc(s);
+		return map && map[s] ? `<span class="${map[s]}">${esc(s)}</span>` : s;
 	},
 	src: (b, env) => {
 		if (!b.source) return "";
@@ -30400,7 +30834,7 @@ R("def", {
 	notes: "lead",
 	defaultLabel: "Definition",
 	name: (b) => b.term,
-	render: (b, U2, env) => U.box("def", b.label || (b.term ? "" : "Definition"), (b.term ? `<dt>${esc(b.term)}</dt>` : "") + U.body(b) + U.items(b) + U.src(b, env))
+	render: (b, U2, env) => U.box("def", b.label || (b.term ? "" : "Definition"), (b.term ? `<dt>${b.term}</dt>` : "") + U.body(b) + U.items(b) + U.src(b, env))
 });
 R("key", {
 	notes: "lead",
@@ -30524,9 +30958,9 @@ R("figure", {
 	name: (b) => b.cap,
 	render: (b, _u, env) => {
 		const fn = Figures[b.kind];
-		const body = fn ? fn(b.spec || {}) : `<p class="fx-miss">unknown figure kind: ${esc(b.kind)}</p>`;
+		const body = fn ? fn(b.spec || {}, b.cap || "") : `<p class="fx-miss">unknown figure kind: ${esc(b.kind)}</p>`;
 		const cap = U.caption(env.fignum, b.cap);
-		return `<div class="figure">${cap ? `<span class="fcap">${cap}</span>` : ""}${body}</div>`;
+		return `<div class="figure">${cap ? `<span class="fcap">${cap}</span>` : ""}<div class="figure-viewport"><div class="figure-scroll">${body}</div></div></div>`;
 	}
 });
 R("slides", {
@@ -31192,9 +31626,10 @@ for (const id of courses) {
 			"cap",
 			"label",
 			"title",
-			"note"
+			"note",
+			"term"
 		];
-		const bare = new RegExp(`</?(?!(?:a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul)[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
+		const bare = new RegExp(`</?(?!(?:a|b|br|c|code|em|f|i|li|m|mark|n|ol|p|s|span|strong|sub|sup|u|ul)[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
 		const checkHtml = (v, what) => {
 			if (typeof v !== "string") return;
 			v = v.replace(/<m>[\s\S]*?<\/m>/g, (m) => " ".repeat(m.length));
@@ -31202,12 +31637,20 @@ for (const id of courses) {
 			const at = v.search(bare);
 			errs.push(`${what}: bare "${v[at]}" in HTML — write &lt; or &amp;  …${v.slice(Math.max(0, at - 24), at + 24)}…`);
 		};
+		checkHtml(C.title, "course title");
+		checkHtml(C.tagline, "course tagline");
+		checkHtml(s.title, `section ${s.id} title`);
+		checkHtml(s.blurb, `section ${s.id} blurb`);
+		checkHtml(u.title, `${where} title`);
 		for (const b of u.blocks || []) {
 			if (!b) continue;
 			for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
 			for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
 			if (Array.isArray(b.items)) b.items.forEach((v) => checkHtml(v, `${where} ${b.t} item`));
-			if (b.t === "slides" && Array.isArray(b.frames)) b.frames.forEach((frame, i) => checkHtml(frame?.text, `${where} slide ${i + 1} text`));
+			if (b.t === "slides" && Array.isArray(b.frames)) b.frames.forEach((frame, i) => {
+				checkHtml(frame?.title, `${where} slide ${i + 1} title`);
+				checkHtml(frame?.text, `${where} slide ${i + 1} text`);
+			});
 			if (b.asides && typeof b.asides === "object") for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
 		}
 		for (const item of u.quiz || []) {

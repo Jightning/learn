@@ -442,6 +442,26 @@ quiz:
 Both accept `id:`/`num:` overrides. Do not write them: positional numbering is
 what keeps ids stable.
 
+### Inline visual cues
+
+Use the same short HTML tags in course titles, section and subsection titles,
+block prose and labels, table cells, slide text, concept text, primer questions,
+and quiz prompts, choices, answers, and explanations. No extra YAML fields are
+needed:
+
+```yaml
+h: '<p><strong>Compare the inputs:</strong> <mark>the sign changes</mark>, so <em>this</em> case differs. <span class="ink-caution">Check the boundary.</span></p>'
+```
+
+`<b>`/`<strong>` bold, `<i>`/`<em>` italicize, `<mark>` highlights,
+`<u>` underlines, and `<s>` strikes through. `<sub>` and `<sup>` remain
+available for short textual notation.
+For colored text use `<span class="ink-accent">`, `ink-info`, `ink-note`, or
+`ink-caution`. These use the site palette in light and dark themes. Use a cue
+only when it points to a relation, distinction, or step the reader should see;
+large colored passages compete with the content. Close each tag, and quote a
+YAML scalar containing `: ` or `#`.
+
 ### 6.1 Block types
 
 | `t:` | Use for | Key fields |
@@ -524,6 +544,11 @@ ex         worked examples where needed, fully stepped
 figure     the artefact that makes it concrete
 trap       what goes wrong, named as a specific slip
 ```
+
+Before drafting, mark each idea whose connections, shape, motion, or signal
+path the reader must see. Put a `figure` or `image` at its first explanation in
+the spine; do not leave the visual for optional depth or replace it with a
+longer verbal description. See M17 and §10.1 for the figure/image choice.
 
 Definition before example before exception; never lead with a qualification
 [M10].
@@ -990,10 +1015,27 @@ generalise to the rest of the section.
 
 `{t: figure, kind, cap, id, spec}`. Eleven kinds, with their `spec` fields in full.
 
+Choose the smallest visual that carries the idea: `flow` for steps, `bar` for
+comparisons, `graph` for relationships, `timing` for signals, and `circuit` with
+`layout: rectangle` for a simple closed loop. These need labels and values,
+not drawing coordinates. Use `drawing` only for an annotation the presets
+cannot express, and `svg` only when no data-only kind fits. A readable caption
+is required because it is what read-aloud uses for the figure.
+
+**If understanding requires seeing a shape, connection, arrangement, or signal
+path, place a visual next to the explanation.** This is the default for visual
+mechanisms, not an optional embellishment. Use a built-in figure when it can
+faithfully express the relationship; otherwise include a labelled `image`
+asset. For example, a CMOS explanation needs a transistor schematic with VDD,
+GND, pMOS/nMOS devices, inputs, and output connections. The current `circuit`
+kind has no transistor symbol, so use a sourced or source-grounded SVG/image
+instead of describing the network only in prose. Explain in adjacent text what
+the reader should trace in the visual, and include descriptive `alt` and `cap`.
+
 | `kind` | For | `spec` |
 |---|---|---|
 | `graph` | State machines, block diagrams | `nodes:[{id, label, x, y, note, title, accent, state, here}]`, `edges:[{from, to, label, curve, self}]`, `layout: circle \| row \| layered \| manual`, `r`, `w`, `h` |
-| `circuit` | Circuit schematics | `w`, `h` (grid size), `wires:[{from:[x,y], to:[x,y]}]`, `parts:[{type, x, y, dir, label, value}]`, `junctions:[[x,y],…]` |
+| `circuit` | Circuit schematics | Series loop: `layout: rectangle`, `sides:{top,right,bottom,left}` with part lists. Branches: `layout: manual`, `w`, `h`, `wires:[{from:[x,y], to:[x,y]}]`, `parts:[{type, x, y, dir, label, value}]`, `junctions:[[x,y],…]` |
 | `drawing` | Annotated shapes and arrows | `w`, `h`, `alt`, `shapes:[{type, x, y, w, h, points, text, label, accent}]` |
 | `plot` | Functions or measured series | `series:[{label, fn \| points, from, to, dash, samples}]`, `xlabel`, `ylabel`, `xrange`, `yrange`, `ticks`, `legend`, `xfmt`, `yfmt`, `w`, `h` |
 | `flow` | Processes and pipelines | `steps:[{label, note}]`, `dir: row \| col` |
@@ -1008,16 +1050,30 @@ generalise to the rest of the section.
 colours. A `plot` series' `fn` is JavaScript in `x`, compiled and sampled by
 `validate.mjs`, so one that will not parse or has no finite value fails the build.
 
-For `circuit`, coordinates are grid points. Parts are centred at `(x,y)` and
-extend half a grid unit on each side; wires end at those terminals.
-`dir: v` rotates a symbol vertically (horizontal is the default). Supported
-parts: `resistor`, `capacitor`, `battery`, `switch`, `diode`, `lamp`, `source`.
-Use `junctions` to mark connected crossings; a crossing without a dot is not a
-connection. For `drawing`, coordinates are pixels in the viewBox. Supported
+For a rectangular `circuit`, list components in travel order on each side.
+Omit empty sides: wires and corners are generated, and each wire segment gets
+a stable reference such as `top-1` in the SVG. Optional `w` and `h` add space;
+they are never needed for a basic loop. For parallel or more complex branches,
+use `layout: manual`: coordinates are grid points, and each wire joins two
+points. Parts are centred at `(x,y)` and extend half a grid unit on each side;
+wires end at those terminals. `dir: v` rotates a symbol vertically. Split a
+wire at a branch point, list each outgoing segment, and put the point in
+`junctions` to show the electrical connection; a junction must lie on at least
+two wires. Crossing wires without a dot do
+not connect. The complete parallel RC example in
+`courses/demo/sections/04-figure-catalogue/1-diagrams.yaml` shows both a split
+and a rejoin. `rectangle` remains the shorter choice for a single loop.
+Supported parts: `resistor`, `capacitor`, `battery`, `switch`, `diode`, `lamp`,
+`source`. For `drawing`, coordinates are pixels in the viewBox. Supported
 shapes: `line`, `arrow`, `path` (a polyline), `rect`, `ellipse`, and `text`.
 Lines, arrows and paths use `points:[[x,y],…]`. Rectangles and ellipses use
 `x`, `y`, `w`, `h`; text uses `x`, `y`, `text`. An `accent` from 0–3 uses the
 course palette. Write descriptive `alt` text for a drawing.
+
+Wide figures scroll within their frame. The caption stays above the scrolling
+visual, and the edge fade disappears once the reader reaches that edge. Leave
+the default spacing around components and labels; the renderer keeps labels
+near their symbol or graph branch while clearing other text and shapes.
 
 ```yaml
 - t: figure
@@ -1025,15 +1081,10 @@ course palette. Write descriptive `alt` text for a drawing.
   id: simple-loop
   cap: The resistor limits current from the battery
   spec:
-    w: 5
-    h: 3
-    wires:
-      - {from: [0, 1], to: [1, 1]}
-      - {from: [2, 1], to: [3, 1]}
-      - {from: [4, 1], to: [5, 1]}
-    parts:
-      - {type: battery, x: 1.5, y: 1, label: B, value: 9 V}
-      - {type: resistor, x: 3.5, y: 1, label: R, value: 1 kΩ}
+    layout: rectangle
+    sides:
+      top: [{type: resistor, label: R, value: 1 kΩ}]
+      left: [{type: battery, label: B, value: 9 V}]
 ```
 
 Use `slides` when understanding depends on seeing a state change one step at a
@@ -1209,6 +1260,8 @@ list because it was the natural tool.
 - [ ] Every list item, table heading, table cell and `steps` entry is a
       **string**, not a mapping an unquoted `": "` created (writing.md §4a)
 - [ ] Every `figure`, `table` and `image` has a `cap:` saying what it shows (§2.2)
+- [ ] Every explanation that depends on spatial structure, connections, motion,
+      or a signal path has an adjacent figure or image that shows it (M17)
 - [ ] Every `<m>` and `math` compiles; no `<m>` in a `mono`/`map` table
 - [ ] Every authored HTML field escapes a bare `<` or `&`
 - [ ] Every `image` has `alt`; every `plot` `fn` parses and is finite

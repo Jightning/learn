@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import { readNote, writeNote } from "../lib/notes.js";
 import { M } from "../lib/math.js";
+import Inline from "./Inline.jsx";
 
 /* A problem before the instruction that solves it.
  *
@@ -19,7 +20,7 @@ export default function Attempt({ b, cid, anchor }) {
 
   return (
     <div class="attempt" data-attempt={anchor}>
-      <span class="blabel">{b.label || "Try it first"}</span>
+      <span class="blabel"><Inline text={b.label || "Try it first"} /></span>
       <div dangerouslySetInnerHTML={{ __html: M(b.h) }} />
       <textarea class="attempt-in" rows="3" value={text} placeholder="However far you get."
                 onInput={e => setText(e.currentTarget.value)} />

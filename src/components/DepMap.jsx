@@ -2,6 +2,7 @@ import { qid } from "../lib/util.js";
 import { sectionEdges } from "../lib/refs.js";
 import { transitiveReduction } from "../lib/graph.js";
 import { Figures } from "../figures/index.js";
+import Inline from "./Inline.jsx";
 
 /* The course's real shape, derived from its cross-references. */
 export default function DepMap({ ctx, onNode, focus }) {
@@ -108,7 +109,7 @@ export default function DepMap({ ctx, onNode, focus }) {
            onMouseOver={e => pair(e, true)} onMouseOut={e => pair(e, false)}>
         {C.sections.map(s => (
           <a href={`#/${cid}/${s.id}`} key={s.id} data-pair={s.id}
-             class={s.id === focus ? "is-here" : ""}><b>{s.num}</b> {s.title}</a>
+             class={s.id === focus ? "is-here" : ""}><b>{s.num}</b> <Inline text={s.title} /></a>
         ))}
       </div>
     </div>

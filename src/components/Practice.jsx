@@ -2,6 +2,7 @@ import { useState } from "preact/hooks";
 import { rangePool, selectMixed, retryVariant } from "../lib/practice-pool.js";
 import { get as retentionGet } from "../lib/retention.js";
 import QuestionCard from "./QuestionCard.jsx";
+import { strip } from "../lib/util.js";
 
 export default function Practice({ ctx, cat }) {
   const { cid, idx, state } = ctx;
@@ -39,10 +40,10 @@ export default function Practice({ ctx, cat }) {
       <summary><i class="caret" aria-hidden="true" />Choose subsections and set length</summary>
       <div class="pcfg-row">
         <label>From <select id="p-from" value={from} onChange={e => setFrom(e.currentTarget.value)}>
-          {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {x.sub.title}</option>)}
+          {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {strip(x.sub.title)}</option>)}
         </select></label>
         <label>Through <select id="p-to" value={to} onChange={e => setTo(e.currentTarget.value)}>
-          {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {x.sub.title}</option>)}
+          {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {strip(x.sub.title)}</option>)}
         </select></label>
         <label>Questions <select id="p-count" value={count} onChange={e => setCount(e.currentTarget.value)}>
           {[5, 10, 20, 40].map(n => <option value={n} key={n}>{n}</option>)}

@@ -20,3 +20,9 @@ export function slideSwipe(dx, dy) {
   if (Math.abs(dx) < OPEN_DISTANCE || Math.abs(dx) <= Math.abs(dy) * HORIZONTAL_RATIO) return null;
   return dx < 0 ? "next" : "previous";
 }
+
+export function slideIntent(dx, dy) {
+  if (Math.hypot(dx, dy) < INTENT_DISTANCE) return null;
+  if (Math.abs(dx) <= Math.abs(dy) * HORIZONTAL_RATIO) return "other";
+  return dx < 0 ? "next" : "previous";
+}

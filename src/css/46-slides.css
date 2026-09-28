@@ -8,7 +8,10 @@
 .slides-count{flex:none;font:600 var(--fs-meta) var(--mono);color:var(--hi-ink)}
 .slides-progress{height:3px;flex:1;background:var(--rule-2);border-radius:3px;overflow:hidden}
 .slides-progress i{display:block;height:100%;background:var(--hi);transition:width .2s ease}
-.slides-frame{min-height:230px;display:flex;flex-direction:column;justify-content:center;gap:14px;
+.slides-stage{overflow:hidden;touch-action:pan-y}
+.slides-track{display:flex;align-items:stretch;will-change:transform}
+.slides-track.settling{transition:transform .22s ease}
+.slides-frame{flex:0 0 100%;min-width:0;min-height:230px;display:flex;flex-direction:column;justify-content:center;gap:14px;
   padding:22px;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:3px}
 .slides-frame h4{margin:0;font:600 1.1rem var(--display);color:var(--ink)}
 .slides-visual{overflow-x:auto}

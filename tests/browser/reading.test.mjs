@@ -111,10 +111,42 @@ try {
   await page.waitForTimeout(300);
   check('mobile notes stay readable without horizontal overflow', await row(0).locator('.mnote.is-a').isVisible() && await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await page.screenshot({ path: resolve(shots, 'reading-mobile.png') });
+  await page.locator('.modesw-cycle:visible').click();
+  await page.locator('.modesw-cycle:visible').click();
+  await page.waitForTimeout(350);
+  const mobileDeck = row(12).locator('.slides');
+  await mobileDeck.locator('.slides-stage').evaluate(stage => {
+    const fire = (type, x, y) => stage.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, pointerId: 51, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y
+    }));
+    fire('pointerdown', 260, 300);
+    fire('pointermove', 170, 306);
+  });
+  check('a slide reveals its neighbor during a mobile swipe',
+    await mobileDeck.locator('.slides-frame').count() === 2
+    && await mobileDeck.locator('.slides-track').evaluate(el => getComputedStyle(el).transform !== 'matrix(1, 0, 0, 1, 0, 0)'));
+  await mobileDeck.locator('.slides-stage').evaluate(stage => stage.dispatchEvent(new PointerEvent('pointerup', {
+    bubbles: true, pointerId: 51, pointerType: 'touch', isPrimary: true, clientX: 170, clientY: 306
+  })));
+  await page.waitForTimeout(250);
+  check('releasing the mobile slide swipe completes the transition',
+    await mobileDeck.locator('.slides-frame h4').innerText() === 'Transform');
+  await mobileDeck.locator('.slides-stage').evaluate(stage => {
+    const fire = (type, x, y) => stage.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, pointerId: 52, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y
+    }));
+    fire('pointerdown', 260, 300);
+    fire('pointermove', 244, 310);
+    fire('pointerup', 244, 310);
+  });
+  await page.waitForTimeout(250);
+  check('a short diagonal slide drag settles back on the same frame',
+    await mobileDeck.locator('.slides-frame h4').innerText() === 'Transform');
 
   await page.setViewportSize({ width: 1600, height: 1000 });
   await mode('Study');
   const deck = row(12).locator('.slides');
+  await deck.getByRole('button', { name: 'Previous slide' }).click();
   check('slide starts on its first visual', await deck.locator('.slides-frame h4').innerText() === 'Input' && await deck.locator('svg.fx-drawing').count() === 1);
   await deck.getByRole('button', { name: 'Next slide' }).click();
   check('slide navigation replaces the visual and explanation', await deck.locator('.slides-frame h4').innerText() === 'Transform' && await deck.locator('.fx-flow').count() === 1);

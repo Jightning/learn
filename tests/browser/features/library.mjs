@@ -11,6 +11,26 @@ if (installed) {
   ck("demo fixture installs", failed === 0,
      failed ? await page.locator(".cio-msg.bad").first().innerText() : `${installed} courses`);
   await go();
+  const styled = await page.evaluate(() => {
+    const card = [...document.querySelectorAll(".lcard")].find(c => c.querySelector("h3 strong"));
+    if (!card) return null;
+    const mark = card.querySelector("h3 mark");
+    const ink = card.querySelector("h3 .ink-info");
+    return { href: card.querySelector(".lhit")?.getAttribute("href"),
+      text: card.querySelector("h3")?.textContent,
+      italic: !!mark?.querySelector("em"),
+      highlight: mark && getComputedStyle(mark).backgroundColor,
+      color: ink && getComputedStyle(ink).color };
+  });
+  ck("inline styles render in the course list", !!styled && styled.italic &&
+     styled.highlight !== "rgba(0, 0, 0, 0)" && !!styled.color,
+     JSON.stringify(styled));
+  if (styled?.href) {
+    await go(styled.href);
+    ck("inline styles render in the course heading",
+       await page.locator(".desk h1 strong, .desk h1 mark, .desk h1 .ink-info").count() === 3);
+    await go();
+  }
 }
 
 /* the app does not expose its data, so drive it through the DOM instead */
@@ -57,8 +77,15 @@ if (single) {
   }));
   ck("the dialog holds the install controls",
      await page.locator(".modal .cio-foot .dbtn").count() >= 1);
-  ck("the public library includes DEMO",
-     await page.locator('.cio-catalog .cio-course a[href="#/demo"]').count() === 1);
+  ck("the public library includes DEMO as added",
+     await page.locator(".cio-catalog .cio-course").filter({ hasText: "DEMO" })
+       .locator("button:disabled").innerText() === "Added");
+  const addHash = await page.evaluate(() => {
+    const before = location.hash;
+    document.querySelector(".cio-course button:disabled").click();
+    return [before, location.hash];
+  });
+  ck("Added cannot navigate", addHash[0] === addHash[1]);
   ck("public courses have a category",
      await page.locator(".cio-category h4").filter({ hasText: "Getting Started" }).count() === 1);
   ck("prebuilt courses remain simple rows under their category",
@@ -297,12 +324,19 @@ if (single) {
     ck("hiding survives a reload", await page.locator(".lcard").count() === before - 1);
     await page.locator("#lib-add").click(); await page.waitForTimeout(250);
     ck("the add dialog offers it back",
-       await page.locator('[data-restore="demo"]').count() === 1);
+       await page.locator('[data-restore="demo"]').count() === 1 &&
+       await page.locator('[data-restore="demo"]').innerText() === "Add");
     ck("a hidden course stays listed in the library",
        await page.locator(".cio-catalog .cio-course").filter({ hasText: "DEMO" }).count() === 1);
     await page.locator('[data-restore="demo"]').click(); await page.waitForTimeout(300);
-    await page.keyboard.press("Escape"); await page.waitForTimeout(200);
+    ck("adding a hidden course closes the popup",
+       await page.locator(".modal").count() === 0);
     ck("restoring puts it back", await page.locator(".lcard").count() === before);
+    await page.locator('.lcard .lhit[href="#/demo"]').click();
+    await page.locator(".desk h1").waitFor();
+    ck("a newly added course opens from its shelf card",
+       await page.locator(".lib .lede").count() === 0);
+    await go();
   }
 
   /* The Home Screen advice is for a reader who is not already there. WebKit

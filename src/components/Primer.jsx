@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import { keyTerms } from "../lib/pretrain.js";
 import Prequestion from "./Prequestion.jsx";
+import Inline from "./Inline.jsx";
 
 /* Pre-training as a module rather than a panel.
  *
@@ -19,7 +20,7 @@ export default function Primer({ section, ctx }) {
   if (!terms.length && !asks.length) {
     return (
       <div class="primer">
-        <h1>{section.title}</h1>
+        <h1><Inline text={section.title} /></h1>
         <p class="lede">This section defines no new terms. Go straight in.</p>
         <a class="dbtn" href={`#/${cid}/${section.id}`}>Start section {section.num} →</a>
       </div>
@@ -35,7 +36,7 @@ export default function Primer({ section, ctx }) {
   return (
     <div class="primer">
       <span class="eyebrow">Before section {section.num}</span>
-      <h1>{section.title}</h1>
+      <h1><Inline text={section.title} /></h1>
       <p class="lede">
         The {terms.length} terms this section works with{asks.length
           ? `, then ${asks.length} question${asks.length === 1 ? "" : "s"} about how they interact`
@@ -64,7 +65,7 @@ export default function Primer({ section, ctx }) {
             Term {i + 1} of {terms.length}
             {t.kind === "concept" && <span class="pt-tag">core</span>}
           </div>
-          <h2 class="primer-term">{t.term}</h2>
+          <h2 class="primer-term"><Inline text={t.term} /></h2>
           {shown
             ? <p class="primer-gloss">{t.gloss}</p>
             : <p class="primer-hint">What does this mean here?</p>}

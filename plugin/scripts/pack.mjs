@@ -2769,9 +2769,7 @@ function loadCourse(dir) {
 		errors
 	};
 }
-//#endregion
-//#region tools/lib/files.mjs
-const PUBLIC = /* @__PURE__ */ new Set(["demo"]);
+const PUBLIC = new Set((/* @__PURE__ */ new Map([["demo", "Getting Started"]])).keys());
 const MIME = {
 	".png": "image/png",
 	".jpg": "image/jpeg",

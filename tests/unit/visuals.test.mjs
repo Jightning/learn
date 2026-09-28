@@ -26,6 +26,30 @@ assert.ok(errors("circuit", { parts: [{ type: "transistor", x: 1, y: 1 }] })
   .some(e => e.includes("unknown circuit part")));
 assert.ok(errors("circuit", { wires: [{ from: [0, "x"], to: [2, 0] }] })
   .some(e => e.includes("two [x, y] points")));
+const rectangleSpec = { layout: "rectangle", sides: {
+  top: [{ type: "resistor", label: "R", value: "1 kΩ" }],
+  left: [{ type: "battery", label: "V", value: "9 V" }]
+} };
+assert.deepEqual(errors("circuit", rectangleSpec), []);
+const rectangle = circuit(rectangleSpec, "Simple loop");
+assert.equal((rectangle.match(/data-wire="/g) || []).length, 6);
+assert.match(rectangle, /data-wire="top-1"/);
+assert.match(rectangle, /aria-label="Simple loop"/);
+assert.ok(errors("circuit", { layout: "rectangle", sides: { top: [{ type: "transistor" }] } })
+  .some(e => e.includes("unknown circuit part")));
+assert.ok(errors("circuit", { layout: "rectangle", sides: { top: [] }, wires: [] })
+  .some(e => e.includes("draws its own wires")));
+const branchSpec = { layout: "manual", wires: [
+  { from: [0, 0], to: [2, 0] },
+  { from: [2, 0], to: [4, 0] },
+  { from: [2, 0], to: [2, 2] }
+], parts: [{ type: "capacitor", x: 2, y: 3, dir: "v" }], junctions: [[2, 0]] };
+assert.deepEqual(errors("circuit", branchSpec), []);
+assert.equal((circuit(branchSpec).match(/fx-c-wire/g) || []).length, 3);
+assert.ok(errors("circuit", { ...branchSpec, junctions: [[3, 2]] })
+  .some(e => e.includes("must lie on at least two wires")));
+assert.ok(errors("circuit", { ...branchSpec, sides: { top: [] } })
+  .some(e => e.includes("manual circuit uses wires and parts")));
 
 const drawingSpec = {
   alt: "Arrow from input to output",

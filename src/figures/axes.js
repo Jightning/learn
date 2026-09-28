@@ -1,6 +1,7 @@
 /* Shared plotting frame: scales, gridlines and axis labels.
  * Used by every chart kind so they share one visual language. */
 import { esc, round, txt } from "./base.js";
+import { textWidth } from "./labels.js";
 
 export const MARGIN = { l: 56, r: 20, t: 18, b: 44 };
 
@@ -38,11 +39,20 @@ export function scale(domain, range) {
 
 /** `yDomain` is optional only so a caller with no vertical axis can omit it;
  *  every chart that draws ticks passes it, and gets a margin that fits them. */
-export function frame(spec, yDomain, ticks = 5, fmt = round) {
-  const w = spec.w || 640, h = spec.h || 320;
+export function frame(spec, yDomain, ticks = 5, fmt = round, xLabels = []) {
   const m = yDomain
     ? { ...MARGIN, l: leftMargin(tickLabels(yDomain, ticks, fmt), spec.ylabel) }
-    : MARGIN;
+    : { ...MARGIN };
+  const xWide = Math.max(0, ...xLabels.map(s => textWidth(s, 10)));
+  if (xWide) {
+    m.l = Math.max(m.l, Math.ceil(xWide / 2) + 8);
+    m.r = Math.max(m.r, Math.ceil(xWide / 2) + 8);
+  }
+  const xNeed = xLabels.length > 1 ? (xLabels.length - 1) * (xWide + 10) : 0;
+  const w = Math.max(spec.w || 640, m.l + m.r + xNeed,
+    m.l + m.r + textWidth(spec.xlabel || "", 11) + 16);
+  const h = Math.max(spec.h || 320,
+    textWidth(spec.ylabel || "", 11) + m.t + m.b + 12);
   return { w, h, m, iw: w - m.l - m.r, ih: h - m.t - m.b };
 }
 

@@ -1,9 +1,9 @@
 title: Media and edge-case displays
 blocks:
   - t: p
-    source: docs/create_course.md §11.3
+    source: docs/create_course.md §10.3
     h: |-
-      An <code>image</code> is a photograph or scan, embedded at build time so the page stays self-contained. It is the fallback for what a declarative figure cannot describe. Everything below the first image is an edge case: a numbered figure with no caption, and the badges a block wears when its claim is not grounded.
+      An <code>image</code> can be a photograph, scan, or labelled SVG diagram, embedded at build time so the page stays self-contained. When a learner must see a structure and no built-in figure can show it faithfully, a suitable image is part of the explanation. The embedded image below shows the spine, depth, and apply bars at different lengths; those lengths make their relative emphasis visible. Everything below it is an edge case: a numbered figure with no caption, and the badges a block wears when its claim is not grounded.
 
   - t: def
     source: docs/material_truth.md M28

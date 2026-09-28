@@ -115,6 +115,8 @@
 .cio-course strong{display:block;color:var(--ink)}
 .cio-course p{margin:.2rem 0 0;color:var(--ink-3)}
 .cio-course .dbtn{flex:none}
+.cio-course .dbtn:disabled,.cio-course .dbtn:disabled:hover{
+  cursor:default;border-color:var(--rule);border-style:dashed;color:var(--ink-3)}
 /* A standing caution about this device, not the result of an action —
    distinct from .cio-msg so a test cannot mistake one for the other. */
 .cio-warn{font:400 14px/1.5 var(--sans);margin:var(--sp-2) 0 0;color:var(--wn-ink)}

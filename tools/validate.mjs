@@ -625,12 +625,12 @@ for (const id of courses) {
          silent hole rather than an error, which is why this is checked here.
          `a`, `cap`, `label` and an example's `title` used to be escaped; the
          rule is what makes it safe that they no longer are. */
-      const HTML_FIELDS = ["h", "q", "a", "why", "cap", "label", "title", "note"];
+      const HTML_FIELDS = ["h", "q", "a", "why", "cap", "label", "title", "note", "term"];
       /* Only the genuinely ambiguous shapes. An HTML parser emits `<` before a
          space or an `=` as text, so `b <= a` and `j < i` are safe and must not
          be flagged; `x <id` is not, because it opens a tag. Likewise `a & b`
          is text, while `&amp` without its semicolon is not. */
-      const TAGS = "a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul";
+      const TAGS = "a|b|br|c|code|em|f|i|li|m|mark|n|ol|p|s|span|strong|sub|sup|u|ul";
       const bare = new RegExp(`</?(?!(?:${TAGS})[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
       const checkHtml = (v, what) => {
         if (typeof v !== "string") return;
@@ -642,13 +642,21 @@ for (const id of courses) {
         const at = v.search(bare);
         errs.push(`${what}: bare "${v[at]}" in HTML — write &lt; or &amp;  …${v.slice(Math.max(0, at - 24), at + 24)}…`);
       };
+      checkHtml(C.title, "course title");
+      checkHtml(C.tagline, "course tagline");
+      checkHtml(s.title, `section ${s.id} title`);
+      checkHtml(s.blurb, `section ${s.id} blurb`);
+      checkHtml(u.title, `${where} title`);
       for (const b of u.blocks || []) {
         if (!b) continue;
         for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
         for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
         if (Array.isArray(b.items)) b.items.forEach(v => checkHtml(v, `${where} ${b.t} item`));
         if (b.t === "slides" && Array.isArray(b.frames))
-          b.frames.forEach((frame, i) => checkHtml(frame?.text, `${where} slide ${i + 1} text`));
+          b.frames.forEach((frame, i) => {
+            checkHtml(frame?.title, `${where} slide ${i + 1} title`);
+            checkHtml(frame?.text, `${where} slide ${i + 1} text`);
+          });
         if (b.asides && typeof b.asides === "object")
           for (const [k, v] of Object.entries(b.asides)) checkHtml(v, `${where} ${b.t}.asides.${k}`);
       }

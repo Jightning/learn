@@ -4,6 +4,7 @@ import { IconStart, IconIndex, IconPractice, IconMap, IconTuck, IconExplore,
 import CourseActions from "./CourseActions.jsx";
 import LaneSelect from "./LaneSelect.jsx";
 import HueSelect from "./HueSelect.jsx";
+import Inline from "./Inline.jsx";
 
 /* State is carried by the number itself — weight, colour and an edge marker.
    The previous 26x18px pulse was too small to read as a signal and landed as a
@@ -94,7 +95,7 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
             device needs this link most. */}
         <a class="backlib" href="#/">All courses</a>
         <span class="code">{course.code}</span>
-        <span class="name">{course.title}</span>
+        <span class="name"><Inline text={course.title} /></span>
         <span class="meta">{course.meta}</span>
       </div>
 
@@ -123,7 +124,7 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
             <div key={s.id} class={"sec" + (on ? " active open" : "")}>
               <a class="sec-btn" href={H(s.id)} onClick={onNavigate}>
                 <Cycle n={s.num} active={on} visited={s.num < curNum} />
-                <span class="sec-title">{s.title}</span>
+                <span class="sec-title"><Inline text={s.title} /></span>
               </a>
               <ul class="subs">
                 {s.subs.map((sub, k) => (
@@ -131,7 +132,7 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
                     {/* `here` is where the reader is, not where they clicked —
                         see useReading in lib/nav.js. */}
                     <a href={H(sub.id)} class={here === sub.id ? "cur" : ""} onClick={onNavigate}>
-                      {`${s.num}.${k + 1}  ${sub.title}`}
+                      {`${s.num}.${k + 1}  `}<Inline text={sub.title} />
                     </a>
                   </li>
                 ))}

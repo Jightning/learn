@@ -92,39 +92,65 @@ export default function App() {
   const [course, setCourse] = useState(() => (cid ? peek(cid) : null));
   const [loadError, setLoadError] = useState(null);
 
-  /* A closed mobile drawer follows an intentional right swipe. Pointer events
-     keep this touch-only without suppressing the browser's normal scrolling.
-     The first meaningful movement locks the gesture out if it is vertical or
-     leftward; the completed swipe then has to be strongly horizontal too, so
-     a reader whose scrolling finger drifts right cannot open navigation. */
+  /* Let a horizontal touch reveal the drawer under the finger. Keep the live
+     position on the DOM so a course-sized render is not needed for each move. */
   useEffect(() => {
     if (!course || wide || menuOpen || searchOpen) return;
     let swipe = null;
+    let finishFrame = 0;
+    const sidebar = document.getElementById("sidebar");
+    const scrim = document.querySelector(".scrim");
+    if (!sidebar || !scrim) return;
+    const reset = () => {
+      sidebar.classList.remove("dragging");
+      scrim.classList.remove("dragging");
+      sidebar.style.removeProperty("--drag-x");
+      scrim.style.removeProperty("--drag-progress");
+    };
     const down = e => {
       if (e.pointerType !== "touch") return;
       if (!e.isPrimary) { swipe = null; return; }
-      swipe = { id: e.pointerId, x: e.clientX, y: e.clientY, cancelled: false };
+      /* A slide or horizontally scrollable figure owns its own gesture. */
+      if (e.target.closest(".slides, .figure-scroll, .fx-grid, .fx-tm")) return;
+      swipe = { id: e.pointerId, x: e.clientX, y: e.clientY,
+        width: sidebar.getBoundingClientRect().width, cancelled: false, dragging: false };
     };
     const move = e => {
       if (!swipe || e.pointerId !== swipe.id || swipe.cancelled) return;
-      const intent = swipeIntent(e.clientX - swipe.x, e.clientY - swipe.y);
+      const dx = e.clientX - swipe.x;
+      const intent = swipeIntent(dx, e.clientY - swipe.y);
       if (intent === "other") swipe.cancelled = true;
+      if (intent === "right") swipe.dragging = true;
+      if (!swipe.dragging || swipe.cancelled) return;
+      const distance = Math.max(0, Math.min(swipe.width, dx));
+      sidebar.classList.add("dragging");
+      scrim.classList.add("dragging");
+      sidebar.style.setProperty("--drag-x", `${distance}px`);
+      scrim.style.setProperty("--drag-progress", distance / swipe.width);
     };
     const up = e => {
       if (!swipe || e.pointerId !== swipe.id) return;
-      const opens = !swipe.cancelled
+      const opens = swipe.dragging && !swipe.cancelled
         && opensSidebar(e.clientX - swipe.x, e.clientY - swipe.y);
       swipe = null;
-      if (opens) setMenuOpen(true);
+      if (sidebar.classList.contains("dragging")) {
+        setMenuOpen(opens);
+        finishFrame = requestAnimationFrame(reset);
+      }
     };
     const cancel = e => {
-      if (swipe && e.pointerId === swipe.id) swipe = null;
+      if (swipe && e.pointerId === swipe.id) {
+        swipe = null;
+        finishFrame = requestAnimationFrame(reset);
+      }
     };
     addEventListener("pointerdown", down, { passive: true });
     addEventListener("pointermove", move, { passive: true });
     addEventListener("pointerup", up, { passive: true });
     addEventListener("pointercancel", cancel, { passive: true });
     return () => {
+      cancelAnimationFrame(finishFrame);
+      reset();
       removeEventListener("pointerdown", down);
       removeEventListener("pointermove", move);
       removeEventListener("pointerup", up);
@@ -519,7 +545,7 @@ export default function App() {
           <IconTuck open={false} />
         </button>
       )}
-      {menuOpen && <div class="scrim on" onClick={() => setMenuOpen(false)} />}
+      {course && <div class={"scrim" + (menuOpen ? " on" : "")} onClick={() => setMenuOpen(false)} />}
       <ReturnPill stack={nav.stack} onBack={nav.back} />
       {course && <SearchOverlay ctx={ctx} open={searchOpen} onClose={() => setSearchOpen(false)} />}
     </>

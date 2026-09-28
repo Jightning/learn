@@ -1,31 +1,23 @@
 /* 45-figures — figure frame and every figure kind. */
 
-/* A wide figure scrolls inside its frame. It used to do that with no sign that
-   it did: a ten-node graph was cut off at the border mid-arrow, and the only
-   hint was the caption saying so. The two `local` layers are painted in the
-   content's coordinate space and slide away as it scrolls, uncovering the two
-   fixed shading layers underneath — so the shadow appears on exactly the edge
-   that is hiding something and on neither edge when nothing is. The base
-   colour is unchanged, which is what keeps the contrast sweep reading the same
-   ground it always did. */
+/* Keep the caption fixed while a wide drawing scrolls below it. The small
+   edge fades appear only where content remains; they follow scroll position
+   rather than painting a permanent dark stripe on the frame. */
 .figure{container-type:inline-size;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);border-radius:3px;
-  background-color:var(--surface);padding:15px 16px;overflow-x:auto;
-  background-image:
-    linear-gradient(to right, var(--surface) 60%, transparent),
-    linear-gradient(to left,  var(--surface) 60%, transparent),
-    linear-gradient(to right, color-mix(in srgb,var(--ink) 13%,transparent), transparent),
-    linear-gradient(to left,  color-mix(in srgb,var(--ink) 13%,transparent), transparent);
-  background-position:left center, right center, left center, right center;
-  background-repeat:no-repeat;
-  background-size:26px 100%, 26px 100%, 13px 100%, 13px 100%;
-  background-attachment:local, local, scroll, scroll;
-}
+  background:var(--surface);padding:15px 0;overflow:hidden}
+.figure-viewport{position:relative}
+.figure-viewport::before,.figure-viewport::after{content:"";position:absolute;z-index:1;
+  top:0;bottom:0;width:24px;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.figure-viewport::before{left:0;background:linear-gradient(to right,var(--surface),transparent)}
+.figure-viewport::after{right:0;background:linear-gradient(to left,var(--surface),transparent)}
+.figure-viewport.has-left::before,.figure-viewport.has-right::after{opacity:1}
+.figure-scroll{overflow-x:auto;padding:0 16px 8px}
 /* A caption is a sentence — it describes the figure — so it is read, not
    scanned, and it is not a label however much it looks like one. */
 /* A caption describes; the number beside it identifies. Only the number keeps
    the mono, via .fnum. */
 .figure .fcap{font-family:var(--sans);font-size:var(--fs-small);
-  color:var(--ink-3);margin-bottom:11px;display:block}
+  color:var(--ink-3);margin:0 16px 11px;display:block}
 svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
 .fx-t{font-family:var(--mono);fill:var(--ink-2)}
 .fx-nl{font-size:11px;fill:var(--ink);font-weight:600}
@@ -86,6 +78,7 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
     display:flex;align-items:stretch;gap:1.5rem;
     padding-bottom:4px;
   }
+  .fx-flow.is-row::after{content:"";flex:0 0 16px;margin-left:-1.5rem}
   /* A step's floor is a measure, not a token width. `flex:1 1 0` alone divides
      whatever the column has by the number of steps, and a note is a sentence:
      four of them across a 566px reading column came out at seventeen
@@ -116,11 +109,12 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
 .fx-mxl{align-self:center;margin-left:9px;color:var(--ink-3);font-size:var(--fs-small)}
 .fx-grid{overflow-x:auto;padding-bottom:4px}
 .fx-gw{display:inline-grid;font-family:var(--mono);font-size:.84rem;min-width:min-content}
-.fx-gcell,.fx-gh,.fx-gc{border:1px solid var(--rule);min-width:46px;height:44px;
-  display:flex;align-items:center;justify-content:center;position:relative}
-.fx-gh{border:0;color:var(--ink-3);font-size:var(--fs-small);height:26px}
-.fx-gc{border:0;font-size:var(--fs-meta);color:var(--ink-2);justify-content:flex-start;padding-left:2px}
-.fx-gcell{background:var(--surface);font-weight:600}
+.fx-gcell,.fx-gh,.fx-gc{border:1px solid var(--rule);min-width:46px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;position:relative;
+  padding:6px;text-align:center;overflow-wrap:break-word}
+.fx-gh{border:0;color:var(--ink-3);font-size:var(--fs-small);min-height:26px}
+.fx-gc{border:0;font-size:var(--fs-meta);color:var(--ink-2);justify-content:flex-start;text-align:left}
+.fx-gcell{background:var(--surface);font-weight:600;padding-top:16px}
 .fx-gcell.g0{background:color-mix(in srgb,var(--hi) 15%,var(--surface));border-color:var(--hi)}
 .fx-gcell.g1{background:color-mix(in srgb,var(--lo) 15%,var(--surface));border-color:var(--lo)}
 .fx-gcell.g2{background:color-mix(in srgb,var(--dc) 15%,var(--surface));border-color:var(--dc)}
@@ -131,10 +125,11 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
 .fx-gl .l0{border-color:var(--hi);color:var(--hi-ink)}
 .fx-gl .l1{border-color:var(--lo);color:var(--lo-ink)}
 .fx-gl .l2{border-color:var(--dc);color:var(--dc-ink)}
-.fx-tm{overflow-x:auto}
-.fx-tr{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.fx-tm{overflow-x:auto;display:grid;grid-template-columns:max-content max-content;
+  column-gap:12px;row-gap:4px;align-items:center}
+.fx-tr{display:contents}
 .fx-tn{font-family:var(--mono);font-size:var(--fs-small);color:var(--ink-2);
-  width:64px;text-align:right;flex:none}
+  max-width:12rem;text-align:right;overflow-wrap:anywhere}
 .fx-tr svg{flex:none}
 .fx-bar{opacity:.85}
 .fx-bar:hover{opacity:1}

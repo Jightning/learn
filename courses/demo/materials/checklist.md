@@ -47,6 +47,7 @@ through Review, where a tick means durable rather than answered once.
 
 - [ ] Pick the figure kind, [4.1](../index.html#s4-1)
 - [ ] Read a rendered figure, [4.1](../index.html#s4-1)
+- [ ] Trace an automatic circuit, [4.1](../index.html#s4-1)
 - [ ] Choose plot vs bar, [4.2](../index.html#s4-2)
 - [ ] Read a trend, [4.2](../index.html#s4-2)
 - [ ] Justify a figure choice, [4.3](../index.html#s4-3)

@@ -1,9 +1,14 @@
-title: "Diagrams: graph, flow, timing"
+title: "Diagrams: graph, flow, timing, circuit"
 blocks:
   - t: p
-    source: docs/create_course.md §11.1
+    source: docs/create_course.md §10.1
     h: |-
-      Three kinds carry structure rather than magnitude: <b>graph</b> for nodes and edges, <b>flow</b> for an ordered procedure, <b>timing</b> for square-wave traces. The state machine below is figure <f k="loop-machine"/>.
+      Four kinds carry structure rather than magnitude: <b>graph</b> for nodes and edges, <b>flow</b> for an ordered procedure, <b>timing</b> for square-wave traces, and <b>circuit</b> for electrical connections. The state machine below is figure <f k="loop-machine"/>.
+
+  - t: p
+    source: docs/create_course.md §6
+    h: |-
+      Inline cues work in ordinary prose: <strong>bold</strong> names the point, <em>italic</em> changes emphasis, <mark>highlighting</mark> draws the eye to one result, and <span class="ink-caution">colour</span> flags a caution. They can also appear in titles, table cells, slide text, and quiz text. Use them sparingly so the diagram remains the main visual evidence.
 
   - t: def
     source: docs/material_truth.md M18
@@ -105,19 +110,55 @@ blocks:
     cat: figure-kinds
     id: demo-circuit
     kind: circuit
-    cap: "circuit: a battery drives a resistor through a closed loop"
+    cap: "circuit: closing S1 connects a 9 V battery to R1, R2, and C1 in series; the circuit syntax lists parts by side and generates every wire"
     source: src/figures/circuit.js
     spec:
-      w: 6
-      h: 2
-      wires:
-        - {from: [0, 1], to: [1, 1]}
-        - {from: [2, 1], to: [3, 1]}
-        - {from: [4, 1], to: [5, 1]}
+      layout: rectangle
+      sides:
+        top:
+          - {type: switch, label: S1, value: open}
+          - {type: resistor, label: R1, value: 1 kΩ}
+        right:
+          - {type: capacitor, label: C1, value: 100 µF}
+        bottom:
+          - {type: resistor, label: R2, value: 220 Ω}
+        left:
+          - {type: battery, label: B1, value: 9 V}
+
+  - t: p
+    source: docs/material_truth.md M17
+    h: |-
+      Trace the generated loop: the <b>battery</b> is on the left, the open switch and R1 are on top, C1 is on the right, and R2 returns along the bottom. <mark>Closing S1 completes the path</mark>; the capacitor then charges through both resistors. The figure shows the connections that a list of parts alone would leave to imagination.
+
+  - t: figure
+    cat: figure-kinds
+    tier: depth
+    id: branched-circuit
+    kind: circuit
+    cap: "manual circuit: R1 feeds two parallel branches, C1 and R2; dots mark the branch and rejoin"
+    source: src/figures/circuit.js
+    spec:
+      layout: manual
+      w: 8
+      h: 6
       parts:
-        - {type: battery, x: 1.5, y: 1, label: B, value: 9 V}
-        - {type: resistor, x: 3.5, y: 1, label: R, value: 1 kΩ}
-      junctions: [[0, 1], [5, 1]]
+        - {type: battery, x: 1, y: 3, dir: v, label: B1, value: 9 V}
+        - {type: resistor, x: 3, y: 1, label: R1, value: 1 kΩ}
+        - {type: capacitor, x: 5, y: 3, dir: v, label: C1, value: 100 µF}
+        - {type: resistor, x: 7, y: 3, dir: v, label: R2, value: 680 Ω}
+      wires:
+        - {from: [1, 2.5], to: [1, 1]}
+        - {from: [1, 1], to: [2.5, 1]}
+        - {from: [3.5, 1], to: [5, 1]}
+        - {from: [5, 1], to: [7, 1]}
+        - {from: [5, 1], to: [5, 2.5]}
+        - {from: [5, 3.5], to: [5, 5]}
+        - {from: [7, 1], to: [7, 2.5]}
+        - {from: [7, 3.5], to: [7, 5]}
+        - {from: [7, 5], to: [5, 5]}
+        - {from: [5, 5], to: [1, 5]}
+        - {from: [1, 5], to: [1, 3.5]}
+      junctions: [[5, 1], [5, 5]]
 
   - t: figure
     cat: figure-kinds
@@ -197,3 +238,14 @@ quiz:
       <p>Durability is revoked by a single failed retrieval. That is the curved edge back to "learning". Everything else flows forward toward durable; only a miss moves backward.</p>
     why_prompt: Which direction do all the other edges point, and what does that tell you?
     verified: 2026-09-02
+
+  - type: Trace an automatic circuit
+    concept: tier
+    q: |-
+      In figure <f k="demo-circuit"/>, which side holds C1, and what must the author specify for the wire segments between S1, R1, C1, R2, and B1?
+    a: |-
+      C1 is on the right. The author lists the components by side in travel order; the rectangle layout creates the wire segments and corners automatically.
+    why: |-
+      <p>The side lists describe the electrical path without hand-writing coordinates or individual wire endpoints.</p>
+    why_prompt: Which fields in the figure spec describe components, and which ones describe wires?
+    verified: 2026-09-27

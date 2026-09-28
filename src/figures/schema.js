@@ -27,7 +27,8 @@ const CHART = ["w", "h", "xlabel", "ylabel", "ticks"];
 
 export const SPEC = {
   circuit: {
-    keys: ["w", "h", "wires", "parts", "junctions"],
+    keys: ["layout", "sides", "w", "h", "wires", "parts", "junctions"],
+    enums: { layout: ["rectangle", "manual"] },
     items: {
       wires: ["from", "to"],
       parts: ["type", "x", "y", "dir", "label", "value"]

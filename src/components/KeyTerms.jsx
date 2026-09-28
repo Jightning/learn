@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
 import { keyTerms } from "../lib/pretrain.js";
+import Inline from "./Inline.jsx";
 
 /* Shown before a section's content: what the moving parts are called.
  * Collapsed after first use so it never competes with the material itself. */
@@ -27,8 +28,8 @@ export default function KeyTerms({ section, ctx }) {
             <div class="pt-row" key={t.term}>
               <dt>
                 {t.concept
-                  ? <a href={`#/${cid}/c/${t.concept}`}>{t.term}</a>
-                  : <a href={`#/${cid}/${t.where}`}>{t.term}</a>}
+                  ? <a href={`#/${cid}/c/${t.concept}`}><Inline text={t.term} /></a>
+                  : <a href={`#/${cid}/${t.where}`}><Inline text={t.term} /></a>}
                 {t.kind === "concept" && <span class="pt-tag">core</span>}
               </dt>
               <dd>{t.gloss}</dd>

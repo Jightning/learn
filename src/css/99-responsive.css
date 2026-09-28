@@ -11,12 +11,15 @@
    mode to reason about rather than two overlapping ones. */
 @media (max-width:64em){
   .shell{grid-template-columns:1fr}
-  .sidebar{position:fixed;left:0;top:0;width:290px;z-index:60;transform:translateX(-100%);
+  .sidebar{--drag-x:0px;position:fixed;left:0;top:0;width:290px;z-index:60;transform:translateX(-100%);
     transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.22)}
   .sidebar.open{transform:none}
+  .sidebar.dragging{transform:translateX(calc(-100% + var(--drag-x)));transition:none}
   .mobnav{display:inline-block}
-  .scrim{position:fixed;inset:0;background:rgba(8,11,16,.45);z-index:55;display:none}
-  .scrim.on{display:block}
+  .scrim{--drag-progress:0;position:fixed;inset:0;background:rgba(8,11,16,.45);z-index:55;
+    opacity:0;pointer-events:none;transition:opacity .22s ease}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .scrim.dragging{opacity:var(--drag-progress);transition:none}
 
   /* One row, and it stays one row. The toolbar is sticky, so every pixel here
      is charged against the reading area for the whole session: it was 142px of

@@ -1,5 +1,12 @@
 /* 30-typography — Section and subsection headings and rhythm. */
 
+/* Small, reusable visual cues for authored text in every reading surface. */
+mark{background:color-mix(in srgb,var(--hi) 23%,transparent);color:inherit;border-radius:2px;padding:0 .08em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.ink-accent{color:var(--hi-ink)}
+.ink-info{color:var(--lo-ink)}
+.ink-note{color:var(--dc-ink)}
+.ink-caution{color:var(--wn-ink)}
+
 .eyebrow{
   font-family:var(--mono);font-size:var(--fs-meta);letter-spacing:.15em;text-transform:uppercase;
   color:var(--hi-ink);display:block;margin-bottom:9px;

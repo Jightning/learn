@@ -43,7 +43,7 @@ function checkKeys(obj, allowed, what, errs) {
    this process — the bundler imports courses/<id>/blocks.js — so this adds no
    trust that is not already assumed. */
 function checkPlotFns(spec, where, errs) {
-  for (const ser of spec.series || []) {
+  for (const ser of Array.isArray(spec.series) ? spec.series : []) {
     if (!ser || ser.points || ser.fn == null) continue;
     let f;
     try { f = new Function("x", "return (" + ser.fn + ");"); }
@@ -65,27 +65,64 @@ function checkPlotFns(spec, where, errs) {
 
 const finite = x => typeof x === "number" && Number.isFinite(x);
 const point = p => Array.isArray(p) && p.length === 2 && p.every(finite);
+const onWire = (p, wire) => {
+  const [a, b] = [wire.from, wire.to];
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  return Math.abs((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) < 1e-8 &&
+    p[0] >= Math.min(a[0], b[0]) && p[0] <= Math.max(a[0], b[0]) &&
+    p[1] >= Math.min(a[1], b[1]) && p[1] <= Math.max(a[1], b[1]);
+};
 
 function checkDiagram(kind, spec, where, errs) {
-  for (const key of ["w", "h"])
-    if (spec[key] != null && (!finite(spec[key]) || spec[key] <= 0))
-      errs.push(`${where}: figure ${kind} ${key} must be a positive number`);
   if (kind === "circuit") {
+    if (spec.layout === "rectangle") {
+      const sides = spec.sides;
+      if (!sides || typeof sides !== "object" || Array.isArray(sides))
+        errs.push(`${where}: rectangle circuit needs sides: {top, right, bottom, left}`);
+      else {
+        checkKeys(sides, ["top", "right", "bottom", "left"], `${where}: rectangle circuit sides`, errs);
+        let count = 0;
+        for (const [side, items] of Object.entries(sides)) {
+          if (!Array.isArray(items)) { errs.push(`${where}: rectangle circuit ${side} must be a list`); continue; }
+          count += items.length;
+          for (const part of items) {
+            if (!part || typeof part !== "object" || Array.isArray(part)) {
+              errs.push(`${where}: rectangle circuit ${side} part must be a mapping`); continue;
+            }
+            checkKeys(part, ["type", "label", "value"], `${where}: rectangle circuit ${side} part`, errs);
+            if (!["resistor", "capacitor", "battery", "switch", "diode", "lamp", "source"].includes(part.type))
+              errs.push(`${where}: unknown circuit part "${part.type}"`);
+          }
+        }
+        if (!count) errs.push(`${where}: rectangle circuit needs at least one part`);
+      }
+      if (spec.wires || spec.parts || spec.junctions)
+        errs.push(`${where}: rectangle circuit draws its own wires and parts; remove manual fields`);
+      return;
+    }
+    if (spec.sides != null)
+      errs.push(`${where}: manual circuit uses wires and parts, not sides`);
     for (const field of ["wires", "parts", "junctions"])
       if (spec[field] != null && !Array.isArray(spec[field]))
         errs.push(`${where}: circuit ${field} must be a list`);
     if (!(spec.wires || []).length && !(spec.parts || []).length)
       errs.push(`${where}: circuit needs wires or parts`);
-    for (const wire of Array.isArray(spec.wires) ? spec.wires : [])
+    const wires = Array.isArray(spec.wires) ? spec.wires : [];
+    for (const wire of wires)
       if (!point(wire?.from) || !point(wire?.to)) errs.push(`${where}: circuit wire needs two [x, y] points`);
+      else if (wire.from[0] === wire.to[0] && wire.from[1] === wire.to[1])
+        errs.push(`${where}: circuit wire cannot have zero length`);
     for (const part of Array.isArray(spec.parts) ? spec.parts : []) {
       if (!part || !["resistor", "capacitor", "battery", "switch", "diode", "lamp", "source"].includes(part.type))
         errs.push(`${where}: unknown circuit part "${part?.type}"`);
       if (!finite(part?.x) || !finite(part?.y)) errs.push(`${where}: circuit part needs numeric x and y`);
       if (part?.dir != null && !["h", "v"].includes(part.dir)) errs.push(`${where}: circuit part dir must be h or v`);
     }
-    for (const p of Array.isArray(spec.junctions) ? spec.junctions : [])
-      if (!point(p)) errs.push(`${where}: circuit junction needs [x, y]`);
+    for (const p of Array.isArray(spec.junctions) ? spec.junctions : []) {
+      if (!point(p)) { errs.push(`${where}: circuit junction needs [x, y]`); continue; }
+      if (wires.filter(w => point(w?.from) && point(w?.to) && onWire(p, w)).length < 2)
+        errs.push(`${where}: circuit junction ${JSON.stringify(p)} must lie on at least two wires`);
+    }
   } else {
     if (!String(spec.alt || "").trim()) errs.push(`${where}: drawing needs alt text`);
     if (!Array.isArray(spec.shapes) || !spec.shapes.length) errs.push(`${where}: drawing needs shapes`);
@@ -108,6 +145,99 @@ function checkDiagram(kind, spec, where, errs) {
   }
 }
 
+function checkGeometry(kind, spec, where, errs) {
+  for (const key of ["w", "h"])
+    if (spec[key] != null && (!finite(spec[key]) || spec[key] <= 0))
+      errs.push(`${where}: figure ${kind} ${key} must be a positive number`);
+  if (spec.ticks != null && (!Number.isInteger(spec.ticks) || spec.ticks < 1 || spec.ticks > 20))
+    errs.push(`${where}: figure ${kind} ticks must be an integer from 1 to 20`);
+  for (const key of ["xrange", "yrange"])
+    if (spec[key] != null && (!Array.isArray(spec[key]) || spec[key].length !== 2 ||
+        !spec[key].every(finite) || spec[key][0] >= spec[key][1]))
+      errs.push(`${where}: figure ${kind} ${key} must be two increasing numbers`);
+}
+
+function checkChart(kind, spec, where, errs) {
+  if (kind === "bar") {
+    if (spec.bars != null && !Array.isArray(spec.bars))
+      errs.push(`${where}: bar bars must be a list`);
+    for (const b of Array.isArray(spec.bars) ? spec.bars : [])
+      if (!finite(b?.value)) errs.push(`${where}: bar value must be a finite number`);
+    for (const key of ["max", "baseline"])
+      if (spec[key] != null && !finite(spec[key]))
+        errs.push(`${where}: bar ${key} must be a finite number`);
+    if (finite(spec.max) && finite(spec.baseline) && spec.max <= spec.baseline)
+      errs.push(`${where}: bar max must exceed baseline`);
+    return;
+  }
+  if (spec.series != null && !Array.isArray(spec.series))
+    errs.push(`${where}: ${kind} series must be a list`);
+  for (const s of Array.isArray(spec.series) ? spec.series : []) {
+    if (!s || typeof s !== "object" || Array.isArray(s)) {
+      errs.push(`${where}: ${kind} series item must be a mapping`); continue;
+    }
+    if (s.points != null && (!Array.isArray(s.points) || !s.points.every(point)))
+      errs.push(`${where}: ${kind} points must be [x, y] finite-number pairs`);
+    if (kind === "plot") {
+      if (s.samples != null && (!Number.isInteger(s.samples) || s.samples < 2 || s.samples > 2000))
+        errs.push(`${where}: plot samples must be an integer from 2 to 2000`);
+      if (s.from != null && !finite(s.from) || s.to != null && !finite(s.to))
+        errs.push(`${where}: plot from and to must be finite numbers`);
+      if (finite(s.from) && finite(s.to) && s.from >= s.to)
+        errs.push(`${where}: plot from must be less than to`);
+    }
+  }
+}
+
+function checkGraph(spec, where, errs) {
+  if (spec.nodes != null && !Array.isArray(spec.nodes)) errs.push(`${where}: graph nodes must be a list`);
+  if (spec.edges != null && !Array.isArray(spec.edges)) errs.push(`${where}: graph edges must be a list`);
+  const ids = new Set();
+  for (const n of Array.isArray(spec.nodes) ? spec.nodes : []) {
+    if (!n || !String(n.id || "").trim()) { errs.push(`${where}: graph node needs id`); continue; }
+    if (ids.has(n.id)) errs.push(`${where}: graph repeats node id "${n.id}"`);
+    ids.add(n.id);
+    if (spec.layout === "manual" && (!finite(n.x) || !finite(n.y)))
+      errs.push(`${where}: manual graph node "${n.id}" needs numeric x and y`);
+  }
+  for (const e of Array.isArray(spec.edges) ? spec.edges : [])
+    if (!ids.has(e?.from) || !ids.has(e?.to))
+      errs.push(`${where}: graph edge refers to an unknown node`);
+  if (spec.r != null && (!finite(spec.r) || spec.r <= 0))
+    errs.push(`${where}: graph r must be positive`);
+}
+
+function checkGrid(spec, where, errs) {
+  if (Array.isArray(spec.cells)) {
+    for (const row of spec.cells)
+      if (!Array.isArray(row)) errs.push(`${where}: grid each cells row must be a list`);
+    if (Array.isArray(spec.rowLabels) && spec.cells.length !== spec.rowLabels.length)
+      errs.push(`${where}: grid cells needs one row per rowLabel`);
+    if (Array.isArray(spec.colLabels))
+      for (const row of spec.cells)
+        if (Array.isArray(row) && row.length !== spec.colLabels.length)
+          errs.push(`${where}: grid cells row length must match colLabels`);
+  }
+  for (const group of Array.isArray(spec.groups) ? spec.groups : []) {
+    if (!Array.isArray(group?.cells) || !group.cells.every(p =>
+      Array.isArray(p) && p.length === 2 && p.every(Number.isInteger) &&
+      p[0] >= 0 && p[1] >= 0 &&
+      (!Array.isArray(spec.rowLabels) || p[0] < spec.rowLabels.length) &&
+      (!Array.isArray(spec.colLabels) || p[1] < spec.colLabels.length)))
+      errs.push(`${where}: grid group cells must name existing [row, column] positions`);
+  }
+}
+
+function checkTiming(spec, where, errs) {
+  if (spec.unit != null && (!finite(spec.unit) || spec.unit <= 0))
+    errs.push(`${where}: timing unit must be positive`);
+  if (spec.signals != null && !Array.isArray(spec.signals))
+    errs.push(`${where}: timing signals must be a list`);
+  for (const signal of Array.isArray(spec.signals) ? spec.signals : [])
+    if (!/^[01]+$/.test(String(signal?.wave || "")))
+      errs.push(`${where}: timing wave must contain only 0 and 1`);
+}
+
 /** Check one `{t:"figure", kind, spec}` block. `where` names the subsection. */
 export function checkFigure(b, where, errs) {
   const s = SPEC[b.kind];
@@ -120,6 +250,8 @@ export function checkFigure(b, where, errs) {
   }
 
   checkKeys(spec, s.keys, `${where}: figure ${b.kind} spec`, errs);
+
+  checkGeometry(b.kind, spec, where, errs);
 
   for (const [k, allowed] of Object.entries(s.enums || {}))
     if (spec[k] != null && !allowed.includes(spec[k]))
@@ -149,7 +281,11 @@ export function checkFigure(b, where, errs) {
     for (const field of ["rowVars", "colVars", "rowLabels", "colLabels", "cells", "groups"])
       if (spec[field] != null && !Array.isArray(spec[field]))
         errs.push(`${where}: figure grid ${field} must be a list`);
+  if (b.kind === "grid") checkGrid(spec, where, errs);
+  if (b.kind === "timing") checkTiming(spec, where, errs);
 
   if (b.kind === "plot") checkPlotFns(spec, where, errs);
   if (b.kind === "circuit" || b.kind === "drawing") checkDiagram(b.kind, spec, where, errs);
+  if (["bar", "plot", "scatter"].includes(b.kind)) checkChart(b.kind, spec, where, errs);
+  if (b.kind === "graph") checkGraph(spec, where, errs);
 }

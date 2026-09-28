@@ -86,7 +86,7 @@ const ck = (name, ok, detail = "") => {
      (many.match(/min-width:\d+px/) || ["none"])[0]);
 
   const few = graph({ nodes: [{ id: "a" }, { id: "b" }, { id: "c" }], edges: [] });
-  ck("a 3-node graph does not (it scales to fit)", !/min-width:/.test(few));
+  ck("a 3-node graph keeps readable text on phones", /min-width:480px/.test(few));
 }
 
 /* ---- bar: labels and width ---- */
@@ -95,7 +95,7 @@ const ck = (name, ok, detail = "") => {
   ck("a 15-bar chart carries an intrinsic min-width", /style="min-width:\d+px"/.test(wide));
 
   const narrow = bar({ bars: [{ label: "a", value: 1 }, { label: "b", value: 2 }] });
-  ck("a 2-bar chart does not", !/min-width:/.test(narrow));
+  ck("a 2-bar chart keeps readable text at phone widths", /min-width:480px/.test(narrow));
 
   const wrapped = bar({
     bars: [
@@ -103,8 +103,9 @@ const ck = (name, ok, detail = "") => {
       { label: "one two three four", value: 9 }
     ]
   });
-  ck("a long label in a narrow slot wraps onto two lines",
-     wrapped.includes(">one two<") && wrapped.includes(">three four</text>"),
+  ck("a long label wraps without forcing two overwide lines",
+     wrapped.includes(">one two<") && wrapped.includes(">three</text>") &&
+     wrapped.includes(">four</text>"),
      wrapped.includes(">one two<") ? "split found" : "not split");
 }
 
@@ -196,6 +197,13 @@ const ck = (name, ok, detail = "") => {
   one("a scalar grid colVars value is caught", "grid", { colVars: "YZ" },
       "figure grid colVars must be a list");
   one("an unregistered kind is caught", "sankey", {}, 'unknown figure kind "sankey"');
+
+  one("chart ticks cannot divide by zero", "plot", { ticks: 0 }, "ticks must be an integer");
+  one("reversed chart ranges are caught", "scatter", { xrange: [5, 1] }, "two increasing numbers");
+  one("invalid bar data cannot silently become zero", "bar", { bars: [{ label: "a", value: "bad" }] },
+      "value must be a finite number");
+  one("manual graph positions are checked", "graph", { layout: "manual", nodes: [{ id: "a" }] },
+      "needs numeric x and y");
 
   ck("a grid with axis variable lists passes",
      errsFor("grid", { rowVars: ["X"], colVars: ["Y", "Z"] }).length === 0);

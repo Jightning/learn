@@ -1,5 +1,6 @@
 import { strip, clip } from "../lib/util.js";
 import { previewSub } from "../lib/refs.js";
+import Inline from "./Inline.jsx";
 
 /* How much of a card is worth showing.
  *
@@ -24,7 +25,7 @@ export default function MarginNote({ r, ctx, hot }) {
     return (
       <div class={"mnote is-c" + (hot ? " hot" : "")} data-xr={"c:" + r.id}>
         <span class="mn-k">Core concept</span>
-        <h5>{d.term || r.id}</h5>
+        <h5><Inline text={d.term || r.id} /></h5>
         <p>{clip(strip(d.body || ""), PREVIEW)}</p>
         <a class="mn-go" href={H("c/" + r.id)}>Full entry →</a>
       </div>
@@ -38,8 +39,8 @@ export default function MarginNote({ r, ctx, hot }) {
   return (
     <div class={"mnote" + (hot ? " hot" : "")} data-xr={r.id}>
       <span class="mn-k">{e ? e.num : sec.num}</span>
-      <h5>{e ? e.sub.title : sec.title}</h5>
-      <p>{clip(e ? previewSub(idx.SUBS, r.id) : sec.blurb, PREVIEW)}</p>
+      <h5><Inline text={e ? e.sub.title : sec.title} /></h5>
+      <p>{clip(strip(e ? previewSub(idx.SUBS, r.id) : sec.blurb), PREVIEW)}</p>
       <a class="mn-go" href={H(r.id)}>Open →</a>
     </div>
   );
