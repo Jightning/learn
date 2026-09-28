@@ -44,6 +44,7 @@ export default function Desk({ ctx }) {
 
   return (
     <div class="desk">
+      <a class="desk-index" href={H("index")}>Index →</a>
       <h1><Inline text={C.title} /></h1>
       <p class="lede"><Inline text={C.tagline} /></p>
 
@@ -118,7 +119,6 @@ export default function Desk({ ctx }) {
           reader who wants the map goes looking for the map. */}
       <div class="tools">
         <a href={H("review")}>Review</a>
-        <a href={H("index")}>Index</a>
         <a href={H("map")}>Dependency map</a>
         <a href={H("calibration")}>
           Practice history{b && b.seen ? ` (${b.durable}/${b.total} durable)` : ""}

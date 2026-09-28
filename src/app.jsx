@@ -28,7 +28,7 @@ import Section from "./components/Section.jsx";
 import { ConceptDetail } from "./components/Concepts.jsx";
 import { CatDetail } from "./components/Categories.jsx";
 import IndexPage from "./components/Index.jsx";
-import Explore from "./components/Explore.jsx";
+import Explore, { SavedPage } from "./components/Explore.jsx";
 import Primer from "./components/Primer.jsx";
 import DepMap from "./components/DepMap.jsx";
 import SearchOverlay from "./components/SearchOverlay.jsx";
@@ -429,6 +429,7 @@ export default function App() {
     : rest === "index" || rest === "concepts" || rest === "cat" ? "<b>Index</b>"
     : rest === "review" || rest.startsWith("review/") ||
       rest === "practice" || rest.startsWith("practice/") ? "<b>Review</b>"
+    : rest === "saved" || rest === "explore/saved" ? "<b>Saved</b>"
     : rest === "explore" || rest.startsWith("explore/") ? "<b>Explore</b>"
     : rest.startsWith("cat/")
       ? `<b>Index</b>  ›  ${((course.cats || {})[rest.slice(4)] || {}).name || rest.slice(4)}`
@@ -473,8 +474,8 @@ export default function App() {
                       : rest.startsWith("practice/") ? rest.slice(9) : null} />;
   else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} />;
   else if (rest === "explore") view = <Explore ctx={ctx} seed={null} />;
-  else if (rest === "explore/saved")
-    view = <Explore ctx={ctx} seed={{ saved: true }} depth={depth} />;
+  else if (rest === "saved" || rest === "explore/saved")
+    view = <SavedPage ctx={ctx} depth={depth} />;
   else if (rest.startsWith("explore/tag/"))
     view = <Explore ctx={ctx} seed={{ tag: decodeURIComponent(rest.slice(12)) }} />;
   else if (rest.startsWith("explore/cat/"))
@@ -535,7 +536,7 @@ export default function App() {
         )}
         <main>
           <Topbar crumb={crumb} inCourse={!!course} home={!!course || inReview}
-                  reading={!!section || rest === "explore/saved"}
+                  reading={!!section || rest === "saved" || rest === "explore/saved"}
                   lane={lane} depth={depth} onMode={onMode}
                   zoom={zoom} onZoomReset={() => setZoom(1)}
                   onSearch={() => setSearchOpen(true)}

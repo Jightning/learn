@@ -1,13 +1,27 @@
 export async function testPracticeAndNotes(ctx, state) {
   const { page, ck, go, shot } = ctx;
   const { cid, P, nSections, secIds, last } = state;
+  await go(`#/${cid}`);
+  ck(P("Overview offers Index at the top instead of in the sidebar"),
+     await page.locator(`.desk > .desk-index[href="#/${cid}/index"]`).count() === 1 &&
+     await page.locator('.navtop a', { hasText: 'Index' }).count() === 0 &&
+     await page.locator('.desk .tools a', { hasText: 'Index' }).count() === 0);
+  ck(P("Saved has its own sidebar destination"),
+     await page.locator(`.navtop a[href="#/${cid}/saved"]`).count() === 1);
   await go(`#/${cid}/review/mixed`);
   ck(P("Review has one sidebar destination for both question modes"),
      await page.locator(".navtop a", { hasText: "Review" }).count() === 1 &&
      await page.locator(".navtop a", { hasText: "Mixed practice" }).count() === 0);
   ck(P("Mixed practice is an option inside Review"),
      await page.locator(".review-head h1").innerText() === "Review" &&
-     await page.locator('.review-options [aria-current="page"]').innerText() === "Mixed practice");
+     await page.locator('.review-options [aria-current="page"]').innerText() === "Mixed practice" &&
+     await page.locator(".review-head .xviews").count() === 1);
+  ck(P("Review options sit in the upper right of the heading"),
+     await page.locator(".review-options").evaluate(el => {
+       const head = el.closest(".review-head").getBoundingClientRect();
+       const options = el.getBoundingClientRect();
+       return options.right >= head.right - 1 && options.top >= head.top;
+     }));
 
   /* The page opens on its action, not on its settings.
    *
@@ -237,14 +251,17 @@ export async function testPracticeAndNotes(ctx, state) {
     ck(P("a note can be deleted"), await page.locator(".note-one").count() === 1,
        (await page.locator(".note-one").count()) + " left");
 
-    /* A blank note is the no-writing path into the same collection, which
-       belongs to Explore rather than adding another sidebar destination. */
+    /* A blank note is the no-writing path into Saved. */
     const markerGrip = page.locator(".note-pull").nth(1);
     await markerGrip.click(); await page.waitForTimeout(200);
     await page.locator(".note-area").first().blur(); await page.waitForTimeout(350);
     ck(P("a blank note collapses into a saved marker"),
        await page.locator(".mnote.is-n.is-blank").count() > 0);
-    await go(`#/${cid}/explore/saved`);
+    await go(`#/${cid}/saved`);
+    ck(P("Saved is its own page and sidebar row"),
+       await page.locator(".xhead h1").innerText() === "Saved" &&
+       await page.locator(`.navtop a[href="#/${cid}/saved"].cur`).count() === 1 &&
+       await page.locator(".xviews").count() === 0);
     ck(P("Saved groups annotations as ordinary subsections"),
        await page.locator(".saved-section .sub h3").count() > 0);
     ck(P("Saved uses the ordinary reading rows and note cards"),

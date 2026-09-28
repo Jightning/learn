@@ -19,13 +19,13 @@ export default function Review({ only = null, ctx = null, mixed = false, cat = n
     <header class="review-head">
       <h1>Review</h1>
       <span class="review-scope">{scope}</span>
+      <nav class="xviews review-options" aria-label="Review options">
+        <a href={dueUrl} class={!mixed ? "cur" : ""}
+           aria-current={!mixed ? "page" : undefined}>Due now</a>
+        <a href={mixedUrl} class={mixed ? "cur" : ""}
+           aria-current={mixed ? "page" : undefined}>Mixed practice</a>
+      </nav>
     </header>
-    <nav class="review-options" aria-label="Review options">
-      <a href={dueUrl} class={!mixed ? "cur" : ""}
-         aria-current={!mixed ? "page" : undefined}>Due now</a>
-      <a href={mixedUrl} class={mixed ? "cur" : ""}
-         aria-current={mixed ? "page" : undefined}>Mixed practice</a>
-    </nav>
     <section hidden={mixed} aria-label="Due now">
       <DueReview only={only} />
     </section>

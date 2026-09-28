@@ -379,9 +379,8 @@
 .xrow .glead,.xrow .bhtml{margin-left:0;margin-top:.3rem}
 .xrow .gmeta{margin-left:0;margin-top:.35rem}
 
-/* Saved is a view within Explore, not another navigation destination. Its body
-   is a synthetic section, using the same subsection and block rules as the
-   source material. */
+/* Saved is a synthetic section, using the same subsection and block rules as
+   the source material. */
 .saved-view{margin-top:var(--sp-2)}
 .saved-empty{
   display:flex;flex-direction:column;align-items:center;text-align:center;

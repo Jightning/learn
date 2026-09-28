@@ -49,7 +49,7 @@ const SHOW = [
   { id: "full",  label: "Everything", hint: "the whole block" }
 ];
 
-export default function Explore({ ctx, seed, depth: readingDepth = "notes" }) {
+export default function Explore({ ctx, seed }) {
   const { C, cid, idx } = ctx;
   const CAT = idx.CAT;
   const [q, setQ] = useState("");
@@ -57,7 +57,6 @@ export default function Explore({ ctx, seed, depth: readingDepth = "notes" }) {
   const [tag, setTag] = useState(seed && seed.tag ? seed.tag : "");
   const [kinds, setKinds] = useState([]);
   const [depth, setDepth] = useState("notes");
-  const savedView = !!(seed && seed.saved);
 
   /* A link into this page carries the facet it meant. Re-seeding on the route
      rather than on mount so following a second tag chip from the results
@@ -97,17 +96,8 @@ export default function Explore({ ctx, seed, depth: readingDepth = "notes" }) {
   return (
     <div class="explore">
       <div class="xhead">
-        <h1>{savedView ? "Saved" : "Explore"}</h1>
-        <nav class="xviews" aria-label="Explore views">
-          <a href={`#/${cid}/explore`} class={!savedView ? "cur" : ""}>Discover</a>
-          <a href={`#/${cid}/explore/saved`} class={savedView ? "cur" : ""}>
-            <IconSaved /> Saved
-          </a>
-        </nav>
+        <h1>Explore</h1>
       </div>
-
-      {savedView ? <Saved ctx={ctx} depth={readingDepth} /> : (
-        <>
 
       <div class="xbar">
         <input class="xq" type="search" value={q} placeholder="Search, or leave empty and filter…"
@@ -198,10 +188,15 @@ export default function Explore({ ctx, seed, depth: readingDepth = "notes" }) {
       <div class="xres">
         {res.map(r => <Row key={r.e.id} r={r} ctx={ctx} depth={depth} />)}
       </div>
-        </>
-      )}
     </div>
   );
+}
+
+export function SavedPage({ ctx, depth = "notes" }) {
+  return <div class="explore">
+    <div class="xhead"><h1>Saved</h1></div>
+    <Saved ctx={ctx} depth={depth} />
+  </div>;
 }
 
 /* Saved is one synthetic section made from the course's annotated

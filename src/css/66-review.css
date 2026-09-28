@@ -14,16 +14,11 @@
  * breadcrumb and the back button — the same three every other page offers. */
 .review{padding:var(--view-top) 0 0;max-width:var(--measure)}
 .review>*:last-child{margin-bottom:0}
-.review-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.review-head{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
 .review-head h1{font-family:var(--display);font-size:2.15rem;font-weight:600;
   letter-spacing:-.02em;margin:0}
 .review-head .review-scope{border:0;padding:0}
-.review-options{display:flex;gap:24px;border-bottom:1px solid var(--rule);margin-bottom:22px}
-.review-options a{display:inline-block;padding:0 1px 11px;margin-bottom:-1px;
-  border-bottom:2px solid transparent;color:var(--ink-3);font-family:var(--ui);
-  font-size:var(--fs-small);text-decoration:none}
-.review-options a:hover{color:var(--ink)}
-.review-options a.cur{color:var(--ink);border-bottom-color:var(--hi);font-weight:600}
+.review-head .review-options{margin-left:auto}
 .review-options a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 .review-practice .practice-intro{color:var(--ink-2);margin:0 0 16px}
 .review-practice .pgo{margin-top:0}
@@ -61,4 +56,8 @@
 @media (max-width:32em){
   .review-dots{display:none}
   .review-n{margin-left:auto}
+}
+@media (max-width:52em){
+  .review-head .review-options{width:auto}
+  .review-options a{flex:none}
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
-import { IconStart, IconIndex, IconMap, IconTuck, IconExplore,
+import { IconStart, IconMap, IconTuck, IconExplore, IconSaved,
          IconReview } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
 import LaneSelect from "./LaneSelect.jsx";
@@ -58,23 +58,17 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
   const activeSec = target && target.startsWith("s") ? target.split("-")[0] : null;
   const curNum = activeSec ? Number(activeSec.slice(1)) : 0;
 
-  /* One Index, not two. "Core concepts" and "Categories" were adjacent rows
-     opening onto identical card grids, and the reader's only way to learn
-     which was which was to visit both. They are two bands of one page now; see
-     components/Index.jsx. Explore sits last because it is where you go when
-     the index did not have the shape you wanted. */
-  const ixHere = ["index", "concepts", "cat"].includes(rest)
-    || rest.startsWith("c/") || rest.startsWith("cat/");
   const top = [
     ["", "Overview", IconStart, !rest],
-    ["index", "Index", IconIndex, ixHere],
     /* One destination for scheduled questions and mixed practice. The count
        belongs only to scheduled questions from this course. */
     ["review", "Review", IconReview,
       rest === "review" || rest.startsWith("review/") ||
       rest === "practice" || rest.startsWith("practice/"), due > 0 ? due : null],
     ["map", "Dependency map", IconMap, rest === "map" || rest.startsWith("map/")],
-    ["explore", "Explore", IconExplore, rest === "explore" || rest.startsWith("explore/")]
+    ["explore", "Explore", IconExplore, rest === "explore" ||
+      (rest.startsWith("explore/") && rest !== "explore/saved")],
+    ["saved", "Saved", IconSaved, rest === "saved" || rest === "explore/saved"]
   ];
 
   return (

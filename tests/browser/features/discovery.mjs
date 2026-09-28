@@ -46,9 +46,9 @@ export async function testDiscovery(ctx, state) {
     }));
     await go(`#/${cid}/explore`);
     ck(P("explore opens with no query"), await page.locator(".xq").count() === 1);
-    ck(P("saved blocks are a view within Explore"),
-       await page.locator('.xviews a[href$="/explore/saved"]').count() === 1 &&
-       await page.locator('.sidebar .navtop a', { hasText: "Saved" }).count() === 0);
+    ck(P("Explore has no Saved view; Saved is in the sidebar"),
+       await page.locator('.xviews').count() === 0 &&
+       await page.locator(`.sidebar .navtop a[href="#/${cid}/saved"]`).count() === 1);
     /* A facet per axis the course actually has. Kind and Show are structural
        and always present; Category and Tag are declared, and a course with no
        taxonomy must show neither rather than an empty menu. Counting buttons
