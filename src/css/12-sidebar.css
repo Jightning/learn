@@ -88,6 +88,16 @@
   .tuck,.untuck{display:none}
 }
 
+/* In the open state, the main grid track begins after the 308px rail. Once
+   there is room for the reading measure, offset its wrapper so the text stays
+   on the viewport centreline, matching the tucked state. */
+@media (min-width:81em){
+  .shell:not(.tucked) .wrap{
+    margin-left:calc(50vw - var(--measure) / 2 - var(--wrap-pad) - var(--sidebar-width));
+    margin-right:auto;
+  }
+}
+
 /* ------------------------------------------------------------- the settings
  * What the page gives you and what it looks like, at the foot of the
  * navigation.

@@ -16,15 +16,16 @@
  *    progress survives and can be reopened precisely.
  * 4. The generation log is built from the transcript, not by the model.
  */
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readReader, peekReader } from "../../tools/lib/reader.mjs";
 import { loadSpec } from "../../tools/lib/spec.mjs";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, existsSync } from "node:fs";
 import { summarize, entry, record } from "../../tools/author-log.mjs";
+import { digest } from "../../tools/lib/digest.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const R = [];
@@ -144,34 +145,46 @@ try {
   ck("the next subsection is named without another command",
      /Next: s1-1 One/.test(author("write", cid).stdout));
 
-  const thinDone = author("done", cid, "s1-1", "--no-validate");
-  ck("a thin subsection is warned about, not refused",
-     thinDone.status === 0 && /warning: s1-1 has no spine blocks; recorded anyway/.test(thinDone.stdout) &&
-     readFileSync(join(state, "map.txt"), "utf8").includes("1-one.yaml"), thinDone.stdout);
+  const thinDone = author("done", cid, "s1-1");
+  ck("done refuses minimum content and leaves no completion record",
+     thinDone.status === 1 && /not finished: s1-1 has no spine blocks/.test(thinDone.stdout) &&
+     !existsSync(join(state, "map.txt")), thinDone.stdout);
+  const noValidate = author("done", cid, "s1-1", "--no-validate");
+  ck("skipping validation requires an explicit staging override",
+     noValidate.status === 1 && /requires --staging/.test(noValidate.stdout));
+  const stagedThin = author("done", cid, "s1-1", "--staging", "--no-validate");
+  ck("a staging override records a draft without counting it complete",
+     stagedThin.status === 0 && /s1-1 staged/.test(stagedThin.stdout) &&
+     existsSync(join(state, "staged.txt")) && !existsSync(join(state, "map.txt")) &&
+     /1 staged/.test(author("status", cid).stdout), stagedThin.stdout);
   put("sections/01-a/1-one.yaml", "title: One\nblocks:\n  - t: p\n    text: x\nquiz:\n  - type: recall\n    q: q\n");
   const src = join(tmp, "src", "notes.md");
-  const ok = author("done", cid, "s1-1", `${src}#Alpha Topic`, "--no-validate");
-  ck("recording a subsection replaces its line and names the next",
-     ok.status === 0 && /Next: s1-2/.test(ok.stdout) &&
-     readFileSync(join(state, "map.txt"), "utf8").split("\n").filter(l => l.startsWith("sections/01-a/1-one")).length === 1,
-     ok.stdout);
-  const odd = author("done", cid, "s1-2", "notes.md", "--no-validate");
-  ck("a doubtful source path is a warning too",
+  const local = author("done", cid, "s1-1", `${src}#Alpha Topic`);
+  ck("done refuses local validation errors and clears the staged record",
+     local.status === 1 && /question.*needs a and why/.test(local.stdout) &&
+     !existsSync(join(state, "map.txt")) && !existsSync(join(state, "staged.txt")), local.stdout);
+  const stagedLocal = author("done", cid, "s1-1", `${src}#Alpha Topic`, "--staging");
+  ck("staging can carry local validation errors forward explicitly",
+     stagedLocal.status === 0 && /staging s1-1/.test(stagedLocal.stdout) &&
+     existsSync(join(state, "staged.txt")) && !existsSync(join(state, "map.txt")), stagedLocal.stdout);
+  const odd = author("done", cid, "s1-2", "notes.md", "--staging", "--no-validate");
+  ck("a doubtful source path remains a warning",
      odd.status === 0 && /warning: sources should be absolute/.test(odd.stdout), odd.stdout);
 
   const fin = author("finish", cid);
-  ck("finish does not require optional practice variants",
-     fin.status === 0 && !/review concepts with no drills|practice variants/.test(fin.stdout) &&
-     /Recorded as finished/.test(fin.stdout) && existsSync(join(state, "finish.done")), fin.stdout.slice(0, 400));
+  ck("finish refuses staged and thin work without writing its marker",
+     fin.status === 1 && /staged, not completed/.test(fin.stdout) &&
+     !existsSync(join(state, "finish.done")), fin.stdout.slice(0, 400));
 
   const redo = author("redo", cid, "s1-1");
   ck("redo reopens only what it names, and the finish",
      /Next: s1-1/.test(author("status", cid).stdout) &&
-     readFileSync(join(state, "map.txt"), "utf8").includes("2-two.yaml") && !existsSync(join(state, "finish.done")),
+     readFileSync(join(state, "staged.txt"), "utf8").includes("2-two.yaml") && !existsSync(join(state, "finish.done")),
      redo.stdout);
-  ck("status reports progress", /steps 0-4 done · 1\/2 subsections/.test(author("status", cid).stdout));
+  ck("status reports staged progress separately", /steps 0-4 done · 0\/2 subsections · 1 staged/.test(author("status", cid).stdout));
   ck("reset forgets progress, keeps files",
-     author("reset", cid).status === 0 && !existsSync(join(state, "course.done")) && existsSync(join(cdir, "sections/01-a/1-one.yaml")));
+     author("reset", cid).status === 0 && !existsSync(join(state, "course.done")) &&
+     !existsSync(join(state, "staged.txt")) && existsSync(join(cdir, "sections/01-a/1-one.yaml")));
 
   /* ---------------------------------------------------- courses elsewhere --
    * Packaged for an agent, the engine is the package and the courses belong
@@ -189,6 +202,53 @@ try {
      ab.status === 0 && existsSync(join(ws, ".author/away/rules-variants.md")) &&
      !existsSync(join(ROOT, ".author/away")), ab.stdout + ab.stderr);
   ck("and the spec still comes from the engine", /## The spec/.test(away("begin", "away").stdout));
+
+  /* The public demo is a validated, source-free fixture. Use its real content
+     so finish proves the successful path without a brittle miniature course. */
+  const completeWs = join(tmp, "complete-workspace");
+  const completeDir = join(completeWs, "courses", "complete");
+  const completeState = join(completeWs, ".author", "complete");
+  mkdirSync(dirname(completeDir), { recursive: true });
+  cpSync(join(ROOT, "courses", "demo"), completeDir, { recursive: true });
+  const complete = (...a) => spawnSync("node", [join(ROOT, "tools/author.mjs"), ...a],
+    { encoding: "utf8", env: { ...process.env, AUTHOR_WORKSPACE: completeWs, AUTHOR_READER: reader } });
+  ck("a complete course can record its initial shape", complete("write", "complete", "--lean").status === 0);
+  const subs = digest(completeDir).subs;
+  mkdirSync(completeState, { recursive: true });
+  writeFileSync(join(completeState, "map.txt"), subs.slice(0, -1)
+    .map(u => `${relative(completeDir, u.file)}: NONE`).join("\n") + "\n");
+  const early = complete("finish", "complete");
+  ck("finish refuses missing subsection work and leaves no marker",
+     early.status === 1 && /not written yet/.test(early.stdout) &&
+     !existsSync(join(completeState, "finish.done")), early.stdout);
+  const last = complete("done", "complete", subs.at(-1).id);
+  ck("done accepts a subsection that passes local validation",
+     last.status === 0 && /Next: add useful practice variants/.test(last.stdout), last.stdout);
+  const finished = complete("finish", "complete");
+  ck("finish succeeds after all required work and validation pass",
+     finished.status === 0 && /validate: ok/.test(finished.stdout) &&
+     /warning: coverage could not be scored/.test(finished.stdout) &&
+     /Recorded as finished/.test(finished.stdout) && existsSync(join(completeState, "finish.done")),
+     finished.stdout.slice(0, 500));
+  const lastFile = subs.at(-1).file;
+  const validLast = readFileSync(lastFile, "utf8");
+  writeFileSync(lastFile, "title: Temporarily broken\n");
+  const regressed = complete("done", "complete", subs.at(-1).id);
+  ck("a refused redo revokes prior subsection and finish records",
+     regressed.status === 1 && /no spine blocks/.test(regressed.stdout) &&
+     !readFileSync(join(completeState, "map.txt"), "utf8").includes(relative(completeDir, lastFile)) &&
+     !existsSync(join(completeState, "finish.done")), regressed.stdout.slice(0, 400));
+  writeFileSync(lastFile, validLast);
+  ck("the repaired subsection can complete again", complete("done", "complete", subs.at(-1).id).status === 0);
+  ck("the repaired course can finish again", complete("finish", "complete").status === 0 &&
+     existsSync(join(completeState, "finish.done")));
+  const metaFile = join(completeDir, "course.yaml");
+  const validMeta = readFileSync(metaFile, "utf8");
+  writeFileSync(metaFile, validMeta.replace(/^    - \{re:.*$/m, "    - {re: '[', cls: tok-n}"));
+  const invalidFinish = complete("finish", "complete");
+  ck("finish rejects validation errors and removes an old completion marker",
+     invalidFinish.status === 1 && /validate: .* errors/.test(invalidFinish.stdout) &&
+     !existsSync(join(completeState, "finish.done")), invalidFinish.stdout.slice(0, 500));
 
   /* --------------------------------------------------------------- the log --*/
   const sid = "abc-123";

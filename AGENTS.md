@@ -4,14 +4,14 @@ This repository builds study courses and the site that reads them. Follow the wo
 
 # Authoring a course
 
-Write the course in this conversation. From the repository root, `node tools/author.mjs` provides rules, sources, progress, and non-blocking warnings; it never runs a model.
+Write the course in this conversation. From the repository root, `node tools/author.mjs` provides rules, sources, progress, mechanical completion checks, and quality warnings; it never runs a model.
 
 Course flow: `begin`, `write`, `done` for each subsection, then `finish`.
 
 1. `node tools/author.mjs begin <id> [--source PATH]...` reports status, sources, and rules for steps 0–4. Follow them to write `materials/expectations.md`, section/subsection files, categories, and the concept set. If no course exists, run `npm run new -- <id> "Title"`; sources may be anywhere except unsafe paths.
 2. `node tools/author.mjs write <id>` gives the writing rules and first subsection.
-3. For each subsection, read only what it needs, write it in one operation, then run `node tools/author.mjs done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It names the next subsection.
-4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `node tools/author.mjs finish <id>`. Every encountered question can enter Review, so a variant bank is optional. Act on the report or explain what was written, skipped, or unsourced.
+3. For each subsection, read only what it needs, write it in one operation, then run `node tools/author.mjs done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It checks spine, quiz, and local validation errors, then names the next subsection. Use `--staging` only to keep an unfinished draft moving; a staged subsection must pass `done` again without the override.
+4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `node tools/author.mjs finish <id>`. Every encountered question can enter Review, so a variant bank is optional. `finish` records mechanical completion only when required work and validation pass. Use `node tools/audit-content.mjs --profile draft <id>` for nonblocking content debt. Run `node tools/coverage.mjs <id> --init-review` once to create `materials/coverage-review.yaml`; review each low-score lead and fill its disposition. Then run `node tools/audit-content.mjs --profile publish <id>` before calling the course publish-ready. Scores are leads, not proof; review source dispositions and answers yourself.
 
 ## Cost
 
@@ -20,7 +20,7 @@ Model requests process conversation context; cached input is cheaper but not fre
 - Request each rule set once; after compaction use `node tools/author.mjs status <id> --digest`.
 - Read each subsection's needed sources once, in parallel; write its file once and use targeted patches for fixes. Do not reread it or run unlisted commands.
 - Delegate broad reading only when it saves context or enables independent work; return concise cited findings. Search locally for small lookups.
-- For cheaper requests, use `--lean` with `begin`/`write` and `--no-validate` with `done`. Use `--confident` for extra checks.
+- For cheaper requests, use `--lean` with `begin`/`write`. `done` reports compact feedback for its subsection; do not reread the full course. `--no-validate` is available only with `--staging` and still requires a later checked `done`. Use `--confident` for extra checks.
 
 ## Subagents
 

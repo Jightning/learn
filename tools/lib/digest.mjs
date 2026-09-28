@@ -34,10 +34,10 @@ const cited = blocks => {
 
 /** One line per subsection: id, title, what it defines, what it states, what it cites. */
 function subLine(u, id) {
-  const blocks = u.blocks || [];
-  const defs = blocks.filter(b => b.t === "def").map(b => b.term).filter(Boolean);
-  const keys = blocks.filter(b => b.t === "key").map(b => b.label).filter(Boolean);
-  const types = (u.quiz || []).map(q => q.type).filter(Boolean);
+  const blocks = Array.isArray(u.blocks) ? u.blocks : [];
+  const defs = blocks.filter(b => b?.t === "def").map(b => b.term).filter(Boolean);
+  const keys = blocks.filter(b => b?.t === "key").map(b => b.label).filter(Boolean);
+  const types = (Array.isArray(u.quiz) ? u.quiz : []).map(q => q?.type).filter(Boolean);
   const parts = [`${id} ${u.title || "(untitled)"}`];
   if (defs.length) parts.push(`defines: ${defs.join("; ")}`);
   if (keys.length) parts.push(`states: ${keys.join("; ")}`);
@@ -46,12 +46,12 @@ function subLine(u, id) {
   /* Which categories this subsection has already joined. Without it a later
      unit invents "invoke-labels" beside an existing "invocation-labels" and the
      taxonomy fragments — the same failure non-redundancy has, one level up. */
-  const cats = [...new Set(blocks.map(b => b.cat).filter(Boolean))];
+  const cats = [...new Set(blocks.map(b => b?.cat).filter(Boolean))];
   if (cats.length) parts.push(`cat: ${cats.join(",")}`);
   if (types.length) parts.push(`quiz: ${types.join(",")}`);
   /* Claim coverage, so a later pass can see which blocks still state nothing
      at notes depth without reading their prose back. */
-  const claims = blocks.filter(b => CLAIMY.has(b.t));
+  const claims = blocks.filter(b => CLAIMY.has(b?.t));
   if (claims.length) {
     const withCore = claims.filter(b => b.core).length;
     const withGist = claims.filter(b => b.gist).length;
@@ -91,9 +91,10 @@ export function digest(dir) {
         id: `${id}-${i + 1}`,
         file: join(path, f.file),
         title: f.data.title || stem(f.file),
-        blocks: (f.data.blocks || []).length,
-        quiz: (f.data.quiz || []).length,
-        tiers: new Set((f.data.blocks || []).map(b => b.tier || "spine")),
+        blocks: Array.isArray(f.data.blocks) ? f.data.blocks.length : 0,
+        spine: Array.isArray(f.data.blocks) ? f.data.blocks.filter(b => b && (!b.tier || b.tier === "spine")).length : 0,
+        quiz: Array.isArray(f.data.quiz) ? f.data.quiz.length : 0,
+        tiers: new Set((Array.isArray(f.data.blocks) ? f.data.blocks : []).map(b => b?.tier || "spine")),
         line: subLine(f.data, `${id}-${i + 1}`)
       }));
     sections.push({ id, dir: path, title: s.title || d, blurb: !!s.blurb, subs });

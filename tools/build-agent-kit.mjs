@@ -46,7 +46,7 @@ const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 /* The scripts an authoring agent runs, bundled one by one so each stays a
    command a person can also type. */
 const SCRIPTS = ["author.mjs", "author-log.mjs", "coverage.mjs", "validate.mjs",
-                 "gen-materials.mjs", "pack.mjs", "new-course.mjs"];
+                 "gen-materials.mjs", "pack.mjs", "new-course.mjs", "audit-content.mjs"];
 /* Read at runtime by validate.mjs, so it travels with the scripts. */
 const ASSETS = [["src/blocks/index.js", "src/blocks/index.js"]];
 
@@ -82,11 +82,15 @@ const fill = (vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`
 
 const repoVars = {
   AUTHOR: "node tools/author.mjs", NEW: 'npm run new --', PACK: "node tools/pack.mjs",
+  AUDIT: "node tools/audit-content.mjs",
+  COVERAGE: "node tools/coverage.mjs",
   WHERE: "From the repository root,", DELEGATE: DELEGATE.codex, LOG: LOG.any
 };
 const pluginVars = a => ({
   AUTHOR: `node "${a}/scripts/author.mjs"`, NEW: `node "${a}/scripts/new-course.mjs"`,
   PACK: `node "${a}/scripts/pack.mjs"`,
+  AUDIT: `node "${a}/scripts/audit-content.mjs"`,
+  COVERAGE: `node "${a}/scripts/coverage.mjs"`,
   WHERE: "From the author's working folder,",
   DELEGATE: DELEGATE.claude, LOG: LOG.claude
 });

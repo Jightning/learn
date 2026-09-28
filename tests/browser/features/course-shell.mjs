@@ -13,6 +13,8 @@ export async function testCourseShell(ctx, cid) {
   }, points);
   await go(`#/${cid}`);
   ck(P("course home renders"), await page.locator(".desk h1").isVisible());
+  ck(P("the breadcrumb includes the course ID"),
+     await page.locator(".crumb").innerText().then(text => text.includes(cid)));
   const nSections = await page.locator(".spine .srow").count();
   ck(P("the spine lists sections"), nSections > 0, nSections + " sections");
 
@@ -149,6 +151,15 @@ export async function testCourseShell(ctx, cid) {
         && light[0] === light[1] && dark[0] === dark[1] && light[0] !== dark[0];
     }, selector);
     ck(P("sidebar close icon follows light and dark themes"), await themeIcon(".tuck"));
+    const openPosition = await page.evaluate(() => {
+      const b = document.querySelector(".bmain").getBoundingClientRect();
+      const svg = document.querySelector(".tuck svg");
+      return {
+        off: Math.round(Math.abs(b.left + b.width / 2 - innerWidth / 2)),
+      };
+    });
+    ck(P("open, the reading column is centred"), openPosition.off <= 2,
+       openPosition.off + "px off centre");
     await page.locator(".tuck").click();
     await page.waitForTimeout(250);
     ck(P("sidebar open icon follows light and dark themes"), await themeIcon(".untuck"));

@@ -6,15 +6,15 @@
  *                     where the course stands, its sources, and the rules for its shape
  *   author write  <id> [--lean] [--confident]
  *                     the writing rules, once, and the first subsection
- *   author done   <id> <sN-M> [SOURCE]...   record one, and name the next
+ *   author done   <id> <sN-M> [SOURCE]... [--staging]   check one, and name the next
  *   author finish <id>                      materials, validate and coverage, compactly
  *   author status <id> [--digest]   ·   redo <id> <sN-M|course|finish>...   ·   reset <id>
  *   author plan   <id>                      what the rules and sources weigh
  *
  * Four calls carry a whole course: begin, write, done per subsection, finish.
- * Each prints only what the one before it did not, and every check here warns
- * rather than refuses — a block count cannot overrule the model that wrote the
- * blocks, and arguing with a gate costs more than the gate is worth.
+ * Each prints only what the one before it did not. Mechanical minimum-content
+ * and validation failures refuse completion; --staging records a draft without
+ * calling it done. Subjective coverage and writing judgments remain warnings.
  *
  * No command here runs a model. The agent the author is already talking to
  * (Claude Code, or any CLI agent) is the one that writes: it reads the rules
@@ -25,8 +25,8 @@
  * finished, and refusing to call a subsection finished when it is not.
  *
  * The workflow the agent follows is .claude/skills/create-course/SKILL.md.
- * Progress is .author/<id>/: map.txt (one line per finished subsection, with
- * the sources it was written from), course.done, finish.done, roots.txt.
+ * Progress is .author/<id>/: map.txt (checked subsections and sources),
+ * staged.txt (drafts), course.done, finish.done, roots.txt.
  * The generation log is written by tools/author-log.mjs from the session
  * transcript, never by the model.
  * ==========================================================================*/
@@ -38,7 +38,7 @@ import { loadSpec } from "./lib/spec.mjs";
 import { digest } from "./lib/digest.mjs";
 import { readReader } from "./lib/reader.mjs";
 import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from "./lib/sources.mjs";
-import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE, PACKAGED } from "./lib/paths.mjs";
+import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE } from "./lib/paths.mjs";
 import { note } from "./author-log.mjs";
 
 const est = s => Math.round(s.length / 4);   /* chars/4: an estimate, not a count */
@@ -106,10 +106,14 @@ const positional = rest.filter((a, i) => !a.startsWith("--") && rest[i - 1] !== 
 const lean = flag("--lean"), research = flag("--research"), confident = flag("--confident");
 const stateDir = join(STATE, id);
 const marker = name => join(stateDir, `${name}.done`);
+const stagedPath = join(stateDir, "staged.txt");
 const rootsFile = join(stateDir, "roots.txt");
 const today = new Date().toISOString().slice(0, 10);
 /* Beside this file in a package, under tools/ in the repository. */
-const script = name => join(ENGINE, PACKAGED ? "scripts" : "tools", `${name}.mjs`);
+const script = name => {
+  const local = join(ENGINE, "tools", `${name}.mjs`);
+  return existsSync(local) ? local : join(ENGINE, "scripts", `${name}.mjs`);
+};
 
 /* The roots `begin` recorded, checked again rather than trusted. */
 function savedRoots() {
@@ -143,24 +147,31 @@ function placeholders() {
 function progress() {
   const d = digest(courseDir);
   const map = loadMap(WORKSPACE, id);
+  const staged = existsSync(stagedPath) ? new Set(readFileSync(stagedPath, "utf8").split("\n")
+    .filter(Boolean).map(l => l.split(":")[0].trim())) : new Set();
   const key = u => relative(courseDir, u.file);
   return {
     d,
     done: d.subs.filter(u => key(u) in map),
-    todo: d.subs.filter(u => !(key(u) in map)),
+    staged: d.subs.filter(u => staged.has(key(u))),
+    todo: d.subs.filter(u => !(key(u) in map) && !staged.has(key(u))),
     courseDone: existsSync(marker("course")),
     finished: existsSync(marker("finish"))
   };
 }
 
-const thin = u => !u.blocks ? "no spine blocks" : !u.quiz ? "no quiz items" : null;
+const thin = u => !u.spine ? "no spine blocks" : !u.quiz ? "no quiz items" : null;
+function recordLine(path, file, sources = null) {
+  const kept = existsSync(path) ? readFileSync(path, "utf8").split("\n")
+    .filter(l => l && l.split(":")[0].trim() !== file) : [];
+  if (sources) kept.push(`${file}: ${sources.join(" | ") || "NONE"}`);
+  if (kept.length) { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, kept.join("\n") + "\n"); }
+  else rmSync(path, { force: true });
+}
 const researchFile = u => join(courseDir, "sources", "research",
   `${relative(join(courseDir, "sections"), dirname(u.file))}.md`);
 
-/* Warnings, never refusals. A check here is a heuristic — it counts blocks, it
-   does not read them — and the model writing the course knows things it does
-   not. Blocking would cost a turn to argue with; a warning costs a line, and
-   the same line lands in the log for a person to judge later. */
+/* Warnings cover judgments the mechanical checks cannot settle. */
 const warn = text => {
   say(`warning: ${text}`);
   try { note(courseDir, `\`author ${process.argv.slice(2).join(" ")}\` → warning: ${text}`); }
@@ -171,7 +182,9 @@ const warn = text => {
 function pointer(p) {
   if (!p.courseDone) return `Next: steps 0-4 above, then \`author write ${id}\`.`;
   const u = p.todo[0];
-  if (!u) return `Next: add useful practice variants, then \`author finish ${id}\`.`;
+  if (!u) return p.staged.length
+    ? `Next: finish staged ${p.staged.map(x => x.id).join(", ")} with \`author done ${id} <sN-M> <source>...\`, then finish.`
+    : `Next: add useful practice variants, then \`author finish ${id}\`.`;
   const sec = p.d.sections.find(s => s.subs.includes(u));
   return [
     `Next: ${u.id} ${u.title}  (${p.done.length}/${p.d.subs.length} done)`,
@@ -209,8 +222,8 @@ function briefText(which, reader) {
     "    A source topic you do not teach gets a YAML comment at the top of the file: " +
       "`# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",
     confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",
-    `  - \`author done ${id} <sN-M> <source>...\` records it and names the next one. Its warnings are ` +
-      "advice, not gates: fix what is worth fixing and carry on.",
+    `  - \`author done ${id} <sN-M> <source>...\` checks it and names the next one. ` +
+      "Fix minimum-content and local validation errors before moving on; use --staging only for a draft.",
     "When none are left: add practice/<key>.yaml variants where another surface is needed " +
       `(rules: .author/${id}/rules-variants.md)` +
       (confident ? ", then independently check their answers" : "") +
@@ -304,55 +317,86 @@ const commands = {
   done() {
     const [sub, ...sources] = positional;
     if (!sub) fail(`usage: author done ${id} <sN-M> [source]...`);
+    if (flag("--no-validate") && !flag("--staging"))
+      fail("--no-validate requires --staging; a completed subsection needs local validation");
     const p = progress();
     const u = p.d.subs.find(x => x.id === sub);
     if (!u) fail(`no subsection ${sub} (have ${p.d.subs.map(x => x.id).join(", ")})`);
-    const why = thin(u);
-    if (why) warn(`${sub} has ${why}; recorded anyway`);
     const file = relative(courseDir, u.file);
+    /* A changed subsection cannot keep an older completion or final marker
+       when this attempt fails. A staged attempt lives outside the source map. */
+    recordLine(mapPath(WORKSPACE, id), file);
+    recordLine(stagedPath, file);
+    rmSync(marker("finish"), { force: true });
+    const why = thin(u);
+    const problems = why ? [`${sub} has ${why}`] : [];
+    let advice = [];
     if (!flag("--no-validate")) {
       const v = spawnSync(process.execPath, [script("validate"), id], { encoding: "utf8" });
       const mine = (v.stdout || "").split("\n")
-        .filter(l => /✗/.test(l) && (l.includes(file) || l.includes(u.title) || new RegExp(`\\b${sub}\\b`).test(l)));
-      if (mine.length) warn(`validate on ${sub}:\n${mine.slice(0, 12).join("\n")}`);
+        .filter(l => /✗/.test(l) && (l.includes(file) || l.includes(file.slice("sections/".length)) ||
+          l.includes(`${sub} "`) || l.includes(`${sub}:`)));
+      advice = (v.stdout || "").split("\n")
+        .filter(l => /^\s+! /.test(l) && (l.includes(file) || l.includes(`${sub} "`) || l.includes(`${sub}:`)));
+      if (mine.length) problems.push(...mine.map(l => l.trim()));
+      if (v.error || v.signal || (v.status !== 0 && !/✗/.test(v.stdout || "")))
+        problems.push(`validation could not complete: ${(v.stderr || v.stdout || v.error?.message || "unknown failure").trim()}`);
     }
+    if (problems.length && !flag("--staging"))
+      fail(`not finished: ${problems.join("\n")}. Fix these, or use --staging for a draft.`);
+    if (problems.length) warn(`staging ${sub}: ${problems.join("; ")}`);
+    if (advice.length) warn(`validate on ${sub}: ${advice.slice(0, 8).map(l => l.trim()).join("; ")}` +
+      (advice.length > 8 ? `; ${advice.length - 8} more warnings` : ""));
     const unknown = sources.filter(x => !x.startsWith("/") || !existsSync(x.split("#")[0]));
     if (unknown.length) warn(`sources should be absolute paths that exist: ${unknown.join(", ")}`);
-    const map = mapPath(WORKSPACE, id);
-    mkdirSync(dirname(map), { recursive: true });
-    const kept = existsSync(map) ? readFileSync(map, "utf8").split("\n")
-      .filter(l => l && l.split(":")[0].trim() !== file) : [];
-    writeFileSync(map, [...kept, `${file}: ${sources.join(" | ") || "NONE"}`].join("\n") + "\n");
+    recordLine(flag("--staging") ? stagedPath : mapPath(WORKSPACE, id), file, sources);
+    if (flag("--staging")) say(`${sub} staged; it is not complete until done passes without --staging.`);
     say(pointer(progress()));
   },
 
   /* The last call: the three course-wide checks, cut to what needs doing. */
   finish() {
     const run = (name, ...a) => spawnSync(process.execPath, [script(name), ...a], { encoding: "utf8" });
+    const refuse = message => { rmSync(marker("finish"), { force: true }); fail(`not finished: ${message}`); };
     const p = progress();
-    if (p.todo.length) warn(`not written yet: ${p.todo.map(u => u.id).join(", ")}`);
+    const required = [
+      !p.courseDone && "steps 0-4 were not recorded with author write",
+      !existsSync(join(courseDir, "materials", "expectations.md")) && "materials/expectations.md is missing",
+      !p.d.subs.length && "no subsection files",
+      p.todo.length && `not written yet: ${p.todo.map(u => u.id).join(", ")}`,
+      p.staged.length && `staged, not completed: ${p.staged.map(u => u.id).join(", ")}`,
+      ...p.d.subs.filter(thin).map(u => `${u.id} has ${thin(u)}`)
+    ].filter(Boolean);
+    if (required.length) refuse(required.join("\n"));
     const g = run("gen-materials", id);
     say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
+    if (g.status !== 0) refuse("materials generation failed");
     const v = run("validate", id);
     const errs = (v.stdout || "").split("\n").filter(l => /✗/.test(l));
-    say(errs.length ? `validate: ${errs.length} errors\n${errs.slice(0, 30).join("\n")}` : "validate: ok");
+    const advice = (v.stdout || "").split("\n").filter(l => /^\s+! /.test(l));
+    say(errs.length ? `validate: ${errs.length} errors\n${errs.slice(0, 30).join("\n")}` :
+      v.status === 0 ? "validate: ok" : `validate: FAILED\n${(v.stderr || v.stdout || "unknown failure").trim()}`);
+    if (v.status !== 0) refuse("validation failed; fix the reported errors and run finish again");
+    if (advice.length) warn(`validate: ${advice.length} quality warnings\n${advice.slice(0, 12).join("\n")}` +
+      (advice.length > 12 ? `\n${advice.length - 12} more warnings in validate output` : ""));
     const c = run("coverage", id);
     const lines = (c.stdout || c.stderr || "").split("\n");
     const flagged = lines.filter(l => /^\s+! |missing:|^Named by no|^  \//.test(l));
     const summary = lines.filter(l => /topics below/.test(l)).join(" ") || "no report";
     say(`coverage: ${summary}` + (flagged.length ? `\n${flagged.slice(0, 60).join("\n")}` : ""));
+    if (c.status !== 0) warn(`coverage could not be scored: ${(c.stderr || c.stdout || "unknown failure").trim()}`);
     mkdirSync(stateDir, { recursive: true });
     writeFileSync(marker("finish"), today);
     note(courseDir, `\`author finish ${id}\` → materials ${g.status === 0 ? "ok" : "FAILED"}, ` +
       `validate ${errs.length ? errs.length + " errors" : "ok"}, coverage: ${summary}`);
-    say(`\nRecorded as finished. Teach each flagged topic or list it under Skip, or leave it: ` +
-      `nothing here blocks. \`author redo ${id} <sN-M>\` to revise.`);
+    say(`\nRecorded as finished. Review flagged coverage topics as teaching or Skip decisions. ` +
+      `\`author redo ${id} <sN-M>\` to revise.`);
   },
 
   status() {
     const p = progress();
     say(`${id}: steps 0-4 ${p.courseDone ? "done" : "to do"} · ${p.done.length}/${p.d.subs.length} ` +
-      `subsections · finish ${p.finished ? "done" : "to do"}`);
+      `subsections${p.staged.length ? ` · ${p.staged.length} staged` : ""} · finish ${p.finished ? "done" : "to do"}`);
     if (p.todo.length) say(`to write: ${p.todo.map(u => u.id).join(", ")}`);
     const thinDone = p.done.filter(thin);
     if (thinDone.length) say(`recorded but thin: ${thinDone.map(u => `${u.id} (${thin(u)})`).join(", ")}`);
@@ -374,6 +418,7 @@ const commands = {
       writeFileSync(map, readFileSync(map, "utf8").split("\n")
         .filter(l => !files.has(l.split(":")[0].trim())).join("\n"));
     }
+    if (files.size) for (const file of files) recordLine(stagedPath, file);
     if (positional.includes("course")) rmSync(marker("course"), { force: true });
     if (files.size || positional.includes("finish")) rmSync(marker("finish"), { force: true });
     say(`reopened ${positional.join(", ")}: read each file, change what was asked, then ` +
@@ -382,7 +427,7 @@ const commands = {
   },
 
   reset() {
-    for (const f of [mapPath(WORKSPACE, id), marker("course"), marker("finish")]) rmSync(f, { force: true });
+    for (const f of [mapPath(WORKSPACE, id), stagedPath, marker("course"), marker("finish")]) rmSync(f, { force: true });
     say(`forgot progress for ${id}; the course files are untouched`);
   },
 

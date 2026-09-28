@@ -44,8 +44,10 @@ export default function Desk({ ctx }) {
 
   return (
     <div class="desk">
-      <a class="desk-index" href={H("index")}>Index →</a>
-      <h1><Inline text={C.title} /></h1>
+      <div class="desk-heading">
+        <h1><Inline text={C.title} /></h1>
+        <a class="desk-index" href={H("index")}>Index →</a>
+      </div>
       <p class="lede"><Inline text={C.tagline} /></p>
 
       {/* The recommendation. One action, one reason, one button — and it is a

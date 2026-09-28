@@ -226,13 +226,16 @@ mark by forgetting this exact thing while understanding everything around it?
 ## 9. Trust
 
 **M28. Every explanatory claim names its source, or is flagged unverified in
-place.** `npm run audit` reports the fraction and fails above a per-course
-ceiling.
+place.** Draft audit reports the fraction. Publish audit enforces the
+per-course ceiling and requires a human-reviewed source disposition for each
+claim: `sourceReview: sourced` with a checked origin, or
+`sourceReview: disclosed` with explicit `source: unverified` or `generated`.
+This records the review decision; it does not establish the truth of a claim.
 
 **M30. Model-drafted content carries `source: generated`**, which counts as
-unverified until a human replaces it. Generation is a drafting step, never a
-publishing step, and a course written entirely by a model must not pass the M28
-audit at zero percent unverified.
+unverified until a human reviews its source disposition. Generation is a
+drafting step, never a publishing claim of verification. Publish also requires
+zero unverified answers, independent of a course's declared audit ceilings.
 
 **M29. Each section's primer prequestions a relation, not only a term.** The
 benefit does not generalise past what was asked: g = .66 on the prequestioned

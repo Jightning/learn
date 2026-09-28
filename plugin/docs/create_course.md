@@ -289,9 +289,8 @@ state:
   enabled: true                  # false = stateless reference, no review loop
 retention:
   target: 0.9                    # optional: recall probability the schedule holds
-audit:                           # optional: fail ceilings for `npm run audit`
-  unsourced: 0.1                 # absent means 1, meaning report only
-  unverified: 0
+audit:                           # optional publish ceilings; draft only reports
+  unsourced: 0.1                 # absent means 1; publish always requires 0 unverified answers
 valueStyles:                     # optional: colour cell values in mono tables
   "1": b1                        # and in `grid` figures
 styles: |                        # optional: CSS for the classes above
@@ -310,8 +309,12 @@ free angle. It is the course's colour, not the last word on it: a reader can
 pick another under **Settings → Appearance**, per course and per device, and
 that choice is never written back into the course. `code` keys learner state, so two courses sharing one share a
 reader's history silently. `retention.target` defaults to 0.9; lower it where
-the material is background rather than load-bearing. **`audit:` is a ratchet** —
-lower a key as its pass lands and the course can never regress.
+the material is background rather than load-bearing. Run
+`npm run audit -- --profile draft <id>` while writing; it reports debt without
+blocking. Run `npm run audit -- --profile publish <id>` deliberately before
+calling a course publish-ready. Publish enforces the declared ceilings, zero
+unverified answers, and a reviewed source disposition on every `def`, `key`,
+and `trap`. **`audit:` is a publish ratchet** — lower a key as its pass lands.
 
 ---
 
@@ -526,9 +529,14 @@ reader what to do on the page.
 
 **`source:` belongs on every `def`, `key` and `trap`** — the three that carry
 conclusions a reader cannot catch by reading around them, and the population
-`npm run audit` measures. Three legal shapes: a real origin (`"Griffiths §2.3"`,
-counts as verified), `unverified`, or `generated` (you wrote it unsourced [M30]).
-An absent `source:` counts against the fraction like an ungrounded one.
+the audit measures. Three legal shapes: a real, checkable origin
+(`"Griffiths §2.3"`), `unverified`, or `generated` (you wrote it unsourced
+[M30]). An absent `source:` counts against the fraction like an ungrounded one.
+Before publish, a human reviews each claim and adds `sourceReview: sourced`
+for a checked origin, or `sourceReview: disclosed` for an explicit
+`source: unverified` or `source: generated`. The publish check rejects missing
+or mismatched dispositions; the marker records a review decision, not proof
+that the claim is true.
 
 **Use `def` for every term you name.** It is the only block feeding the
 pre-training panel [M8, T14], and it is how closure is checked: a term with no
@@ -1276,7 +1284,9 @@ list because it was the natural tool.
 - [ ] `expectations.md` has `exam.format`
 - [ ] `code` and `theme.hue` are not shared with another course
 - [ ] Spine-only reading resolves every reference (M23, T33)
-- [ ] `npm run audit` is inside every ceiling `course.yaml` declares
+- [ ] `npm run audit -- --profile publish <id>` passes after source and answer review
+- [ ] Every low-scoring source topic has a reviewed disposition in
+      `materials/coverage-review.yaml`; scores identify leads, not proof of a gap
 
 **The claim and the taxonomy (§5a, §6.6)**
 
@@ -1321,9 +1331,19 @@ No script decides any of these.
 
 ```sh
 npm run validate -- <id>  # must be clean
-npm run audit -- <id>     # the fractions and the M33 warnings
+npm run audit -- --profile draft <id>    # nonblocking debt report
+npm run coverage -- <id> --init-review   # make a compact checklist of low topics
+npm run audit -- --profile publish <id>  # publish gate after human review
 npm run pack -- <id>      # import it and look at both depths
 ```
+
+`coverage-review.yaml` uses stable topic IDs, so ordinary score changes do not
+erase decisions. For each low topic, choose `taught`, `bridged`, `moved`,
+`skipped`, or `false-match`. A `skipped` decision needs `reason:`; `moved` needs
+`to:` and `false-match` needs `reason:`. A source file mapped to no finished
+subsection can receive one file-level decision. `coverage --init-review` adds
+new leads without overwriting existing dispositions. Review the source and
+reader-visible course yourself before assigning a disposition.
 
 **Read the section at both depths before calling it done** (§6.7).
 

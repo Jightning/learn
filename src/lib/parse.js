@@ -52,6 +52,7 @@ function calibration(text) {
  */
 export function parseCourse(files) {
   const errors = [];
+  const mapping = value => value && typeof value === "object" && !Array.isArray(value);
   const read = p => {
     try { return p.endsWith(".json") ? JSON.parse(files[p]) : YAML.load(files[p]); }
     catch (e) { errors.push(`${p}: ${e.message.split("\n")[0]}`); return null; }
@@ -60,14 +61,19 @@ export function parseCourse(files) {
   const metaPath = Object.keys(files).find(p => /^course\.(ya?ml|json)$/.test(p));
   if (!metaPath) return { course: null, errors: ["no course.yaml at the root"] };
 
-  const meta = read(metaPath) || {};
+  const parsedMeta = read(metaPath);
+  if (!mapping(parsedMeta)) errors.push(`${metaPath}: not a mapping`);
+  const meta = mapping(parsedMeta) ? parsedMeta : {};
   const C = Object.assign(
     { code: "", title: "", tagline: "", meta: "", concepts: {}, drills: {}, practice: {}, sections: [] },
     meta);
-  C.concepts = Object.assign({}, meta.concepts || {});
+  C.sections = [];
+  if (meta.concepts != null && !mapping(meta.concepts)) errors.push(`${metaPath}: concepts must be a mapping`);
+  if (meta.cats != null && !mapping(meta.cats)) errors.push(`${metaPath}: cats must be a mapping`);
+  C.concepts = Object.assign({}, mapping(meta.concepts) ? meta.concepts : {});
   C.drills = {};
   C.practice = {};
-  C.cats = Object.assign({}, meta.cats || {});
+  C.cats = Object.assign({}, mapping(meta.cats) ? meta.cats : {});
 
   /* Categories are declared, never inferred (the M31 shape): one file per
      category, carrying the boundary that makes it a category rather than a
@@ -75,27 +81,29 @@ export function parseCourse(files) {
      an undeclared membership rather than inventing a category at read time. */
   for (const p of listing(files, "categories/")) {
     const body = read(p);
-    if (!body || typeof body !== "object") { errors.push(`${p}: not a mapping`); continue; }
+    if (!mapping(body)) { errors.push(`${p}: not a mapping`); continue; }
     C.cats[body.key || stem(p)] = body;
   }
 
   for (const p of listing(files, "concepts/")) {
     const body = read(p);
-    if (!body || typeof body !== "object") { errors.push(`${p}: not a mapping`); continue; }
+    if (!mapping(body)) { errors.push(`${p}: not a mapping`); continue; }
     C.concepts[body.key || stem(p)] = body;
   }
 
   for (const p of listing(files, "drills/")) {
     const body = read(p);
-    if (!body || typeof body !== "object") { errors.push(`${p}: not a mapping`); continue; }
+    if (!mapping(body)) { errors.push(`${p}: not a mapping`); continue; }
     const key = body.concept || stem(p);
-    C.drills[key] = { concept: key, items: body.items || [] };
+    if (body.items != null && !Array.isArray(body.items)) errors.push(`${p}: items must be a list`);
+    C.drills[key] = { concept: key, items: Array.isArray(body.items) ? body.items : [] };
   }
   for (const p of listing(files, "practice/")) {
     const body = read(p);
-    if (!body || typeof body !== "object") { errors.push(`${p}: not a mapping`); continue; }
+    if (!mapping(body)) { errors.push(`${p}: not a mapping`); continue; }
     const key = body.concept || stem(p);
-    C.practice[key] = { concept: key, items: body.items || [] };
+    if (body.items != null && !Array.isArray(body.items)) errors.push(`${p}: items must be a list`);
+    C.practice[key] = { concept: key, items: Array.isArray(body.items) ? body.items : [] };
   }
 
   const cal = calibration(files["materials/expectations.md"]);
@@ -115,18 +123,22 @@ export function parseCourse(files) {
   folders.forEach((folder, si) => {
     const dir = `sections/${folder}/`;
     const metaFile = Object.keys(files).find(p => new RegExp(`^${dir}_section\\.(ya?ml|json)$`).test(p));
-    const smeta = (metaFile && read(metaFile)) || {};
+    const parsedSection = metaFile && read(metaFile);
+    if (metaFile && !mapping(parsedSection)) errors.push(`${metaFile}: not a mapping`);
+    const smeta = mapping(parsedSection) ? parsedSection : {};
     const n = smeta.num != null ? smeta.num : num(folder, si + 1);
     const id = smeta.id || `s${n}`;
 
     const subs = listing(files, dir).map((p, k) => {
       const sub = read(p);
-      if (!sub || typeof sub !== "object") { errors.push(`${p}: not a mapping`); return null; }
+      if (!mapping(sub)) { errors.push(`${p}: not a mapping`); return null; }
+      if (sub.blocks != null && !Array.isArray(sub.blocks)) errors.push(`${p}: blocks must be a list`);
+      if (sub.quiz != null && !Array.isArray(sub.quiz)) errors.push(`${p}: quiz must be a list`);
       return Object.assign({}, sub, {
         id: sub.id || `${id}-${num(p, k + 1)}`,
         title: sub.title || stem(p),
-        blocks: sub.blocks || [],
-        quiz: sub.quiz || []
+        blocks: Array.isArray(sub.blocks) ? sub.blocks : [],
+        quiz: Array.isArray(sub.quiz) ? sub.quiz : []
       });
     }).filter(Boolean);
 
@@ -162,14 +174,14 @@ export function parseCourse(files) {
           for (const [i, frame] of (Array.isArray(b.frames) ? b.frames : []).entries())
             resolveImage(frame?.image, `${u.id} slide ${i + 1}`);
       }
-      for (const q of u.quiz) if (q.stimulus?.t === "image")
+      for (const q of u.quiz) if (q?.stimulus?.t === "image")
         resolveImage(q.stimulus, `${u.id} question`);
     }
   for (const bank of Object.values(C.practice))
-    for (const item of bank.items) if (item.stimulus?.t === "image")
+    for (const item of bank.items) if (item?.stimulus?.t === "image")
       resolveImage(item.stimulus, `practice/${bank.concept}`);
   for (const bank of Object.values(C.drills))
-    for (const item of bank.items) if (item.stimulus?.t === "image")
+    for (const item of bank.items) if (item?.stimulus?.t === "image")
       resolveImage(item.stimulus, `drills/${bank.concept}`);
 
   return { course: C, errors };

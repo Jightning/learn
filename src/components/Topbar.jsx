@@ -21,7 +21,7 @@ import { M } from "../lib/math.js";
  * below. It renders no sidebar (`shell.solo`), so a control moved off its
  * toolbar is a control with nowhere to live — and the queue in particular is
  * cross-course, which is exactly what the library is. */
-export default function Topbar({ crumb, inCourse, home, onSearch, onMenu, zoom, onZoomReset,
+export default function Topbar({ crumb, courseId, inCourse, home, onSearch, onMenu, zoom, onZoomReset,
                                  due, onReview, reading, lane, depth, onMode }) {
   return (
     <div class="topbar">
@@ -57,6 +57,10 @@ export default function Topbar({ crumb, inCourse, home, onSearch, onMenu, zoom, 
             <span class="crumb-sep" aria-hidden="true">›</span>
           </>
         )}
+        {courseId && <>
+          <b>{courseId}</b>
+          <span class="crumb-sep" aria-hidden="true">›</span>
+        </>}
         <span dangerouslySetInnerHTML={{ __html: M(crumb) }} />
       </span>
       <span class="spacer" />

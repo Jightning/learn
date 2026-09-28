@@ -1,0 +1,14 @@
+title: Start
+blocks:
+  - t: def
+    term: Resistor
+    source: Handbook §1
+    sourceReview: sourced
+    core: Resistor basics relate voltage, current, resistance, and ohms in a circuit.
+    h: <p>Current through a resistor follows the voltage and resistance.</p>
+quiz:
+  - type: recall
+    q: Which quantities describe a resistor?
+    a: Voltage, current, and resistance.
+    why: They describe the circuit relation.
+    verified: true

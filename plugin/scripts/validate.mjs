@@ -31259,7 +31259,7 @@ const KNOWN = /* @__PURE__ */ new Set([...[...coreBlocks.matchAll(/\bR\("([a-z]+
 const args = process.argv.slice(2);
 const isolated = args.includes("--isolated");
 const wanted = args.filter((a) => !a.startsWith("--"));
-const courses = existsSync(COURSES) ? readdirSync(COURSES, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => d.name).filter((n) => !wanted.length || wanted.includes(n)) : [];
+const courses = existsSync(COURSES) ? readdirSync(COURSES, { withFileTypes: true }).filter((d) => d.isDirectory() && (!d.name.startsWith("_") || wanted.includes(d.name))).map((d) => d.name).filter((n) => !wanted.length || wanted.includes(n)) : [];
 const allCourseIds = isolated ? courses : existsSync(COURSES) ? readdirSync(COURSES, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => d.name) : [];
 const otherIds = {};
 const byCode = {};

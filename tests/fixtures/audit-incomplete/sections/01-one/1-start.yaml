@@ -1,0 +1,12 @@
+title: Start
+blocks:
+  - t: def
+    term: Sample claim
+    source: generated
+    core: A sample claim for the audit fixture.
+    h: <p>This claim still needs source review.</p>
+quiz:
+  - type: recall
+    q: What is the sample claim?
+    a: A sample claim.
+    why: It is the fixture's claim.

@@ -44,10 +44,16 @@ The changes can be validated with:
 
 ```sh
 npm run validate -- ma26600
-npm run audit -- ma26600
+npm run audit -- --profile draft ma26600    # report content debt while writing
+npm run coverage -- ma26600 --init-review   # create low-topic review checklist
+npm run audit -- --profile publish ma26600  # required before calling it publish-ready
 ```
 
-Finally import your course to the site and enjoy.
+The publish audit requires zero unverified answers and a reviewed source
+disposition on every claim, plus a reviewed disposition for low-scoring source
+topics in `materials/coverage-review.yaml`. A low score is a lead for review,
+not proof of missing teaching. Draft reporting remains nonblocking. Then import
+your course to the site and inspect it as a reader.
 
 `node plugin/scripts/pack.mjs <id>` creates a `.course.json` you can import into a site (not needed though, you can just import the course folder).
 
@@ -65,7 +71,7 @@ node tools/author.mjs begin ma26600 --source ~/code/some-repo  # sources + the r
 node tools/author.mjs write ma26600 --lean  # the writing rules (--lean: cheaper)
 node tools/author.mjs done ma26600 s1-6 /abs/source.md  # records a subsection, and names the next
 node tools/author.mjs finish ma26600  # materials, validation, coverage
-npm run coverage -- ma26600  # does a comparison to see if the course is covering everything
+npm run coverage -- ma26600 --init-review  # create the source-topic review checklist
 ```
 
 **Claude:**
@@ -117,7 +123,3 @@ npm run test:browser
 ### Adding a Public Course
 
 After making a course, it can be made public by adding the course to the gitignore, and including it in `tools/lib/files.mjs` under `PUBLIC_CATEGORIES`.
-
-## Todo
-
-- Ability to save entire subsections from within the sidebar

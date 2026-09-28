@@ -26,3 +26,5 @@ docs/*
 !docs/material_truth.md
 !docs/code_truth.md
 !docs/writing.md
+
+audit.md

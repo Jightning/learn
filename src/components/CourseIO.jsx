@@ -60,12 +60,9 @@ export default function CourseIO({ onChange }) {
 
   /* Throws on refusal; callers collect failures so one bad course in a
      selection does not stop the others. */
-  const install = async ({ id, files }, label = "that course") => {
-    /* Naming the source is the whole value of the message: a batch of five
-       folders reporting "could not tell what this course is called" says
-       nothing about which one to go and look at. */
+  const install = async ({ id, files }) => {
     if (!id) throw new Error(
-      `${label}: could not tell what this course is called. Pick the course ` +
+      `Could not tell what this course is called. Pick the course ` +
       `folder itself (the one holding course.yaml), not the files inside it`);
     const bad = refuse(files);
     if (bad) throw new Error(bad);
@@ -74,8 +71,11 @@ export default function CourseIO({ onChange }) {
     for (const [cid, e] of Object.entries(INDEX)) if (e.code) taken.codes[e.code] = cid;
 
     const r = importCourse(id, files, taken);
-    if (!r.ok) throw new Error(r.errors.join("; "));
-    if (r.errors.length) console.warn(`${id}:`, r.errors.join("\n"));
+    if (!r.ok) {
+      const error = new Error("course structure is invalid");
+      error.details = r.errors;
+      throw error;
+    }
     return (r.index.title || id) + (installed.includes(id) ? " (updated)" : "");
   };
 
@@ -83,15 +83,15 @@ export default function CourseIO({ onChange }) {
     refresh();
     onChange && onChange();
     setBusy(false);
-    if (failed.length) console.warn(failed.join("\n"));
     setMsg({
       ok: failed.length === 0,
-      text: [ok.length ? `Installed ${ok.join(", ")}.` : "",
-             failed.length ? `${failed.length} failed: ${failed[0]}` +
-               (failed.length > 1 ? ` (and ${failed.length - 1} more; see the console)` : "") : ""]
-        .filter(Boolean).join(" ")
+      installed: ok.length ? `Installed ${ok.join(", ")}. Content not audited; this import did not verify sources or answers.` : "",
+      failedCount: failed.length,
+      failed: failed.flatMap(({ label, errors }) => errors.map(error => `${label}: ${error}`))
     });
   };
+
+  const failure = (label, error) => ({ label, errors: error.details || [error.message] });
 
   /* A whole directory: every file arrives at once, each carrying its own path. */
   const takeFolder = async e => {
@@ -103,8 +103,8 @@ export default function CourseIO({ onChange }) {
        the failure can name it even when the course id could not be derived. */
     const folder = (list[0].webkitRelativePath || list[0].name || "").split("/")[0]
       || "that folder";
-    try { report([await install(await fromFolder(list), folder)], []); }
-    catch (err) { report([], [err.message]); }
+    try { report([await install(await fromFolder(list))], []); }
+    catch (err) { report([], [failure(folder, err)]); }
   };
 
   /* Zips and packed JSON, any number at once. */
@@ -119,10 +119,9 @@ export default function CourseIO({ onChange }) {
       try {
         if (f.size > MAX_BYTES) throw new Error(`${kb(f.size)} exceeds the ${kb(MAX_BYTES)} limit`);
         ok.push(await install(
-          /\.zip$/i.test(f.name) ? await fromZip(f) : await fromJSON(f), f.name));
+          /\.zip$/i.test(f.name) ? await fromZip(f) : await fromJSON(f)));
       } catch (err) {
-        /* The label is already inside the message when install() threw it. */
-        failed.push(err.message.startsWith(f.name) ? err.message : `${f.name}: ${err.message}`);
+        failed.push(failure(f.name, err));
       }
     }
     report(ok, failed);
@@ -158,7 +157,13 @@ export default function CourseIO({ onChange }) {
         </p>
       )}
 
-      {msg && <p class={"cio-msg" + (msg.ok ? "" : " bad")}>{msg.text}</p>}
+      {msg && <div class={"cio-msg" + (msg.ok ? "" : " bad")} role="status">
+        {msg.installed && <p>{msg.installed}</p>}
+        {msg.failed.length > 0 && <>
+          <p>Could not import {msg.failedCount === 1 ? "this course" : `${msg.failedCount} courses`}. Fix every issue below and try again:</p>
+          <ul>{msg.failed.map((error, i) => <li key={i}>{error}</li>)}</ul>
+        </>}
+      </div>}
     </div>
   );
 }

@@ -4,12 +4,13 @@
  * for the pager and the hero that other views still use. */
 
 .desk{padding:var(--view-top) 0 0;max-width:44rem}
-.desk-index{display:table;margin:0 0 14px auto;font-family:var(--ui);
+.desk-heading{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
+.desk-index{flex:none;margin-left:auto;font-family:var(--ui);white-space:nowrap;
   font-size:var(--fs-small);color:var(--ink-2);text-decoration:none}
 .desk-index:hover{color:var(--hi-ink)}
-.desk h1{
+.desk-heading h1{
   font-family:var(--display);font-size:clamp(2rem,4.4vw,3rem);font-weight:600;
-  letter-spacing:-.025em;line-height:1.07;margin:0 0 14px;
+  letter-spacing:-.025em;line-height:1.07;margin:0;min-width:0;
 }
 .desk .lede{font-size:1.03rem;color:var(--ink-2);margin:0 0 26px;max-width:60ch}
 

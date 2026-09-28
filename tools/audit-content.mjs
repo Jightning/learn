@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* What the structural gates cannot see: whether the content is true.
  *
- *   node tools/audit-content.mjs [course …]
+ *   node tools/audit-content.mjs [--profile draft|publish] [course …]
  *
  * validate.mjs checks that references resolve, figures carry ids and equations
  * compile. It checks structure, never truth. A confident, well-formatted, wrong
@@ -10,30 +10,35 @@
  * standard.
  *
  * So every explanatory claim names where it came from, every worked answer
- * names the date it was re-derived, and every question names the concept its
- * outcome updates. What is missing is counted as a fraction, and
- * a course fails above the ceiling it declares.
+ * records its verification, and every question names the concept its
+ * outcome updates. Draft reports missing work without failing. Publish enforces
+ * the declared ceilings, zero unverified answers, and reviewed claim sources.
  *
- * The ceiling is per course, in `course.yaml`, and defaults to 1 — report
- * only — because these fractions are content debt that lands course by course:
+ * The optional ceiling is per course, in `course.yaml`, and defaults to 1:
  *
  *   audit:
- *     unsourced: 0.1     # fail if more than a tenth of claims name no source
- *     unverified: 0      # every answer carries a re-derivation date
+ *     unsourced: 0.1     # publish ceiling for claims with no grounded source
  *
  * A course that has finished a pass declares the number it reached, and can
  * then never regress. A global ceiling could only ever be the worst course's.
  */
 import { readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { loadCourse } from "./lib/load.mjs";
+import { COURSES } from "./lib/paths.mjs";
 import { conceptOf } from "../src/lib/index.js";
 import { present } from "../src/lib/gist.js";
 import { pointsAtNothing } from "./lib/sequence.mjs";
+import { coverageReport } from "./lib/coverage-report.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const COURSES = join(ROOT, "courses");
+const args = process.argv.slice(2);
+const at = args.indexOf("--profile");
+const profile = at < 0 ? "draft" : args[at + 1];
+const wanted = args.filter((a, i) => a !== "--profile" && (at < 0 || i !== at + 1));
+if (!["draft", "publish"].includes(profile) || wanted.some(a => a.startsWith("--"))) {
+  console.error("usage: audit-content.mjs [--profile draft|publish] [course …]");
+  process.exit(2);
+}
 
 /* Claims that assert something the reader will rely on. Prose carries the
    argument; these carry the conclusions, and a wrong conclusion is the one a
@@ -50,7 +55,7 @@ const UNSOURCED = new Set(["unverified", "generated"]);
    population, so a course with none of that population scores 0. */
 const METRICS = [
   ["unsourced",  "claims name no source"],
-  ["unverified", "answers carry no re-derivation date"],
+  ["unverified", "answers lack a valid verification marker"],
   ["unrouted",   "questions resolve to no concept"],
   ["unclaimed",  "claims declare neither core: nor gist:"],
   ["repeat",     "claims restate themselves in a gist: rather than splitting a core:"],
@@ -58,6 +63,15 @@ const METRICS = [
 ];
 
 const pct = x => `${Math.round(x * 100)}%`;
+const verifiedAnswer = value => {
+  if (value === true) return true;
+  if (value instanceof Date) return !Number.isNaN(value.getTime());
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+const sourceKind = source => !String(source || "").trim() ? "missing" :
+  UNSOURCED.has(String(source).trim().toLowerCase()) ? "disclosed" : "sourced";
 
 /* M33, heuristically. A stated constant, threshold or boundary that is never
    retrieved is a sentence, not a memory, and cued recall is the format that
@@ -80,10 +94,11 @@ function audit(id) {
   const miss = { unsourced: 0, unverified: 0, unrouted: 0,
                  unclaimed: 0, repeat: 0, nameonly: 0 };
   let blocks = 0;
+  const sourceIssues = [];
 
   for (const s of C.sections)
     for (const u of s.subs) {
-      for (const b of u.blocks || []) {
+      for (const [i, b] of (u.blocks || []).entries()) {
         /* A row that shows only its own label is a row the reader has to open
            before it tells them anything, which is the one thing notes depth is
            not for. Counted over every block the depth can show — a `p` is
@@ -101,7 +116,11 @@ function audit(id) {
         }
         if (!CLAIM.has(b.t)) continue;
         n.claims++;
-        if (!String(b.source || "").trim() || UNSOURCED.has(b.source)) miss.unsourced++;
+        const kind = sourceKind(b.source);
+        if (kind !== "sourced") miss.unsourced++;
+        if (profile === "publish" && (kind === "missing" || b.sourceReview !== kind))
+          sourceIssues.push(`${u.id} block ${i + 1}: sourceReview must be ${kind === "missing"
+            ? "sourced or disclosed, with a source: value" : kind} after reviewing source: ${b.source || "(missing)"}`);
         /* A claim with neither field states nothing at `notes` depth and
            closes to its own label, so the reader gets a name where a claim
            was promised. Counted rather than failed, because a course written
@@ -117,15 +136,15 @@ function audit(id) {
       }
       for (const q of u.quiz || []) {
         n.quiz++; n.answers++;
-        if (!q.verified) miss.unverified++;
+        if (!verifiedAnswer(q.verified)) miss.unverified++;
         if (!conceptOf(C, q, u)) miss.unrouted++;
       }
     }
 
   for (const file of Object.values(C.drills))
-    for (const it of file.items || []) { n.answers++; if (!it.verified) miss.unverified++; }
+    for (const it of file.items || []) { n.answers++; if (!verifiedAnswer(it.verified)) miss.unverified++; }
   for (const file of Object.values(C.practice || {}))
-    for (const it of file.items || []) { n.answers++; if (!it.verified) miss.unverified++; }
+    for (const it of file.items || []) { n.answers++; if (!verifiedAnswer(it.verified)) miss.unverified++; }
 
   const of = { unsourced: n.claims, unverified: n.answers, unrouted: n.quiz,
                unclaimed: n.claims, repeat: n.claims, nameonly: blocks };
@@ -133,27 +152,53 @@ function audit(id) {
   const rows = METRICS.map(([k, label]) => ({
     k, label, of: of[k],
     frac: of[k] ? miss[k] / of[k] : 0,
-    max: ceiling[k] != null ? Number(ceiling[k]) : 1
+    max: profile === "publish" && k === "unverified" ? 0 :
+      ceiling[k] != null ? Number(ceiling[k]) : 1
   }));
 
-  return { C, rows, over: rows.filter(r => r.frac > r.max), details: detailsWithoutRecall(C),
-           points: pointsAtNothing(C) };
+  return { C, rows, over: rows.filter(r => r.frac > r.max), sourceIssues,
+           details: detailsWithoutRecall(C), points: pointsAtNothing(C) };
 }
 
-const wanted = process.argv.slice(2);
 const ids = readdirSync(COURSES, { withFileTypes: true })
-  .filter(d => d.isDirectory() && !d.name.startsWith("_")).map(d => d.name)
+  .filter(d => d.isDirectory() && (!d.name.startsWith("_") || wanted.includes(d.name))).map(d => d.name)
   .filter(n => !wanted.length || wanted.includes(n));
+if (wanted.some(id => !ids.includes(id))) {
+  console.error(`course not found: ${wanted.filter(id => !ids.includes(id)).join(", ")}`);
+  process.exit(2);
+}
 
 let failed = 0;
 for (const id of ids) {
-  const { rows, over, details, points } = audit(id);
-  if (over.length) failed++;
+  const { rows, over, sourceIssues, details, points } = audit(id);
+  let coverage = null, coverageError = null;
+  if (profile === "publish") {
+    try { coverage = coverageReport(id); }
+    catch (e) { coverageError = e.message; }
+  }
+  const blocked = profile === "publish" &&
+    (over.length || sourceIssues.length || coverage?.unresolved.length || coverageError);
+  if (blocked) failed++;
 
-  console.log(`${over.length ? "FAIL" : "ok  "} ${id.padEnd(10)} ` +
+  console.log(`${blocked ? "FAIL publish" : profile === "draft" ? "draft" : "ok   publish"} ${id.padEnd(10)} ` +
     rows.map(r => `${pct(r.frac)} of ${r.of} ${r.k}`).join(", "));
   for (const r of over)
-    console.log(`       ✗ ${pct(r.frac)} ${r.label}, against a declared ceiling of ${pct(r.max)}`);
+    console.log(`       ${profile === "draft" ? "!" : "✗"} ${pct(r.frac)} ${r.label}, against ${
+      profile === "draft" ? "a draft target" : "the publish ceiling"} of ${pct(r.max)}`);
+  for (const issue of sourceIssues) console.log(`       ✗ ${issue}`);
+  if (coverageError) console.log(`       ✗ coverage: ${coverageError}`);
+  if (coverage && !coverage.files.length)
+    console.log("       ! coverage: no readable source documents; topic comparison unavailable");
+  else if (coverage && !coverage.unresolved.length)
+    console.log(`       coverage: ${coverage.rows.filter(r => r.low).length} low-score topic leads reviewed; scores are not proof`);
+  if (coverage?.unresolved.length) {
+    console.log(`       ✗ ${coverage.unresolved.length} low-scoring coverage leads need reviewed dispositions ` +
+      `(run: node tools/coverage.mjs ${id} --init-review)`);
+    for (const t of coverage.unresolved.slice(0, 15))
+      console.log(`         ${t.id} ${t.heading}: ${t.problem}`);
+    if (coverage.unresolved.length > 15)
+      console.log(`         ${coverage.unresolved.length - 15} more in the coverage report`);
+  }
   for (const key of details)
     console.log(`       ! drills/${key}: a key block states a value and no item cues it back (M33)`);
   /* Listed, never counted: the phrase is right whenever the subsection it

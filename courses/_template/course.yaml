@@ -17,12 +17,12 @@ theme:
 state:
   enabled: true
 
-# What fraction of each audit population this course tolerates, checked by
-# `npm run audit`. Absent means 1, meaning report only. Lower each one as its
-# pass lands and the course can never regress past what it has reached.
+# Draft audit (`npm run audit -- --profile draft <id>`) reports all debt without
+# failing. Publish audit (`--profile publish`) enforces these optional ceilings,
+# always requires zero unverified answers, and requires sourceReview on every
+# def/key/trap claim. Absent ceilings mean 1; lower them as review lands.
 audit:
   unsourced: 1      # claims (def/key/trap) whose source: is absent or ungrounded
-  unverified: 1     # answers or variants without verified: true
   unrouted: 1       # questions that resolve to no concept in the concept set
 
 # Optional: how table/grid cell values are coloured. Keys are cell contents,

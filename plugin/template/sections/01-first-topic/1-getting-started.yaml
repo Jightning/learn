@@ -36,6 +36,7 @@ blocks:
   - t: def
     term: A definition
     source: Textbook ch.1.2
+    # sourceReview: sourced  # add only after checking this origin
     cat: block-kinds
     tags: [authoring]
     core: |-
@@ -49,9 +50,12 @@ blocks:
   # `source:` is where the claim came from: a real, checkable origin, or
   # `unverified` (a human should look it up), or `generated` (a model wrote it
   # and a human should check whether it is even true). The last two both count
-  # against the unsourced fraction `npm run audit` reports.
+  # against the unsourced fraction draft audit reports. Before publishing, a
+  # human sets sourceReview: sourced for a checked origin, or disclosed for an
+  # explicitly unverified/generated source. The value must match source:.
   - t: key
     source: unverified
+    # sourceReview: disclosed  # add only after reviewing this disposition
     cat: block-kinds
     core: The one thing to remember, stated in a sentence that stands alone.
     h: <p>And then whatever makes it usable, which is where it comes from,
@@ -69,6 +73,7 @@ blocks:
   # the fraction is measured and ceilinged in `course.yaml`.
   - t: trap
     source: generated
+    # sourceReview: disclosed  # add only after reviewing this disposition
     cat: block-kinds
     gist: The tempting wrong answer is X; it is really Y.
     h: <p>The error people actually make, stated the way they would state it,

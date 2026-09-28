@@ -52,7 +52,7 @@ export const versionOf = cid => (getBook(cid) || {}).version || null;
  */
 export function importCourse(id, files, taken = {}, version = null) {
   const { course, errors } = parseCourse(files);
-  if (!course) return { ok: false, errors };
+  if (!course || errors.length) return { ok: false, errors };
 
   const index = indexOf(course);
   const clashes = [];

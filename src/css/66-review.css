@@ -12,12 +12,14 @@
  * `.wrap` like the index and the dependency map, which means the toolbar above
  * it pays for the status bar (10-shell.css) and the way out is the rail, the
  * breadcrumb and the back button — the same three every other page offers. */
-.review{padding:var(--view-top) 0 0;max-width:var(--measure)}
+.review{padding:var(--view-top) 0 0}
+.review>section{max-width:var(--measure)}
 .review>*:last-child{margin-bottom:0}
-.review-head{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.review-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.review-heading{display:flex;flex-direction:column;gap:2px}
 .review-head h1{font-family:var(--display);font-size:2.15rem;font-weight:600;
   letter-spacing:-.02em;margin:0}
-.review-head .review-scope{border:0;padding:0}
+.review-head .review-scope{border:0;padding:0;line-height:1.2}
 .review-head .review-options{margin-left:auto}
 .review-options a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 .review-practice .practice-intro{color:var(--ink-2);margin:0 0 16px}

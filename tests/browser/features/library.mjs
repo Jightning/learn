@@ -11,6 +11,8 @@ if (installed) {
   ck("demo fixture installs", failed === 0,
      failed ? await page.locator(".cio-msg.bad").first().innerText() : `${installed} courses`);
   await go();
+  ck("imported course shows content not audited status",
+     await page.locator(".lcard .laudit").filter({ hasText: "Content not audited" }).count() === installed);
   const styled = await page.evaluate(() => {
     const card = [...document.querySelectorAll(".lcard")].find(c => c.querySelector("h3 strong"));
     if (!card) return null;
@@ -77,6 +79,27 @@ if (single) {
   }));
   ck("the dialog holds the install controls",
      await page.locator(".modal .cio-foot .dbtn").count() >= 1);
+  /* Both files are valid JSON and valid YAML, but their course structures
+     cannot be read safely. Every actionable error stays in the dialog. */
+  await page.locator('.modal .cio input[accept*="zip"]').setInputFiles([
+    { name: "bad-empty.course.json", mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({ "course.yaml": "title: Empty\n" })) },
+    { name: "bad-shape.course.json", mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify({
+        "course.yaml": "title: Wrong lists\n",
+        "sections/01-one/1-start.yaml": "title: Start\nblocks: wrong\nquiz: wrong\n"
+      })) }
+  ]);
+  await page.locator(".modal .cio-msg.bad li").first().waitFor();
+  const importErrors = await page.locator(".modal .cio-msg.bad li").allInnerTexts();
+  ck("malformed parseable courses show every structural error",
+     importErrors.length === 3 &&
+     importErrors.some(e => e.includes("bad-empty.course.json: no sections found")) &&
+     importErrors.some(e => e.includes("bad-shape.course.json: sections/01-one/1-start.yaml: blocks must be a list")) &&
+     importErrors.some(e => e.includes("bad-shape.course.json: sections/01-one/1-start.yaml: quiz must be a list")),
+     importErrors.join(" | "));
+  ck("malformed courses were not installed",
+     await page.locator(".lcard").count() === courseIds.length);
   ck("the public library includes DEMO as added",
      await page.locator(".cio-catalog .cio-course").filter({ hasText: "DEMO" })
        .locator("button:disabled").innerText() === "Added");

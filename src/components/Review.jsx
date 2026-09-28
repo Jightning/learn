@@ -17,8 +17,10 @@ export default function Review({ only = null, ctx = null, mixed = false, cat = n
   const mixedUrl = only ? `#/${only}/review/mixed` : "#/review/mixed";
   return <div class="review">
     <header class="review-head">
-      <h1>Review</h1>
-      <span class="review-scope">{scope}</span>
+      <div class="review-heading">
+        <h1>Review</h1>
+        <span class="review-scope">{scope}</span>
+      </div>
       <nav class="xviews review-options" aria-label="Review options">
         <a href={dueUrl} class={!mixed ? "cur" : ""}
            aria-current={!mixed ? "page" : undefined}>Due now</a>

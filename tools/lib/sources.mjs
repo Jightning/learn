@@ -263,15 +263,15 @@ function headingOf(line) {
   // headings, and scanning every lower-to-upper pair would grow quadratically.
   if (line.length > 1000) return null;
   const marked = /^##+\s+(.+?)\s*$/.exec(line);
-  if (marked) return { heading: marked[1], rest: "" };
-  if (titleCase(line)) return { heading: line.trim(), rest: "" };
+  if (marked) return { heading: marked[1], rest: "", kind: "marked" };
+  if (titleCase(line)) return { heading: line.trim(), rest: "", kind: "inferred" };
   /* Glued: a lowercase letter directly followed by a capital. The shortest
      Title Case prefix wins, so "Exact Differential EquationsWe have seen" splits
      after "Equations" and not inside "EquationsWe". */
   for (const m of line.matchAll(/[a-z](?=[A-Z])/g)) {
     const head = line.slice(0, m.index + 1);
     if (titleCase(head.replace(/^\d+(\.\d+)*\s+/, "X "))) {
-      return { heading: head, rest: line.slice(m.index + 1) };
+      return { heading: head, rest: line.slice(m.index + 1), kind: "inferred" };
     }
   }
   return null;
@@ -301,17 +301,17 @@ function readableHtml(html) {
 export function topics(md) {
   if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
   const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
-  const out = [{ heading: title, lines: [] }];
+  const out = [{ heading: title, lines: [], kind: "title" }];
   for (const line of md.replace(/^#\s.*$/m, "").replace(/<!--[\s\S]*?-->/g, "").split("\n")) {
     const h = headingOf(line);
     /* A glued page title ("1.6 Substitution …EquationsThe first") repeats the
        `#` line: keep its prose under the title rather than opening a twin. */
     if (h && bare(h.heading) !== bare(title)) {
-      out.push({ heading: h.heading, lines: [h.rest] });
+      out.push({ heading: h.heading, lines: [h.rest], kind: h.kind });
     } else {
       out[out.length - 1].lines.push(h ? h.rest : line);
     }
   }
-  return out.map(t => ({ heading: t.heading, body: t.lines.join("\n").trim() }))
+  return out.map(t => ({ heading: t.heading, body: t.lines.join("\n").trim(), kind: t.kind }))
             .filter((t, i) => i === 0 || t.body);
 }

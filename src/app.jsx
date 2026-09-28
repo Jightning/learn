@@ -425,7 +425,7 @@ export default function App() {
   const crumb = inReview ? "<b>Review</b>"
     : !course
     ? "<b>Courses</b>"
-    : !rest ? `<b>${course.code}</b>  ›  contents`
+    : !rest ? ""
     : rest === "index" || rest === "concepts" || rest === "cat" ? "<b>Index</b>"
     : rest === "review" || rest.startsWith("review/") ||
       rest === "practice" || rest.startsWith("practice/") ? "<b>Review</b>"
@@ -535,7 +535,8 @@ export default function App() {
                               onExpand: () => setExpandAll(v => !v) }} />
         )}
         <main>
-          <Topbar crumb={crumb} inCourse={!!course} home={!!course || inReview}
+          <Topbar crumb={crumb} courseId={course ? cid : null}
+                  inCourse={!!course} home={!!course || inReview}
                   reading={!!section || rest === "saved" || rest === "explore/saved"}
                   lane={lane} depth={depth} onMode={onMode}
                   zoom={zoom} onZoomReset={() => setZoom(1)}

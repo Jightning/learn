@@ -3,9 +3,15 @@ export async function testPracticeAndNotes(ctx, state) {
   const { cid, P, nSections, secIds, last } = state;
   await go(`#/${cid}`);
   ck(P("Overview offers Index at the top instead of in the sidebar"),
-     await page.locator(`.desk > .desk-index[href="#/${cid}/index"]`).count() === 1 &&
+     await page.locator(`.desk-heading > .desk-index[href="#/${cid}/index"]`).count() === 1 &&
      await page.locator('.navtop a', { hasText: 'Index' }).count() === 0 &&
      await page.locator('.desk .tools a', { hasText: 'Index' }).count() === 0);
+  ck(P("Overview Index sits beside the course title"),
+     await page.locator(".desk-heading").evaluate(el => {
+       const title = el.querySelector("h1").getBoundingClientRect();
+       const index = el.querySelector(".desk-index").getBoundingClientRect();
+       return index.top < title.bottom && index.left >= title.right - 1;
+     }));
   ck(P("Saved has its own sidebar destination"),
      await page.locator(`.navtop a[href="#/${cid}/saved"]`).count() === 1);
   await go(`#/${cid}/review/mixed`);
@@ -20,7 +26,16 @@ export async function testPracticeAndNotes(ctx, state) {
      await page.locator(".review-options").evaluate(el => {
        const head = el.closest(".review-head").getBoundingClientRect();
        const options = el.getBoundingClientRect();
-       return options.right >= head.right - 1 && options.top >= head.top;
+       const content = document.querySelector(".review > section").getBoundingClientRect();
+       return options.right >= head.right - 1 && options.top >= head.top &&
+         head.right > content.right + 30;
+     }));
+  ck(P("Review course ID stays close beneath the title"),
+     await page.locator(".review-heading").evaluate(el => {
+       const title = el.querySelector("h1").getBoundingClientRect();
+       const scope = el.querySelector(".review-scope").getBoundingClientRect();
+       return scope.top >= title.bottom && scope.top - title.bottom <= 5 &&
+         Math.abs(scope.left - title.left) <= 1;
      }));
 
   /* The page opens on its action, not on its settings.
