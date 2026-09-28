@@ -118,10 +118,12 @@ export default function App() {
     const move = e => {
       if (!swipe || e.pointerId !== swipe.id || swipe.cancelled) return;
       const dx = e.clientX - swipe.x;
-      const intent = swipeIntent(dx, e.clientY - swipe.y);
-      if (intent === "other") swipe.cancelled = true;
-      if (intent === "right") swipe.dragging = true;
-      if (!swipe.dragging || swipe.cancelled) return;
+      if (!swipe.dragging) {
+        const intent = swipeIntent(dx, e.clientY - swipe.y);
+        if (intent === "other") { swipe.cancelled = true; return; }
+        if (intent !== "right") return;
+        swipe.dragging = true;
+      }
       const distance = Math.max(0, Math.min(swipe.width, dx));
       sidebar.classList.add("dragging");
       scrim.classList.add("dragging");
@@ -130,8 +132,7 @@ export default function App() {
     };
     const up = e => {
       if (!swipe || e.pointerId !== swipe.id) return;
-      const opens = swipe.dragging && !swipe.cancelled
-        && opensSidebar(e.clientX - swipe.x, e.clientY - swipe.y);
+      const opens = swipe.dragging && opensSidebar(e.clientX - swipe.x);
       swipe = null;
       if (sidebar.classList.contains("dragging")) {
         setMenuOpen(opens);
@@ -144,10 +145,16 @@ export default function App() {
         finishFrame = requestAnimationFrame(reset);
       }
     };
+    /* Once horizontal intent is locked, a later downward drift belongs to the
+       drawer rather than turning into a page scroll and cancelling its pointer. */
+    const keepDrag = e => {
+      if (swipe?.dragging && e.cancelable) e.preventDefault();
+    };
     addEventListener("pointerdown", down, { passive: true });
     addEventListener("pointermove", move, { passive: true });
     addEventListener("pointerup", up, { passive: true });
     addEventListener("pointercancel", cancel, { passive: true });
+    addEventListener("touchmove", keepDrag, { passive: false });
     return () => {
       cancelAnimationFrame(finishFrame);
       reset();
@@ -155,6 +162,7 @@ export default function App() {
       removeEventListener("pointermove", move);
       removeEventListener("pointerup", up);
       removeEventListener("pointercancel", cancel);
+      removeEventListener("touchmove", keepDrag);
     };
   }, [course, wide, menuOpen, searchOpen]);
 

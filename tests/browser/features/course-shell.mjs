@@ -135,8 +135,23 @@ export async function testCourseShell(ctx, cid) {
   /* Collapsing the sidebar gives the reader the space rather than spending it
      on gutter, and cannot strand a narrow reader with no navigation at all. */
   if (await page.locator(".tuck").count()) {
+    const themeIcon = async selector => page.evaluate(sel => {
+      const root = document.documentElement, before = root.getAttribute("data-theme");
+      const button = document.querySelector(sel), svg = button.querySelector("svg");
+      const fill = theme => {
+        root.setAttribute("data-theme", theme);
+        return [getComputedStyle(svg).fill, getComputedStyle(button).color];
+      };
+      const light = fill("light"), dark = fill("dark");
+      if (before == null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", before);
+      return svg.getAttribute("fill") === "currentColor"
+        && light[0] === light[1] && dark[0] === dark[1] && light[0] !== dark[0];
+    }, selector);
+    ck(P("sidebar close icon follows light and dark themes"), await themeIcon(".tuck"));
     await page.locator(".tuck").click();
     await page.waitForTimeout(250);
+    ck(P("sidebar open icon follows light and dark themes"), await themeIcon(".untuck"));
     const t = await page.evaluate(() => {
       const b = document.querySelector(".bmain").getBoundingClientRect();
       const w = document.querySelector(".wrap").getBoundingClientRect();
@@ -254,6 +269,12 @@ export async function testCourseShell(ctx, cid) {
   ck(P('one tap on the current section returns to its heading'),
      (await seat(secIds[0])) < 140);
   await page.locator('.mobnav').click();
+  const subGap = await page.locator('.sec.active .subs a').first().evaluate(link => {
+    const number = link.querySelector('.sub-num').getBoundingClientRect();
+    const title = link.querySelector('.sub-num + span').getBoundingClientRect();
+    return title.left - number.right;
+  });
+  ck(P('mobile subsection numbers have room before the title'), subGap >= 8, subGap + 'px');
   await page.locator(`.sec.active .subs a[href="${firstSub}"]`).click();
   ck(P('one tap opens a subsection on mobile'),
      await page.evaluate(() => location.hash) === firstSub);
@@ -277,6 +298,12 @@ export async function testCourseShell(ctx, cid) {
   await page.waitForTimeout(50);
   ck(P("a short right drag does not open the mobile sidebar"),
      await page.locator(".sidebar.open").count() === 0);
+  await swipe([[30, 180], [50, 184], [95, 280]]);
+  await page.waitForTimeout(250);
+  ck(P("vertical drift after horizontal intent keeps the sidebar swipe"),
+     await page.locator(".sidebar.open").count() === 1);
+  await page.locator(".scrim.on").click({ position: { x: 350, y: 400 } });
+  await page.waitForTimeout(220);
   const partialDrawer = await page.evaluate(() => {
     const target = document.querySelector("main");
     const fire = (type, x, y) => target.dispatchEvent(new PointerEvent(type, {

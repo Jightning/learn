@@ -132,7 +132,7 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
                     {/* `here` is where the reader is, not where they clicked —
                         see useReading in lib/nav.js. */}
                     <a href={H(sub.id)} class={here === sub.id ? "cur" : ""} onClick={onNavigate}>
-                      {`${s.num}.${k + 1}  `}<Inline text={sub.title} />
+                      <span class="sub-num">{`${s.num}.${k + 1}`}</span><Inline text={sub.title} />
                     </a>
                   </li>
                 ))}

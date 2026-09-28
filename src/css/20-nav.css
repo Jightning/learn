@@ -46,6 +46,7 @@
   display:block;padding:4px 8px 4px 12px;font-size:var(--fs-small);line-height:1.4;
   color:var(--ink-3);text-decoration:none;border-left:1px solid var(--rule-2);
 }
+.sub-num{display:inline-block;margin-right:.65em;white-space:nowrap;font-family:var(--mono)}
 .subs a:hover{color:var(--ink);background:var(--surface-2)}
 .subs a.cur{color:var(--hi-ink);border-left-color:var(--hi);font-weight:600}
 .navtop{padding:0 16px 12px;margin-bottom:4px;border-bottom:1px solid var(--rule-2)}

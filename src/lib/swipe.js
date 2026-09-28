@@ -1,6 +1,5 @@
-/* A swipe must first declare a horizontal direction, then travel far enough
-   on that line. Keeping these tests separate lets a vertical scroll cancel
-   early instead of becoming a swipe when the finger later drifts right. */
+/* Decide whether the gesture starts as a swipe, then judge its horizontal
+   travel. A later vertical drift must not undo an already locked drawer drag. */
 const INTENT_DISTANCE = 12;
 const OPEN_DISTANCE = 48;
 const HORIZONTAL_RATIO = 1.5;
@@ -10,8 +9,8 @@ export function swipeIntent(dx, dy) {
   return dx > Math.abs(dy) ? "right" : "other";
 }
 
-export function opensSidebar(dx, dy) {
-  return dx >= OPEN_DISTANCE && dx >= Math.abs(dy) * HORIZONTAL_RATIO;
+export function opensSidebar(dx) {
+  return dx >= OPEN_DISTANCE;
 }
 
 /** Direction for a slide deck: horizontal intent must be clear before a

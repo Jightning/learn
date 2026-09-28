@@ -124,6 +124,8 @@
   /* A drawer link the thumb has to hit while the page moves under it. */
   .sidebar .navtop a,.sidebar .rail .subs a,.sidebar .sec-btn{min-height:44px}
   .sidebar .navtop a,.sidebar .rail .subs a{display:flex;align-items:center}
+  .sidebar .rail .subs a{gap:10px;align-items:baseline}
+  .sidebar .rail .sub-num{flex:none;margin-right:0}
 }
 
 /* The mode switch sheds to its cycling form on the same line the toolbar sheds

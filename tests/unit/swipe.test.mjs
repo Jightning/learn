@@ -17,10 +17,8 @@ test("a slide drag waits for horizontal intent", () => {
   assert.equal(slideIntent(12, 20), "other");
 });
 
-test("a sidebar swipe must be long and predominantly horizontal", () => {
-  assert.equal(opensSidebar(47, 0), false, "rejects short horizontal movement");
-  assert.equal(opensSidebar(60, 41), false, "rejects a swipe outside the horizontal angle");
-  assert.equal(opensSidebar(60, -41), false, "rejects upward scrolling with rightward drift");
-  assert.equal(opensSidebar(60, 40), true, "accepts the boundary of the horizontal angle");
-  assert.equal(opensSidebar(60, 20), true, "accepts a relaxed diagonal right swipe");
+test("a locked sidebar swipe commits by horizontal distance", () => {
+  assert.equal(opensSidebar(47), false, "releasing a short drag closes the drawer");
+  assert.equal(opensSidebar(48), true, "vertical drift after lock does not change the commitment");
+  assert.equal(opensSidebar(60), true);
 });
