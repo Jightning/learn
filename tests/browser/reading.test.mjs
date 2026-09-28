@@ -91,6 +91,53 @@ try {
     await card.evaluate(el => el.blur());
     check(label + ' leaves prose unmarked at rest', await first.locator('.nref').evaluate(el => !el.classList.contains('hot') && getComputedStyle(el).borderBottomStyle === 'none'));
   }
+  await mode('Study');
+  const selectText = async (from, start, to, end) => page.evaluate(({ from, start, to, end }) => {
+    const point = (id, offset) => {
+      const root = document.querySelector(`[id="s1-1~${id}"] .bhtml`);
+      const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node, at = 0;
+      while ((node = walk.nextNode())) {
+        if (offset <= at + node.length) return [node, offset - at];
+        at += node.length;
+      }
+      throw Error('selection point missing');
+    };
+    const range = document.createRange();
+    range.setStart(...point(from, start));
+    range.setEnd(...point(to, end));
+    const selection = getSelection();
+    selection.removeAllRanges(); selection.addRange(range);
+  }, { from, start, to, end });
+  const highlighted = () => page.evaluate(() => {
+    const highlight = CSS.highlights.get('learner-note');
+    return highlight ? [...highlight].map(range => range.toString()).join('') : '';
+  });
+  await selectText(3, 0, 3, 16);
+  await row(3).locator('.note-pull').click();
+  await row(3).locator('.note-area').fill('Selected words');
+  await row(3).locator('.note-edit', { hasText: 'done' }).click();
+  await row(3).locator('.note-one').hover();
+  check('a note highlights its selected words across inline markup',
+    await highlighted() === 'Unfamiliar prose');
+  await row(3).locator('.note-fold').hover();
+  check('the note header also highlights its words',
+    await highlighted() === 'Unfamiliar prose');
+  await page.mouse.move(0, 0);
+  check('the note highlight clears at rest', await highlighted() === '');
+  await selectText(2, 0, 3, 10);
+  await row(3).locator('.note-pull').click();
+  await row(3).locator('.note-area').fill('Clipped words');
+  await row(3).locator('.note-edit', { hasText: 'done' }).click();
+  await row(3).locator('.note-one').last().hover();
+  check('a selection crossing blocks highlights only this block',
+    await highlighted() === 'Unfamiliar');
+  await mode('Review');
+  await mode('Study');
+  await row(3).locator('.note-one').last().hover();
+  check('a note restores its selected text after reopening the block',
+    await highlighted() === 'Unfamiliar');
+  await page.mouse.move(0, 0);
   await mode('Review');
   await row(2).locator('.mn-open').click();
   await page.waitForTimeout(200);

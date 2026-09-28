@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "preact/hooks";
-import { readNotes, writeNotes, isFolded, setFolded } from "../lib/notes.js";
+import { readNotes, writeNotes, noteText, isFolded, setFolded } from "../lib/notes.js";
+import { selectedIn, showNoteSelection, clearNoteSelection } from "../lib/note-selection.js";
 import { md } from "../lib/md.js";
 
 /* The learner's notes on one block, in two pieces that share one state.
@@ -34,7 +35,7 @@ const NUDGE = 18;        /* how far the grip itself follows the finger */
  * because the grip and the card are different zones of the same row and the
  * same notes. `anchor` may be null for a row that carries none.
  */
-export function useNotes(cid, anchor) {
+export function useNotes(cid, anchor, content) {
   const [list, setList] = useState(() => (anchor ? readNotes(cid, anchor) : []));
   const [editing, setEditing] = useState(-1);       /* index, or -1 */
   const [fold, setFold] = useState(() => (anchor ? isFolded(cid, anchor) : false));
@@ -49,7 +50,10 @@ export function useNotes(cid, anchor) {
   const held = useRef(list);
   const apply = next => { held.current = next; setList(next); };
 
-  useEffect(() => () => clearTimeout(save.current), []);
+  useEffect(() => () => {
+    clearTimeout(save.current);
+    clearNoteSelection(content.current);
+  }, []);
   /* a different block is being annotated: start clean rather than carrying the
      previous one's editing state across */
   useEffect(() => {
@@ -81,20 +85,30 @@ export function useNotes(cid, anchor) {
     cid, anchor, list, editing, fold, pull, setPull,
     /* A new note always goes at the end and opens straight into editing: the
        gesture that asked for it was already the decision to write one. */
-    add: () => {
+    selection: () => selectedIn(content.current),
+    show: i => showNoteSelection(content.current, held.current[i]?.selection),
+    hide: () => clearNoteSelection(content.current),
+    add: selection => {
       open();
-      const blank = held.current.findIndex(t => !t.trim());
-      if (blank >= 0) { setEditing(blank); return; }
-      setEditing(held.current.length); apply([...held.current, ""]);
+      const blank = held.current.findIndex(t => !noteText(t).trim());
+      if (blank >= 0) {
+        if (selection) apply(held.current.map((t, i) => i === blank
+          ? { text: noteText(t), selection } : t));
+        setEditing(blank); return;
+      }
+      setEditing(held.current.length);
+      apply([...held.current, selection ? { text: "", selection } : ""]);
     },
     edit: i => { open(); setEditing(i); },
     input: (i, v) => {
-      const next = held.current.map((t, k) => (k === i ? v : t));
+      const next = held.current.map((t, k) => (k === i
+        ? typeof t === "string" ? v : { ...t, text: v } : t));
       apply(next); later(next);
     },
     /* Written through, not debounced: a delete is the one edit the reader
        cannot repeat by typing it again. */
     drop: i => {
+      clearNoteSelection(content.current);
       const next = held.current.filter((_, k) => k !== i);
       apply(next); setEditing(-1); now(next);
     },
@@ -102,7 +116,8 @@ export function useNotes(cid, anchor) {
        same gesture. A blank is intentional: it collapses into the saved-note
        state instead of being discarded. */
     done: () => {
-      const keep = held.current.map(t => t.trim() ? t : "");
+      const keep = held.current.map(t => typeof t === "string"
+        ? (t.trim() ? t : "") : { ...t, text: t.text.trim() ? t.text : "" });
       setEditing(-1); apply(keep); now(keep);
     },
     toggle: () => setFold(f => { setFolded(cid, anchor, !f); return !f; })
@@ -118,7 +133,8 @@ export function NoteGrip({ n }) {
      72px grip and the gesture dies mid-pull. */
   const onDown = e => {
     if (e.button != null && e.button > 0) return;      /* left button only */
-    drag.current = { y: e.clientY, id: e.pointerId, moved: false };
+    drag.current = { y: e.clientY, id: e.pointerId, moved: false,
+                     selection: n.selection() };
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
   };
   const onMove = e => {
@@ -136,14 +152,14 @@ export function NoteGrip({ n }) {
     /* A press opens. A pull opens once past the threshold. A pull that stops
        short snaps back, which is what makes the threshold discoverable rather
        than a trap. */
-    if (!d.moved || e.clientY - d.y >= OPEN_AT) n.add();
+    if (!d.moved || e.clientY - d.y >= OPEN_AT) n.add(d.selection);
     n.setPull(0);
   };
   const onCancel = () => { drag.current = null; n.setPull(0); };
   /* The browser also fires click after a pointer sequence, which would open a
      snapped-back pull a second time. `detail === 0` is a click with no pointer
      behind it — the keyboard case, and the only one not covered above. */
-  const onClick = e => { if (e.detail === 0) n.add(); };
+  const onClick = e => { if (e.detail === 0) n.add(n.selection()); };
 
   if (!n.anchor) return null;
   return (
@@ -164,9 +180,12 @@ function Note({ n, i, text }) {
   const area = useRef(null);
   const mine = n.editing === i;
   useEffect(() => { if (mine) area.current?.focus(); }, [mine]);
+  const leave = e => { if (!e.currentTarget.contains(e.relatedTarget)) n.hide(); };
 
   if (!mine && !text.trim()) return (
-    <div class="note-one note-blank">
+    <div class="note-one note-blank" onMouseOver={() => n.show(i)}
+         onMouseOut={leave} onFocusIn={() => n.show(i)}
+         onFocusOut={leave}>
       <button class="note-blank-open" type="button" onClick={() => n.edit(i)}>
         <span class="note-blank-line" aria-hidden="true" />
         <span>Saved note</span>
@@ -177,7 +196,9 @@ function Note({ n, i, text }) {
   );
 
   if (!mine) return (
-    <div class="note-one">
+    <div class="note-one" tabIndex={0} onMouseOver={() => n.show(i)}
+         onMouseOut={leave} onFocusIn={() => n.show(i)}
+         onFocusOut={leave}>
       {/* The reader's own text, through lib/md.js, which escapes before it
           formats — see the safety note there. */}
       <div class="note-body" dangerouslySetInnerHTML={{ __html: md(text) }} />
@@ -186,7 +207,9 @@ function Note({ n, i, text }) {
   );
 
   return (
-    <div class="note-one">
+    <div class="note-one" onMouseOver={() => n.show(i)}
+         onMouseOut={leave} onFocusIn={() => n.show(i)}
+         onFocusOut={leave}>
       <textarea ref={area} class="note-area" value={text}
                 onInput={e => n.input(i, e.currentTarget.value)} onBlur={n.done}
                 rows={Math.max(3, text.split("\n").length + 1)}
@@ -214,7 +237,7 @@ export function NoteCard({ n, label = "Note" }) {
      the reader a box with nothing in it. */
   if (!n.anchor || !n.list.length) return null;
 
-  const blank = n.editing < 0 && n.list.every(t => !t.trim());
+  const blank = n.editing < 0 && n.list.every(t => !noteText(t).trim());
   if (blank) return (
     <div class="mnote is-n is-blank" data-nosnippet>
       <Note n={n} i={0} text="" />
@@ -224,11 +247,15 @@ export function NoteCard({ n, label = "Note" }) {
   return (
     <div class={"mnote is-n" + (n.fold ? " is-shut" : "")} data-nosnippet>
       <button class="mn-k note-fold" type="button" onClick={n.toggle}
+              onMouseOver={() => { if (n.list.length === 1) n.show(0); }}
+              onMouseOut={() => n.hide()}
+              onFocusIn={() => { if (n.list.length === 1) n.show(0); }}
+              onFocusOut={() => n.hide()}
               aria-expanded={n.fold ? "false" : "true"}>
         <span class="note-caret" aria-hidden="true" />
         {label}{n.list.length > 1 ? ` (${n.list.length})` : ""}
       </button>
-      {!n.fold && n.list.map((t, i) => <Note key={i} n={n} i={i} text={t} />)}
+      {!n.fold && n.list.map((t, i) => <Note key={i} n={n} i={i} text={noteText(t)} />)}
     </div>
   );
 }

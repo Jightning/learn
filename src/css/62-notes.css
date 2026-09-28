@@ -60,6 +60,8 @@
 .mnote.is-n{border-left-color:var(--dc)}
 .mnote.is-n .mn-k{color:var(--dc-ink)}
 .mnote.is-n .mn-go{color:var(--dc-ink)}
+::highlight(learner-note){background:color-mix(in srgb,var(--dc) 25%,transparent);color:var(--dc-ink)}
+.note-one:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 /* One card can hold several notes. They are ruled apart rather than boxed
    apart: a box inside a box reads as two cards that failed to separate. */

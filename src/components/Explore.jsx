@@ -11,6 +11,9 @@ import { IconSaved } from "./Icon.jsx";
 import { ReadingRow, NoteRow } from "./Section.jsx";
 import Attempt from "./Attempt.jsx";
 import Inline from "./Inline.jsx";
+import Quiz from "./Quiz.jsx";
+import Slides from "./Slides.jsx";
+import Asides from "./Asides.jsx";
 
 /* Explore — search with the facets the overlay deliberately does not have.
  *
@@ -210,16 +213,21 @@ function Saved({ ctx, depth }) {
 
   useEffect(() => {
     const onSync = e => { if (e.detail.notes) setSynced(n => n + 1); };
+    const onNotes = e => { if (e.detail.cid === cid) setSynced(n => n + 1); };
     addEventListener("learn:synced", onSync);
-    return () => removeEventListener("learn:synced", onSync);
-  }, []);
+    addEventListener("learn:notes-changed", onNotes);
+    return () => {
+      removeEventListener("learn:synced", onSync);
+      removeEventListener("learn:notes-changed", onNotes);
+    };
+  }, [cid]);
 
   const groups = useMemo(() => {
     const bySub = new Map();
     for (const entry of idx.ANNOTATIONS) {
       const notes = readNotes(cid, entry.anchor);
-      if (!notes.length) continue;
       let group = bySub.get(entry.sub.id);
+      if (!notes.length && !group?.noted) continue;
       if (!group) {
         group = { sub: entry.sub, sec: entry.sec, num: entry.num,
                   noted: false, items: [] };
@@ -252,6 +260,11 @@ function Saved({ ctx, depth }) {
             {g.items.map(item => (
               <SavedBlock key={item.anchor} item={item} ctx={ctx} depth={depth} />
             ))}
+            {g.noted && (g.sub.quiz || []).length > 0 && (
+              <ReadingRow ctx={ctx}>
+                <Quiz sub={g.sub} num={g.num} ctx={ctx} depth={depth} />
+              </ReadingRow>
+            )}
           </div>
         ))}
       </section>
@@ -271,9 +284,12 @@ function SavedBlock({ item, ctx, depth }) {
 
   if (full) {
     const row = (
-      <ReadingRow ctx={ctx} noteAt={item.anchor} apart={isApart(b.t)}>
+      <ReadingRow ctx={ctx} noteAt={item.anchor} apart={isApart(b.t)}
+                  notes={<Asides b={b} ctx={ctx} />}>
       {INTERACTIVE.includes(b.t)
         ? <Attempt b={b} cid={cid} anchor={`${item.sub.id}#${item.at}@attempt`} />
+        : b.t === "slides"
+        ? <Slides b={b} ctx={ctx} fignum={idx.FIG.numOf(b)} />
         : <div class="bhtml" dangerouslySetInnerHTML={{ __html: decorate(
             renderBlock(b, { fignum: idx.FIG.numOf(b),
                              prevSource: prev && prev.source ? prev.source : null }),

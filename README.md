@@ -123,4 +123,3 @@ After making a course, it can be made public by adding the course to the gitigno
 ## Todo
 
 - Ability to save entire subsections from within the sidebar
-- Allow for bolding, italicization, highlighting, etc. (inline customization of block text)

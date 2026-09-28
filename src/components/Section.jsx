@@ -39,17 +39,18 @@ function usePair() {
  * right. */
 export function ReadingRow({ html, notes, noteAt, noteLabel, apart, follow, ctx, id, children }) {
   const pair = usePair();
+  const content = useRef(null);
   useEffect(() => pair.ref.current ? watchFigureScroll(pair.ref.current) : undefined, [html]);
   /* The row owns the note because the note is in two of its zones: the grip at
      the foot of the block, and the card in the margin beside it. */
-  const note = useNotes(ctx.cid, noteAt || null);
+  const note = useNotes(ctx.cid, noteAt || null, content);
 
   return (
     <div class="brow" ref={pair.ref} id={id} data-apart={apart || undefined}
          data-follow={follow || undefined}
          onMouseOver={pair.over} onMouseOut={pair.out}
          onFocusIn={pair.over} onFocusOut={pair.out}>
-      <div class="bmain">
+      <div class="bmain" ref={content}>
         {html != null
           ? <div class="bhtml" dangerouslySetInnerHTML={{
               __html: decorate(renderAnchors(html), ctx.cid, ctx.idx.FIG.byKey) }} />

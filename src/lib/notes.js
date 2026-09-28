@@ -32,13 +32,18 @@ const forgetLegacySaved = (cid, anchor) => {
 const notesOf = list => {
   const out = [];
   let blank = false;
-  for (const t of list || []) {
-    if (typeof t !== "string") continue;
-    if (t.trim()) out.push(t);
-    else if (!blank) { out.push(""); blank = true; }
+  for (const item of list || []) {
+    const t = noteText(item);
+    if (t == null) continue;
+    const keep = typeof item === "string" ? item : { text: t, selection: item.selection };
+    if (t.trim()) out.push(keep);
+    else if (!blank) { out.push(keep); blank = true; }
   }
   return out;
 };
+
+export const noteText = item => typeof item === "string" ? item
+  : item && typeof item.text === "string" ? item.text : null;
 
 /* One anchor, one string. Still used by the pre-question attempt box, which
    holds a single answer and is not a note. */
@@ -66,7 +71,7 @@ export function readNotes(cid, anchor) {
       list = Array.isArray(v) ? notesOf(v) : [raw];
     } catch { list = [raw]; /* not JSON at all: the legacy shape */ }
   }
-  if (legacySaved(cid).has(anchor) && !list.some(t => !t.trim())) list.push("");
+  if (legacySaved(cid).has(anchor) && !list.some(t => !noteText(t).trim())) list.push("");
   return list;
 }
 
@@ -76,6 +81,8 @@ export function writeNotes(cid, anchor, list) {
   forgetLegacySaved(cid, anchor);
   if (keep.length) setPref(key(cid, anchor), JSON.stringify(keep));
   else dropPref(key(cid, anchor));
+  if (typeof dispatchEvent === "function")
+    dispatchEvent(new CustomEvent("learn:notes-changed", { detail: { cid } }));
 }
 
 /* Which of a course's notes the reader has folded shut.

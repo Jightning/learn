@@ -253,6 +253,20 @@ export async function testPracticeAndNotes(ctx, state) {
     await go(`#/${cid}/index`);
     await go(`#/${cid}/explore/saved`);
     ck(P("saved markers persist"), await page.locator(".saved-section .mnote.is-blank").count() > 0);
+
+    /* The written note above was added through the first grip, on this
+       subsection's title. It saves the reading unit, including blocks with
+       no individual note and the questions after those blocks. */
+    await go(`#/${cid}/${secIds[0]}`);
+    const subId = await page.locator(".sec-body .sub").first().getAttribute("id");
+    await go(`#/${cid}/explore/saved`);
+    const savedSub = page.locator(".saved-section .sub").filter({
+      has: page.locator(`.saved-origin[href="#/${cid}/${subId}"]`)
+    });
+    ck(P("saving the title includes every block once"),
+       await savedSub.locator(":scope > .brow").count() === 8);
+    ck(P("saving the title includes subsection questions"),
+       await savedSub.locator(".quiz").count() === 1);
   }
 
   /* One course's styles at a time: they used to be appended and never removed,
