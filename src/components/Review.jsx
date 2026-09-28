@@ -6,10 +6,45 @@ import { dueKeys } from "../lib/retention.js";
 import { buildQueue } from "../lib/queue.js";
 import { retryVariant } from "../lib/practice-pool.js";
 import QuestionCard from "./QuestionCard.jsx";
+import Practice from "./Practice.jsx";
 
 const SESSION = 20;
 
-export default function Review({ only = null }) {
+export default function Review({ only = null, ctx = null, mixed = false, cat = null }) {
+  const scope = only ? (INDEX[only] || {}).code || only
+    : mixed ? "choose a course" : "all courses";
+  const dueUrl = only ? `#/${only}/review` : "#/review";
+  const mixedUrl = only ? `#/${only}/review/mixed` : "#/review/mixed";
+  return <div class="review">
+    <header class="review-head">
+      <h1>Review</h1>
+      <span class="review-scope">{scope}</span>
+    </header>
+    <nav class="review-options" aria-label="Review options">
+      <a href={dueUrl} class={!mixed ? "cur" : ""}
+         aria-current={!mixed ? "page" : undefined}>Due now</a>
+      <a href={mixedUrl} class={mixed ? "cur" : ""}
+         aria-current={mixed ? "page" : undefined}>Mixed practice</a>
+    </nav>
+    <section hidden={mixed} aria-label="Due now">
+      <DueReview only={only} />
+    </section>
+    {ctx && <section hidden={!mixed} aria-label="Mixed practice">
+      <Practice key={cat || "all"} ctx={ctx} cat={cat} embedded />
+    </section>}
+    {!ctx && <section hidden={!mixed} aria-label="Choose a course for mixed practice"
+                     class="review-pick">
+      <p>{ORDER.length
+        ? "Choose a course to practise questions even when nothing is due."
+        : "Add a course to start mixed practice."}</p>
+      <div class="review-courses">{ORDER.map(cid => (
+        <a key={cid} href={`#/${cid}/review/mixed`}>{(INDEX[cid] || {}).code || cid} →</a>
+      ))}</div>
+    </section>}
+  </div>;
+}
+
+function DueReview({ only }) {
   const wanted = useMemo(() => ORDER.filter(cid => (!only || cid === only) &&
     dueKeys(cid).length > 0), [only]);
   const [books, setBooks] = useState(null);
@@ -32,15 +67,12 @@ export default function Review({ only = null }) {
 
   const again = () => setRun({ items: buildQueue(books || [], { limit: SESSION }), at: 0,
     retries: [], results: [] });
-  const scope = only ? (INDEX[only] || {}).code || only : "all courses";
-  if (!run) return <div class="review"><h1>Review</h1><p>Loading questions…</p></div>;
-  if (run.at >= run.items.length) return <div class="review">
-    <div class="review-bar"><span class="review-t">Review</span><span class="review-scope">{scope}</span></div>
-    <h1>{run.items.length ? "Session complete" : "Nothing is due"}</h1>
+  if (!run) return <p>Loading questions…</p>;
+  if (run.at >= run.items.length) return <div class="review-done">
+    <h2>{run.items.length ? "Session complete" : "Nothing is due"}</h2>
     <p>{run.items.length ? `${run.results.filter(r => r.correct).length} right; ${run.results.filter(r => !r.correct).length} to revisit.` :
       "You are caught up."}</p>
     {run.items.length > 0 && <button class="dbtn" onClick={again}>Another set</button>}
-    {only && <a class="dbtn" href={`#/${only}/practice`}>Mixed Practice →</a>}
   </div>;
 
   const row = run.items[run.at];
@@ -60,11 +92,11 @@ export default function Review({ only = null }) {
     return next;
   });
 
-  return <div class="review">
-    <div class="review-bar"><span class="review-t">Review</span><span class="review-scope">{scope}</span>
+  return <>
+    <div class="review-bar"><span class="review-t">Scheduled questions</span>
       <span class="review-n">{run.at + 1} of {run.items.length}</span></div>
     <QuestionCard key={`${run.at}:${row.item.id}`} item={row.item}
       ctx={{ ...book, state: book.state }} reason={row.reason}
       onResult={result} onContinue={() => setRun(prev => ({ ...prev, at: prev.at + 1 }))} />
-  </div>;
+  </>;
 }

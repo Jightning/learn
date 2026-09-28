@@ -12,8 +12,28 @@
  * `.wrap` like the index and the dependency map, which means the toolbar above
  * it pays for the status bar (10-shell.css) and the way out is the rail, the
  * breadcrumb and the back button — the same three every other page offers. */
-.review{padding:var(--view-top) 0 0;max-width:34rem}
+.review{padding:var(--view-top) 0 0;max-width:var(--measure)}
 .review>*:last-child{margin-bottom:0}
+.review-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.review-head h1{font-family:var(--display);font-size:2.15rem;font-weight:600;
+  letter-spacing:-.02em;margin:0}
+.review-head .review-scope{border:0;padding:0}
+.review-options{display:flex;gap:24px;border-bottom:1px solid var(--rule);margin-bottom:22px}
+.review-options a{display:inline-block;padding:0 1px 11px;margin-bottom:-1px;
+  border-bottom:2px solid transparent;color:var(--ink-3);font-family:var(--ui);
+  font-size:var(--fs-small);text-decoration:none}
+.review-options a:hover{color:var(--ink)}
+.review-options a.cur{color:var(--ink);border-bottom-color:var(--hi);font-weight:600}
+.review-options a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.review-practice .practice-intro{color:var(--ink-2);margin:0 0 16px}
+.review-practice .pgo{margin-top:0}
+.review-done h2{font-family:var(--display);font-size:1.4rem;margin:0 0 .5rem}
+.review-pick p{color:var(--ink-2);margin:0 0 16px}
+.review-courses{display:flex;flex-wrap:wrap;gap:8px}
+.review-courses a{padding:9px 12px;border:1px solid var(--rule);border-radius:3px;
+  color:var(--ink);text-decoration:none;font-family:var(--ui);font-size:var(--fs-small)}
+.review-courses a:hover{border-color:var(--hi);color:var(--hi-ink)}
+.review-courses a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 .review-bar{
   display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
@@ -34,7 +54,6 @@
 .review-dots i{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--rule)}
 .review-dots i.on{background:var(--hi);border-color:var(--hi)}
 .review-n{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3)}
-.review h1{font-size:1.4rem;margin:0 0 .5rem}
 .review-nav{display:flex;gap:8px;margin-top:1.2rem;flex-wrap:wrap}
 
 /* The dots are the first thing to go when the bar runs out of room: the count

@@ -244,14 +244,12 @@ export async function testCourseShell(ctx, cid) {
   ck(P("toolbar costs under a sixth of a phone screen"), narrow.barH < 800 / 6, narrow.barH + "px");
   ck(P("the controls it sheds are in the sidebar"), narrow.shed >= 2,
      narrow.shed + " under Settings");
-  /* The row is scoped to this course, so a course with no drill bank of its
-     own has none — which is most of them, and asserting one unconditionally
-     asserted that every course runs a review schedule. What has to hold is
-     that there is never more than one, and that the one there is points at
-     this course and carries its count. */
-  ck(P("at most one review row, and it is this course's"),
-     narrow.queue.length <= 1
-     && narrow.queue.every(r => r.href === `#/${cid}/review` && /^\d+$/.test((r.count || "").trim())),
+  /* Review is always a destination; its badge appears only when this course
+     has scheduled work. */
+  ck(P("one review row leads to this course"),
+     narrow.queue.length === 1
+     && narrow.queue[0].href === `#/${cid}/review`
+     && (!narrow.queue[0].count || /^\d+$/.test(narrow.queue[0].count.trim())),
      JSON.stringify(narrow.queue));
   if (narrow.queue.length) ctx.sawQueueRow = true;
 

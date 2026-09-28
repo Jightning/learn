@@ -29,7 +29,6 @@ import { ConceptDetail } from "./components/Concepts.jsx";
 import { CatDetail } from "./components/Categories.jsx";
 import IndexPage from "./components/Index.jsx";
 import Explore from "./components/Explore.jsx";
-import Practice from "./components/Practice.jsx";
 import Primer from "./components/Primer.jsx";
 import DepMap from "./components/DepMap.jsx";
 import SearchOverlay from "./components/SearchOverlay.jsx";
@@ -428,8 +427,8 @@ export default function App() {
     ? "<b>Courses</b>"
     : !rest ? `<b>${course.code}</b>  ›  contents`
     : rest === "index" || rest === "concepts" || rest === "cat" ? "<b>Index</b>"
-    : rest === "review" ? "<b>Review</b>"
-    : rest === "practice" || rest.startsWith("practice/") ? "<b>Mixed practice</b>"
+    : rest === "review" || rest.startsWith("review/") ||
+      rest === "practice" || rest.startsWith("practice/") ? "<b>Review</b>"
     : rest === "explore" || rest.startsWith("explore/") ? "<b>Explore</b>"
     : rest.startsWith("cat/")
       ? `<b>Index</b>  ›  ${((course.cats || {})[rest.slice(4)] || {}).name || rest.slice(4)}`
@@ -453,7 +452,7 @@ export default function App() {
      is the library's frame, and the library is what a cross-course page
      belongs to. It used to draw a full-bleed frame of its own with a Close
      button; see components/Review.jsx. */
-  if (inReview) view = <Review />;
+  if (inReview) view = <Review mixed={rest === "mixed"} />;
   else if (!course) view = cid
     ? <Library courses={INDEX} order={ORDER} loading={!loadError} error={loadError}
                onChange={() => forceRender(n => n + 1)} />
@@ -464,9 +463,14 @@ export default function App() {
      still says, and a dead route is a worse answer than the page they meant. */
   else if (rest === "index" || rest === "concepts" || rest === "cat")
     view = <IndexPage ctx={ctx} />;
-  else if (rest === "practice") view = <Practice ctx={ctx} />;
-  else if (rest.startsWith("practice/"))
-    view = <Practice ctx={ctx} cat={rest.slice(9)} />;
+  /* The old practice routes still open the mixed option for existing links. */
+  else if (rest === "review" || rest === "review/mixed" ||
+           rest.startsWith("review/mixed/") || rest === "practice" ||
+           rest.startsWith("practice/"))
+    view = <Review only={cid} ctx={ctx}
+                   mixed={rest !== "review"}
+                   cat={rest.startsWith("review/mixed/") ? rest.slice(13)
+                      : rest.startsWith("practice/") ? rest.slice(9) : null} />;
   else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} />;
   else if (rest === "explore") view = <Explore ctx={ctx} seed={null} />;
   else if (rest === "explore/saved")
@@ -475,7 +479,6 @@ export default function App() {
     view = <Explore ctx={ctx} seed={{ tag: decodeURIComponent(rest.slice(12)) }} />;
   else if (rest.startsWith("explore/cat/"))
     view = <Explore ctx={ctx} seed={{ cat: decodeURIComponent(rest.slice(12)) }} />;
-  else if (rest === "review") view = <Review only={cid} />;
   else if (rest === "calibration") view = <Calibration ctx={ctx} onReset={onReset} />;
   else if (rest === "map" || rest.startsWith("map/"))
     view = <DepMap ctx={ctx} focus={rest.slice(4)}
@@ -539,7 +542,10 @@ export default function App() {
                   onMenu={() => setMenuOpen(v => !v)}
                   due={due} onReview={() => (location.hash = "#/review")} />
           <div class="wrap" id="content" ref={contentRef} onClick={onContentClick}>
-            <div class="viewport" key={hash}>{view}</div>
+            <div class="viewport" key={inReview || (course && (
+              rest === "review" || rest.startsWith("review/mixed") ||
+              rest === "practice" || rest.startsWith("practice/")))
+              ? `${cid}:review` : hash}>{view}</div>
           </div>
           {/* Outside `.wrap`, which carries the content zoom: the bar is chrome
               and magnifying the material should not magnify its controls. */}

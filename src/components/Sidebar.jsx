@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
-import { IconStart, IconIndex, IconPractice, IconMap, IconTuck, IconExplore,
+import { IconStart, IconIndex, IconMap, IconTuck, IconExplore,
          IconReview } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
 import LaneSelect from "./LaneSelect.jsx";
@@ -68,17 +68,11 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
   const top = [
     ["", "Overview", IconStart, !rest],
     ["index", "Index", IconIndex, ixHere],
-    ["practice", "Mixed practice", IconPractice, rest === "practice" || rest.startsWith("practice/")],
-    /* The queue was a chip in the toolbar. It is a place you go, which is what
-       every other row here is, and it sits beside mixed practice because the
-       two are the same act at two schedules. It carries a count, so the count
-       goes where a count goes in a table of contents: the far edge.
-
-       Scoped to this course, and so is the count. A rail belongs to one course
-       and a row in it that covered every other course was confusing; the
-       cross-course queue is on the dashboard. */
-    ...(due != null ? [["review", "Review", IconReview,
-                        rest === "review", due]] : []),
+    /* One destination for scheduled questions and mixed practice. The count
+       belongs only to scheduled questions from this course. */
+    ["review", "Review", IconReview,
+      rest === "review" || rest.startsWith("review/") ||
+      rest === "practice" || rest.startsWith("practice/"), due > 0 ? due : null],
     ["map", "Dependency map", IconMap, rest === "map" || rest.startsWith("map/")],
     ["explore", "Explore", IconExplore, rest === "explore" || rest.startsWith("explore/")]
   ];
@@ -101,12 +95,12 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
 
       <div class="navtop">
         {top.map(([route, label, Ico, cur, n]) => (
-          <a key={label} href={H(route)} class={(cur ? "cur" : "") + (n != null ? " rv-row" : "")}
-             id={n != null ? "rv-open" : undefined}
-             title={n != null ? "Review what is due  (r)" : undefined}
+          <a key={label} href={H(route)} class={(cur ? "cur" : "") + (route === "review" ? " rv-row" : "")}
+             id={route === "review" ? "rv-open" : undefined}
+             title={route === "review" ? "Review this course  (r)" : undefined}
              onClick={onNavigate}>
             <span class="k"><Ico /></span>{label}
-            {n != null && <b class="rv-n">{n}</b>}
+            {n > 0 && <b class="rv-n">{n}</b>}
           </a>
         ))}
       </div>

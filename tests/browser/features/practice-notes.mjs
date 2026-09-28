@@ -1,7 +1,13 @@
 export async function testPracticeAndNotes(ctx, state) {
   const { page, ck, go, shot } = ctx;
   const { cid, P, nSections, secIds, last } = state;
-  await go(`#/${cid}/practice`);
+  await go(`#/${cid}/review/mixed`);
+  ck(P("Review has one sidebar destination for both question modes"),
+     await page.locator(".navtop a", { hasText: "Review" }).count() === 1 &&
+     await page.locator(".navtop a", { hasText: "Mixed practice" }).count() === 0);
+  ck(P("Mixed practice is an option inside Review"),
+     await page.locator(".review-head h1").innerText() === "Review" &&
+     await page.locator('.review-options [aria-current="page"]').innerText() === "Mixed practice");
 
   /* The page opens on its action, not on its settings.
    *
@@ -29,8 +35,17 @@ export async function testPracticeAndNotes(ctx, state) {
   }
 
   await page.locator("#p-start").click(); await page.waitForTimeout(400);
+  ck(P("the active question replaces the setup controls"),
+     await page.locator("#p-start, .pcfg").count() === 0);
   ck(P("practice serves one unified question card"), await page.locator("#p-run .q").count() === 1);
   ck(P("practice reports position in its run"), /Question 1 of/.test(await page.locator("#p-run .pmeta").innerText()));
+  const firstQuestion = await page.locator("#p-run .q").innerText();
+  await page.locator('.review-options a', { hasText: 'Due now' }).click();
+  await page.locator('.review-options [aria-current="page"]').getByText('Due now').waitFor();
+  await page.locator('.review-options a', { hasText: 'Mixed practice' }).click();
+  await page.locator('#p-run:visible').waitFor();
+  ck(P("switching review options keeps the mixed practice question"),
+     await page.locator("#p-run .q").innerText() === firstQuestion);
   await shot(cid + "-practice");
 
   /* T6-adjacent: the library is where courses are installed and removed, so a
@@ -40,7 +55,7 @@ export async function testPracticeAndNotes(ctx, state) {
   ck(P("home reaches the library"),
      await page.evaluate(() => location.hash === "#/" || location.hash === ""));
   await page.setViewportSize({ width: 390, height: 800 });
-  await go(`#/${cid}/practice`);
+  await go(`#/${cid}/review/mixed`);
   /* Tappability is swept for every control at this width above; what matters
      here is that the crumb truncating does not take the way home with it. */
   /* The crumb clips, and it clips from the right, so the trail's deep end is

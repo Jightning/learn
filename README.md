@@ -14,8 +14,7 @@ A course is the specific thing you want to learn/study (like a class, or certain
 2. Click `Add Course` to browse the prebuilt library (which starts with DEMO), or import a course folder, .zip, or .course.json file from your device.
 3. Click on the course to enter. There'll be a sidebar with all the course sections, and the different features:
     - **Index** provides and overview of the course concepts and categories.
-    - **Mixed Practice** is for practice questions.
-    - **Review** pulls questions from concepts you've attempted, including practice variants.
+    - **Review** opens questions due from concepts you've attempted. Choose *Mixed practice* there to practise a range of subsections, including questions that are not due.
     - **Dependency Map** demonstrates how sections connect to each other.
     - **Explore**
         - The Discover section allow you to quickly find needed information.

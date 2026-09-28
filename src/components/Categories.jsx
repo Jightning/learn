@@ -105,7 +105,7 @@ export function CatDetail({ ctx, k }) {
         </span>
         <span class="catcount">{v.count} {v.count === 1 ? "item" : "items"}</span>
         {v.drills.length > 0 && (
-          <a class="dbtn ghost catpractice" href={`#/${cid}/practice/${k}`}>
+          <a class="dbtn ghost catpractice" href={`#/${cid}/review/mixed/${k}`}>
             Practise this category{due ? ` (${due} due)` : ""} →
           </a>
         )}

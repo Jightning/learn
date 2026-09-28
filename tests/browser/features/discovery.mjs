@@ -22,6 +22,15 @@ export async function testDiscovery(ctx, state) {
       /* A member carries the section it actually lives in, because a category
          is not a section and the reader has to be able to get back. */
       ck(P("a member says where it lives"), await page.locator(".cmem-at").count() > 0);
+      const categoryPractice = page.locator(".catpractice");
+      if (await categoryPractice.count()) {
+        const target = await categoryPractice.getAttribute("href");
+        ck(P("category practice opens inside Review"),
+           target.includes(`/review/mixed/`));
+        await go(target);
+        ck(P("the category is named in Mixed practice"),
+           await page.locator(".review-practice .practice-intro").count() === 1);
+      }
     }
   }
 

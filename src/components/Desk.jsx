@@ -117,7 +117,7 @@ export default function Desk({ ctx }) {
       {/* Everything that is not the reading path. Quiet, and last, because a
           reader who wants the map goes looking for the map. */}
       <div class="tools">
-        <a href={H("practice")}>Mixed practice</a>
+        <a href={H("review")}>Review</a>
         <a href={H("index")}>Index</a>
         <a href={H("map")}>Dependency map</a>
         <a href={H("calibration")}>

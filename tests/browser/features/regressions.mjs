@@ -222,7 +222,7 @@ if (ids.includes("ma26600")) {
   }));
   ck("attempted concepts enter the Review schedule",
     rows.some(row => row.concept && scheduled[row.course]?.[row.concept]?.reps > 0));
-  ck("Review shows a card or the next due state", await page.locator(".review .q, .review .review-bar").count() > 0);
+  ck("Review shows a card or the next due state", await page.locator(".review .q, .review .review-done").count() > 0);
 }
 
 /* A row of flow steps gives each note a measure rather than a share of the
@@ -287,6 +287,8 @@ if (ids.includes("ma26600")) {
     ck("it names which queue it is",
        /all courses/i.test(await page.locator(".review-scope").innerText()),
        await page.locator(".review-scope").innerText());
+    ck("cross-course Review offers mixed practice",
+       await page.locator('.review-options a', { hasText: 'Mixed practice' }).count() === 1);
     ck("review states its progress in words", await page.locator(".review-n, .review h1").count() >= 1);
     await shot("review");
     await page.setViewportSize({ width: 390, height: 780 });
@@ -295,6 +297,10 @@ if (ids.includes("ma26600")) {
       document.documentElement.scrollWidth - document.documentElement.clientWidth);
     ck("review does not scroll sideways on a phone", overflow <= 1, overflow + "px");
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.locator('.review-options a', { hasText: 'Mixed practice' }).click();
+    await page.locator('.review-pick:visible').waitFor();
+    ck("cross-course mixed practice lets the reader choose a course",
+       await page.locator('.review-courses a').count() === ids.length);
   }
 
   /* Somewhere in the sweep a course does have a drill bank, and its rail must
@@ -313,6 +319,19 @@ if (ids.includes("ma26600")) {
      await page.locator(".review-scope").innerText());
   ck("the rail marks the row you are standing on",
      await page.locator(".navtop a.rv-row.cur").count() === 1);
+  ck("due questions open by default in course Review",
+     await page.locator('.review-options [aria-current="page"]').innerText() === "Due now" &&
+     await page.locator(".review-practice").isHidden());
+  await page.locator('.review-options a', { hasText: 'Mixed practice' }).click();
+  await page.locator('#p-start:visible').waitFor();
+  ck("Mixed practice opens within the same Review destination",
+     await page.locator('#p-start').isVisible() &&
+     await page.locator('.navtop a.rv-row.cur').count() === 1 &&
+     /review\/mixed$/.test(await page.evaluate(() => location.hash)));
+  await go(`#/${ids[0]}/practice`);
+  ck("old practice bookmarks open the mixed option in Review",
+     await page.locator('#p-start').isVisible() &&
+     await page.locator('.review-options [aria-current="page"]').innerText() === "Mixed practice");
 }
 
 /* Reading a page aloud.

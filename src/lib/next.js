@@ -192,7 +192,7 @@ export function nextUp({ C, cid, idx, state, drills, place = null, now = Date.no
        and it is a good one, so it is not an empty page — it is the only branch
        where practice is the right recommendation rather than a distraction. */
     out.push({
-      kind: "practice", href: H("practice"), count: null,
+      kind: "practice", href: H("review/mixed"), count: null,
       title: "Nothing is due, practise anyway",
       why: "You are ahead of the schedule. Mixed practice is what keeps you there."
     });

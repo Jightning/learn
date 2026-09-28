@@ -4,7 +4,7 @@ import { get as retentionGet } from "../lib/retention.js";
 import QuestionCard from "./QuestionCard.jsx";
 import { strip } from "../lib/util.js";
 
-export default function Practice({ ctx, cat }) {
+export default function Practice({ ctx, cat, embedded = false }) {
   const { cid, idx, state } = ctx;
   const subs = Object.entries(idx.SUBS);
   const [from, setFrom] = useState(subs[0]?.[0] || "");
@@ -32,25 +32,30 @@ export default function Practice({ ctx, cat }) {
     });
   };
 
-  return <div class="chub">
-    <h1>Mixed Practice</h1>
-    <div class="pgo"><button class="dbtn primary" id="p-start" onClick={start}
-      disabled={!pool.length}>Start {Math.min(Number(count), pool.length)} questions →</button></div>
-    <details class="pcfg">
-      <summary><i class="caret" aria-hidden="true" />Choose subsections and set length</summary>
-      <div class="pcfg-row">
-        <label>From <select id="p-from" value={from} onChange={e => setFrom(e.currentTarget.value)}>
-          {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {strip(x.sub.title)}</option>)}
-        </select></label>
-        <label>Through <select id="p-to" value={to} onChange={e => setTo(e.currentTarget.value)}>
-          {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {strip(x.sub.title)}</option>)}
-        </select></label>
-        <label>Questions <select id="p-count" value={count} onChange={e => setCount(e.currentTarget.value)}>
-          {[5, 10, 20, 40].map(n => <option value={n} key={n}>{n}</option>)}
-        </select></label>
-        <span class="pinfo">{pool.length} available</span>
-      </div>
-    </details>
+  return <div class={embedded ? "review-practice" : "chub"}>
+    {!embedded && <h1>Mixed Practice</h1>}
+    {!run && <>
+      <p class="practice-intro">{cat
+        ? `Practice ${idx.CAT.cats[cat]?.name || cat} across the selected subsections.`
+        : "Practice questions from this course, even when nothing is due."}</p>
+      <div class="pgo"><button class="dbtn primary" id="p-start" onClick={start}
+        disabled={!pool.length}>Start {Math.min(Number(count), pool.length)} questions →</button></div>
+      <details class="pcfg">
+        <summary><i class="caret" aria-hidden="true" />Choose subsections and set length</summary>
+        <div class="pcfg-row">
+          <label>From <select id="p-from" value={from} onChange={e => setFrom(e.currentTarget.value)}>
+            {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {strip(x.sub.title)}</option>)}
+          </select></label>
+          <label>Through <select id="p-to" value={to} onChange={e => setTo(e.currentTarget.value)}>
+            {subs.map(([id, x]) => <option value={id} key={id}>{x.num} {strip(x.sub.title)}</option>)}
+          </select></label>
+          <label>Questions <select id="p-count" value={count} onChange={e => setCount(e.currentTarget.value)}>
+            {[5, 10, 20, 40].map(n => <option value={n} key={n}>{n}</option>)}
+          </select></label>
+          <span class="pinfo">{pool.length} available</span>
+        </div>
+      </details>
+    </>}
     {run && <div id="p-run">
       {run.at < run.items.length ? <>
         <div class="pbar"><i style={`width:${Math.round(run.at / run.items.length * 100)}%`} /></div>

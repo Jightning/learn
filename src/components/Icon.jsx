@@ -9,10 +9,7 @@ export function IconPractice() { return <svg {...P}><path d="M13 8a5 5 0 1 1-1.6
 export function IconMap()      { return <svg {...P}><circle cx="4" cy="4" r="1.8"/><circle cx="12" cy="4" r="1.8"/><circle cx="8" cy="12" r="1.8"/><path d="M5.4 5.2 7 10.4M10.6 5.2 9 10.4M5.8 4h4.4"/></svg>; }
 export function IconHome()     { return <svg {...P}><path d="M2.5 7 8 2.5 13.5 7"/><path d="M4 7.5V13h8V7.5"/></svg>; }
 export function IconSearch()   { return <svg {...P}><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2 14 14"/></svg>; }
-/* Review: a clock, not another circular arrow. Mixed practice already wears
-   the arrow, and the two differ in exactly one thing — the queue is scheduled
-   and practice is not — so the icon that separates them has to be the one that
-   says "when". */
+/* Review leads with its scheduled queue; mixed practice lives inside it. */
 export function IconReview()   { return <svg {...P}><circle cx="8" cy="8" r="5.8"/><path d="M8 4.6V8l2.4 1.6"/></svg>; }
 /* The index: a page of entries with the thumb tab a back-of-book index is cut
    with. Replaces the separate concept and category marks, which were a diamond
