@@ -263,6 +263,25 @@ try {
   ck("the repaired subsection can complete again", complete("done", "complete", subs.at(-1).id).status === 0);
   ck("the repaired course can finish again", complete("finish", "complete").status === 0 &&
      existsSync(join(completeState, "finish.done")));
+  const diagnosticTools = join(tmp, "diagnostic-tools");
+  mkdirSync(diagnosticTools, { recursive: true });
+  const longError = "stderr-only diagnostic ".repeat(1800);
+  writeFileSync(join(diagnosticTools, "gen-materials.mjs"),
+    `process.stderr.write(${JSON.stringify(longError)}); process.exit(7);\n`);
+  const failedFinish = spawnSync("node", [join(ROOT, "tools/author.mjs"), "finish", "complete"], {
+    encoding: "utf8", env: { ...process.env, AUTHOR_WORKSPACE: completeWs, AUTHOR_READER: reader,
+      AUTHOR_TOOL_DIR: diagnosticTools }
+  });
+  const reportMatch = failedFinish.stdout.match(/Full diagnostics: (.+)$/m);
+  const reportPath = reportMatch?.[1];
+  const reportText = reportPath && readFileSync(reportPath, "utf8");
+  ck("finish reports nonzero subprocess status and diagnostic path",
+    failedFinish.status === 1 && /gen-materials: failed \(status 7\)/.test(failedFinish.stdout) && !!reportText,
+    failedFinish.stdout);
+  ck("the diagnostic report keeps stderr-only output beyond the display cap",
+    reportText?.includes("status: 7") && reportText.includes("### stdout\n```\n\n```") &&
+    reportText.includes(longError) && reportText.length > 30000,
+    reportText?.slice(-400));
   const metaFile = join(completeDir, "course.yaml");
   const validMeta = readFileSync(metaFile, "utf8");
   writeFileSync(metaFile, validMeta.replace(/^    - \{re:.*$/m, "    - {re: '[', cls: tok-n}"));

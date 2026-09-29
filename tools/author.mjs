@@ -114,8 +114,29 @@ const rootsFile = join(stateDir, "roots.txt");
 const today = new Date().toISOString().slice(0, 10);
 /* Beside this file in a package, under tools/ in the repository. */
 const script = name => {
+  if (process.env.AUTHOR_TOOL_DIR) return join(process.env.AUTHOR_TOOL_DIR, `${name}.mjs`);
   const local = join(ENGINE, "tools", `${name}.mjs`);
   return existsSync(local) ? local : join(ENGINE, "scripts", `${name}.mjs`);
+};
+
+const diagnostics = [];
+const runDiagnostic = (name, ...args) => {
+  const result = spawnSync(process.execPath, [script(name), ...args], { encoding: "utf8" });
+  diagnostics.push({ name, args, status: result.status, signal: result.signal,
+    error: result.error?.message, stdout: result.stdout || "", stderr: result.stderr || "" });
+  return result;
+};
+const saveDiagnostics = () => {
+  mkdirSync(stateDir, { recursive: true });
+  const path = join(stateDir, `finish-diagnostics-${Date.now()}.md`);
+  writeFileSync(path, diagnostics.map(d => [
+    `## ${d.name} ${d.args.join(" ")}`, `status: ${d.status ?? "unavailable"}`,
+    `signal: ${d.signal || "none"}`, `error: ${d.error || "none"}`,
+    "### stdout", "```", d.stdout, "```", "### stderr", "```", d.stderr, "```", ""
+  ].join("\n")).join("\n"));
+  const summary = diagnostics.map(d => `${d.name}: ${d.status === 0 ? "ok" : `failed (status ${d.status ?? "unavailable"})`}`).join(", ");
+  say(`Subprocesses: ${summary}. Full diagnostics: ${path}`);
+  return path;
 };
 
 /* The roots `begin` recorded, checked again rather than trusted. */
@@ -386,7 +407,7 @@ const commands = {
 
   /* The last call: the three course-wide checks, cut to what needs doing. */
   finish() {
-    const run = (name, ...a) => spawnSync(process.execPath, [script(name), ...a], { encoding: "utf8" });
+    const run = runDiagnostic;
     const refuse = message => { rmSync(marker("finish"), { force: true }); fail(`not finished: ${message}`); };
     const p = progress();
     const required = [
@@ -400,13 +421,13 @@ const commands = {
     if (required.length) refuse(required.join("\n"));
     const g = run("gen-materials", id);
     say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
-    if (g.status !== 0) refuse("materials generation failed");
+    if (g.status !== 0) { saveDiagnostics(); refuse("materials generation failed"); }
     const v = run("validate", id);
     const errs = (v.stdout || "").split("\n").filter(l => /✗/.test(l));
     const advice = (v.stdout || "").split("\n").filter(l => /^\s+! /.test(l));
     say(errs.length ? `validate: ${errs.length} errors\n${errs.slice(0, 30).join("\n")}` :
       v.status === 0 ? "validate: ok" : `validate: FAILED\n${(v.stderr || v.stdout || "unknown failure").trim()}`);
-    if (v.status !== 0) refuse("validation failed; fix the reported errors and run finish again");
+    if (v.status !== 0) { saveDiagnostics(); refuse("validation failed; fix the reported errors and run finish again"); }
     if (advice.length) warn(`validate: ${advice.length} quality warnings\n${advice.slice(0, 12).join("\n")}` +
       (advice.length > 12 ? `\n${advice.length - 12} more warnings in validate output` : ""));
     const c = run("coverage", id);
@@ -415,6 +436,7 @@ const commands = {
     const summary = lines.filter(l => /topics below/.test(l)).join(" ") || "no report";
     say(`coverage: ${summary}` + (flagged.length ? `\n${flagged.slice(0, 60).join("\n")}` : ""));
     if (c.status !== 0) warn(`coverage could not be scored: ${(c.stderr || c.stdout || "unknown failure").trim()}`);
+    saveDiagnostics();
     mkdirSync(stateDir, { recursive: true });
     writeFileSync(marker("finish"), today);
     note(courseDir, `\`author finish ${id}\` → materials ${g.status === 0 ? "ok" : "FAILED"}, ` +
