@@ -100,7 +100,13 @@
 .lempty{color:var(--ink-3);font-size:.9rem}
 
 /* Installing your own courses — the body of the Add dialog. */
-.cio h3,.cio-catalog h3{font-size:1rem;color:var(--ink);margin:0 0 .4rem}
+.cio h3{font-size:1rem;color:var(--ink);margin:0 0 .4rem}
+.cio-guide{font-size:.84rem;line-height:1.4;margin:.25rem 0 0!important}
+.cio-guide a,.make-course a{color:var(--hi-ink);text-decoration:underline;text-underline-offset:2px}
+.make-course{max-width:42rem;margin:var(--view-top) auto;padding:0 1rem;color:var(--ink-2);line-height:1.6}
+.make-course h1{font-family:var(--display);font-size:clamp(2rem,4.4vw,2.9rem);color:var(--ink);margin:0 0 1rem}
+.make-course p{margin:0 0 1rem}
+.make-course-back{font:var(--fs-meta) var(--mono)}
 .cio-foot{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-top:var(--sp-2)}
 .cio-foot label{cursor:pointer}
 .cio-msg{font:400 14px/1.5 var(--sans);margin:var(--sp-2) 0 0;color:var(--ink-3)}
@@ -109,6 +115,14 @@
 .cio-msg ul{margin:.35rem 0 0;padding-left:1.4rem}
 .cio-msg li+li{margin-top:.25rem}
 .cio-catalog{margin-top:var(--sp-3);padding-top:var(--sp-2);border-top:1px solid var(--rule)}
+.cio-catalog summary{display:flex;align-items:center;gap:.75rem;list-style:none;
+  font-size:1rem;font-weight:600;color:var(--ink);cursor:pointer}
+.cio-catalog summary::-webkit-details-marker{display:none}
+.cio-arrows{display:flex;gap:.14em;margin-left:auto;color:var(--ink-3);
+  font:400 .86rem/1 var(--mono)}
+.cio-arrows span{display:inline-block;transition:transform 180ms ease}
+.cio-catalog[open] .cio-arrows span{transform:rotate(90deg)}
+.cio-catalog[open] summary{margin-bottom:var(--sp-2)}
 .cio-category{margin-top:var(--sp-2)}
 .cio-category h4{font:600 var(--fs-meta) var(--mono);letter-spacing:.06em;
   text-transform:uppercase;color:var(--ink-3);margin:0 0 .65rem}

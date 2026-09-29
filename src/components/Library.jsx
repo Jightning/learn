@@ -278,8 +278,10 @@ export default function Library({ courses, order, loading, error, onChange }) {
       {adding && (
         <Modal title="Add Course" onClose={() => setAdding(false)}>
           <CourseIO onChange={onChange} />
-          <section class="cio-catalog" aria-label="Course library">
-            <h3>Library</h3>
+          <details class="cio-catalog" aria-label="Course library">
+            <summary>Library<span class="cio-arrows" aria-hidden="true">
+              <span>→</span><span>→</span><span>→</span>
+            </span></summary>
             {catalogGroups().map((group, i) => (
               <section class="cio-category" key={group.name}
                        aria-labelledby={`cio-category-${i}`}>
@@ -304,7 +306,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
                 })}
               </section>
             ))}
-          </section>
+          </details>
         </Modal>
       )}
 

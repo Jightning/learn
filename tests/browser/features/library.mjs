@@ -77,8 +77,35 @@ if (single) {
     return body?.firstElementChild?.classList.contains("cio") &&
       body?.lastElementChild?.classList.contains("cio-catalog");
   }));
+  ck("course library starts closed",
+     await page.locator(".modal details.cio-catalog").evaluate(el => !el.open));
+  ck("closed library shows three right-facing arrows at the end",
+     await page.locator(".modal .cio-arrows").evaluate(el =>
+       el.children.length === 3 && [...el.children].every(a => a.textContent === "→") &&
+       getComputedStyle(el).display === "flex" &&
+       el.getBoundingClientRect().right >= el.closest("summary").getBoundingClientRect().right - 2));
   ck("the dialog holds the install controls",
      await page.locator(".modal .cio-foot .dbtn").count() >= 1);
+  const guide = page.locator(".modal .cio-guide");
+  ck("Add Course links to the Make a course guide",
+     await guide.locator('a[href="#/make-course"]').innerText() === "How to make a course");
+  await guide.locator('a[href="#/make-course"]').click();
+  await page.locator(".make-course h1").waitFor();
+  ck("Make a course guide loads from Add Course",
+     await page.locator(".make-course").innerText().then(t =>
+       t.includes("Bring that ZIP back here") && t.includes("only stay on your browser")));
+  await page.locator('.make-course a[href="#/"]').last().click();
+  await page.locator("#lib-add").waitFor();
+  ck("guide returns to the course shelf", await page.locator(".make-course").count() === 0);
+  await page.locator("#lib-add").click();
+  await page.locator(".modal .cio-guide").waitFor();
+  await page.locator(".modal details.cio-catalog > summary").click();
+  ck("course library opens on request",
+     await page.locator(".modal details.cio-catalog").evaluate(el => el.open));
+  await page.waitForTimeout(220);
+  ck("open library arrows turn downward",
+     await page.locator(".modal .cio-arrows span").evaluateAll(els =>
+       els.length === 3 && els.every(el => getComputedStyle(el).transform === "matrix(0, 1, -1, 0, 0, 0)")));
   /* Both files are valid JSON and valid YAML, but their course structures
      cannot be read safely. Every actionable error stays in the dialog. */
   await page.locator('.modal .cio input[accept*="zip"]').setInputFiles([
@@ -346,6 +373,9 @@ if (single) {
     await go();
     ck("hiding survives a reload", await page.locator(".lcard").count() === before - 1);
     await page.locator("#lib-add").click(); await page.waitForTimeout(250);
+    ck("library stays closed when Add Course is reopened",
+       await page.locator(".modal details.cio-catalog").evaluate(el => !el.open));
+    await page.locator(".modal details.cio-catalog > summary").click();
     ck("the add dialog offers it back",
        await page.locator('[data-restore="demo"]').count() === 1 &&
        await page.locator('[data-restore="demo"]').innerText() === "Add");

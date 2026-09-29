@@ -130,7 +130,9 @@ export default function CourseIO({ onChange }) {
   return (
     <div class="cio">
       <h3>Import a course</h3>
-      <p>Choose a course folder, .zip, or .course.json file from your device.</p>
+      <p>Choose a course folder, .zip, or .course.json file.</p>
+
+      <p class="cio-guide"><a href="#/make-course">How to make a course</a></p>
 
       <div class="cio-foot">
         {canPickFolder && (

@@ -39,12 +39,16 @@ test("the trend question keeps its scatterplot in subsection, Review, and Mixed 
     await page.locator(".pcfg > summary").click();
     await page.locator("#p-from").selectOption("s4-2");
     await page.locator("#p-to").selectOption("s4-2");
+    const available = parseInt(await page.locator(".pinfo").innerText(), 10);
+    assert.ok(available <= Number(await page.locator("#p-count").inputValue()),
+      "the run must include every question in the selected subsection");
     await page.locator("#p-start").click();
-    let mixed = page.locator("#p-run .q");
-    for (let i = 0; i < 4 && (await mixed.getAttribute("data-qid")) !== "s4-2#read-a-trend"; i++) {
-      await miss(mixed);
+    const mixed = page.locator("#p-run .q");
+    for (let i = 0; i < available * 2 &&
+      (await mixed.getAttribute("data-qid")) !== "s4-2#read-a-trend"; i++) {
+      await mixed.getByRole("button", { name: "Skip" }).click();
       await mixed.getByRole("button", { name: "Continue" }).click();
-      mixed = page.locator("#p-run .q");
+      assert.equal(await mixed.count(), 1, "the trend question must appear in this run");
     }
     assert.equal(await mixed.getAttribute("data-qid"), "s4-2#read-a-trend");
     assert.equal(await hasStimulus(mixed), 1);

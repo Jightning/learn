@@ -4,6 +4,17 @@ const INTENT_DISTANCE = 12;
 const OPEN_DISTANCE = 48;
 const HORIZONTAL_RATIO = 1.5;
 
+/* Decide ownership at pointerdown, before either gesture starts moving. A
+   scrollport owns the swipe even when it has not been tapped or focused. */
+export function ownsHorizontalSwipe(target) {
+  for (let el = target; el instanceof Element; el = el.parentElement) {
+    if (el.classList.contains("slides")) return true;
+    const overflow = getComputedStyle(el).overflowX;
+    if ((overflow === "auto" || overflow === "scroll") && el.scrollWidth > el.clientWidth + 1) return true;
+  }
+  return false;
+}
+
 export function swipeIntent(dx, dy) {
   if (Math.hypot(dx, dy) < INTENT_DISTANCE) return null;
   return dx > Math.abs(dy) ? "right" : "other";

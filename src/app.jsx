@@ -16,7 +16,7 @@ import { readZoom, applyZoom, zoomFromKey } from "./lib/zoom.js";
 import { getItem, setItem } from "./lib/store.js";
 import { land, resume, track, repin } from "./lib/place.js";
 import { warm as warmSearch } from "./lib/search.js";
-import { swipeIntent, opensSidebar } from "./lib/swipe.js";
+import { swipeIntent, opensSidebar, ownsHorizontalSwipe } from "./lib/swipe.js";
 
 import Sidebar from "./components/Sidebar.jsx";
 import { IconTuck } from "./components/Icon.jsx";
@@ -37,6 +37,7 @@ import Review from "./components/Review.jsx";
 import Speaker, { useSpeaker } from "./components/Speaker.jsx";
 import Calibration from "./components/Calibration.jsx";
 import CloudPanel from "./components/CloudPanel.jsx";
+import MakeCourse from "./components/MakeCourse.jsx";
 
 /* The width above which the sidebar is a column rather than a drawer. Mirrors
    the 64em breakpoint in 99-responsive.css. */
@@ -109,8 +110,8 @@ export default function App() {
     const down = e => {
       if (e.pointerType !== "touch") return;
       if (!e.isPrimary) { swipe = null; return; }
-      /* A slide or horizontally scrollable figure owns its own gesture. */
-      if (e.target.closest(".slides, .figure-scroll, .fx-grid, .fx-tm")) return;
+      /* Let the touched slide or horizontal scrollport handle the first swipe. */
+      if (ownsHorizontalSwipe(e.target)) { swipe = null; return; }
       swipe = { id: e.pointerId, x: e.clientX, y: e.clientY,
         width: sidebar.getBoundingClientRect().width, cancelled: false, dragging: false };
     };
@@ -448,12 +449,13 @@ export default function App() {
         : "";
 
   let view = null;
+  if (cid === "make-course" && !rest) view = <MakeCourse />;
   /* The cross-course queue, on the dashboard's own frame. `#/review` reserves
      the id, so `course` is null here and the shell is already `solo` — which
      is the library's frame, and the library is what a cross-course page
      belongs to. It used to draw a full-bleed frame of its own with a Close
      button; see components/Review.jsx. */
-  if (inReview) view = <Review mixed={rest === "mixed"} />;
+  else if (inReview) view = <Review mixed={rest === "mixed"} />;
   else if (!course) view = cid
     ? <Library courses={INDEX} order={ORDER} loading={!loadError} error={loadError}
                onChange={() => forceRender(n => n + 1)} />

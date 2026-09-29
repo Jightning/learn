@@ -307,6 +307,28 @@ export async function testCourseShell(ctx, cid) {
   await page.waitForTimeout(50);
   ck(P("a short right drag does not open the mobile sidebar"),
      await page.locator(".sidebar.open").count() === 0);
+  const scrollOwnsSwipe = await page.evaluate(() => {
+    const port = document.createElement("div");
+    port.style.cssText = "width:160px;overflow-x:auto";
+    port.innerHTML = '<span style="display:block;width:480px">Wide content</span>';
+    document.querySelector("main").append(port);
+    port.scrollLeft = 100;
+    const target = port.firstElementChild;
+    const fire = (type, x) => target.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, pointerId: 43, pointerType: "touch", isPrimary: true,
+      clientX: x, clientY: 180
+    }));
+    fire("pointerdown", 30);
+    fire("pointermove", 100);
+    const dragging = document.querySelector(".sidebar").classList.contains("dragging");
+    fire("pointerup", 100);
+    const focused = document.activeElement === port || document.activeElement === target;
+    port.remove();
+    return !dragging && !focused;
+  });
+  await page.waitForTimeout(50);
+  ck(P("an unfocused horizontal scroll area owns its first swipe"),
+     scrollOwnsSwipe && await page.locator(".sidebar.open").count() === 0);
   await swipe([[30, 180], [50, 184], [95, 280]]);
   await page.waitForTimeout(250);
   ck(P("vertical drift after horizontal intent keeps the sidebar swipe"),

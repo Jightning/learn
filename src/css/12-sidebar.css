@@ -88,13 +88,16 @@
   .tuck,.untuck{display:none}
 }
 
-/* In the open state, the main grid track begins after the 308px rail. Once
+/* In an open course, the main grid track begins after the 308px rail. Once
    there is room for the reading measure, offset its wrapper so the text stays
-   on the viewport centreline, matching the tucked state. */
+   on the viewport centreline. The library is solo and keeps normal centring. */
 @media (min-width:81em){
-  .shell:not(.tucked) .wrap{
+  .shell:not(.tucked):not(.solo) .wrap{
     margin-left:calc(50vw - var(--measure) / 2 - var(--wrap-pad) - var(--sidebar-width));
     margin-right:auto;
+  }
+  .shell:not(.tucked):not(.solo) .topbar{
+    padding-left:calc(50vw - var(--measure) / 2 - var(--sidebar-width) + var(--safe-l));
   }
 }
 
