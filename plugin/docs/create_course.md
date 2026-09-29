@@ -8,6 +8,7 @@ follow them; read the entry only if one seems wrong.
 ```sh
 npm run new -- <id> "Course Title"   # scaffold courses/<id>/
 npm run validate -- <id>             # structure and references for this course
+npm run validate:current -- <id>      # strict response:/practice schema for new work
 npm run audit -- <id>                # sourcing, verification, routing, practice
 npm run pack -- <id>                 # bundle for browser import and inspection
 ```
@@ -256,6 +257,12 @@ section synthesis item when the material composes. *Stop: each item has one
 `type`, a resolvable `concept:`, a typed `response:`, and a `why` where an
 explanation helps the learner.*
 
+Normal validation and runtime loading continue to accept older `q/a` quiz
+items and `drills/` banks. Use `npm run validate:current -- <id>` for a new
+course; the publish audit applies this strict schema automatically and prints
+one migration count per course. To inventory older courses without blocking,
+run `npm run validate -- --migration-report <id>`.
+
 **6 — Practice variants (optional).** Add `practice/<key>.yaml` only when a
 skill benefits from another surface, context, or difficulty. Do not make a
 variant for every quiz item. *Stop: each variant has a distinct question,
@@ -264,7 +271,7 @@ the same concept, a valid `response:`, and a `verified:` date after checking.*
 **7 — Depth and apply.** Now add `tier: depth` and `tier: apply`. Last,
 deliberately: written earlier, spine material gets absorbed into digressions.
 Every `key` whose derivation did not fit the spine gets it here (§6.3).
-*Stop: `npm run validate -- <id>` passes, then the imported course reads
+*Stop: `npm run validate:current -- <id>` passes, then the imported course reads
 correctly in Spine mode.*
 
 **8 — Verify.** Re-derive every worked answer and practice solution; re-reading is

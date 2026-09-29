@@ -63,7 +63,6 @@ quiz:
       model: Non-redundancy. §5.1 should link to §3.2, or the idea should be promoted to a concept because it is used in several places.
     why: |-
       <p>The second full explanation is a second copy that will drift. A link renders a margin card, feeds the prerequisite list, and draws a dependency edge. One action, several benefits, no duplication.</p>
-    why_prompt: What does the reader lose when the two copies eventually disagree?
     verified: 2026-09-02
 
   - type: Identify which rule applies
@@ -74,7 +73,6 @@ quiz:
       Completeness. The step is only omittable if the calibration says the reader already has it, and this one does not.
     why: |-
       <p>Completeness is measured against the written record, not the author's sense of the median student. If the reader on record needs the step, it is not obvious. It is missing.</p>
-    why_prompt: Against whom is "obvious" measured?
     verified: 2026-09-02
 
   - type: Spot the error
@@ -85,5 +83,4 @@ quiz:
       No. The practice bank is required to repeat applications, and that repetition is the retention loop. Non-redundancy forbids repeating the <em>explanation</em>, which the practice items do not do.
     why: |-
       <p>The tempting reading is that any repetition is waste. The rule is narrower: one copy of the words that teach the idea. Repeated practice on the idea is a different reader activity, and cutting it removes the only thing that makes the concept stick past the week.</p>
-    why_prompt: Which kind of repetition does Rule 2 actually prohibit?
     verified: 2026-09-02

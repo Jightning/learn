@@ -44,10 +44,17 @@ The changes can be validated with:
 
 ```sh
 npm run validate -- ma26600
+npm run validate:current -- ma26600       # require the current question schema
+npm run validate -- --migration-report ma26600  # count legacy questions to migrate
 npm run audit -- --profile draft ma26600    # report content debt while writing
 npm run coverage -- ma26600 --init-review   # create low-topic review checklist
 npm run audit -- --profile publish ma26600  # required before calling it publish-ready
 ```
+
+Normal validation and the reader continue to accept legacy `q/a` questions and
+`drills/` banks. `validate:current` applies the strict current schema, and the
+publish audit applies that same check while printing a per-course migration
+count.
 
 The publish audit requires zero unverified answers and a reviewed source
 disposition on every claim, plus a reviewed disposition for low-scoring source

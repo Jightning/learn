@@ -9,6 +9,8 @@ blocks:
 quiz:
   - type: recall
     q: Which quantities describe a resistor?
-    a: Voltage, current, and resistance.
+    response:
+      kind: self
+      model: Voltage, current, and resistance.
     why: They describe the circuit relation.
     verified: true

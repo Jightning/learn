@@ -73,7 +73,6 @@ quiz:
       Nothing is due yet. Answered concepts enter the schedule automatically, but the first due date may still be later; reading alone does not create an answer history.
     why: |-
       <p>The schedule starts from answered items, so it has evidence about what the learner encountered. It does not fill with every concept merely because a course was opened.</p>
-    why_prompt: What puts a concept into Review?
     verified: 2026-09-06
 
   - type: Choose the right surface
@@ -92,5 +91,4 @@ quiz:
       correct: [1]
     why: |-
       <p>The two are not interchangeable: review protects the long interval that makes memory durable, so it will not hand you twenty items because you asked. Practice exists for exactly the case where you want volume now.</p>
-    why_prompt: Why will review not simply give you more items when you ask for them?
     verified: 2026-09-06

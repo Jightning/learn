@@ -31347,6 +31347,46 @@ function coverageReport(id, below = .25) {
 	};
 }
 //#endregion
+//#region tools/lib/current-schema.mjs
+const LEGACY_FIELDS = [
+	"a",
+	"answer",
+	"stem",
+	"steps"
+];
+const hasLegacyShape = (item) => !item?.response || LEGACY_FIELDS.some((key) => Object.hasOwn(item || {}, key));
+function legacyQuestionCounts(C) {
+	return {
+		quiz: (C.sections || []).reduce((n, s) => n + (s.subs || []).reduce((m, u) => m + (u.quiz || []).filter(hasLegacyShape).length, 0), 0),
+		practice: Object.values(C.practice || {}).reduce((n, bank) => n + (bank.items || []).filter(hasLegacyShape).length, 0),
+		drills: Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0)
+	};
+}
+function migrationReportLine(id, C) {
+	const { quiz, practice, drills } = legacyQuestionCounts(C);
+	return `migration ${id.padEnd(10)} quiz ${quiz} · practice ${practice} · drill items ${drills}`;
+}
+function strictCurrentIssues(C) {
+	const issues = [];
+	for (const s of C.sections || []) for (const u of s.subs || []) for (const item of u.quiz || []) {
+		const legacy = LEGACY_FIELDS.filter((key) => Object.hasOwn(item || {}, key));
+		if (!item.response || legacy.length) {
+			const detail = [!item.response && "requires response:", legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`].filter(Boolean).join("; ");
+			issues.push(`${u.id}: question "${item.type || "(untitled)"}": strict current schema ${detail}`);
+		}
+	}
+	for (const [key, bank] of Object.entries(C.practice || {})) for (const [i, item] of (bank.items || []).entries()) {
+		const legacy = LEGACY_FIELDS.filter((field) => Object.hasOwn(item || {}, field));
+		if (!item.response || legacy.length) {
+			const detail = [!item.response && "requires response:", legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`].filter(Boolean).join("; ");
+			issues.push(`practice/${key} item ${i + 1}: strict current schema ${detail}`);
+		}
+	}
+	const drillCount = Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0);
+	if (drillCount) issues.push(`drills/: strict current schema requires variants in practice/<concept>.yaml; migrate ${drillCount} legacy drill item(s)`);
+	return issues;
+}
+//#endregion
 //#region tools/audit-content.mjs
 const args = process.argv.slice(2);
 const at = args.indexOf("--profile");
@@ -31454,6 +31494,7 @@ function audit(id) {
 		rows,
 		over: rows.filter((r) => r.frac > r.max),
 		sourceIssues,
+		schemaIssues: profile === "publish" ? strictCurrentIssues(C) : [],
 		details: detailsWithoutRecall(C),
 		points: pointsAtNothing(C)
 	};
@@ -31465,18 +31506,20 @@ if (wanted.some((id) => !ids.includes(id))) {
 }
 let failed = 0;
 for (const id of ids) {
-	const { rows, over, sourceIssues, details, points } = audit(id);
+	const { C, rows, over, sourceIssues, schemaIssues, details, points } = audit(id);
 	let coverage = null, coverageError = null;
 	if (profile === "publish") try {
 		coverage = coverageReport(id);
 	} catch (e) {
 		coverageError = e.message;
 	}
-	const blocked = profile === "publish" && (over.length || sourceIssues.length || coverage?.unresolved.length || coverageError);
+	const blocked = profile === "publish" && (over.length || sourceIssues.length || schemaIssues.length || coverage?.unresolved.length || coverageError);
 	if (blocked) failed++;
 	console.log(`${blocked ? "FAIL publish" : profile === "draft" ? "draft" : "ok   publish"} ${id.padEnd(10)} ` + rows.map((r) => `${pct(r.frac)} of ${r.of} ${r.k}`).join(", "));
+	if (profile === "publish") console.log(migrationReportLine(id, C));
 	for (const r of over) console.log(`       ${profile === "draft" ? "!" : "✗"} ${pct(r.frac)} ${r.label}, against ${profile === "draft" ? "a draft target" : "the publish ceiling"} of ${pct(r.max)}`);
 	for (const issue of sourceIssues) console.log(`       ✗ ${issue}`);
+	for (const issue of schemaIssues) console.log(`       ✗ ${issue}`);
 	if (coverageError) console.log(`       ✗ coverage: ${coverageError}`);
 	if (coverage && !coverage.files.length) console.log("       ! coverage: no readable source documents; topic comparison unavailable");
 	else if (coverage && !coverage.unresolved.length) console.log(`       coverage: ${coverage.rows.filter((r) => r.low).length} low-score topic leads reviewed; scores are not proof`);

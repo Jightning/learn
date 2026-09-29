@@ -79,7 +79,6 @@ quiz:
       correct: 1
     why: |-
       <p>A skipped or incorrect response is still recorded. Review uses missed and challenging outcomes to prioritize later retrieval.</p>
-    why_prompt: Which of the two readers already knows they have a problem?
     verified: 2026-09-06
 
   - type: Explain a design rule
@@ -90,7 +89,6 @@ quiz:
       Because producing the idea from memory is what builds it; reading a correct answer produces recognition, which feels like knowing and is not.
     why: |-
       <p>A self-check reveals its model answer and offers Got it or Needs work, so the learner can record an honest outcome without a fake confidence step.</p>
-    why_prompt: What is the difference between recognising an answer and producing one?
     verified: 2026-09-06
 
   - type: Spot the error
@@ -101,5 +99,4 @@ quiz:
       It records a challenging outcome, so the concept receives more weight in later Review.
     why: |-
         <p>Needs work is an honest self-check result. It helps the queue focus on material that still needs retrieval.</p>
-    why_prompt: Which Review items receive more weight?
     verified: 2026-09-06

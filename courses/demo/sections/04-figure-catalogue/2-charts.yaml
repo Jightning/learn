@@ -75,16 +75,25 @@ quiz:
       plot. The x-axis (review count) is continuous and you want to overlay a function on the measurements; bar is for comparing values across unrelated labelled categories.
     why: |-
       <p>bar cannot draw a function, and it implies the categories have no order. plot's continuous axis is exactly what a review-count sweep needs.</p>
-    why_prompt: What can plot do with the model curve that bar cannot?
     verified: 2026-09-02
 
   - type: Read a trend
     concept: retrieval-practice
+    stimulus:
+      t: figure
+      kind: scatter
+      cap: "two series with least-squares trend lines"
+      spec:
+        xlabel: "items practised"
+        ylabel: "retained at 6 weeks"
+        trend: true
+        series:
+          - {label: "spaced", points: [[3, 2], [6, 5], [9, 7], [12, 10], [15, 12]]}
+          - {label: "massed", points: [[3, 1], [6, 2], [9, 3], [12, 4], [15, 4]]}
     q: |-
       In the scatter figure, the "spaced" series' trend line is steeper than "massed". What does that slope difference mean?
     a: |-
       Each additional practised item is retained at a higher rate under spacing than under massing. Spacing converts practice into retention more efficiently.
     why: |-
       <p>The x-axis is items practised and the y-axis is items retained, so slope is retained-per-practised. A steeper line is a better conversion rate, which is the spacing effect.</p>
-    why_prompt: What are the units of the trend line's slope here?
     verified: 2026-09-02

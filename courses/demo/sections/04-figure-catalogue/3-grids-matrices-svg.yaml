@@ -76,7 +76,6 @@ quiz:
       grid. A plain table has no concept of highlighted cell groups or a per-cell binary index, so it would need manual markup in every cell, which is what grid exists to avoid.
     why: |-
       <p>grid takes the groups and the index as data and renders the decoration itself. The table block is for tabular values without that structure.</p>
-    why_prompt: What does grid take as data that a table would force you to hand-write per cell?
     verified: 2026-09-02
 
   - type: Decide whether to use svg
@@ -87,5 +86,4 @@ quiz:
       No. That is exactly the matrix kind. svg is only for shapes none of the other figure kinds cover.
     why: |-
       <p>The escape hatch trades away theme-awareness, validation, and future maintainability. Using it for something a built-in already does is a strict loss.</p>
-    why_prompt: What three things do you give up by dropping to raw svg?
     verified: 2026-09-02

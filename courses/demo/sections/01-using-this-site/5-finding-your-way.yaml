@@ -82,7 +82,6 @@ quiz:
       Read the margin card that is already beside that line. For the full entry, follow the link and use the return pill to come back.
     why: |-
       <p>The reference is placed next to the mention rather than collected at the end because a definition you have to go looking for is one you read the paragraph without.</p>
-    why_prompt: Why is the card beside the line rather than at the end of the section?
     verified: 2026-09-06
 
   - type: Tell two indexes apart
@@ -93,7 +92,6 @@ quiz:
       Kinds. A category groups things by what kind they are regardless of where they sit, so it does not need you to remember the position. Ideas is an index of <em>mentions</em>: it answers "where else is this idea talked about", which still starts from knowing which idea you want.
     why: |-
       <p>"Search" is the tempting answer and it works only if you can recall a word that was actually in the table. The point of a category is that it is reachable when the thing you have retained is the <em>kind</em> rather than the wording or the place.</p>
-    why_prompt: Which of the two indexes needs you to already know where you read it?
     verified: 2026-09-11
 
   - type: Protect your data
@@ -104,7 +102,6 @@ quiz:
       Because iOS deletes a tab's stored data after seven days without a visit, and review intervals are routinely longer than that. Home-screen apps are exempt.
     why: |-
       <p>It is the one platform rule that can silently destroy a schedule, and it does so precisely when the schedule is working. Long intervals are the goal, and long intervals are what trip the deletion.</p>
-    why_prompt: Why does a *longer* review interval make this more dangerous, not less?
     verified: 2026-09-06
 
   - type: Synthesis
@@ -122,5 +119,4 @@ quiz:
       teaching device. The site takes the second option on purpose. What is
       being tested is whether you can see the empty queue as a consequence of a
       choice rather than as the system working.</p>
-    why_prompt: What are the only two events that put a concept into the queue?
     verified: 2026-09-08

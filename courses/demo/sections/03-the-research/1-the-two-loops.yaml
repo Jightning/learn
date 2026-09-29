@@ -74,7 +74,6 @@ quiz:
       Yes. Any answered concept enters Review; the scheduler can still weight missed items more heavily.
     why: |-
       <p>Correct answers still create an answer history. Review weighting distinguishes outcomes without asking the learner for a confidence prediction.</p>
-    why_prompt: What makes a concept eligible for Review?
     verified: 2026-09-02
 
   - type: Choose the loop for more volume
@@ -88,7 +87,6 @@ quiz:
       unit: rejected quiz items
     why: |-
       <p>The subsection quiz exists for coverage of question types; Mixed Practice and Review provide fluency through repeated retrieval. The constraints keep coverage and retention useful without forcing different interactions on the learner.</p>
-    why_prompt: What rule in the subsection quiz blocks the other nine problems?
     verified: 2026-09-02
 
   - type: Spot the error
@@ -99,5 +97,4 @@ quiz:
       It reverses the seam. Practice and Review success do not mark quiz types as covered; a successful concept item says nothing about whether the reader can handle each distinct question type.
     why: |-
       <p>The tempting idea is that mastering the concept should discharge the questions about it. But the quiz tracks <em>types</em>: forwards, backwards, boundary, error-spotting. Holding the concept in memory is not the same as being fluent in every form the examiner can use.</p>
-    why_prompt: Which identity does the subsection quiz track that practice does not?
     verified: 2026-09-02

@@ -30,6 +30,7 @@ import { conceptOf } from "../src/lib/index.js";
 import { present } from "../src/lib/gist.js";
 import { pointsAtNothing } from "./lib/sequence.mjs";
 import { coverageReport } from "./lib/coverage-report.mjs";
+import { migrationReportLine, strictCurrentIssues } from "./lib/current-schema.mjs";
 
 const args = process.argv.slice(2);
 const at = args.indexOf("--profile");
@@ -157,6 +158,7 @@ function audit(id) {
   }));
 
   return { C, rows, over: rows.filter(r => r.frac > r.max), sourceIssues,
+           schemaIssues: profile === "publish" ? strictCurrentIssues(C) : [],
            details: detailsWithoutRecall(C), points: pointsAtNothing(C) };
 }
 
@@ -170,22 +172,24 @@ if (wanted.some(id => !ids.includes(id))) {
 
 let failed = 0;
 for (const id of ids) {
-  const { rows, over, sourceIssues, details, points } = audit(id);
+  const { C, rows, over, sourceIssues, schemaIssues, details, points } = audit(id);
   let coverage = null, coverageError = null;
   if (profile === "publish") {
     try { coverage = coverageReport(id); }
     catch (e) { coverageError = e.message; }
   }
   const blocked = profile === "publish" &&
-    (over.length || sourceIssues.length || coverage?.unresolved.length || coverageError);
+    (over.length || sourceIssues.length || schemaIssues.length || coverage?.unresolved.length || coverageError);
   if (blocked) failed++;
 
   console.log(`${blocked ? "FAIL publish" : profile === "draft" ? "draft" : "ok   publish"} ${id.padEnd(10)} ` +
     rows.map(r => `${pct(r.frac)} of ${r.of} ${r.k}`).join(", "));
+  if (profile === "publish") console.log(migrationReportLine(id, C));
   for (const r of over)
     console.log(`       ${profile === "draft" ? "!" : "✗"} ${pct(r.frac)} ${r.label}, against ${
       profile === "draft" ? "a draft target" : "the publish ceiling"} of ${pct(r.max)}`);
   for (const issue of sourceIssues) console.log(`       ✗ ${issue}`);
+  for (const issue of schemaIssues) console.log(`       ✗ ${issue}`);
   if (coverageError) console.log(`       ✗ coverage: ${coverageError}`);
   if (coverage && !coverage.files.length)
     console.log("       ! coverage: no readable source documents; topic comparison unavailable");

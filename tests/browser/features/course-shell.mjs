@@ -96,7 +96,7 @@ export async function testCourseShell(ctx, cid) {
   /* T41: uppercase is for labels the reader scans. The renderer cannot tell a
      label from a sentence, so the check is the string — anything set in caps
      that runs past a short label is being shouted at the reader. Captions, the
-     why_prompt, the answer and the course meta line all used to fail this. */
+     the answer and the course meta line all used to fail this. */
   const shouted = await page.evaluate(() => {
     const bad = [];
     for (const el of document.querySelectorAll("body *")) {

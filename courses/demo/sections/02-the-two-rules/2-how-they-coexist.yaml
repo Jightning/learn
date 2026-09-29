@@ -67,7 +67,6 @@ quiz:
       Every definition is reachable by a link from anywhere it is used, so a subsection can rely on an idea without carrying its own copy.
     why: |-
       <p>The contradiction is only apparent because "complete" does not require "self-contained". The reference system trades a second copy for a one-hop path to the first.</p>
-    why_prompt: What does "complete" require, and what does it not require?
     verified: 2026-09-02
 
   - type: Choose the fix for a forward reference
@@ -78,7 +77,6 @@ quiz:
       Move the idea earlier so it precedes §2, or promote it to a concept and link it from both places.
     why: |-
       <p>An unresolvable forward reference strands the reader, which is the one thing the reference system exists to prevent. Restating the idea inline in §2 is not a fix; it is a non-redundancy violation.</p>
-    why_prompt: Why is "just restate it in §2" not on the list?
     verified: 2026-09-02
 
   - type: Count the outputs of one link
@@ -89,7 +87,6 @@ quiz:
       A concept-hub entry, an "appears in" line for that concept, and a dependency-map edge (any two).
     why: |-
       <p>The point of routing everything through one mention is leverage: the author writes a link, the engine writes the navigation. This is also why the two loops can share a concept identity without extra bookkeeping.</p>
-    why_prompt: Why does the author only have to write the link and not the navigation?
     verified: 2026-09-02
 
   - type: Synthesis
@@ -116,5 +113,4 @@ quiz:
       does not survive contact with generated material, and the course renders
       three generated pages. The rule needs the word "source" in it, which is
       not how anyone states it out loud.</p>
-    why_prompt: What can go wrong with a second copy that cannot go wrong with a second rendering?
     verified: 2026-09-08

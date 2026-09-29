@@ -31243,12 +31243,63 @@ function checkAsides(C, errs, warns) {
 	}
 }
 //#endregion
+//#region tools/lib/question-context.mjs
+const OBJECT = "(?:figure|chart|graph|plot|scatter\\s*plot|scatterplot|table|passage|excerpt|text)";
+const REFERENCE = new RegExp(`\\b(?:the|this|that|above|below|following|preceding|shown|given)\\s+(?:(?:scatter|line|bar|data|quoted|reading)\\s+)?${OBJECT}\\b|\\b(?:figure|chart|graph|plot|scatter\\s*plot|scatterplot|table|passage|excerpt)\\s+\\d+(?:\\.\\d+)?\\b`, "i");
+const DESCRIBED = new RegExp(`\\b${OBJECT}\\b[\\s\\S]{0,45}\\b(?:shows?|plots?|lists?|contains?|reports?|states?|describes?|reads?)\\b[\\s\\S]{12,}`, "i");
+function questionContextWarning(item, where) {
+	if (item?.stimulus) return null;
+	const prompt = String(item?.q || item?.prompt || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+	if (!REFERENCE.test(prompt) || DESCRIBED.test(prompt)) return null;
+	return `${where}: refers to a figure, table, or passage without stimulus — attach it, or make the prompt self-contained`;
+}
+//#endregion
 //#region src/lib/index.js
 function conceptOf(C, q, sub) {
 	const concepts = C.concepts || {};
 	if (q.concept) return concepts[q.concept] ? q.concept : null;
 	const seen = [...new Set([...textOf(sub).matchAll(/<c\s+k="([^"]+)"/g)].map((m) => m[1]))].filter((k) => concepts[k]);
 	return seen.length === 1 ? seen[0] : null;
+}
+//#endregion
+//#region tools/lib/current-schema.mjs
+const LEGACY_FIELDS = [
+	"a",
+	"answer",
+	"stem",
+	"steps"
+];
+const hasLegacyShape = (item) => !item?.response || LEGACY_FIELDS.some((key) => Object.hasOwn(item || {}, key));
+function legacyQuestionCounts(C) {
+	return {
+		quiz: (C.sections || []).reduce((n, s) => n + (s.subs || []).reduce((m, u) => m + (u.quiz || []).filter(hasLegacyShape).length, 0), 0),
+		practice: Object.values(C.practice || {}).reduce((n, bank) => n + (bank.items || []).filter(hasLegacyShape).length, 0),
+		drills: Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0)
+	};
+}
+function migrationReportLine(id, C) {
+	const { quiz, practice, drills } = legacyQuestionCounts(C);
+	return `migration ${id.padEnd(10)} quiz ${quiz} · practice ${practice} · drill items ${drills}`;
+}
+function strictCurrentIssues(C) {
+	const issues = [];
+	for (const s of C.sections || []) for (const u of s.subs || []) for (const item of u.quiz || []) {
+		const legacy = LEGACY_FIELDS.filter((key) => Object.hasOwn(item || {}, key));
+		if (!item.response || legacy.length) {
+			const detail = [!item.response && "requires response:", legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`].filter(Boolean).join("; ");
+			issues.push(`${u.id}: question "${item.type || "(untitled)"}": strict current schema ${detail}`);
+		}
+	}
+	for (const [key, bank] of Object.entries(C.practice || {})) for (const [i, item] of (bank.items || []).entries()) {
+		const legacy = LEGACY_FIELDS.filter((field) => Object.hasOwn(item || {}, field));
+		if (!item.response || legacy.length) {
+			const detail = [!item.response && "requires response:", legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`].filter(Boolean).join("; ");
+			issues.push(`practice/${key} item ${i + 1}: strict current schema ${detail}`);
+		}
+	}
+	const drillCount = Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0);
+	if (drillCount) issues.push(`drills/: strict current schema requires variants in practice/<concept>.yaml; migrate ${drillCount} legacy drill item(s)`);
+	return issues;
 }
 //#endregion
 //#region tools/validate.mjs
@@ -31258,6 +31309,8 @@ const coreBlocks = readFileSync(join(ROOT, "src/blocks/index.js"), "utf8");
 const KNOWN = /* @__PURE__ */ new Set([...[...coreBlocks.matchAll(/\bR\("([a-z]+)"/g)].map((m) => m[1]), ...INTERACTIVE]);
 const args = process.argv.slice(2);
 const isolated = args.includes("--isolated");
+const strictCurrent = args.includes("--strict-current");
+const showMigrationReport = strictCurrent || args.includes("--migration-report");
 const wanted = args.filter((a) => !a.startsWith("--"));
 const courses = existsSync(COURSES) ? readdirSync(COURSES, { withFileTypes: true }).filter((d) => d.isDirectory() && (!d.name.startsWith("_") || wanted.includes(d.name))).map((d) => d.name).filter((n) => !wanted.length || wanted.includes(n)) : [];
 const allCourseIds = isolated ? courses : existsSync(COURSES) ? readdirSync(COURSES, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith("_")).map((d) => d.name) : [];
@@ -31358,6 +31411,8 @@ function checkPractice(C, errs, courseId) {
 			const at = `${where} item ${i + 1}`;
 			if (!String(item.q || "").trim()) errs.push(`${at}: no q`);
 			if (!item.response) errs.push(`${at}: no response`);
+			const contextWarning = questionContextWarning(item, at);
+			if (contextWarning) warns.push(contextWarning);
 			checkResponse(item, at, errs);
 			checkStimulus(item, at, errs, courseId);
 			checkQuestionHtml(item, at, errs);
@@ -31612,6 +31667,8 @@ for (const id of courses) {
 			if (seenType.has(t)) errs.push(`${where}: repeats question type "${item.type}"`);
 			seenType.add(t);
 			if (!String(item.q || "").trim()) errs.push(`${where}: question "${item.type}" missing "q"`);
+			const contextWarning = questionContextWarning(item, `${where} question "${item.type}"`);
+			if (contextWarning) warns.push(contextWarning);
 			if (!item.response && (!String(item.a || "").trim() || !String(item.why || "").trim())) errs.push(`${where}: legacy question "${item.type}" needs a and why`);
 			checkResponse(item, `${where} question "${item.type}"`, errs);
 			checkStimulus(item, `${where} question "${item.type}"`, errs, id);
@@ -31703,6 +31760,7 @@ for (const id of courses) {
 	checkExaminableInSpine(C, warns);
 	checkClusters(C, errs);
 	checkPrimers(C, errs);
+	if (strictCurrent) errs.push(...strictCurrentIssues(C));
 	for (const c of Object.values(C.concepts || {})) for (const m of String(c.body || "").matchAll(/<c\s+k="([^"]+)"/g)) {
 		used.add(m[1]);
 		if (!defined.has(m[1])) errs.push(`concept card references undefined concept "${m[1]}"`);
@@ -31711,6 +31769,7 @@ for (const id of courses) {
 	const subs = C.sections.reduce((n, s) => n + s.subs.length, 0);
 	failed += errs.length;
 	console.log(`${errs.length ? "FAIL" : "ok  "} ${id.padEnd(10)} ${C.sections.length} sections · ${subs} subsections · ${qCount} questions · ${defined.size} concepts`);
+	if (showMigrationReport) console.log(migrationReportLine(id, C));
 	errs.forEach((e) => console.log("       ✗ " + e));
 	warns.forEach((w) => console.log("       ! " + w));
 }

@@ -23,7 +23,8 @@ try {
   check("draft reports the incomplete course without failing",
     draft.status === 0 && /draft incomplete/.test(draft.stdout) &&
     /100% of 1 unsourced/.test(draft.stdout) && /100% of 1 unverified/.test(draft.stdout) &&
-    /draft target of 0%/.test(draft.stdout), draft.stdout + draft.stderr);
+    /draft target of 0%/.test(draft.stdout) && !/\bunprompted\b/.test(draft.stdout),
+    draft.stdout + draft.stderr);
 
   const publish = run("publish");
   check("publish refuses the same unverified answer and unreviewed source",
@@ -38,6 +39,7 @@ try {
   const file = join(course, "sections/01-one/1-start.yaml");
   writeFileSync(file, readFileSync(file, "utf8")
     .replace("source: generated", "source: Handbook §1\n    sourceReview: sourced")
+    .replace("    a: A sample claim.\n", "    response:\n      kind: self\n      model: A sample claim.\n")
     .replace("    why: It is the fixture's claim.", "    why: It is the fixture's claim.\n    verified: true"));
   const cleared = run("publish");
   check("publish accepts reviewed sources and verified answers",

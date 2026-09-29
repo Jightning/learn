@@ -84,7 +84,6 @@ quiz:
       The statement "the solution is unique" is spine; the proof is depth.
     why: |-
       <p>Split the block. The examinable claim cannot sit in a collapsible tier; the argument for it can. If they cannot be separated, the whole block is spine.</p>
-    why_prompt: Which half of the block is the part a student could be asked to reproduce?
     verified: 2026-09-02
 
   - type: Predict the lane behaviour
@@ -95,7 +94,6 @@ quiz:
       One stub reading "2 in depth, 1 more application".
     why: |-
       <p>Collapsed runs become a single stub whose count is text, so the reader knows exactly what was skipped rather than meeting an invisible gap. Expanding it restores the blocks in place.</p>
-    why_prompt: Why is the count shown as words rather than just hidden?
     verified: 2026-09-02
 
   - type: Apply the depth constraint
@@ -106,7 +104,6 @@ quiz:
       No. Anything examinable must be spine, regardless of length.
     why: |-
       <p>Depth is a promise that collapsing it is free on the exam. A tested boundary case breaks that promise, and a reader in the Spine lane would miss it entirely.</p>
-    why_prompt: What promise does putting a block in depth make to the reader?
     verified: 2026-09-02
 
   - type: Synthesis
@@ -132,5 +129,4 @@ quiz:
       one is an inference from a nearby effect, and the section says so. A
       reader who can design the missing study is a reader who can tell the two
       apart everywhere else.</p>
-    why_prompt: What does the coherence result measure that a collapsed stub does not?
     verified: 2026-09-08

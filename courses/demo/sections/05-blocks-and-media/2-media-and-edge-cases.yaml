@@ -65,7 +65,6 @@ quiz:
       <code>generated</code>. A blank field reads as "not yet audited" rather than "known-unverified", so the audit would not count it and the badge would not appear.
     why: |-
       <p>The three legal values each mean something. Blank is a fourth state, unreviewed, which is why the audit distinguishes it and why a drafted-but-ungrounded claim must be marked rather than left empty.</p>
-    why_prompt: What does a blank source field signal, versus the value "generated"?
     verified: 2026-09-02
 
   - type: Read the numbered-figure rule
@@ -76,7 +75,6 @@ quiz:
       "Figure N", the number alone. The number is the citable half and is emitted even with no caption text.
     why: |-
       <p>The reference needs a stable label to point at. Requiring a caption just to enable a cross-link would be a redundancy tax, so the number stands on its own.</p>
-    why_prompt: Why is the number emitted even when there is no caption to go with it?
     verified: 2026-09-02
 
   - type: Synthesis
@@ -103,5 +101,4 @@ quiz:
       unsourced by citing things nobody will ever open. Nothing in the build
       catches that, which is why the judgement has to sit with whoever writes
       the field.</p>
-    why_prompt: What is the audit actually counting when it reports 6% unsourced?
     verified: 2026-09-08

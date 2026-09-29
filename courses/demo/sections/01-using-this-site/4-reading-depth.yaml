@@ -105,7 +105,6 @@ quiz:
       One line reading "2 in depth, 1 more application", which expands them again in place.
     why: |-
       <p>The count is written out as text on purpose. A silent collapse would leave the reader unable to tell a short subsection from a filtered one.</p>
-    why_prompt: What would go wrong if the collapsed blocks left nothing behind?
     verified: 2026-09-06
 
   - type: Apply the spine promise
@@ -116,7 +115,6 @@ quiz:
       No. Anything examinable is spine by rule, so the Spine lane is a complete course rather than a summary of one.
     why: |-
       <p>That is the whole basis on which collapsing is safe. If examinable material could sit in depth, the lane control would be a way to fail an exam quietly, and no reader could trust it.</p>
-    why_prompt: What would the lane control become if depth blocks could be examinable?
     verified: 2026-09-06
 
   - type: Separate the two axes
@@ -127,5 +125,4 @@ quiz:
       The Read control does nothing at all, because there is nothing outside the spine to remove. Show still works, and takes the page to about a fifth of its words at Notes, because it closes prose inside blocks rather than removing blocks.
     why: |-
       <p>"Both stop working" is the tempting answer, and it is the reason the second axis exists: tier operates between blocks and depth operates inside one, so a course that defeats the first leaves the second untouched.</p>
-    why_prompt: Does the control act on whole blocks, or on the prose inside one?
     verified: 2026-09-10

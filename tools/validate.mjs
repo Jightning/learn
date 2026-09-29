@@ -3,6 +3,7 @@
  * failures name something you can actually open and fix.
  *
  *   node tools/validate.mjs [--isolated] [course …]
+ *   node tools/validate.mjs --strict-current [--migration-report] [course …]
  *
  * Checks include course structure and links, figure and block schemas,
  * question response shapes and grading keys, stimuli and assets, concept
@@ -21,8 +22,10 @@ import { checkSlides } from "./lib/slides.mjs";
 import { TIERS, tierOf } from "../src/lib/tiers.js";
 import { NOTES_MODES, present, leadOf } from "../src/lib/gist.js";
 import { checkRunInLists, checkFollows, checkAsides } from "./lib/structure.mjs";
+import { questionContextWarning } from "./lib/question-context.mjs";
 import { textOf } from "../src/lib/util.js";
 import { conceptOf } from "../src/lib/index.js";
+import { migrationReportLine, strictCurrentIssues } from "./lib/current-schema.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = COURSES_DIR;
@@ -37,6 +40,8 @@ const KNOWN = new Set([...[...coreBlocks.matchAll(/\bR\("([a-z]+)"/g)].map(m => 
 
 const args = process.argv.slice(2);
 const isolated = args.includes("--isolated");
+const strictCurrent = args.includes("--strict-current");
+const showMigrationReport = strictCurrent || args.includes("--migration-report");
 const wanted = args.filter(a => !a.startsWith("--"));
 const courses = existsSync(COURSES)
   ? readdirSync(COURSES, { withFileTypes: true }).filter(d => d.isDirectory() &&
@@ -158,6 +163,8 @@ function checkPractice(C, errs, courseId) {
       const at = `${where} item ${i + 1}`;
       if (!String(item.q || "").trim()) errs.push(`${at}: no q`);
       if (!item.response) errs.push(`${at}: no response`);
+      const contextWarning = questionContextWarning(item, at);
+      if (contextWarning) warns.push(contextWarning);
       checkResponse(item, at, errs);
       checkStimulus(item, at, errs, courseId);
       checkQuestionHtml(item, at, errs);
@@ -610,6 +617,8 @@ for (const id of courses) {
         if (seenType.has(t)) errs.push(`${where}: repeats question type "${item.type}"`);
         seenType.add(t);
         if (!String(item.q || "").trim()) errs.push(`${where}: question "${item.type}" missing "q"`);
+        const contextWarning = questionContextWarning(item, `${where} question "${item.type}"`);
+        if (contextWarning) warns.push(contextWarning);
         if (!item.response && (!String(item.a || "").trim() || !String(item.why || "").trim()))
           errs.push(`${where}: legacy question "${item.type}" needs a and why`);
         checkResponse(item, `${where} question "${item.type}"`, errs);
@@ -715,6 +724,7 @@ for (const id of courses) {
   checkExaminableInSpine(C, warns);
   checkClusters(C, errs);
   checkPrimers(C, errs);
+  if (strictCurrent) errs.push(...strictCurrentIssues(C));
 
   for (const c of Object.values(C.concepts || {})) {
     for (const m of String(c.body || "").matchAll(/<c\s+k="([^"]+)"/g)) {
@@ -728,6 +738,7 @@ for (const id of courses) {
   failed += errs.length;
   console.log(`${errs.length ? "FAIL" : "ok  "} ${id.padEnd(10)} ` +
     `${C.sections.length} sections · ${subs} subsections · ${qCount} questions · ${defined.size} concepts`);
+  if (showMigrationReport) console.log(migrationReportLine(id, C));
   errs.forEach(e => console.log("       ✗ " + e));
   warns.forEach(w => console.log("       ! " + w));
 }

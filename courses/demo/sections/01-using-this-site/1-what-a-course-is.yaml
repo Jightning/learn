@@ -57,7 +57,6 @@ quiz:
       No, not unless you set up sync. A course and its answers live in the browser you used them in.
     why: |-
       <p>Nothing is uploaded, so there is no account holding your state and no server to fetch it from. Sync exists and runs between your own devices, but it is something you turn on rather than the default.</p>
-    why_prompt: If nothing is uploaded, where could the phone have got your answers from?
     verified: 2026-09-06
 
   - type: Predict the structure
@@ -68,5 +67,4 @@ quiz:
       It fails. Every subsection carries at least one question.
     why: |-
       <p>The rule is mechanical because the judgement is unreliable: a subsection that feels too small to test is exactly the one whose material quietly leaves. If it is worth writing down, it is worth one question.</p>
-    why_prompt: Why is this enforced by the build rather than left to the author?
     verified: 2026-09-06

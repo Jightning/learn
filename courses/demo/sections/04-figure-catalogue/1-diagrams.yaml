@@ -225,7 +225,6 @@ quiz:
       flow. A procedure is an ordered list; flow numbers the steps without a glyph and puts the caveat in a sub-line. graph would imply the steps are peers connected by meaningful edges.
     why: |-
       <p>graph is for structure where the edges carry information. A linear procedure's "edges" are just "next", which flow expresses as sequence.</p>
-    why_prompt: What would the edges in a graph version actually mean here?
     verified: 2026-09-02
 
   - type: Read a rendered figure
@@ -236,7 +235,6 @@ quiz:
       durable → learning, caused by a miss.
     why: |-
       <p>Durability is revoked by a single failed retrieval. That is the curved edge back to "learning". Everything else flows forward toward durable; only a miss moves backward.</p>
-    why_prompt: Which direction do all the other edges point, and what does that tell you?
     verified: 2026-09-02
 
   - type: Trace an automatic circuit
@@ -247,5 +245,4 @@ quiz:
       C1 is on the right. The author lists the components by side in travel order; the rectangle layout creates the wire segments and corners automatically.
     why: |-
       <p>The side lists describe the electrical path without hand-writing coordinates or individual wire endpoints.</p>
-    why_prompt: Which fields in the figure spec describe components, and which ones describe wires?
     verified: 2026-09-27

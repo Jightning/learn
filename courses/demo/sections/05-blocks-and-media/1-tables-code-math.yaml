@@ -96,7 +96,6 @@ quiz:
       mono. It applies the course-level valueStyles, so every truth table in the course colours values identically.
     why: |-
       <p><code>map</code> would work but is per-block, so the mapping would have to be repeated on every table and could drift. <code>mono</code> centralises it.</p>
-    why_prompt: What goes wrong if you use a per-block map on twenty tables instead?
     verified: 2026-09-02
 
   - type: Add a language
@@ -107,5 +106,4 @@ quiz:
       Add a <code>syntax</code> block to that course's <code>course.yaml</code>: a comment marker, a keyword list, and any regex patterns. No renderer, no code.
     why: |-
       <p>Highlighting is configuration consumed by one generic highlighter. Writing a Verilog renderer would be new code for a job the data already does.</p>
-    why_prompt: Which file changes, and does any .js file change?
     verified: 2026-09-02

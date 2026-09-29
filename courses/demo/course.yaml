@@ -21,7 +21,6 @@ state:
 audit:
   unsourced: 0.15
   unverified: 0
-  unprompted: 0
   unrouted: 0.17
   # This course has been through a claims pass, so it declares what it reached
   # and can never regress past it. `unclaimed: 0` means every def, key and trap

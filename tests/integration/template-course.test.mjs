@@ -63,6 +63,7 @@ try {
   if (built.includes(name)) throw new Error("the app build inspected the user-course probe");
   if (existsSync(join(dir, "blocks.js"))) throw new Error("probe course required custom code");
   run("validate.mjs", ["--isolated", name]);
+  run("validate.mjs", ["--isolated", "--strict-current", name]);
   const packed = run("pack.mjs", [name]);
   if (!packed.includes(`packed/${name}.course.json`))
     throw new Error("probe course did not produce an importable bundle");
