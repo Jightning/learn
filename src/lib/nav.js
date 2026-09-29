@@ -5,7 +5,14 @@ import { useState, useEffect, useCallback, useRef } from "preact/hooks";
 /** parse "#/course/rest" */
 function parseHash(h) {
   const parts = (h || "#/").slice(1).split("/").filter(Boolean);
-  return { cid: parts[0] || null, rest: parts.slice(1).join("/") };
+  try {
+    const decoded = parts.map(part => decodeURIComponent(part));
+    return { cid: decoded[0] || null, rest: decoded.slice(1).join("/") };
+  } catch {
+    /* A malformed escape is an invalid address. Keep the shell on the library
+       route instead of letting a route consumer throw during render. */
+    return { cid: null, rest: "" };
+  }
 }
 
 export function useHashRoute() {

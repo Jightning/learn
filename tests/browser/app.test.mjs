@@ -51,6 +51,15 @@ const ctx = { ROOT, URL, browser, page, errs, R, ck, go, shot, installDemoFixtur
 let crash = null;
 try {
   await run("library", () => testLibrary(ctx));
+  await run("malformed routes", async () => {
+    for (const route of ["#/demo/explore/tag/%", "#/demo/explore/cat/%"]) {
+      await go(route);
+      ck(`malformed route ${route} falls back to library`,
+         await page.locator(".lib").count() > 0 &&
+         await page.locator(".xq, .catdetail, .desk").count() === 0,
+         await page.locator("body").innerText().then(t => t.slice(0, 100)));
+    }
+  });
   await testCourses(ctx);
   await run("regressions", () => testRegressions(ctx));
 } catch (error) {

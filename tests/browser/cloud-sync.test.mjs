@@ -80,6 +80,23 @@ const ORIGIN = `http://localhost:${server.address().port}`;
 
 /* --------------------------------------------------------------- the devices */
 const browser = await chromium.launch();
+/* ------------------------------------------------------ stalled request UX --
+ * A fetch that never settles used to leave the owner's button disabled forever.
+ * Hold the API request open and let the client's bounded abort reach the panel. */
+{
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.route("**/api/sync", () => new Promise(() => {}));
+  await page.goto(ORIGIN + "/#/sync");
+  await page.locator("#cloud-secret").fill(SECRET);
+  await page.locator("#cloud-sync").click();
+  await page.locator(".sync-msg").filter({ hasText: "timed out" }).waitFor({ timeout: 25_000 });
+  check("a stalled backup request reports a retryable timeout",
+        /try again/i.test(await page.locator(".sync-msg").innerText()));
+  check("a stalled backup request re-enables the button",
+        await page.locator("#cloud-sync").isEnabled());
+  await context.close();
+}
 const laptop = await browser.newContext();   /* separate contexts: separate IndexedDB */
 const phone = await browser.newContext();
 const A = await laptop.newPage();

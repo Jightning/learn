@@ -50,6 +50,7 @@ const SEEN   = "cloud:bin";         /* the account's bin, as of the last sync */
    multiple of the request budget. Manual sync exists for when that window
    matters — before wiping a phone, say. */
 const AUTO_MS = 24 * 60 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export const configured = () => !!getItem(SECRET);
 export const lastSync = () => Number(getItem(LAST)) || 0;
@@ -96,12 +97,24 @@ const opened = async (prefs = []) => {
 class Unauthorized extends Error {}
 
 async function call(path, payload) {
-  const res = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json",
-               authorization: `Bearer ${getItem(SECRET) || ""}` },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json",
+                 authorization: `Bearer ${getItem(SECRET) || ""}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+  } catch (e) {
+    if (controller.signal.aborted)
+      throw new Error("request timed out");
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (res.status === 401 || res.status === 404) throw new Unauthorized();
   if (!res.ok) throw new Error(`sync ${res.status}`);
   return res.json();

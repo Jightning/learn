@@ -480,9 +480,9 @@ export default function App() {
   else if (rest === "saved" || rest === "explore/saved")
     view = <SavedPage ctx={ctx} depth={depth} />;
   else if (rest.startsWith("explore/tag/"))
-    view = <Explore ctx={ctx} seed={{ tag: decodeURIComponent(rest.slice(12)) }} />;
+    view = <Explore ctx={ctx} seed={{ tag: rest.slice(12) }} />;
   else if (rest.startsWith("explore/cat/"))
-    view = <Explore ctx={ctx} seed={{ cat: decodeURIComponent(rest.slice(12)) }} />;
+    view = <Explore ctx={ctx} seed={{ cat: rest.slice(12) }} />;
   else if (rest === "calibration") view = <Calibration ctx={ctx} onReset={onReset} />;
   else if (rest === "map" || rest.startsWith("map/"))
     view = <DepMap ctx={ctx} focus={rest.slice(4)}

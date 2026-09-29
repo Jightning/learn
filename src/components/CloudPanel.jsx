@@ -42,7 +42,9 @@ export default function CloudPanel({ setup = false, onChange }) {
     if (!r.ok) {
       setMsg(r.unauthorized
         ? "That secret was refused. Check it matches SYNC_SECRET on the deployment."
-        : `Could not reach the backup: ${r.error}.`);
+        : r.error === "request timed out"
+          ? "The backup request timed out. Check your connection and try again."
+          : `Could not reach the backup: ${r.error}.`);
       return;
     }
     setBin(r.bin || []);
