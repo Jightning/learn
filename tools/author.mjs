@@ -9,6 +9,7 @@
  *   author done   <id> <sN-M> [SOURCE]... [--staging]   check one, and name the next
  *   author finish <id>                      materials, validate and coverage, compactly
  *   author status <id> [--digest]   ·   redo <id> <sN-M|course|finish>...   ·   reset <id>
+ *   author rules  <id> [--need KIND]...     on-demand sections for the next subsection
  *   author plan   <id>                      what the rules and sources weigh
  *
  * Four calls carry a whole course: begin, write, done per subsection, finish.
@@ -35,7 +36,9 @@ import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadSpec } from "./lib/spec.mjs";
+import { digestRules, needsIn, needSections, availableNeeds } from "./lib/author-rules.mjs";
 import { digest } from "./lib/digest.mjs";
+import { parseFile } from "./lib/load.mjs";
 import { readReader } from "./lib/reader.mjs";
 import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from "./lib/sources.mjs";
 import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE } from "./lib/paths.mjs";
@@ -87,7 +90,7 @@ const specOf = (steps, lean = false) => [
 
 /* ------------------------------------------------------------- arguments --*/
 const [cmd, id, ...rest] = process.argv.slice(2);
-const USAGE = "usage: author.mjs <begin|write|done|finish|status|redo|reset|plan> <course-id> [args]";
+const USAGE = "usage: author.mjs <begin|write|rules|done|finish|status|redo|reset|plan> <course-id> [args]";
 const say = s => console.log(s);
 /* Every refusal is logged where the course is, so the record of a build does
    not depend on the agent keeping a readable transcript. */
@@ -235,7 +238,9 @@ function briefText(which, reader) {
     "Keep these rules for the rest of the conversation; ask for them again only after a compaction.",
     procedure.filter(Boolean).join("\n"),
     `## The reader\n\n\`\`\`yaml\n${reader}\n\`\`\``,
-    `## The spec (§-numbers are create_course.md)\n\n${specOf(steps, lean)}`
+    flag("--full-spec")
+      ? `## The full spec (§-numbers are create_course.md)\n\n${specOf(steps)}`
+      : digestRules(which, CC, [CC, MT, WR], { lean })
   ].join("\n\n");
 }
 
@@ -311,6 +316,31 @@ const commands = {
     }
     say(briefText("writing", readerOrDie()));
     say("\n" + pointer(progress()));
+    say(`On-demand details: author rules ${id} [--need block:<type>|figure:<kind>|question:<kind>]`);
+  },
+
+  rules() {
+    const p = progress();
+    const next = p.todo[0] || p.staged[0];
+    const explicit = rest.flatMap((a, i) => a === "--need" ? (rest[i + 1] || "").split(",") : []);
+    if (explicit.some(n => !n || n.startsWith("--"))) fail("--need requires a value");
+    let inferred = [];
+    if (next) {
+      try { inferred = needsIn(parseFile(next.file)); }
+      catch (e) { fail(`cannot read ${next.id}: ${e.message}`); }
+    }
+    const needs = [...new Set(explicit.length ? explicit : inferred)];
+    if (flag("--full-spec")) {
+      say(`# Full writing spec for ${id}\n\n${specOf(WRITING_STEPS)}`);
+      return;
+    }
+    if (!needs.length) {
+      say(`No block, figure, or question shapes are declared in the next subsection. Use --need with one of: ${availableNeeds.join(", ")}`);
+      return;
+    }
+    let selected;
+    try { selected = needSections(CC, needs); } catch (e) { fail(e.message); }
+    say(`# On-demand rules for ${next ? next.id : id}: ${needs.join(", ")}\n\n${selected}`);
   },
 
   /* Once per subsection, and the only thing it adds is the next one. */
@@ -437,15 +467,22 @@ const commands = {
     let files = [];
     try { files = list(savedRoots()); } catch { /* sources moved since begin */ }
     const text = files.filter(f => f.text);
-    for (const l of [false, true]) {
-      say(`begin (steps 0-4 rules)${l ? " --lean" : "       "}  ~${est(specOf(COURSE_STEPS, l))} tok    ` +
-          `write (writing rules)${l ? " --lean" : ""}  ~${est(specOf(WRITING_STEPS, l))} tok`);
-    }
+    for (const l of [false, true])
+      say(`compact${l ? " --lean" : "       "}: begin ~${est(digestRules("course", CC, [CC, MT, WR], { lean: l }))} tok; ` +
+          `write ~${est(digestRules("writing", CC, [CC, MT, WR], { lean: l }))} tok`);
+    say(`full-spec          : begin ~${est(specOf(COURSE_STEPS))} tok; ` +
+        `write ~${est(specOf(WRITING_STEPS))} tok`);
+    const next = p.todo[0] || p.staged[0];
+    if (next) try {
+      const needs = needsIn(parseFile(next.file));
+      if (needs.length) say(`next ${next.id} on-demand sections (${needs.join(", ")}): ` +
+        `~${est(needSections(CC, needs))} tok`);
+    } catch { /* a cost estimate also works on an unfinished draft */ }
     say(`sources: ${text.length} readable files, ~${Math.round(text.reduce((n, f) => n + f.bytes, 0) / 4)} tok ` +
       "in all (read per subsection, not at once)");
     say(`subsections: ${p.done.length} written, ${p.todo.length} left`);
-    say("Every turn re-reads the conversation from cache (~0.1x price): the rules' size and the " +
-      "number of turns drive the cost. --lean shrinks the rules; one write per subsection keeps turns down.");
+    say("Estimates count rule text at four characters per token; reader, sources, and procedure are separate. " +
+      "Use author rules for needed sections and --full-spec for the entire phase spec.");
   }
 };
 

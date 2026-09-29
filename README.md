@@ -75,11 +75,17 @@ The AI can use the `create-course` skill, which runs these:
 
 ```sh
 node tools/author.mjs begin ma26600 --source ~/code/some-repo  # sources + the rules for the course's shape
-node tools/author.mjs write ma26600 --lean  # the writing rules (--lean: cheaper)
+node tools/author.mjs write ma26600  # compact writing rules and mandatory checklist
+node tools/author.mjs rules ma26600 --need figure:plot  # just the needed figure rules
+node tools/author.mjs plan ma26600  # compact and full-spec token estimates
 node tools/author.mjs done ma26600 s1-6 /abs/source.md  # records a subsection, and names the next
 node tools/author.mjs finish ma26600  # materials, validation, coverage
 npm run coverage -- ma26600 --init-review  # create the source-topic review checklist
 ```
+
+`begin` and `write` default to a versioned digest with the complete mandatory
+checklist. Use `--full-spec` on either command for the complete phase rules;
+`rules` selects detail from the next subsection or from explicit `--need` values.
 
 **Claude:**
 

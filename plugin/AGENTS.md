@@ -5,7 +5,7 @@ Write the course in this conversation. From the author's working folder, `node "
 Course flow: `begin`, `write`, `done` for each subsection, then `finish`.
 
 1. `node "<KIT>/scripts/author.mjs" begin <id> [--source PATH]...` reports status, sources, and rules for steps 0–4. Follow them to write `materials/expectations.md`, section/subsection files, categories, and the concept set. If no course exists, run `node "<KIT>/scripts/new-course.mjs" <id> "Title"`; sources may be anywhere except unsafe paths.
-2. `node "<KIT>/scripts/author.mjs" write <id>` gives the writing rules and first subsection.
+2. `node "<KIT>/scripts/author.mjs" write <id>` gives the compact, versioned rule digest and first subsection. Use `node "<KIT>/scripts/author.mjs" rules <id>` for sections matching the next subsection's declared block, figure, and question shapes, or `--need block:<type>`, `--need figure:<kind>`, and `--need question:<kind>` before adding a new shape. `--full-spec` on `begin` or `write` prints the complete phase spec.
 3. For each subsection, read only what it needs, write it in one operation, then run `node "<KIT>/scripts/author.mjs" done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It checks spine, quiz, and local validation errors, then names the next subsection. Use `--staging` only to keep an unfinished draft moving; a staged subsection must pass `done` again without the override.
 4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `node "<KIT>/scripts/author.mjs" finish <id>`. Every encountered question can enter Review, so a variant bank is optional. `finish` records mechanical completion only when required work and validation pass. Use `node "<KIT>/scripts/audit-content.mjs" --profile draft <id>` for nonblocking content debt. Run `node "<KIT>/scripts/coverage.mjs" <id> --init-review` once to create `materials/coverage-review.yaml`; review each low-score lead and fill its disposition. Then run `node "<KIT>/scripts/audit-content.mjs" --profile publish <id>` before calling the course publish-ready. Scores are leads, not proof; review source dispositions and answers yourself.
 
@@ -16,7 +16,7 @@ Model requests process conversation context; cached input is cheaper but not fre
 - Request each rule set once; after compaction use `node "<KIT>/scripts/author.mjs" status <id> --digest`.
 - Read each subsection's needed sources once, in parallel; write its file once and use targeted patches for fixes. Do not reread it or run unlisted commands.
 - Delegate broad reading only when it saves context or enables independent work; return concise cited findings. Search locally for small lookups.
-- For cheaper requests, use `--lean` with `begin`/`write`. `done` reports compact feedback for its subsection; do not reread the full course. `--no-validate` is available only with `--staging` and still requires a later checked `done`. Use `--confident` for extra checks.
+- The compact digest includes the mandatory checklist from the source spec. `--lean` trims optional guidance; `--full-spec` restores the complete phase rules. `node "<KIT>/scripts/author.mjs" plan <id>` estimates both paths. `done` reports compact feedback for its subsection; do not reread the full course. `--no-validate` is available only with `--staging` and still requires a later checked `done`. Use `--confident` for extra checks.
 
 ## Subagents
 

@@ -121,11 +121,23 @@ try {
      /^## 8\./m.test(readFileSync(join(state, "rules-variants.md"), "utf8")));
 
   const brief = author("write", cid), lean = author("write", cid, "--lean");
-  ck("write carries the writing rules, the reader and the spec",
-     /Steps 5-7/.test(brief.stdout) && /goal: test/.test(brief.stdout) && /## The spec/.test(brief.stdout));
-  ck("a lean brief is much smaller", lean.stdout.length < brief.stdout.length * 0.75 && /keep optional material focused/.test(lean.stdout),
-     `${lean.stdout.length} vs ${brief.stdout.length}`);
-  for (const [name, output] of [["full", brief.stdout], ["lean", lean.stdout]]) {
+  const full = author("write", cid, "--full-spec");
+  const plan = author("plan", cid).stdout;
+  const compactEstimate = /compact\s+: begin ~(\d+) tok; write ~(\d+) tok/.exec(plan);
+  const fullEstimate = /full-spec\s+: begin ~(\d+) tok; write ~(\d+) tok/.exec(plan);
+  ck("plan measures compact and full rule payloads",
+     !!compactEstimate && !!fullEstimate && Number(compactEstimate[1]) < Number(fullEstimate[1]) &&
+     Number(compactEstimate[2]) < Number(fullEstimate[2]), plan);
+  ck("write carries the compact versioned rules and the reader",
+     /Steps 5-7/.test(brief.stdout) && /goal: test/.test(brief.stdout) &&
+     /Authoring-rule digest v1 \(spec [a-f0-9]{12}\)/.test(brief.stdout) &&
+     /Mandatory checklist/.test(brief.stdout));
+  ck("compact rules cost much less than the explicit full spec",
+     brief.stdout.length < full.stdout.length * 0.25 && /## The full spec/.test(full.stdout),
+     `${brief.stdout.length} vs ${full.stdout.length}`);
+  ck("lean keeps the mandatory checklist", /Mandatory checklist/.test(lean.stdout) &&
+     /keep optional material focused/.test(lean.stdout));
+  for (const [name, output] of [["full", full.stdout], ["lean full", author("write", cid, "--lean", "--full-spec").stdout]]) {
     ck(`${name} writing rules include phrase notes and the complexity judgement`,
        /Judging a passage/.test(output) && /asides:/.test(output) && /follows: true/.test(output));
     ck(`${name} writing rules allow combined help without caps`,
@@ -144,6 +156,12 @@ try {
   put("concepts/idea.yaml", "term: Idea\nbody: <p>An idea.</p>\nreview: true\n");
   ck("the next subsection is named without another command",
      /Next: s1-1 One/.test(author("write", cid).stdout));
+  const requestedRules = author("rules", cid, "--need", "figure:plot", "--need", "question:multi");
+  ck("rules returns requested figure and question sections",
+     requestedRules.status === 0 && /### 10.1 Figures/.test(requestedRules.stdout) &&
+     /## 7. Questions/.test(requestedRules.stdout) && !/## 11. `materials\/`/.test(requestedRules.stdout));
+  ck("rules fails fast on an unknown need",
+     author("rules", cid, "--need", "figure:unknown").status === 1);
 
   const thinDone = author("done", cid, "s1-1");
   ck("done refuses minimum content and leaves no completion record",
@@ -158,6 +176,9 @@ try {
      existsSync(join(state, "staged.txt")) && !existsSync(join(state, "map.txt")) &&
      /1 staged/.test(author("status", cid).stdout), stagedThin.stdout);
   put("sections/01-a/1-one.yaml", "title: One\nblocks:\n  - t: p\n    text: x\nquiz:\n  - type: recall\n    q: q\n");
+  put("sections/01-a/2-two.yaml", "title: Two\nblocks:\n  - t: p\n    h: x\n");
+  ck("rules detects the next subsection's declared block shape",
+     /block:p/.test(author("rules", cid).stdout) && /### 6.1 Block types/.test(author("rules", cid).stdout));
   const src = join(tmp, "src", "notes.md");
   const local = author("done", cid, "s1-1", `${src}#Alpha Topic`);
   ck("done refuses local validation errors and clears the staged record",
@@ -201,7 +222,7 @@ try {
   ck("its progress lives beside it, not in the repository",
      ab.status === 0 && existsSync(join(ws, ".author/away/rules-variants.md")) &&
      !existsSync(join(ROOT, ".author/away")), ab.stdout + ab.stderr);
-  ck("and the spec still comes from the engine", /## The spec/.test(away("begin", "away").stdout));
+  ck("and the spec still comes from the engine", /Authoring-rule digest v1/.test(away("begin", "away").stdout));
 
   /* The public demo is a validated, source-free fixture. Use its real content
      so finish proves the successful path without a brittle miniature course. */
