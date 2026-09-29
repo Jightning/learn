@@ -76,7 +76,7 @@ init().then(() => {
   restore(cid => !!INDEX[cid]);
   render(<App />, document.getElementById("app"));
   auto();
-  addEventListener("pagehide", flush);
+  addEventListener("pagehide", () => { flush().catch(() => {}); });
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
   }

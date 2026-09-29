@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import { M } from "../lib/math.js";
+import { authored as M } from "../lib/safe-markup.js";
 import Inline from "./Inline.jsx";
 
 /* A question about a relation the section is about to establish.

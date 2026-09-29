@@ -57,7 +57,11 @@ export default function CloudPanel({ setup = false, onChange }) {
   };
 
   const now = async () => {
-    if (secret.trim()) { await configure(secret.trim()); setSecret(""); setOn(true); }
+    if (secret.trim()) {
+      try { await configure(secret.trim()); }
+      catch { setMsg("Could not save the backup settings on this device."); return; }
+      setSecret(""); setOn(true);
+    }
     if (!configured()) { setMsg("A secret is needed."); return; }
     setBusy(true); setMsg("Backing up...");
     report(await sync({ manual: true }));
@@ -75,7 +79,8 @@ export default function CloudPanel({ setup = false, onChange }) {
   };
 
   const forget = async () => {
-    await configure("");
+    try { await configure(""); }
+    catch { setMsg("Could not remove the backup settings from this device."); return; }
     setOn(false); setBin([]); setMsg("This device no longer holds the secret.");
   };
 

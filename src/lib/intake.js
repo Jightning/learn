@@ -16,7 +16,8 @@
  *
  * All three produce the same thing, so nothing downstream knows the difference.
  * ==========================================================================*/
-import { unzipSync, strFromU8 } from "fflate";
+import { Unzip, UnzipInflate, strFromU8 } from "fflate";
+import { MAX_BYTES, MAX_FILES, MAX_ENTRY, kb, tooManyFiles, oversizedEntry, oversizedCourse } from "./intake-limits.js";
 
 const TEXT = /\.(ya?ml|json|md|txt)$/i;
 const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
@@ -60,6 +61,7 @@ function build(entries) {
     const rel = clean(e.path).slice(prefix.length);
     if (!rel) continue;
     if (typeof e.text === "string") { files[rel] = e.text; continue; }
+    if (TEXT.test(rel)) { files[rel] = strFromU8(e.bytes); continue; }
     const type = MIME[ext(rel)];
     if (type) files[rel] = `data:${type};base64,${b64(e.bytes)}`;
   }
@@ -68,10 +70,22 @@ function build(entries) {
 
 /** A directory chosen with `webkitdirectory`, or any FileList with paths. */
 export async function fromFolder(fileList) {
-  const entries = [];
+  /* A picker exposes sizes without reading contents. Check the entire
+     selection first so even an oversized last file leaves every file unread. */
+  const selected = [];
+  let count = 0, total = 0;
   for (const f of fileList) {
     const path = f.webkitRelativePath || f.name;
+    if (++count > MAX_FILES) throw new Error(tooManyFiles(count));
+    if (f.size > MAX_ENTRY) throw new Error(oversizedEntry(path));
+    total += f.size;
+    if (total > MAX_BYTES) throw new Error(oversizedCourse(total));
     if (junk(clean(path))) continue;
+    if (hostile(clean(path))) throw new Error(`unsafe path: ${path}`);
+    selected.push({ f, path });
+  }
+  const entries = [];
+  for (const { f, path } of selected) {
     entries.push(TEXT.test(path)
       ? { path, text: await f.text() }
       : { path, bytes: new Uint8Array(await f.arrayBuffer()) });
@@ -81,12 +95,59 @@ export async function fromFolder(fileList) {
 
 /** A .zip of the course folder. */
 export async function fromZip(file) {
-  let unzipped;
-  try { unzipped = unzipSync(new Uint8Array(await file.arrayBuffer())); }
-  catch (e) { throw new Error(`could not read that zip: ${e.message}`); }
-
-  const entries = Object.entries(unzipped).map(([path, bytes]) =>
-    TEXT.test(path) ? { path, text: strFromU8(bytes) } : { path, bytes });
+  if (file.size > MAX_BYTES) throw new Error(`${kb(file.size)} exceeds the ${kb(MAX_BYTES)} limit`);
+  const entries = [];
+  let count = 0, declaredTotal = 0, actualTotal = 0;
+  const limit = message => { const error = new Error(message); error.intakeLimit = true; throw error; };
+  const unzip = new Unzip(entry => {
+    const path = entry.name;
+    if (++count > MAX_FILES) limit(tooManyFiles(count));
+    const ignored = junk(clean(path));
+    if (!ignored && hostile(clean(path))) throw new Error(`unsafe path: ${path}`);
+    /* Local ZIP headers normally declare the uncompressed size. Reject it
+       before starting inflation, then also count output for descriptor-based
+       or dishonest headers. */
+    if (entry.originalSize !== undefined) {
+      if (entry.originalSize > MAX_ENTRY) limit(oversizedEntry(path));
+      declaredTotal += entry.originalSize;
+      if (declaredTotal > MAX_BYTES) limit(oversizedCourse(declaredTotal));
+    }
+    const chunks = [];
+    let size = 0;
+    entry.ondata = (error, bytes, final) => {
+      if (error) throw error;
+      if (bytes) {
+        size += bytes.length;
+        if (size > MAX_ENTRY) limit(oversizedEntry(path));
+        actualTotal += bytes.length;
+        if (actualTotal > MAX_BYTES) limit(oversizedCourse(actualTotal));
+        if (!ignored) chunks.push(bytes);
+      }
+      if (final && !ignored) {
+        const combined = new Uint8Array(size);
+        let offset = 0;
+        for (const chunk of chunks) { combined.set(chunk, offset); offset += chunk.length; }
+        entries.push({ path, bytes: combined });
+      }
+    };
+    entry.start();
+  });
+  unzip.register(UnzipInflate);
+  const reader = file.stream().getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      unzip.push(value, false);
+    }
+    unzip.push(new Uint8Array(0), true);
+  } catch (error) {
+    await reader.cancel().catch(() => {});
+    if (error.intakeLimit || /^unsafe path: /.test(error.message)) throw error;
+    throw new Error(`could not read that zip: ${error.message}`);
+  } finally {
+    reader.releaseLock();
+  }
   const out = build(entries);
   if (!out.id) out.id = file.name.replace(/\.zip$/i, "");
   return out;

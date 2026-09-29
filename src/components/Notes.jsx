@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "preact/hooks";
 import { readNotes, writeNotes, noteText, isFolded, setFolded } from "../lib/notes.js";
 import { selectedIn, showNoteSelection, clearNoteSelection } from "../lib/note-selection.js";
 import { md } from "../lib/md.js";
+import { safeMarkup } from "../lib/safe-markup.js";
 
 /* The learner's notes on one block, in two pieces that share one state.
  *
@@ -201,7 +202,7 @@ function Note({ n, i, text }) {
          onFocusOut={leave}>
       {/* The reader's own text, through lib/md.js, which escapes before it
           formats — see the safety note there. */}
-      <div class="note-body" dangerouslySetInnerHTML={{ __html: md(text) }} />
+      <div class="note-body" dangerouslySetInnerHTML={{ __html: safeMarkup(md(text)) }} />
       <button class="mn-go note-edit" type="button" onClick={() => n.edit(i)}>edit</button>
     </div>
   );

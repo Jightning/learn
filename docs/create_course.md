@@ -300,8 +300,10 @@ audit:                           # optional publish ceilings; draft only reports
   unsourced: 0.1                 # absent means 1; publish always requires 0 unverified answers
 valueStyles:                     # optional: colour cell values in mono tables
   "1": b1                        # and in `grid` figures
-styles: |                        # optional: CSS for the classes above
+styleClasses: [callout]          # optional: other authored block classes
+styles: |                        # optional: class presentation rules inside blocks
   .b1{color:var(--hi-ink);font-weight:700}
+  .callout{border:1px solid var(--rule);padding:10px}
 syntax:                          # optional: highlighting for `code` blocks
   comment: "//"
   keywords: [def, class, return]
@@ -309,6 +311,19 @@ syntax:                          # optional: highlighting for `code` blocks
   patterns:
     - {re: "\\b0x[0-9a-fA-F]+", cls: tok-n}
 ```
+
+Course CSS accepts only `.class{property:value}` rules for class names listed as
+`valueStyles` values or in `styleClasses`. Every rule is scoped inside a rendered
+block; neither a declared class nor a selector can style app controls. The
+property allowlist is `color`, `background-color`, `font-weight`, `font-style`,
+`font-family`, `font-size`, `font-variant-numeric`, `opacity`, `display`,
+`flex-direction`, `gap`, `padding`, `margin`, `border-radius`, and `border`.
+Values are limited to numbers and lengths, basic flex keywords, and the site
+tokens `--hi-ink`, `--lo-ink`, `--dc-ink`, `--accent`, `--ink-2`, `--ink-3`,
+`--rule`, `--hi`, `--lo`, `--dc`, `--hz`, `--mono`, `--sans`, `--serif`, and
+`--sp-1` through `--sp-9` where the property permits them. Global selectors,
+`@import`, `url(...)`, and other CSS syntax cause the whole stylesheet to be
+discarded.
 
 Only the first four fields are required. `theme.hue` rotates the accents with
 lightness and chroma fixed, so contrast holds [T1, T3]; `npm run new` picks a
@@ -471,6 +486,13 @@ For colored text use `<span class="ink-accent">`, `ink-info`, `ink-note`, or
 only when it points to a relation, distinction, or step the reader should see;
 large colored passages compete with the content. Close each tag, and quote a
 YAML scalar containing `: ` or `#`.
+
+Imported markup is untrusted. At rendering, the reader keeps text, these
+formatting tags, structural prose and table tags, safe links (`#` course routes,
+`http`, `https`, `mailto`), KaTeX output, and the supported figure SVG shapes.
+It removes scripts, event attributes, active embeds, other URL schemes, and
+unsafe CSS. Images must be supplied as course assets; the reader accepts their
+resolved image data URLs only in image positions.
 
 ### 6.1 Block types
 
@@ -1062,8 +1084,11 @@ the reader should trace in the visual, and include descriptive `alt` and `cap`.
 | `svg` | Anything the others cannot express | `body`, `viewBox` |
 
 `grid` cells take the course's `valueStyles`; `groups` draw in three rotating
-colours. A `plot` series' `fn` is JavaScript in `x`, compiled and sampled by
-`validate.mjs`, so one that will not parse or has no finite value fails the build.
+colours. A `plot` series' `fn` is a bounded arithmetic expression in `x`:
+numbers, `+ - * / % ^`, parentheses, `pi`, `e`, and common `Math` functions
+such as `Math.exp`, `Math.sin`, and `Math.sqrt`. It cannot access other
+JavaScript values. `validate.mjs` checks the same grammar and samples it;
+use `points` for measured data.
 
 For a rectangular `circuit`, list components in travel order on each side.
 Omit empty sides: wires and corners are generated, and each wire segment gets

@@ -1,7 +1,7 @@
 import { IconSearch, IconHome } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
 import ModeSwitch from "./ModeSwitch.jsx";
-import { M } from "../lib/math.js";
+import { authored as M } from "../lib/safe-markup.js";
 
 /* The toolbar carries three things and no more: where you are, what you are
  * reading for, and the way to find something.

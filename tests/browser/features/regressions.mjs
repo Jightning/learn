@@ -449,10 +449,13 @@ if (ids.includes("ma26600")) {
       return c ? c.textContent.trim().slice(0, 30) : null;
     });
     await page.evaluate(() => {
-      const subs = [...document.querySelectorAll(".sub")];
-      (subs[subs.length - 1] || subs[0]).scrollIntoView({ block: "start" });
+      const prose = [...document.querySelectorAll(".sub .bmain p")]
+        .filter(el => el.checkVisibility ? el.checkVisibility() : el.offsetParent !== null);
+      /* Put a readable cue in view. The last subsection may end in a quiz,
+         leaving no speakable text in the viewport at its scroll position. */
+      prose[Math.floor(prose.length / 2)]?.scrollIntoView({ block: "center", behavior: "instant" });
     });
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(100);
     /* Dispatched rather than clicked. Playwright scrolls a target into view
        before clicking it, and the target is in the rail — so a real click here
        would undo the scroll position this assertion is entirely about. The

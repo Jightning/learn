@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { readNote, writeNote } from "../lib/notes.js";
-import { M } from "../lib/math.js";
+import { authored as M } from "../lib/safe-markup.js";
 import Inline from "./Inline.jsx";
 
 /* A problem before the instruction that solves it.

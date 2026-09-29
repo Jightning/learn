@@ -12,6 +12,7 @@ import { rebuild } from "./lib/replay.js";
 import { useHashRoute, useNav, useReading } from "./lib/nav.js";
 import { setBlockConfig } from "./blocks/index.js";
 import { applyHue } from "./lib/theme.js";
+import { safeCourseStyles } from "./lib/course-styles.js";
 import { readZoom, applyZoom, zoomFromKey } from "./lib/zoom.js";
 import { getItem, setItem } from "./lib/store.js";
 import { land, resume, track, repin } from "./lib/place.js";
@@ -269,17 +270,17 @@ export default function App() {
   setBlockConfig(course);
 
   useEffect(() => {
-    applyHue(course, cid);
-    if (!course) return;
-    /* One course's styles at a time. They used to be appended and never
-       removed, so opening three courses left three stylesheets fighting. */
-    document.querySelectorAll('style[id^="cs-"]').forEach(el => {
-      if (el.id !== "cs-" + cid) el.remove();
-    });
-    if (course.styles && !document.getElementById("cs-" + cid)) {
+    const active = course && peek(cid) === course;
+    applyHue(active ? course : null, cid);
+    /* Route changes can render once with the previous course while the next
+       fetch starts. Remove its sheet first, then install only the course
+       actually bound to this route. */
+    document.querySelectorAll('style[id^="cs-"]').forEach(el => el.remove());
+    const styles = active ? safeCourseStyles(course.styles, course) : "";
+    if (styles) {
       const el = document.createElement("style");
       el.id = "cs-" + cid;
-      el.textContent = course.styles;
+      el.textContent = styles;
       document.head.appendChild(el);
     }
   }, [course, cid, hueSet]);

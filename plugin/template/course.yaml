@@ -30,6 +30,7 @@ audit:
 valueStyles: {}
 
 # Optional: extra CSS for this subject. Plain data, injected at load.
+styleClasses: []   # classes used in authored blocks beyond valueStyles
 styles: ""
 
 # Optional: syntax highlighting for `code` blocks. No renderer needed.

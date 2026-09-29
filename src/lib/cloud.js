@@ -185,11 +185,11 @@ async function pushCourses(listing) {
          to decline is that the account is *ahead*, and stamping the local copy
          then would record an upload that never happened; the pull below is
          what settles that one. */
-      if (remote && !remote.deleted && remote.version === version) markSynced(id, version);
+      if (remote && !remote.deleted && remote.version === version) await markSynced(id, version);
       continue;
     }
     await call("/api/course", { op: "put", id, version, enc: await seal(files) });
-    markSynced(id, version);
+    await markSynced(id, version);
     sent.push(id);
   }
   return sent;
@@ -219,7 +219,7 @@ async function pullCourses(listing, taken, sent = []) {
          one does the same thing to its own copy. */
       if (holding) {
         await purge(c.id, (importedIndex()[c.id] || {}).code);
-        removeCourse(c.id); removed.push(c.id);
+        await removeCourse(c.id); removed.push(c.id);
       }
       continue;
     }
@@ -228,7 +228,7 @@ async function pullCourses(listing, taken, sent = []) {
     const got = await call("/api/course", { op: "get", id: c.id });
     if (!got || !got.enc) continue;
     const files = await open(got.enc);
-    const r = importCourse(c.id, files, taken, c.version);
+    const r = await importCourse(c.id, files, taken, c.version);
     if (r.ok) installed.push(c.id);
     else console.warn(`${c.id}: ${r.errors.join("; ")}`);
   }

@@ -37,6 +37,7 @@ import { dropHue } from "./theme.js";
 import { dropLane } from "./tiers.js";
 import { invalidate } from "./replay.js";
 import { dropCourse } from "./log.js";
+import { flush } from "./store.js";
 
 /**
  * Erase everything this device holds about one course except the course
@@ -46,7 +47,8 @@ import { dropCourse } from "./log.js";
  *
  * Resolves once the rows are gone from disk. Returns how many there were.
  */
-export function purge(cid, code) {
+export async function purge(cid, code) {
+  const dropped = await dropCourse(cid);
   dropStudy(cid, code);
   resetRetention(cid);
   dropNotes(cid);
@@ -55,5 +57,6 @@ export function purge(cid, code) {
   dropDepth(cid);
   dropHue(cid);
   invalidate(cid);
-  return dropCourse(cid);
+  await flush();
+  return dropped;
 }

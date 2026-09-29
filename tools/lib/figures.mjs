@@ -11,6 +11,7 @@
  * ==========================================================================*/
 import { KINDS } from "../../src/figures/index.js";
 import { SPEC } from "../../src/figures/schema.js";
+import { parseExpression } from "../../src/figures/expression.js";
 
 /* The schema sits beside the renderers so a new kind's author trips over it,
    which only works if a kind cannot be added to one and not the other. */
@@ -34,19 +35,12 @@ function checkKeys(obj, allowed, what, errs) {
       errs.push(`${what}: unknown key "${k}"${why(v)}`);
 }
 
-/* A plot series' `fn` is JavaScript in `x` that the reader's browser evaluates
-   while they are reading. It was the one authored expression nothing compiled:
-   a syntax error renders an empty chart with no message at all, and a runtime
-   error paints "Render error" onto the page someone is revising from. Maths is
-   rendered at build time for exactly this reason (T30), so a plot's function is
-   compiled and sampled here for the same one. Course JavaScript already runs in
-   this process — the bundler imports courses/<id>/blocks.js — so this adds no
-   trust that is not already assumed. */
+/* Use the same bounded arithmetic parser as the browser. */
 function checkPlotFns(spec, where, errs) {
   for (const ser of Array.isArray(spec.series) ? spec.series : []) {
     if (!ser || ser.points || ser.fn == null) continue;
     let f;
-    try { f = new Function("x", "return (" + ser.fn + ");"); }
+    try { f = parseExpression(ser.fn); }
     catch (e) { errs.push(`${where}: plot fn "${ser.fn}" does not parse — ${e.message}`); continue; }
     const from = ser.from != null ? ser.from : (spec.xrange ? spec.xrange[0] : 0);
     const to = ser.to != null ? ser.to : (spec.xrange ? spec.xrange[1] : 10);

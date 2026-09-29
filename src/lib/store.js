@@ -14,8 +14,9 @@
  * IndexedDB fixes the quota. Two decisions make it fit the existing code:
  *
  *   1. **Memory is the read model.** Everything is loaded once at boot, so
- *      reads stay synchronous and no call site becomes async. Writes go to
- *      memory immediately and reach disk on a debounce.
+ *      reads stay synchronous. Progress writes update memory immediately and
+ *      reach disk on a debounce; course changes enter memory on transaction
+ *      commit so the shelf only shows persisted courses.
  *   2. **The log gets its own store**, one record per row, so appending costs
  *      one small put rather than a rewrite of the whole array.
  *
@@ -42,6 +43,8 @@ let dirty = new Set();
 let pending = [];
 let timer = null;
 let listeners = [];
+let flushing = null;
+let deleting = null;
 
 export const onError = fn => { listeners.push(fn); };
 const fail = e => { listeners.forEach(fn => { try { fn(e); } catch {} }); };
@@ -165,33 +168,39 @@ export async function init() {
 
 function schedule() {
   if (timer || !db) return;
-  timer = setTimeout(() => { timer = null; flush(); }, FLUSH_MS);
+  timer = setTimeout(() => { timer = null; flush().catch(() => {}); }, FLUSH_MS);
 }
 
 /** Force everything to disk. Call on pagehide, and before syncing. */
 export function flush() {
+  if (deleting) return deleting.then(() => flush());
+  if (flushing) return flushing.then(() => flush());
   if (!db || (!dirty.size && !pending.length)) return Promise.resolve();
   const keys = [...dirty], add = pending;
   dirty = new Set(); pending = [];
-  return new Promise((res, rej) => {
-    const tx = db.transaction([KV, LOG], "readwrite");
-    const kv = tx.objectStore(KV), log = tx.objectStore(LOG);
+  const write = new Promise((res, rej) => {
+    let tx;
+    let failed = false;
+    const restore = e => {
+      if (failed) return;
+      failed = true;
+      keys.forEach(k => dirty.add(k)); pending = add.concat(pending);
+      fail(e); rej(e);
+    };
     try {
+      tx = db.transaction([KV, LOG], "readwrite");
+      const kv = tx.objectStore(KV), log = tx.objectStore(LOG);
       for (const k of keys) mem.has(k) ? kv.put(mem.get(k), k) : kv.delete(k);
       for (const r of add) log.put(r);
+      tx.oncomplete = () => res();
+      tx.onabort = () => restore(tx.error || new Error("storage write aborted"));
     } catch (e) {
-      /* put() throws synchronously on a malformed record, which would
-         otherwise abandon the rest of the batch without a word. */
-      keys.forEach(k => dirty.add(k)); pending = add.concat(pending);
-      fail(e); return rej(e);
+      if (tx) tx.abort();
+      restore(e);
     }
-    tx.oncomplete = () => res();
-    tx.onerror = () => {
-      /* Put them back so the next flush retries rather than dropping them. */
-      keys.forEach(k => dirty.add(k)); pending = add.concat(pending);
-      fail(tx.error); rej(tx.error);
-    };
-  }).catch(() => {});
+  });
+  flushing = write.finally(() => { flushing = null; });
+  return flushing;
 }
 
 /* ------------------------------------------------- the localStorage shape --
@@ -224,15 +233,35 @@ export function removeItem(k) {
 export const allBooks = () => [...books.values()];
 export const getBook = id => books.get(id) || null;
 
-export function putBook(rec) {
-  books.set(rec.id, rec);
-  if (db) db.transaction(COURSES, "readwrite").objectStore(COURSES).put(rec);
+function writeBook(change, commit) {
+  /* Node's memory-only tests have no IndexedDB. In a browser, a failed open
+     must not turn a course import or removal into a claimed success. */
+  if (typeof indexedDB === "undefined") { commit(); return Promise.resolve(); }
+  if (!db) {
+    const e = new Error("course storage is unavailable on this device");
+    fail(e); return Promise.reject(e);
+  }
+  return new Promise((res, rej) => {
+    let tx;
+    let settled = false;
+    const reject = e => {
+      if (settled) return;
+      settled = true; fail(e); rej(e);
+    };
+    try {
+      tx = db.transaction(COURSES, "readwrite");
+      change(tx.objectStore(COURSES));
+      tx.oncomplete = () => { settled = true; commit(); res(); };
+      tx.onabort = () => reject(tx.error || new Error("course storage transaction aborted"));
+    } catch (e) {
+      if (tx) tx.abort();
+      reject(e);
+    }
+  });
 }
 
-export function dropBook(id) {
-  books.delete(id);
-  if (db) db.transaction(COURSES, "readwrite").objectStore(COURSES).delete(id);
-}
+export const putBook = rec => writeBook(s => s.put(rec), () => books.set(rec.id, rec));
+export const dropBook = id => writeBook(s => s.delete(id), () => books.delete(id));
 
 /* --------------------------------------------------------------- the log --*/
 
@@ -281,20 +310,33 @@ export function clearLog() {
  * course erases what the reader answered in it, and these rows are where the
  * answers actually live — the rest is a fold over them.
  *
- * The flush comes first and the ordering is the whole point. Writes are
- * debounced, so a row appended moments ago may still be sitting in `pending`;
- * draining it here puts those rows in a transaction created *before* the
- * delete, and IndexedDB runs overlapping read-write transactions in creation
- * order. Deleting first would let a late flush write them straight back.
+ * Drain queued writes before deleting, then hold later flushes until the
+ * delete commits. A failed write or delete leaves the memory rows available
+ * for a later attempt instead of reporting a successful purge.
  */
 export async function dropRows(pred) {
+  if (deleting) await deleting;
   await flush();
   const gone = rows.filter(pred);
   if (!gone.length) return 0;
-  rows = rows.filter(r => !pred(r));
   if (db) {
-    const s = db.transaction(LOG, "readwrite").objectStore(LOG);
-    for (const r of gone) s.delete(r.id);
+    let release;
+    deleting = new Promise(res => { release = res; });
+    try {
+      await new Promise((res, rej) => {
+        let tx;
+        try {
+          tx = db.transaction(LOG, "readwrite");
+          const s = tx.objectStore(LOG);
+          for (const r of gone) s.delete(r.id);
+          tx.oncomplete = res;
+          tx.onabort = () => rej(tx.error || new Error("storage delete aborted"));
+        } catch (e) { if (tx) tx.abort(); rej(e); }
+      });
+    } catch (e) { fail(e); throw e; }
+    finally { deleting = null; release(); }
   }
+  rows = rows.filter(r => !pred(r));
+  pending = pending.filter(r => !pred(r));
   return gone.length;
 }

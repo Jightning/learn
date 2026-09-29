@@ -71,7 +71,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
      next load, so it is dismissed from the shelf instead and its answers are
      left alone: hiding is reversible, and a reversible act must not discard
      progress. */
-  const drop = cid => {
+  const drop = async cid => {
     const c = courses[cid] || {};
     const name = strip(c.title || cid);
     const own = !!mine[cid];
@@ -79,9 +79,10 @@ export default function Library({ courses, order, loading, error, onChange }) {
       /* Tell the account, if this device is connected to one: a course removed
          here is meant to be gone everywhere, and the queue is carried on the
          next sync rather than costing a request of its own. */
+      try { await purge(cid, c.code); await removeCourse(cid); }
+      catch { setMsg({ text: `Could not remove ${name}. Storage failed; try again.`, bad: true }); setDoomed(null); return; }
       queueDelete(cid);
-      purge(cid, c.code);
-      removeCourse(cid); refresh();
+      refresh();
     }
     else setDismissed(cid, true);
     onChange && onChange();
@@ -89,7 +90,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
     /* Only the destructive one reports. Hiding is reversible, the shelf in
        front of the reader already shows it gone, and the empty-shelf text says
        where it went — a third statement of the same fact is noise. */
-    setMsg(own ? `Removed ${name}.` : null);
+    setMsg(own ? { text: `Removed ${name}.` } : null);
   };
 
   /* The way in to `#/sync` when there is no address bar to type it into.
@@ -264,7 +265,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
         </div>
       )}
 
-      {msg && <p class="cio-msg">{msg}</p>}
+      {msg && <p class={"cio-msg" + (msg.bad ? " bad" : "")} role="status">{msg.text}</p>}
 
       {Object.keys(mine).length > 0 && atRisk && (
         <p class="cio-warn">

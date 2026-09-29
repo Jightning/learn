@@ -307,9 +307,9 @@ export function track() {
      disk here rather than left on the store's debounce, since the next thing
      that happens may be the view being discarded. */
   const onHide = () => {
-    if (document.visibilityState === "hidden") { remember(); flush(); }
+    if (document.visibilityState === "hidden") { remember(); flush().catch(() => {}); }
   };
-  const onPageHide = () => { remember(); flush(); };
+  const onPageHide = () => { remember(); flush().catch(() => {}); };
 
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", onResize);

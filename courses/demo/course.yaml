@@ -40,6 +40,7 @@ valueStyles:
   auto: v-a
 
 # Extra CSS for this course, injected at load. Ink variants for text (T3).
+styleClasses: [metric, metric-v, metric-l]
 styles: |
   .v-y{color:var(--hi-ink);font-weight:700}
   .v-n{color:var(--lo-ink)}

@@ -3,6 +3,7 @@ import { sectionEdges } from "../lib/refs.js";
 import { transitiveReduction } from "../lib/graph.js";
 import { Figures } from "../figures/index.js";
 import Inline from "./Inline.jsx";
+import { safeMarkup } from "../lib/safe-markup.js";
 
 /* The course's real shape, derived from its cross-references. */
 export default function DepMap({ ctx, onNode, focus }) {
@@ -97,7 +98,7 @@ export default function DepMap({ ctx, onNode, focus }) {
              const n = e.target.closest?.("[data-node]");
              if (n) onNode(n.getAttribute("data-node"));
            }}
-           dangerouslySetInnerHTML={{ __html: svg }} />
+           dangerouslySetInnerHTML={{ __html: safeMarkup(svg) }} />
       {/* The list is an index, not a decoder.
        *
        * Pointing at a row lights its node and pointing at a node lights its

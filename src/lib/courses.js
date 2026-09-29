@@ -50,7 +50,7 @@ export const versionOf = cid => (getBook(cid) || {}).version || null;
  * is keyed on `code`, so a duplicate would quietly pool two schedules.
  * `version` is the server's content hash, or null for a hand-installed file.
  */
-export function importCourse(id, files, taken = {}, version = null) {
+export async function importCourse(id, files, taken = {}, version = null) {
   const { course, errors } = parseCourse(files);
   if (!course || errors.length) return { ok: false, errors };
 
@@ -62,19 +62,19 @@ export function importCourse(id, files, taken = {}, version = null) {
     clashes.push(`code "${index.code}" is already used by ${taken.codes[index.code]}`);
   if (clashes.length) return { ok: false, errors: clashes };
 
-  putBook({ id, files, index, version, at: Date.now() });
+  await putBook({ id, files, index, version, at: Date.now() });
   return { ok: true, errors, course, index };
 }
 
-export function removeCourse(cid) { dropBook(cid); }
+export function removeCourse(cid) { return dropBook(cid); }
 
 /** After the server has taken a copy: record the version it assigned, so this
  *  device stops offering the course up on every sync. A null version is what
  *  marks a course as installed here and unknown to the server. */
-export function markSynced(cid, version) {
+export async function markSynced(cid, version) {
   const b = getBook(cid);
   if (!b || !version) return false;
-  putBook({ ...b, version });
+  await putBook({ ...b, version });
   return true;
 }
 

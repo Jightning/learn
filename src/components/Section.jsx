@@ -18,6 +18,7 @@ import Inline from "./Inline.jsx";
 import { isFollow } from "../lib/follows.js";
 import { renderAnchors, asidesOf, anchorKeys } from "../lib/asides.js";
 import { watchFigureScroll } from "../lib/figure-scroll.js";
+import { safeMarkup } from "../lib/safe-markup.js";
 
 /* Pair only within this block: authors may reuse note keys in other blocks.
    Focus gives keyboard and touch readers the same reference as hover. */
@@ -104,7 +105,7 @@ export function NoteRow({ b, p, ctx, refs, open, onToggle, showCat, runIn }) {
           ? (points
               ? <ul class="npoints">
                   {lab && <li class="nlab-li"><b class="nlab"
-                              dangerouslySetInnerHTML={{ __html: lab }} /></li>}
+                              dangerouslySetInnerHTML={{ __html: safeMarkup(lab) }} /></li>}
                   {points.map((t, k) => (
                     <li key={k} dangerouslySetInnerHTML={{
                       __html: decorate(renderAnchors(t), ctx.cid, ctx.idx.FIG.byKey) }} />
@@ -115,7 +116,7 @@ export function NoteRow({ b, p, ctx, refs, open, onToggle, showCat, runIn }) {
                       because a margin is not in the text layer: copied text and
                       a screen reader both ran the label into the claim. */}
                   {lab && <b class="nlab"
-                             dangerouslySetInnerHTML={{ __html: lab + "." }} />}
+                             dangerouslySetInnerHTML={{ __html: safeMarkup(lab + ".") }} />}
                   {lab && " "}
                   {/* A claim can carry an aside's anchor too, and where it
                       does the pairing works here exactly as it does in the

@@ -2,6 +2,7 @@ import { useState } from "preact/hooks";
 import { importCourse, importedIndex } from "../lib/courses.js";
 import { INDEX, refresh } from "../lib/library.js";
 import { fromFolder, fromZip, fromJSON } from "../lib/intake.js";
+import { MAX_BYTES, MAX_FILES, MAX_ENTRY, kb, tooManyFiles, oversizedEntry, oversizedCourse } from "../lib/intake-limits.js";
 
 /* Installing a course onto this device.
  *
@@ -24,12 +25,6 @@ import { fromFolder, fromZip, fromJSON } from "../lib/intake.js";
  * limits sit far above any real course — the largest here is 1.5MB
  * across 262 files — and far below anything that could wedge the tab.
  */
-const MAX_BYTES = 8 * 1024 * 1024;
-const MAX_FILES = 500;
-const MAX_ENTRY = 2 * 1024 * 1024;
-
-const kb = n => `${(n / 1024).toFixed(0)}KB`;
-
 /* webkitdirectory is unsupported on every mobile browser, iOS Safari included,
    so the folder button is offered only where it works. Zip is the path that
    works everywhere. */
@@ -40,14 +35,14 @@ const canPickFolder = typeof document !== "undefined" &&
 function refuse(files) {
   const paths = Object.keys(files || {});
   if (!paths.length) return "that course is empty";
-  if (paths.length > MAX_FILES) return `too many files (${paths.length}); the limit is ${MAX_FILES}`;
+  if (paths.length > MAX_FILES) return tooManyFiles(paths.length);
   let total = 0;
   for (const p of paths) {
     if (typeof files[p] !== "string") return `entry "${p}" is not text`;
     total += files[p].length;
-    if (files[p].length > MAX_ENTRY) return `entry "${p}" is larger than ${kb(MAX_ENTRY)}`;
+    if (files[p].length > MAX_ENTRY) return oversizedEntry(p);
   }
-  if (total > MAX_BYTES) return `that course is ${kb(total)}; the limit is ${kb(MAX_BYTES)}`;
+  if (total > MAX_BYTES) return oversizedCourse(total);
   if (!paths.some(p => /^course\.(ya?ml|json)$/.test(p)))
     return "no course.yaml at the top level. Is this a course folder?";
   return null;
@@ -70,7 +65,7 @@ export default function CourseIO({ onChange }) {
     const taken = { ids: Object.keys(INDEX), codes: {} };
     for (const [cid, e] of Object.entries(INDEX)) if (e.code) taken.codes[e.code] = cid;
 
-    const r = importCourse(id, files, taken);
+    const r = await importCourse(id, files, taken);
     if (!r.ok) {
       const error = new Error("course structure is invalid");
       error.details = r.errors;

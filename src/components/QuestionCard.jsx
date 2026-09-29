@@ -1,5 +1,5 @@
 import { useState, useRef } from "preact/hooks";
-import { M } from "../lib/math.js";
+import { authored as M, safeMarkup } from "../lib/safe-markup.js";
 import { renderBlock } from "../blocks/index.js";
 import { gradeQuestion } from "../lib/questions.js";
 import { append } from "../lib/log.js";
@@ -15,7 +15,7 @@ function Stimulus({ value }) {
       {value.source && <figcaption dangerouslySetInnerHTML={{ __html: M(value.source) }} />}
     </figure>
   );
-  return <div class="qstim" dangerouslySetInnerHTML={{ __html: renderBlock(value, {}) }} />;
+  return <div class="qstim" dangerouslySetInnerHTML={{ __html: safeMarkup(renderBlock(value, {})) }} />;
 }
 
 /* A single attempt. All three routes supply the same card and record the same

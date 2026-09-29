@@ -5,6 +5,7 @@ import { decorate } from "../lib/refs.js";
 import { renderAnchors } from "../lib/asides.js";
 import { strip } from "../lib/util.js";
 import { slideIntent, slideSwipe } from "../lib/swipe.js";
+import { safeMarkup, safeImageURL } from "../lib/safe-markup.js";
 import Inline from "./Inline.jsx";
 
 /* One authored sequence lives in one reading row. During a drag, mount just
@@ -77,9 +78,9 @@ export default function Slides({ b, ctx, fignum }) {
     return <div class="slides-frame" aria-hidden={hidden ? "true" : undefined} inert={hidden || undefined}
                 aria-live={hidden ? undefined : "polite"} aria-atomic={hidden ? undefined : "true"} key={index}>
       {item.title && <h4><Inline text={item.title} /></h4>}
-      {visual && <div class="slides-visual" dangerouslySetInnerHTML={{ __html: visualHtml }} />}
+      {visual && <div class="slides-visual" dangerouslySetInnerHTML={{ __html: safeMarkup(visualHtml) }} />}
       {figure && !visual && <p class="fx-miss">Unknown visual kind.</p>}
-      {item.image && <figure class="slides-image"><img src={item.image.src} alt={item.image.alt || ""} loading="lazy" /></figure>}
+      {item.image && <figure class="slides-image"><img src={safeImageURL(item.image.src)} alt={item.image.alt || ""} loading="lazy" /></figure>}
       {item.text && <div class="slides-text" dangerouslySetInnerHTML={{
         __html: decorate(renderAnchors(item.text), ctx.cid, ctx.idx.FIG.byKey)
       }} />}
@@ -94,7 +95,7 @@ export default function Slides({ b, ctx, fignum }) {
                   e.preventDefault(); move(e.key === "ArrowRight" ? 1 : -1);
                 }
               }}>
-    {cap && <span class="fcap" dangerouslySetInnerHTML={{ __html: cap }} />}
+    {cap && <span class="fcap" dangerouslySetInnerHTML={{ __html: safeMarkup(cap) }} />}
     <div class="slides-head">
       <span class="slides-count">{at + 1} / {frames.length}</span>
       <span class="slides-progress" aria-hidden="true"><i style={{ width: `${(at + 1) / frames.length * 100}%` }} /></span>

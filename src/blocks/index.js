@@ -35,14 +35,7 @@ const UNSOURCED = {
   generated: "generated"
 };
 
-/* Authored fields are HTML, uniformly.
- *
- * `h`, `q` and `why` always were; `a`, `cap`, `label` and an example's `title`
- * were escaped, which made them the only places an equation could not go — and
- * an equation is exactly what a worked example's title or a quiz answer wants
- * to be. They are the same trust domain (a file in this repo), so the rule is
- * now the same everywhere, and validate.mjs fails a bare `<` or `&` so the
- * change cannot bite an author who forgets. */
+/* Authored fields share the safe-markup policy at render time. */
 export const U = {
   esc, strip, clip,
   /* An empty label renders no label row. A callout whose kind is already

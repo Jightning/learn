@@ -1,6 +1,7 @@
 /* Figure kind: plot */
 import { esc, tone, round, fmt } from "./base.js";
 import { frame, grid, xTicks, axisLabels, scale, tickLabels } from "./axes.js";
+import { parseExpression } from "./expression.js";
 
 /* ---------- kind: plot --------------------------------------------------
  * series: [{label, points:[[x,y]…]}] or [{label, fn:"x*x", from, to}]
@@ -10,11 +11,11 @@ export function plot (spec, caption = "") {
         if (s.points) return s;
         var from = s.from != null ? s.from : (spec.xrange ? spec.xrange[0] : 0),
             to = s.to != null ? s.to : (spec.xrange ? spec.xrange[1] : 10),
-            n = s.samples || 80, pts = [], f;
-        try { f = new Function("x", "return (" + s.fn + ");"); } catch (e) { return { label: s.label, points: [] }; }
+            n = Math.min(2000, Math.max(2, Number.isInteger(s.samples) ? s.samples : 80)), pts = [], f;
+        try { f = parseExpression(s.fn); } catch (e) { return { label: s.label, points: [] }; }
         for (var i = 0; i <= n; i++) {
           var x = from + (to - from) * (i / n), y = f(x);
-          if (isFinite(y)) pts.push([x, y]);
+          if (Number.isFinite(y)) pts.push([x, y]);
         }
         return { label: s.label, points: pts, dash: s.dash };
       });
