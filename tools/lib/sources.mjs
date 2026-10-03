@@ -63,6 +63,15 @@ const CODE = new Set([".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx", ".py", ".rb"
   ".sql", ".r", ".jl", ".lua", ".dart", ".vue", ".svelte", ".css", ".scss", ".json", ".yaml",
   ".yml", ".toml", ".ini", ".csv", ".xml", ".proto", ".graphql", ".ipynb"]);
 
+/** Extraction registration only. `doc` and `text` retain their older meaning:
+    binary teaching sources are catalogued, but never read as UTF-8 here. */
+export const SOURCE_FORMATS = new Map([
+  ...[...DOC, ...CODE].map(ext => [ext, "text"]),
+  [".pdf", "pdf"], [".pptx", "pptx"], [".ppt", "ppt"],
+  [".png", "image"], [".jpg", "image"], [".jpeg", "image"],
+  [".gif", "image"], [".webp", "image"], [".svg", "image"]
+]);
+
 /* Never listed, never offered: credentials by name, and bulk that is not
    material (dependencies, build output, lockfiles, minified bundles). The
    authoring session's permissions deny the credential patterns as well. */
@@ -128,7 +137,7 @@ export function list(rootsList) {
 function entry(root, rel, path) {
   const ext = extname(rel).toLowerCase();
   return { root, rel, path, doc: DOC.has(ext), text: DOC.has(ext) || CODE.has(ext),
-           bytes: statSync(path).size };
+           bytes: statSync(path).size, format: SOURCE_FORMATS.get(ext) || "binary" };
 }
 
 const tok = bytes => Math.round(bytes / 4);

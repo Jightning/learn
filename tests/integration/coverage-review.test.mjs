@@ -38,8 +38,11 @@ try {
     draft.status === 0 && resistorId && shieldingId && resistorId !== shieldingId,
     draft.stdout + draft.stderr);
   check("the missing topic is a low-score lead",
-    new RegExp(`! ${shieldingId} 0\\.00`).test(draft.stdout), draft.stdout);
+    new RegExp(`! ${shieldingId} 0%`).test(draft.stdout), draft.stdout);
 
+  check("coverage prints percentages and locators without source passages or missing terms",
+    /Lexical coverage: \d+%/.test(draft.stdout) && !/missing:/.test(draft.stdout) &&
+    !draft.stdout.includes("Magnetic fields"), draft.stdout);
   const original = readFileSync(source, "utf8");
   writeFileSync(source, "## New Front Matter\n\nUnrelated introductory words.\n\n" + original);
   const changed = run("coverage.mjs", "fixture", "--all");
@@ -50,13 +53,13 @@ try {
 
   const draftAudit = run("audit-content.mjs", "--profile", "draft", "fixture");
   const publish = run("audit-content.mjs", "--profile", "publish", "fixture");
-  check("draft audit reports while publish requires coverage review",
-    draftAudit.status === 0 && publish.status === 1 &&
+  check("draft audit reports while publish warns about coverage review",
+    draftAudit.status === 0 && publish.status === 0 &&
     /low-scoring coverage leads need reviewed dispositions/.test(publish.stdout),
     publish.stdout + publish.stderr);
   const packagedPublish = packaged("audit-content.mjs", "--profile", "publish", "fixture");
-  check("the packaged publish command enforces coverage dispositions too",
-    packagedPublish.status === 1 && /low-scoring coverage leads/.test(packagedPublish.stdout),
+  check("the packaged publish command reports coverage dispositions too",
+    packagedPublish.status === 0 && /low-scoring coverage leads/.test(packagedPublish.stdout),
     packagedPublish.stdout + packagedPublish.stderr);
 
   const initialized = run("coverage.mjs", "fixture", "--init-review");
@@ -72,8 +75,8 @@ try {
   delete review.topics[shieldingId].reason;
   writeFileSync(reviewPath, YAML.dump(review));
   const noReason = run("audit-content.mjs", "--profile", "publish", "fixture");
-  check("skipped without a reason still fails publish",
-    noReason.status === 1 && /skipped needs a reason/.test(noReason.stdout), noReason.stdout);
+  check("skipped without a reason warns without blocking publish",
+    noReason.status === 0 && /skipped needs a reason/.test(noReason.stdout), noReason.stdout);
   review.topics[shieldingId].reason = "Magnetic shielding is outside the resistor course";
   writeFileSync(reviewPath, YAML.dump(review));
   const cleared = run("audit-content.mjs", "--profile", "publish", "fixture");

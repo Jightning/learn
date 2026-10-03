@@ -208,7 +208,6 @@ export default function Library({ courses, order, loading, error, onChange }) {
                         <span>{c.questions} questions</span>
                       </>}
                 </div>
-                {ownIt && <div class="laudit">Content not audited</div>}
                 {s && s.total > 0 && s.seen > 0 && (
                   <div class="lbar"><i style={`width:${Math.round((s.got / s.total) * 100)}%`} /></div>
                 )}

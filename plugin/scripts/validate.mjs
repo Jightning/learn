@@ -29112,6 +29112,14 @@ function tex(src, display) {
 	});
 }
 //#endregion
+//#region tools/lib/raw-math.mjs
+function rawMathFragment(value) {
+	if (typeof value !== "string") return "";
+	const prose = value.replace(/<m>[\s\S]*?<\/m>/gi, " ").replace(/<(?:code|pre)\b[^>]*>[\s\S]*?<\/(?:code|pre)>/gi, " ").replace(/<[^>]*>/g, " ");
+	const match = /\\[A-Za-z]{2,}|(?:[A-Za-z0-9)]|\})\^(?:\{[^}]+\}|[-+A-Za-z0-9\\]+)|[A-Za-z][A-Za-z0-9]*_(?:\{[^}]+\}|[-+A-Za-z0-9\\]+)|\b[A-Za-z][A-Za-z0-9]*(?:\([^)]*\))?\s*=/.exec(prose);
+	return match ? match[0] : "";
+}
+//#endregion
 //#region tools/lib/paths.mjs
 const holdsSpec = (d) => existsSync(join(d, "docs", "create_course.md")) || existsSync(join(d, "courses", "_template")) || existsSync(join(d, "template", "course.yaml"));
 function findEngine(from) {
@@ -29121,7 +29129,10 @@ function findEngine(from) {
 /** The folder the running script was installed in (this repo, or the package). */
 const ENGINE = findEngine(dirname(fileURLToPath(import.meta.url)));
 const here = () => resolve(process.env.INIT_CWD || process.cwd());
-const WORKSPACE = process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : existsSync(join(ENGINE, "courses")) ? ENGINE : here();
+const workspaceAt = process.argv.indexOf("--workspace");
+const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : null;
+if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--"))) throw new Error("--workspace needs a directory path");
+const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : here();
 const COURSES$1 = join(WORKSPACE, "courses");
 join(WORKSPACE, ".author");
 existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");
@@ -29792,13 +29803,162 @@ function matrix(spec) {
 	}).join("") + "</table><span class=\"fx-br\">]</span>" + (spec.label ? "<span class=\"fx-mxl\">" + esc$1(spec.label) + "</span>" : "") + "</div>";
 }
 //#endregion
+//#region src/figures/expression.js
+const FUNCTIONS = Object.freeze({
+	abs: Math.abs,
+	acos: Math.acos,
+	asin: Math.asin,
+	atan: Math.atan,
+	ceil: Math.ceil,
+	cos: Math.cos,
+	cosh: Math.cosh,
+	exp: Math.exp,
+	floor: Math.floor,
+	log: Math.log,
+	log10: Math.log10,
+	max: Math.max,
+	min: Math.min,
+	pow: Math.pow,
+	round: Math.round,
+	sign: Math.sign,
+	sin: Math.sin,
+	sinh: Math.sinh,
+	sqrt: Math.sqrt,
+	tan: Math.tan,
+	tanh: Math.tanh,
+	trunc: Math.trunc
+});
+const TOKEN = /\s*(?:((?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)|([a-zA-Z][a-zA-Z0-9_.]*)|(\*\*|[()+\-*/%^,]))/gy;
+function parseExpression(source) {
+	const input = String(source || "");
+	if (input.length > 160) throw new Error("expression is too long");
+	const tokens = [];
+	let at = 0;
+	while (at < input.length) {
+		if (/^\s*$/.test(input.slice(at))) break;
+		TOKEN.lastIndex = at;
+		const match = TOKEN.exec(input);
+		if (!match || match.index !== at) throw new Error("expression contains unsupported syntax");
+		tokens.push(match[1] || match[2] || match[3]);
+		if (tokens.length > 80) throw new Error("expression has too many tokens");
+		at = TOKEN.lastIndex;
+	}
+	let i = 0, nodes = 0;
+	const peek = () => tokens[i];
+	const take = (expected) => {
+		if (peek() !== expected) throw new Error(`expected ${expected}`);
+		i++;
+	};
+	const node = (kind, args) => {
+		if (++nodes > 80) throw new Error("expression is too complex");
+		return {
+			kind,
+			...args
+		};
+	};
+	const atom = (depth) => {
+		if (depth > 24) throw new Error("expression is too deep");
+		const t = tokens[i++];
+		if (t === "(") {
+			const e = sum(depth + 1);
+			take(")");
+			return e;
+		}
+		if (t && /^(?:\d|\.)/.test(t)) return node("number", { value: Number(t) });
+		if (t === "x") return node("x", {});
+		if (t === "pi" || t === "Math.PI") return node("number", { value: Math.PI });
+		if (t === "e" || t === "Math.E") return node("number", { value: Math.E });
+		const name = t?.startsWith("Math.") ? t.slice(5) : t;
+		if (!Object.hasOwn(FUNCTIONS, name)) throw new Error("unknown name or function");
+		take("(");
+		const args = [];
+		if (peek() !== ")") do {
+			args.push(sum(depth + 1));
+			if (peek() !== ",") break;
+			i++;
+		} while (args.length < 5);
+		take(")");
+		if (!args.length || args.length > 4) throw new Error("function needs 1 to 4 arguments");
+		return node("call", {
+			name,
+			args
+		});
+	};
+	const power = (depth) => {
+		let left = atom(depth);
+		if (peek() === "^" || peek() === "**") {
+			i++;
+			left = node("binary", {
+				op: "^",
+				left,
+				right: unary(depth + 1)
+			});
+		}
+		return left;
+	};
+	const unary = (depth) => {
+		if (peek() === "+" || peek() === "-") {
+			const op = tokens[i++];
+			return node("unary", {
+				op,
+				arg: unary(depth + 1)
+			});
+		}
+		return power(depth);
+	};
+	const product = (depth) => {
+		let left = unary(depth);
+		while ([
+			"*",
+			"/",
+			"%"
+		].includes(peek())) {
+			const op = tokens[i++];
+			left = node("binary", {
+				op,
+				left,
+				right: unary(depth)
+			});
+		}
+		return left;
+	};
+	const sum = (depth) => {
+		let left = product(depth);
+		while (peek() === "+" || peek() === "-") {
+			const op = tokens[i++];
+			left = node("binary", {
+				op,
+				left,
+				right: product(depth)
+			});
+		}
+		return left;
+	};
+	const tree = sum(0);
+	if (i !== tokens.length) throw new Error("expression has trailing syntax");
+	const evaluate = (n, x) => {
+		if (n.kind === "number") return n.value;
+		if (n.kind === "x") return x;
+		if (n.kind === "unary") return n.op === "-" ? -evaluate(n.arg, x) : evaluate(n.arg, x);
+		if (n.kind === "call") return FUNCTIONS[n.name](...n.args.map((a) => evaluate(a, x)));
+		const a = evaluate(n.left, x), b = evaluate(n.right, x);
+		if (n.op === "+") return a + b;
+		if (n.op === "-") return a - b;
+		if (n.op === "*") return a * b;
+		if (n.op === "/") return a / b;
+		if (n.op === "%") return a % b;
+		return a ** b;
+	};
+	return (x) => evaluate(tree, x);
+}
+//#endregion
 //#region src/figures/plot.js
 function plot(spec, caption = "") {
 	var series = (spec.series || []).map(function(s) {
 		if (s.points) return s;
-		var from = s.from != null ? s.from : spec.xrange ? spec.xrange[0] : 0, to = s.to != null ? s.to : spec.xrange ? spec.xrange[1] : 10, n = s.samples || 80, pts = [], f;
+		var from = s.from != null ? s.from : spec.xrange ? spec.xrange[0] : 0, to = s.to != null ? s.to : spec.xrange ? spec.xrange[1] : 10, n = Math.min(2e3, Math.max(2, Number.isInteger(s.samples) ? s.samples : 80)), pts = [], f;
 		try {
-			f = new Function("x", "return (" + s.fn + ");");
+			f = parseExpression(s.fn);
 		} catch (e) {
 			return {
 				label: s.label,
@@ -29807,7 +29967,7 @@ function plot(spec, caption = "") {
 		}
 		for (var i = 0; i <= n; i++) {
 			var x = from + (to - from) * (i / n), y = f(x);
-			if (isFinite(y)) pts.push([x, y]);
+			if (Number.isFinite(y)) pts.push([x, y]);
 		}
 		return {
 			label: s.label,
@@ -30391,7 +30551,7 @@ function checkPlotFns(spec, where, errs) {
 		if (!ser || ser.points || ser.fn == null) continue;
 		let f;
 		try {
-			f = new Function("x", "return (" + ser.fn + ");");
+			f = parseExpression(ser.fn);
 		} catch (e) {
 			errs.push(`${where}: plot fn "${ser.fn}" does not parse — ${e.message}`);
 			continue;
@@ -31243,6 +31403,34 @@ function checkAsides(C, errs, warns) {
 	}
 }
 //#endregion
+//#region tools/lib/question-schema.mjs
+function checkResponse(item, where, errs) {
+	const r = item.response;
+	if (!r) return;
+	if (![
+		"single",
+		"multi",
+		"number",
+		"self"
+	].includes(r.kind)) {
+		errs.push(`${where}: response.kind must be single, multi, number, or self`);
+		return;
+	}
+	if (r.kind === "single" || r.kind === "multi") {
+		if (!Array.isArray(r.choices)) {
+			errs.push(`${where}: response.choices must be a list`);
+			return;
+		}
+		r.choices.forEach((choice, i) => {
+			if (!String(choice.text || "").trim() || !String(choice.why || "").trim()) errs.push(`${where}: choice ${i + 1} needs text and why`);
+		});
+		const correct = r.kind === "single" ? [r.correct] : r.correct;
+		if (!Array.isArray(correct) || !correct.length || correct.some((n) => !Number.isInteger(n) || n < 1 || n > r.choices.length) || new Set(correct).size !== correct.length) errs.push(`${where}: correct must name valid 1-based choice numbers`);
+	}
+	if (r.kind === "number" && (r.value == null || String(r.value).trim() === "" || !Number.isFinite(Number(r.value)) || !Number.isFinite(Number(r.tolerance ?? 0)) || Number(r.tolerance ?? 0) < 0)) errs.push(`${where}: numeric response needs a finite value and nonnegative tolerance`);
+	if (r.kind === "self" && !String(r.model || "").trim()) errs.push(`${where}: self-check response needs a model answer`);
+}
+//#endregion
 //#region tools/lib/question-context.mjs
 const OBJECT = "(?:figure|chart|graph|plot|scatter\\s*plot|scatterplot|table|passage|excerpt|text)";
 const REFERENCE = new RegExp(`\\b(?:the|this|that|above|below|following|preceding|shown|given)\\s+(?:(?:scatter|line|bar|data|quoted|reading)\\s+)?${OBJECT}\\b|\\b(?:figure|chart|graph|plot|scatter\\s*plot|scatterplot|table|passage|excerpt)\\s+\\d+(?:\\.\\d+)?\\b`, "i");
@@ -31344,32 +31532,6 @@ const FORMATS = /* @__PURE__ */ new Set([
 	"numeric"
 ]);
 const DRILL_MIN = 3;
-function checkResponse(item, where, errs) {
-	const r = item.response;
-	if (!r) return;
-	if (![
-		"single",
-		"multi",
-		"number",
-		"self"
-	].includes(r.kind)) {
-		errs.push(`${where}: response.kind must be single, multi, number, or self`);
-		return;
-	}
-	if (r.kind === "single" || r.kind === "multi") {
-		if (!Array.isArray(r.choices) || r.choices.length < 2) {
-			errs.push(`${where}: response needs at least two choices`);
-			return;
-		}
-		r.choices.forEach((choice, i) => {
-			if (!String(choice.text || "").trim() || !String(choice.why || "").trim()) errs.push(`${where}: choice ${i + 1} needs text and why`);
-		});
-		const correct = r.kind === "single" ? [r.correct] : r.correct;
-		if (!Array.isArray(correct) || !correct.length || correct.some((n) => !Number.isInteger(n) || n < 1 || n > r.choices.length) || new Set(correct).size !== correct.length) errs.push(`${where}: correct must name valid 1-based choice numbers`);
-	}
-	if (r.kind === "number" && (r.value == null || String(r.value).trim() === "" || !Number.isFinite(Number(r.value)) || !Number.isFinite(Number(r.tolerance ?? 0)) || Number(r.tolerance ?? 0) < 0)) errs.push(`${where}: numeric response needs a finite value and nonnegative tolerance`);
-	if (r.kind === "self" && !String(r.model || "").trim()) errs.push(`${where}: self-check response needs a model answer`);
-}
 function checkStimulus(item, where, errs, courseId) {
 	const s = item.stimulus;
 	if (!s) return;
@@ -31393,6 +31555,8 @@ function checkQuestionHtml(item, where, errs) {
 	const bare = /<\/?(?!(?:a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul)[\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]/;
 	for (let field of fields) {
 		if (typeof field !== "string") continue;
+		const raw = rawMathFragment(field);
+		if (raw) errs.push(`${where}: raw math "${raw}" will print literally — wrap inline notation in <m>...</m> or use a math block for a central equation`);
 		for (const m of field.matchAll(/<m>([\s\S]*?)<\/m>/g)) try {
 			tex(m[1], false);
 		} catch (e) {
@@ -31638,7 +31802,7 @@ for (const id of courses) {
 			if (b.t === "slides") checkSlides(b, where, errs);
 			if (b.tier && !TIERS.includes(b.tier)) errs.push(`${where}: unknown tier "${b.tier}" — one of ${TIERS.join(", ")}`);
 			if (b.notes && !NOTES_MODES.includes(b.notes)) errs.push(`${where}: unknown notes: "${b.notes}" — one of ${NOTES_MODES.join(", ")}`);
-			if (b.t === "attempt" && u.blocks.indexOf(b) !== 0) errs.push(`${where}: an "attempt" block may only be the first block of a subsection`);
+			if (b.t === "attempt" && u.blocks.indexOf(b) !== 0) warns.push(`${where}: an "attempt" block is usually first; retain another placement if deliberate`);
 			if (b.t === "def" && b.term) namedTerms++;
 			if (b.t === "image" && !String(b.alt || "").trim()) errs.push(`${where}: image "${b.src}" has no alt text`);
 			const images = b.t === "image" ? [b] : b.t === "slides" ? (Array.isArray(b.frames) ? b.frames : []).map((frame) => frame?.image).filter(Boolean) : [];
@@ -31653,9 +31817,9 @@ for (const id of courses) {
 			}
 			if (b.t === "table" && (b.mono || b.map) && JSON.stringify(b.rows || []).includes("<m>")) errs.push(`${where}: <m> inside a mono/map table — its cells are escaped`);
 		}
-		if (!namedTerms) errs.push(`${where}: names no term with a def block — its section's primer loses coverage`);
+		if (!namedTerms) warns.push(`${where}: names no term with a def block — check whether this is deliberate`);
 		const q = u.quiz || [];
-		if (!q.length) errs.push(`${where}: no questions`);
+		if (!q.length) warns.push(`${where}: no questions — check the declared teaching and assessment scope`);
 		const seenType = /* @__PURE__ */ new Set();
 		for (const item of q) {
 			qCount++;
@@ -31689,6 +31853,8 @@ for (const id of courses) {
 		const bare = new RegExp(`</?(?!(?:a|b|br|c|code|em|f|i|li|m|mark|n|ol|p|s|span|strong|sub|sup|u|ul)[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
 		const checkHtml = (v, what) => {
 			if (typeof v !== "string") return;
+			const raw = rawMathFragment(v);
+			if (raw) errs.push(`${what}: raw math "${raw}" will print literally — wrap inline notation in <m>...</m> or use a math block for a central equation`);
 			v = v.replace(/<m>[\s\S]*?<\/m>/g, (m) => " ".repeat(m.length));
 			if (!bare.test(v)) return;
 			const at = v.search(bare);
@@ -31702,6 +31868,11 @@ for (const id of courses) {
 		for (const b of u.blocks || []) {
 			if (!b) continue;
 			for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
+			for (const k of ["core", "gist"]) {
+				const value = b[k];
+				if (Array.isArray(value)) value.forEach((v, i) => checkHtml(v, `${where} ${b.t}.${k}[${i + 1}]`));
+				else if (value != null) checkHtml(value, `${where} ${b.t}.${k}`);
+			}
 			for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
 			if (Array.isArray(b.items)) b.items.forEach((v) => checkHtml(v, `${where} ${b.t} item`));
 			if (b.t === "slides" && Array.isArray(b.frames)) b.frames.forEach((frame, i) => {
@@ -31721,6 +31892,8 @@ for (const id of courses) {
 			checkHtml(item.stimulus?.source, `${where} passage source`);
 		}
 		const text = textOf(u);
+		const inlineMathCount = (u.blocks || []).reduce((count, block) => count + (JSON.stringify(block || {}).match(/<m>/g) || []).length, 0);
+		if (inlineMathCount >= 3 && !(u.blocks || []).some((block) => block?.t === "math")) warns.push(`${where}: ${inlineMathCount} inline formulas and no math block — give a central equation its own math block; keep passing mentions inline`);
 		for (const m of text.matchAll(/<m>([\s\S]*?)<\/m>/g)) try {
 			tex(m[1], false);
 		} catch (e) {

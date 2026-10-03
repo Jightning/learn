@@ -48,9 +48,8 @@ test("course import and removal report IndexedDB aborts and preserve the shelf",
 
     await page.locator("#lib-add").click();
     await upload();
-    await page.locator(".modal .cio-msg:not(.bad)").waitFor();
-    await page.keyboard.press("Escape");
     await card.waitFor();
+    await page.keyboard.press("Escape");
 
     const remove = async () => {
       const row = page.locator(`.lcard:has(.lhit[href="#/${CID}"])`);

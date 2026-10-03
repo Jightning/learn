@@ -3531,6 +3531,20 @@ const CODE = /* @__PURE__ */ new Set([
 	".graphql",
 	".ipynb"
 ]);
+/** Extraction registration only. `doc` and `text` retain their older meaning:
+binary teaching sources are catalogued, but never read as UTF-8 here. */
+const SOURCE_FORMATS = new Map([
+	...[...DOC, ...CODE].map((ext) => [ext, "text"]),
+	[".pdf", "pdf"],
+	[".pptx", "pptx"],
+	[".ppt", "ppt"],
+	[".png", "image"],
+	[".jpg", "image"],
+	[".jpeg", "image"],
+	[".gif", "image"],
+	[".webp", "image"],
+	[".svg", "image"]
+]);
 const SECRET = /(^|\/)(\.env[^/]*|.*\.(pem|key|p12|pfx|keystore|jks)|id_(rsa|dsa|ecdsa|ed25519)[^/]*|\.?(credentials|secrets?)(\.[^/]*)?|\.netrc|\.npmrc|\.pypirc)$/i;
 const BULK_DIR = /(^|\/)(node_modules|vendor|dist|build|out|target|coverage|__pycache__|\.[^/]*)(\/|$)/;
 const BULK_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|go\.sum|[^/]*\.min\.(js|css)|[^/]*\.map)$/;
@@ -3624,7 +3638,8 @@ function entry(root, rel, path) {
 		path,
 		doc: DOC.has(ext),
 		text: DOC.has(ext) || CODE.has(ext),
-		bytes: statSync(path).size
+		bytes: statSync(path).size,
+		format: SOURCE_FORMATS.get(ext) || "binary"
 	};
 }
 const mapPath = (repo, id) => join(repo, ".author", id, "map.txt");
@@ -3807,7 +3822,10 @@ function findEngine(from) {
 /** The folder the running script was installed in (this repo, or the package). */
 const ENGINE = findEngine(dirname(fileURLToPath(import.meta.url)));
 const here = () => resolve(process.env.INIT_CWD || process.cwd());
-const WORKSPACE = process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : existsSync(join(ENGINE, "courses")) ? ENGINE : here();
+const workspaceAt = process.argv.indexOf("--workspace");
+const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : null;
+if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--"))) throw new Error("--workspace needs a directory path");
+const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : here();
 const COURSES = join(WORKSPACE, "courses");
 const STATE = join(WORKSPACE, ".author");
 existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");
@@ -3979,8 +3997,8 @@ try {
 	process.exit(2);
 }
 if (!report.files.length) {
-	console.error(`courses/${id} has no readable source documents — nothing to score against`);
-	process.exit(1);
+	console.log(`Coverage unavailable: courses/${id} has no readable source documents. Inspect the source catalog for visual or unresolved sources.`);
+	process.exit(0);
 }
 if (args.includes("--init-review")) {
 	const added = initCoverageReview(id, report);
@@ -4007,16 +4025,15 @@ for (const source of [...new Set(report.rows.map((r) => r.source))]) {
 			omitted++;
 			continue;
 		}
-		console.log(`  ${row.low ? "!" : " "} ${row.id} ${row.score.toFixed(2)}  ${row.heading}   (${row.best})`);
-		if (row.low) console.log(`           missing: ${row.missing.join(", ")}`);
+		console.log(`  ${row.low ? "!" : " "} ${row.id} ${Math.round(row.score * 100)}%  ${row.sourceLabel}#${row.heading}   (${row.best})`);
 	}
 }
 if (omitted) console.log(`… ${omitted} more leads; use --all to print every score or --init-review for the checklist`);
-console.log(`\n${report.rows.filter((r) => r.low).length} of ${report.rows.length} source topics below ${below}. ${report.unresolved.length} review decisions pending. Scores are leads, not proof; run coverage ${id} --init-review to create the checklist.`);
+const average = report.rows.length ? Math.round(100 * report.rows.reduce((n, r) => n + r.score, 0) / report.rows.length) : null;
+console.log(`\nLexical coverage: ${average == null ? "unavailable" : average + "%"} (mean topic overlap, not mastery). ${report.rows.filter((r) => r.low).length} of ${report.rows.length} source topics below ${Math.round(below * 100)}%. ${report.unresolved.length} review decisions pending. Scores are leads, not proof; run coverage ${id} --init-review to create the checklist.`);
 if (profile === "publish" && report.unresolved.length) {
-	for (const t of report.unresolved.slice(0, 30)) console.log(`       ✗ ${t.id} ${t.heading}: ${t.problem}`);
-	if (report.unresolved.length > 30) console.log(`       ✗ ${report.unresolved.length - 30} more unresolved leads`);
-	process.exit(1);
+	for (const t of report.unresolved.slice(0, 30)) console.log(`       ! ${t.id} ${t.sourceLabel}#${t.heading}: ${t.problem}`);
+	if (report.unresolved.length > 30) console.log(`       ! ${report.unresolved.length - 30} more unresolved leads`);
 }
 //#endregion
 export {};

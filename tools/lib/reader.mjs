@@ -14,7 +14,7 @@ import { readFileSync, existsSync } from "node:fs";
 
 export const HELP =
   "It says who the course is for, and every prompt carries it — §1.1 of\n" +
-  "docs/create_course.md derives seven authoring defaults from it. Copy the\n" +
+  "authoring/reader.yaml defines the editable reader profile. Copy the\n" +
   "`reader:` block from §1 into courses/_reader.yaml and fill it in.\n\n" +
   "The file is gitignored, like the courses it calibrates.";
 
@@ -27,7 +27,7 @@ export function readReader(path) {
     throw new Error(
       `${path} still has ${unset} UNSET field${unset === 1 ? "" : "s"}. ` +
       `Fill them in — a course written against UNSET is calibrated to nobody ` +
-      `(create_course.md 0.3).`);
+      `(authoring/core.md).`);
   }
   if (!/^\s*reader\s*:/m.test(text)) throw new Error(`${path} has no \`reader:\` block.\n\n${HELP}`);
   return text.trim();

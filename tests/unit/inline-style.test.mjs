@@ -18,6 +18,19 @@ test("authored visual cues survive prose, terms, and mapped table cells", () => 
   assert.match(table, /<td><mark>1<\/mark><\/td>/);
 });
 
+test("one prose block keeps authored paragraphs and explicit line breaks", () => {
+  const html = renderBlock({ t: "key", h: "<p>First thought.</p><p>Boundary:<br>At zero, stop.</p>" }, {});
+  assert.match(html, /<p>First thought\.<\/p><p>Boundary:<br>At zero, stop\.<\/p>/);
+});
+
+test("an important formula renders as its own display block", () => {
+  const html = renderBlock({ t: "math", label: "The rule", tex: "a^2+b^2=c^2",
+    note: "Use this for a right triangle." }, {});
+  assert.match(html, /class="mathblk"/);
+  assert.match(html, /class="katex-display"/);
+  assert.match(html, /class="mathnote">Use this for a right triangle/);
+});
+
 test("search keeps visible title words without indexing styling tags", () => {
   const C = { concepts: {}, sections: [{ id: "s1", num: 1,
     title: "<strong>Signals</strong> <mark>and systems</mark>", blurb: "<em>Patterns</em>",

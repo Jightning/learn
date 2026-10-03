@@ -157,7 +157,7 @@ blocks:
   - t: math
     label: A standalone equation
     tex: ar^2 + br + c = 0
-    note: Write TeX, not HTML — a formula that does not compile fails the build with the file and formula named.
+    note: Write TeX, not HTML. A formula that does not compile fails validation with the file and formula named. Give an important equation its own math block; a newline around inline maths in YAML does not make it a display equation.
 
   # Follow-ups attach a block to the one above it without nesting: several in
   # a row all attach to the nearest block that is not itself a follow-up — the
@@ -172,6 +172,9 @@ blocks:
       <p>Use <code>math</code> when the equation is the point of the
       paragraph; inline <code>&lt;m&gt;</code> when it is only mentioned in
       passing.</p>
+      <p>A second paragraph can live in the same block. Use
+      <code>&lt;br&gt;</code> for a shorter break within one paragraph; a
+      newline in this YAML source does not create a visible break.</p>
 
   # An aside names one phrase inside a block rather than the whole block: mark
   # it `<n k="…">` in the text and write the note under the same key in

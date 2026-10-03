@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/tools/author-log.mjs\""
+            "command": "node -e \"const f=require('node:fs'),p=require('node:path'),u=require('node:url');for(let d=process.cwd();;d=p.dirname(d)){const s=p.join(d,'tools','author-log.mjs');if(f.existsSync(p.join(d,'.codex','hooks.json'))&&f.existsSync(s)){process.env.AUTHOR_WORKSPACE=d;process.argv[1]=s;import(u.pathToFileURL(s).href);break}if(p.dirname(d)===d)throw Error('author-log.mjs not found')}\""
           }
         ]
       }

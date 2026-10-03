@@ -1,40 +1,13 @@
 # Authoring a course
 
-Write the course in this conversation. {{WHERE}} `{{AUTHOR}}` provides rules, sources, progress, mechanical completion checks, and quality warnings; it never runs a model.
+The authoritative instructions are the modular packet in `authoring/`.
+Read `authoring/entrypoint.md` and select modules from
+`authoring/manifest.yaml` for the phase, role, and needs. This file is a
+generated-agent pointer and must not grow a second policy document.
 
-Course flow: `begin`, `write`, `done` for each subsection, then `finish`.
-
-1. `{{AUTHOR}} begin <id> [--source PATH]...` reports status, sources, and rules for steps 0–4. Follow them to write `materials/expectations.md`, section/subsection files, categories, and the concept set. If no course exists, run `{{NEW}} <id> "Title"`; sources may be anywhere except unsafe paths.
-2. `{{AUTHOR}} write <id>` gives the compact, versioned rule digest and first subsection. Use `{{AUTHOR}} rules <id>` for sections matching the next subsection's declared block, figure, and question shapes, or `--need block:<type>`, `--need figure:<kind>`, and `--need question:<kind>` before adding a new shape. `--full-spec` on `begin` or `write` prints the complete phase spec.
-3. For each subsection, read only what it needs, write it in one operation, then run `{{AUTHOR}} done <id> <sN-M> <absolute source paths>`; use `file#Heading` for part of a file. It checks spine, quiz, and local validation errors, then names the next subsection. Use `--staging` only to keep an unfinished draft moving; a staged subsection must pass `done` again without the override.
-4. After the subsections, add `practice/<concept>.yaml` variants where a weak or important skill needs a different surface, then run `{{AUTHOR}} finish <id>`. Every encountered question can enter Review, so a variant bank is optional. `finish` records mechanical completion only when required work and validation pass. Use `{{AUDIT}} --profile draft <id>` for nonblocking content debt. Run `{{COVERAGE}} <id> --init-review` once to create `materials/coverage-review.yaml`; review each low-score lead and fill its disposition. Then run `{{AUDIT}} --profile publish <id>` before calling the course publish-ready. Scores are leads, not proof; review source dispositions and answers yourself.
-
-## Cost
-
-Model requests process conversation context; cached input is cheaper but not free, and subagents also consume usage.
-
-- Request each rule set once; after compaction use `{{AUTHOR}} status <id> --digest`.
-- Read each subsection's needed sources once, in parallel; write its file once and use targeted patches for fixes. Do not reread it or run unlisted commands.
-- Delegate broad reading only when it saves context or enables independent work; return concise cited findings. Search locally for small lookups.
-- The compact digest includes the mandatory checklist from the source spec. `--lean` trims optional guidance; `--full-spec` restores the complete phase rules. `{{AUTHOR}} plan <id>` estimates both paths. `done` reports compact feedback for its subsection; do not reread the full course. `--no-validate` is available only with `--staging` and still requires a later checked `done`. Use `--confident` for extra checks.
-
-## Subagents
-
-Use the cheapest model that meets correctness and teaching requirements; do not trade away depth, source checks, answer verification, or validation. Give each agent one bounded deliverable, relevant rules/sources, an acceptance checklist, and explicit file ownership. Agents must not revert others' edits.
-
-{{DELEGATE}}
-
-Check every result against its sources and rules, including independent answer checks for practice variants. Escalate for conflicting evidence, insufficient reasoning, or errors after one focused correction; choose stronger models upfront for difficult or ambiguous work. Report uncertainty, never invent content, and keep each subsection's spine, quizzes, and depth in this conversation.
-
-## Revising and resuming
-
-- Resume with `{{AUTHOR}} begin <id>`; recorded work is not redone.
-- Revise with `{{AUTHOR}} redo <id> <sN-M>...` (or `course`, `finish`), edit those files, and run `done` again for each.
-- Read a course with `{{PACK}} <id>`; it writes `packed/<id>.course.json` for the study site.
-
-## When something fails
-
-- After a failed call, change something before retrying; never repeat it unchanged.
-- If a subsection still fails after two honest attempts, leave it and say so at the end.
+Run the CLI sequence from the entrypoint. Preserve bounded packets, exact raw
+source locators, explicit problem-family coverage, and the planner/writer/
+reviewer boundary. The writer creates teaching, questions, answers, and course
+files; the planner owns scope and order; the reviewer emits concise corrections.
 
 {{LOG}}

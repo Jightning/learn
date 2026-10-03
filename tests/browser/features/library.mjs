@@ -10,9 +10,11 @@ if (installed) {
   const failed = await page.locator(".cio-msg.bad").count();
   ck("demo fixture installs", failed === 0,
      failed ? await page.locator(".cio-msg.bad").first().innerText() : `${installed} courses`);
+  ck("successful import shows no message",
+     await page.locator(".modal .cio-msg").count() === 0);
   await go();
-  ck("imported course shows content not audited status",
-     await page.locator(".lcard .laudit").filter({ hasText: "Content not audited" }).count() === installed);
+  ck("imported course has no audit badge",
+     await page.locator(".lcard .laudit").count() === 0);
   const styled = await page.evaluate(() => {
     const card = [...document.querySelectorAll(".lcard")].find(c => c.querySelector("h3 strong"));
     if (!card) return null;

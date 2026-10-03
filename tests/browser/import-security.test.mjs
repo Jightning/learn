@@ -37,7 +37,7 @@ test("an imported course cannot run authored handlers or plot code", async () =>
       name: "security-fixture.course.json", mimeType: "application/json",
       buffer: Buffer.from(JSON.stringify(files))
     });
-    await page.locator(".modal .cio-msg:not(.bad)").waitFor();
+    await page.locator('.lcard .lhit[href="#/security-fixture"]').waitFor();
     await page.keyboard.press("Escape");
     await page.goto(server.origin + "/#/security-fixture/s1-1");
     await page.locator("#s1-1 .bhtml").first().waitFor();

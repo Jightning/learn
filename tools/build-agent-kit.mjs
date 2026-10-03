@@ -33,7 +33,7 @@
  * small and why nothing private may be tracked here. `--check` fails when the
  * committed copy is stale.
  * ==========================================================================*/
-import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rolldown } from "rolldown";
@@ -53,38 +53,30 @@ const ASSETS = [["src/blocks/index.js", "src/blocks/index.js"]];
 const DOCS = ["create_course.md", "material_truth.md", "writing.md"];
 
 /* ------------------------------------------------------------- workflow --*/
-const workflow = readFileSync(join(ROOT, "tools/agent/workflow.md"), "utf8");
-
-const DELEGATE = {
-  codex: "- In Codex, use `gpt-5.6-luna` with medium reasoning for routine concept cards, practice variants based on established worked examples, and focused source extraction. These are the defaults in `.codex/agents/course-drafter.toml` and `course-researcher.toml`. Reassess against the models available in the session; never silently inherit the parent's expensive model.\n" +
-    "- `course-drafter` owns one concept card or practice variant bank. Supply `.author/<id>/rules-concepts.md` or `rules-variants.md` and only the relevant course files. `course-researcher` returns concise cited notes for a bounded question.\n" +
-    "- For harder synthesis or derivations, select the cheapest capable stronger model (for example `gpt-5.6-terra`, then `gpt-5.6-sol`); reserve Astra for work that needs it. The cheap custom roles pin their model: use a `default` worker with the relevant role instructions and an explicit model and reasoning effort when escalating.\n" +
-    "- When `spawn_agent` exposes `fork_turns`, set `fork_turns=\"none\"` and explicitly select model and reasoning effort; provide a self-contained task. A full-history fork can inherit the parent's model and prevent an override. Check the returned configuration when available. If a requested model is unavailable or ignored, report it and select a supported suitable model explicitly; do not silently launch an expensive worker.",
-  claude: "- `course-drafter` (Haiku): writes one concept card or one practice variant bank. Give it the file to " +
-    "write, the rules file `.author/<id>/rules-concepts.md` or `rules-variants.md`, and the course files to read.\n" +
-    "- `course-researcher`: reads widely and returns or saves condensed notes with citations. Use it for " +
-    "a repository's subsystem, a long document you need only part of, or web research.",
-  any: "- If your CLI can run subagents or spawn a cheaper model, hand it one concept card or one practice variant " +
-    "bank at a time, with the rules file `.author/<id>/rules-concepts.md` or `rules-variants.md` and the " +
-    "course files to read; and hand it wide reading (a repository's subsystem, a long document, web " +
-    "research) so the raw material stays out of this conversation.\n" +
-    "- If it cannot, do that work yourself, but read narrowly: search for what you need instead of " +
-    "reading whole files."
+const workflow = readFileSync(join(ROOT, "authoring", "entrypoint.md"), "utf8");
+const modelConfig = readFileSync(join(ROOT, "authoring", "agents.toml"), "utf8");
+const agentConfig = role => {
+  const section = modelConfig.split(`[${role}]`)[1]?.split(/\n\[/)[0];
+  if (!section) throw new Error(`missing centralized agent role ${role}`);
+  const fields = Object.fromEntries([...section.matchAll(/^(\w+) = (".*")$/gm)]
+    .map(m => [m[1], JSON.parse(m[2])]));
+  return fields;
 };
-const LOG = {
-  claude: "The generation log (`courses/<id>/.authoring-log.md`) is written by a hook from this session's " +
-    "transcript, and by the commands themselves. Never write or edit it.",
-  any: "The generation log (`courses/<id>/.authoring-log.md`) is written by the commands themselves. " +
-    "Never write or edit it. Transcript token counts depend on the installed agent hook; the commands work without it."
+const workerToml = name => {
+  const config = agentConfig("writer");
+  return `name = ${JSON.stringify(name)}\ndescription = ${JSON.stringify(config.description)}\nmodel = ${JSON.stringify(config.model)}\nmodel_reasoning_effort = ${JSON.stringify(config.reasoning)}\ndeveloper_instructions = ${JSON.stringify(config.instructions)}\n`;
 };
+const contextFiles = dir => readdirSync(dir, { withFileTypes: true }).flatMap(f =>
+  f.isDirectory() ? contextFiles(join(dir, f.name)) : [join(dir, f.name)]);
 
-const fill = (vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, v), workflow);
+const fill = (vars) => Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, v), workflow).replaceAll("node tools/author.mjs", vars.AUTHOR).replaceAll("npm run new --", vars.NEW).replaceAll("`authoring/orchestration.md`", "`" + vars.ORCHESTRATION + "`");
 
 const repoVars = {
   AUTHOR: "node tools/author.mjs", NEW: 'npm run new --', PACK: "node tools/pack.mjs",
   AUDIT: "node tools/audit-content.mjs",
   COVERAGE: "node tools/coverage.mjs",
-  WHERE: "From the repository root,", DELEGATE: DELEGATE.codex, LOG: LOG.any
+  WHERE: "From the repository root,",
+  ORCHESTRATION: "authoring/orchestration.md"
 };
 const pluginVars = a => ({
   AUTHOR: `node "${a}/scripts/author.mjs"`, NEW: `node "${a}/scripts/new-course.mjs"`,
@@ -92,11 +84,9 @@ const pluginVars = a => ({
   AUDIT: `node "${a}/scripts/audit-content.mjs"`,
   COVERAGE: `node "${a}/scripts/coverage.mjs"`,
   WHERE: "From the author's working folder,",
-  DELEGATE: DELEGATE.claude, LOG: LOG.claude
+  ORCHESTRATION: `${a}/authoring/orchestration.md`
 });
-const anyVars = a => ({ ...pluginVars(a),
-  DELEGATE: DELEGATE.codex + "\n- This portable install supplies instructions only, not Codex custom roles. If the role files are absent, use a `default` worker with the same bounded instructions and explicit model and reasoning settings.\n" + DELEGATE.any,
-  LOG: LOG.any });
+const anyVars = a => pluginVars(a);
 
 const FRONT = "---\nname: create-course\ndescription: Create, continue, or revise a course in " +
   "the courses directory from sources, a repository, or research. Use when the user asks to make, write, " +
@@ -118,10 +108,10 @@ const MARKETPLACE = JSON.stringify({
 /* Files that must match what this builds, in the repository itself. */
 const generated = {
   ".claude-plugin/marketplace.json": MARKETPLACE,
-  ".claude/skills/create-course/SKILL.md": FRONT + fill({ ...repoVars, DELEGATE: DELEGATE.claude, LOG: LOG.claude }),
+  ".claude/skills/create-course/SKILL.md": FRONT + fill(repoVars),
   ".agents/skills/create-course/SKILL.md": FRONT + fill(repoVars),
   ...Object.fromEntries(["course-drafter", "course-researcher"].map(name =>
-    [`.codex/agents/${name}.toml`, readFileSync(join(ROOT, "tools/agent", `${name}.toml`), "utf8")])),
+    [`.codex/agents/${name}.toml`, workerToml(name)])),
   "AGENTS.md": `# ${pkg.name}\n\nThis repository builds study courses and the site that reads them. ` +
     "Follow the workflow below for course work; otherwise read " +
     "`README.md` and `docs/`.\n\n" + fill(repoVars)
@@ -151,6 +141,7 @@ async function bundle(outDir) {
   cpSync(join(ROOT, "src/blocks/index.js"), join(outDir, "src/blocks/index.js"));
   mkdirSync(join(outDir, "docs"), { recursive: true });
   for (const d of DOCS) cpSync(join(ROOT, "docs", d), join(outDir, "docs", d));
+  cpSync(join(ROOT, "authoring"), join(outDir, "authoring"), { recursive: true });
   cpSync(join(ROOT, "courses", "_template"), join(outDir, "template"), { recursive: true });
 }
 
@@ -278,6 +269,8 @@ if (check) {
   const shipped = [
     ["plugin/skills/create-course/SKILL.md", FRONT + fill(pluginVars("${CLAUDE_PLUGIN_ROOT}"))],
     ["plugin/AGENTS.md", fill(anyVars("<KIT>"))],
+    ...contextFiles(join(ROOT, "authoring")).map(path =>
+      [`plugin/authoring/${relative(join(ROOT, "authoring"), path)}`, readFileSync(path, "utf8")]),
     ...DOCS.map(d => [`plugin/docs/${d}`, readFileSync(join(ROOT, "docs", d), "utf8")]),
     ...["course-drafter.md", "course-researcher.md"].map(a =>
       [`plugin/agents/${a}`, readFileSync(join(ROOT, ".claude/agents", a), "utf8")])

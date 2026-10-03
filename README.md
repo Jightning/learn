@@ -14,7 +14,7 @@ A course is the specific thing you want to learn/study (like a class, or certain
 2. Click `Add Course` to browse the prebuilt library (which starts with DEMO), or import a course folder, .zip, or .course.json file from your device.
 3. Click on the course to enter. There'll be a sidebar with all the course sections, and the different features:
     - **Overview** has an Index link at the top for course concepts and categories.
-    - **Review** opens questions due from concepts you've attempted. Choose *Mixed practice* there to practise a range of subsections, including questions that are not due.
+    - **Review** opens questions due from concepts you've attempted. Choose *Mixed practice* there to practice a range of subsections, including questions that are not due.
     - **Dependency Map** demonstrates how sections connect to each other.
     - **Explore** lets you find information by search and filters.
     - **Saved** shows the blocks you saved with notes.
@@ -44,48 +44,55 @@ The changes can be validated with:
 
 ```sh
 npm run validate -- ma26600
-npm run validate:current -- ma26600       # require the current question schema
+npm run validate:current -- ma26600  # require the current question schema
 npm run validate -- --migration-report ma26600  # count legacy questions to migrate
-npm run audit -- --profile draft ma26600    # report content debt while writing
-npm run coverage -- ma26600 --init-review   # create low-topic review checklist
+npm run audit -- --profile draft ma26600  # report content debt while writing
+npm run coverage -- ma26600 --init-review  # create low-topic review checklist
 npm run audit -- --profile publish ma26600  # required before calling it publish-ready
 ```
-
-Normal validation and the reader continue to accept legacy `q/a` questions and
-`drills/` banks. `validate:current` applies the strict current schema, and the
-publish audit applies that same check while printing a per-course migration
-count.
-
-The publish audit requires zero unverified answers and a reviewed source
-disposition on every claim, plus a reviewed disposition for low-scoring source
-topics in `materials/coverage-review.yaml`. A low score is a lead for review,
-not proof of missing teaching. Draft reporting remains nonblocking. Then import
-your course to the site and inspect it as a reader.
 
 `node plugin/scripts/pack.mjs <id>` creates a `.course.json` you can import into a site (not needed though, you can just import the course folder).
 
 ### Write a course with AI
 
-Add the course content under `courses/<your-course>/sources` (so the model know what to work off). If you add your course textbook, it'll be able to reference specific textbook portions, and provide a greater guarantee of coverage.
+You can write a course in either **paired** mode, or **single** mode.
+**Paired:** Use an expensive and cheap model. This is generally better for usage, and can either have the expensive model use subagents, you can open the two separate agents in different instances and prompt these in order
 
-[This document](docs/create_course.md) details how to write out a course.
-[This document](docs/writing.md) is for AI's prose/writing.
+```txt
 
-The AI can use the `create-course` skill, which runs these:
+Expensive Model (planning)
+> Create a course on [subject] from [source paths] in manual paired mode, without subagents. The learning goal is [goal].
 
-```sh
-node tools/author.mjs begin ma26600 --source ~/code/some-repo  # sources + the rules for the course's shape
-node tools/author.mjs write ma26600  # compact writing rules and mandatory checklist
-node tools/author.mjs rules ma26600 --need figure:plot  # just the needed figure rules
-node tools/author.mjs plan ma26600  # compact and full-spec token estimates
-node tools/author.mjs done ma26600 s1-6 /abs/source.md  # records a subsection, and names the next
-node tools/author.mjs finish ma26600  # materials, validation, coverage
-npm run coverage -- ma26600 --init-review  # create the source-topic review checklist
+This determines the needed scope, and saves a plan.
+
+Cheap Model (writing)
+> Continue the working course through all remaining writing and answer checks.
+
+This resumes the saved plan, checks the first representative lesson before bulk writing, then completes the course.
+
+Expensive Model (validation)
+> Validate and finish the working course using narrow evidence packets.
+
+This checks coverage and selected evidence, then finishes if clean or saves consolidated corrections.
+
+Cheap Model (only if corrections are needed)
+> Apply the saved corrections, verify the affected answers, and finish the working course.
+
 ```
 
-`begin` and `write` default to a versioned digest with the complete mandatory
-checklist. Use `--full-spec` on either command for the complete phase rules;
-`rules` selects detail from the next subsection or from explicit `--need` values.
+[`authoring/`](authoring/entrypoint.md) are the general instructions for the AI.
+[`manifest.yaml`](authoring/manifest.yaml) selects rules to display by phase, role, and course shape.
+[`agents.toml`](authoring/agents.toml) defines the role of the AI agent.
+[flow contract](authoring/orchestration.md) defines the course creation flow.
+
+```sh
+node tools/author.mjs begin ma26600 --mode paired --handoff manual --source /abs/textbook.pdf
+node tools/author.mjs status ma26600
+node tools/author.mjs pilot ma26600 --sub s1-1 # before bulk writing
+node tools/author.mjs done ma26600 --all
+node tools/author.mjs reviewed ma26600 --all
+node tools/author.mjs finish ma26600
+```
 
 **Claude:**
 

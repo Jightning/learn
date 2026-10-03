@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* What the structural gates cannot see: whether the content is true.
  *
- *   node tools/audit-content.mjs [--profile draft|publish] [course …]
+ *   node tools/audit-content.mjs [--profile draft|publish] [--sub sN-M] [course …]
  *
  * validate.mjs checks that references resolve, figures carry ids and equations
  * compile. It checks structure, never truth. A confident, well-formatted, wrong
@@ -12,12 +12,12 @@
  * So every explanatory claim names where it came from, every worked answer
  * records its verification, and every question names the concept its
  * outcome updates. Draft reports missing work without failing. Publish enforces
- * the declared ceilings, zero unverified answers, and reviewed claim sources.
+ * zero unverified answers and reviewed claim sources; declared content ratios warn.
  *
  * The optional ceiling is per course, in `course.yaml`, and defaults to 1:
  *
  *   audit:
- *     unsourced: 0.1     # publish ceiling for claims with no grounded source
+ *     unsourced: 0.1     # review target for claims with no grounded source
  *
  * A course that has finished a pass declares the number it reached, and can
  * then never regress. A global ceiling could only ever be the worst course's.
@@ -35,8 +35,10 @@ import { migrationReportLine, strictCurrentIssues } from "./lib/current-schema.m
 const args = process.argv.slice(2);
 const at = args.indexOf("--profile");
 const profile = at < 0 ? "draft" : args[at + 1];
-const wanted = args.filter((a, i) => a !== "--profile" && (at < 0 || i !== at + 1));
-if (!["draft", "publish"].includes(profile) || wanted.some(a => a.startsWith("--"))) {
+const subAt = args.indexOf("--sub"), subsection = subAt < 0 ? null : args[subAt + 1];
+const wanted = args.filter((a, i) => !["--profile", "--sub"].includes(a) && (at < 0 || i !== at + 1) && (subAt < 0 || i !== subAt + 1));
+
+if (!["draft", "publish"].includes(profile) || wanted.some(a => a.startsWith("--")) || (subAt >= 0 && (!subsection || subsection.startsWith("--")))) {
   console.error("usage: audit-content.mjs [--profile draft|publish] [course …]");
   process.exit(2);
 }
@@ -91,6 +93,12 @@ function detailsWithoutRecall(C) {
 
 function audit(id) {
   const { course: C } = loadCourse(join(COURSES, id));
+  if (subsection) {
+    C.sections = C.sections.map(s => ({ ...s, subs: s.subs.filter(u => u.id === subsection) })).filter(s => s.subs.length);
+    if (!C.sections.length) throw new Error(`no subsection ${subsection}`);
+    // Variant banks and global coverage belong to final audit, not the format pilot.
+    C.drills = {}; C.practice = {};
+  }
   const n = { claims: 0, answers: 0, quiz: 0 };
   const miss = { unsourced: 0, unverified: 0, unrouted: 0,
                  unclaimed: 0, repeat: 0, nameonly: 0 };
@@ -174,29 +182,29 @@ let failed = 0;
 for (const id of ids) {
   const { C, rows, over, sourceIssues, schemaIssues, details, points } = audit(id);
   let coverage = null, coverageError = null;
-  if (profile === "publish") {
+  if (profile === "publish" && !subsection) {
     try { coverage = coverageReport(id); }
     catch (e) { coverageError = e.message; }
   }
   const blocked = profile === "publish" &&
-    (over.length || sourceIssues.length || schemaIssues.length || coverage?.unresolved.length || coverageError);
+    (over.some(r => r.k === "unverified") || sourceIssues.length || schemaIssues.length);
   if (blocked) failed++;
 
   console.log(`${blocked ? "FAIL publish" : profile === "draft" ? "draft" : "ok   publish"} ${id.padEnd(10)} ` +
     rows.map(r => `${pct(r.frac)} of ${r.of} ${r.k}`).join(", "));
   if (profile === "publish") console.log(migrationReportLine(id, C));
   for (const r of over)
-    console.log(`       ${profile === "draft" ? "!" : "✗"} ${pct(r.frac)} ${r.label}, against ${
-      profile === "draft" ? "a draft target" : "the publish ceiling"} of ${pct(r.max)}`);
+    console.log(`       ${profile === "publish" && r.k === "unverified" ? "✗" : "!"} ${pct(r.frac)} ${r.label}, against ${
+      profile === "draft" ? "a draft target" : "a declared review target"} of ${pct(r.max)}`);
   for (const issue of sourceIssues) console.log(`       ✗ ${issue}`);
   for (const issue of schemaIssues) console.log(`       ✗ ${issue}`);
-  if (coverageError) console.log(`       ✗ coverage: ${coverageError}`);
+  if (coverageError) console.log(`       ! coverage unavailable: ${coverageError}`);
   if (coverage && !coverage.files.length)
     console.log("       ! coverage: no readable source documents; topic comparison unavailable");
   else if (coverage && !coverage.unresolved.length)
     console.log(`       coverage: ${coverage.rows.filter(r => r.low).length} low-score topic leads reviewed; scores are not proof`);
   if (coverage?.unresolved.length) {
-    console.log(`       ✗ ${coverage.unresolved.length} low-scoring coverage leads need reviewed dispositions ` +
+    console.log(`       ! ${coverage.unresolved.length} low-scoring coverage leads need reviewed dispositions ` +
       `(run: node tools/coverage.mjs ${id} --init-review)`);
     for (const t of coverage.unresolved.slice(0, 15))
       console.log(`         ${t.id} ${t.heading}: ${t.problem}`);

@@ -1,175 +1,11 @@
 #!/usr/bin/env node
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, extname, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { createRequire } from "module";
 import { homedir } from "node:os";
-//#region tools/lib/spec.mjs
-const HEADING = /^(#{2,4})\s+(.+?)\s*$/;
-const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-/** "## 6. Sections and subsections" -> "6";  "### Quality bar" -> "quality-bar" */
-function idOf(title) {
-	const m = /^([0-9]+[a-z]?(?:\.[0-9]+)?)\.?\s+/.exec(title);
-	return m ? m[1] : slug(title.replace(/`/g, ""));
-}
-/** Every heading in `md`, each carrying only the prose directly beneath it. */
-function sections(md) {
-	const lines = md.split("\n");
-	const out = [];
-	let cur = null;
-	for (const line of lines) {
-		const m = HEADING.exec(line);
-		if (m) {
-			if (cur) out.push(cur);
-			cur = {
-				id: idOf(m[2]),
-				level: m[1].length,
-				title: m[2],
-				lines: [line]
-			};
-		} else if (cur) cur.lines.push(line);
-	}
-	if (cur) out.push(cur);
-	return out.map((s) => ({
-		...s,
-		body: s.lines.join("\n").trim(),
-		lines: void 0
-	}));
-}
-/** Index a spec file once; `pick` then costs nothing per call. */
-function loadSpec(path) {
-	const secs = sections(readFileSync(path, "utf8"));
-	const byId = new Map(secs.map((s, i) => [s.id, i]));
-	const withKids = (i) => {
-		const out = [i];
-		for (let j = i + 1; j < secs.length && secs[j].level > secs[i].level; j++) out.push(j);
-		return out;
-	};
-	return {
-		path,
-		ids: secs.map((s) => s.id),
-		/** slice(["0", "6", "6.1*"]) -> markdown, document order, no repeats */
-		pick(ids) {
-			const want = /* @__PURE__ */ new Set();
-			for (const raw of ids) {
-				const deep = raw.endsWith("*");
-				const id = deep ? raw.slice(0, -1) : raw;
-				const i = byId.get(id);
-				if (i === void 0) throw new Error(`${path}: no heading "${id}"`);
-				(deep ? withKids(i) : [i]).forEach((k) => want.add(k));
-			}
-			return [...want].sort((a, b) => a - b).map((i) => secs[i].body).join("\n\n");
-		}
-	};
-}
-function checklist(spec) {
-	const lines = spec.pick(["12a", "12b"]).split("\n");
-	const items = [];
-	for (const line of lines) if (/^- \[ \] /.test(line)) items.push(line);
-	else if (items.length && /^ {6}\S/.test(line)) items[items.length - 1] += "\n" + line;
-	if (!items.length) throw new Error("authoring spec has no mandatory checklist");
-	return items;
-}
-function version(specs) {
-	const hash = createHash("sha256");
-	for (const spec of specs) hash.update(readFileSync(spec.path));
-	return `v1 (spec ${hash.digest("hex").slice(0, 12)})`;
-}
-const CORE = [
-	"Write course data only. Calibrate to the reader before drafting; state every source topic as taught, bridged, or skipped with a reason.",
-	"Keep explanation in one place, define each new term before use, and derive each rule. The reader knows only prerequisites and preceding subsections.",
-	"Do not guess unknown facts or answers: mark generated or unverified, then review sources and re-derive before marking verified.",
-	"Build the subsection in order: definition, rule and its why, worked example, then exception or trap. Put examinable material in the spine.",
-	"Ask one question per distinct skill; check each answer and explain tempting errors. Add a synthesis item to a composing section.",
-	"Choose tiers and prose for this reader. Use figures next to explanations that depend on structure, motion, connections, or signal paths.",
-	"Run validation and the draft audit, review coverage leads and source dispositions, then pass the publish audit before calling a course publish-ready."
-];
-function digestRules(which, cc, specs, { lean = false } = {}) {
-	const checks = checklist(cc);
-	const intro = which === "course" ? "Steps 0-4: reader, source scope, section sequence, taxonomy, and recurring concepts." : "Steps 5-7: one subsection at a time; spine, distinct quiz skills, depth, and answer verification.";
-	return [
-		`## Authoring-rule digest ${version(specs)}`,
-		intro,
-		...CORE.map((s, i) => `${i + 1}. ${s}`),
-		lean ? "" : "Read an on-demand section with `author rules <id> --need block:<type>|figure:<kind>|question:<kind>` before using an unfamiliar shape.",
-		"### Mandatory checklist (create_course.md §12a–b)",
-		...checks
-	].filter(Boolean).join("\n");
-}
-const NEEDS = {
-	"block:all": [
-		"6.1",
-		"6.2",
-		"6.3*",
-		"6.6"
-	],
-	"block:p": ["6.1", "6.2"],
-	"block:def": [
-		"6.1",
-		"6.2",
-		"6.6"
-	],
-	"block:key": [
-		"6.1",
-		"6.2",
-		"6.6"
-	],
-	"block:trap": [
-		"6.1",
-		"6.4",
-		"6.6"
-	],
-	"block:ex": ["6.1", "6.2"],
-	"block:note": ["6.1", "6.3*"],
-	"block:list": ["6.1"],
-	"block:table": ["6.1", "10.1"],
-	"block:code": ["6.1"],
-	"block:math": ["6.1", "10.2"],
-	"block:figure": ["6.1", "10.1"],
-	"block:image": ["6.1", "10.3"],
-	"block:attempt": ["6.1", "6.2"],
-	"figure:all": ["10.1", "10.3"],
-	"figure:bar": ["10.1"],
-	"figure:circuit": ["10.1"],
-	"figure:drawing": ["10.1"],
-	"figure:flow": ["10.1"],
-	"figure:grid": ["10.1"],
-	"figure:matrix": ["10.1"],
-	"figure:plot": ["10.1"],
-	"figure:graph": ["10.1"],
-	"figure:scatter": ["10.1"],
-	"figure:svg": ["10.1"],
-	"figure:timing": ["10.1"],
-	"figure:image": ["10.3"],
-	"question:all": ["7*"],
-	"question:single": ["7"],
-	"question:multi": ["7"],
-	"question:number": ["7"],
-	"question:self": ["7"],
-	"question:synthesis": ["7.1"]
-};
-const availableNeeds = Object.keys(NEEDS);
-function needsIn(subsection) {
-	const found = /* @__PURE__ */ new Set();
-	for (const block of subsection?.blocks || []) {
-		if (NEEDS[`block:${block?.t}`]) found.add(`block:${block.t}`);
-		if (block?.t === "figure" && NEEDS[`figure:${block.kind}`]) found.add(`figure:${block.kind}`);
-	}
-	for (const question of subsection?.quiz || []) {
-		const kind = question?.type === "Synthesis" ? "synthesis" : question?.response?.kind;
-		if (NEEDS[`question:${kind}`]) found.add(`question:${kind}`);
-		if (question?.stimulus?.t === "figure") found.add("figure:all");
-		if (question?.stimulus?.t === "image") found.add("figure:image");
-	}
-	return [...found];
-}
-function needSections(spec, needs) {
-	const unknown = needs.filter((n) => !NEEDS[n]);
-	if (unknown.length) throw new Error(`unknown rule need: ${unknown.join(", ")}. Choose: ${availableNeeds.join(", ")}`);
-	return spec.pick([...new Set(needs.flatMap((n) => NEEDS[n]))]);
-}
-//#endregion
 //#region node_modules/js-yaml/dist/js-yaml.mjs
 /*! js-yaml 5.4.1 https://github.com/nodeca/js-yaml @license MIT */
 /**
@@ -1066,7 +902,18 @@ var CORE_SCHEMA = new Schema([
 	intCoreTag,
 	floatCoreTag
 ]);
-new Schema([
+/**
+* The dumper schema for maximum compatibility. It combines all supported type
+* variants from YAML 1.1 and YAML 1.2 so strings matching any of them are
+* quoted. This makes the generated YAML more compatible with other parsers.
+*
+* The schema is based on YAML 1.1, but extends `!!int` and `!!float` to accept
+* both YAML 1.1 and Core Schema forms, since Core Schema supports some forms
+* that YAML 1.1 does not.
+*
+* @category Schemas
+*/
+var DUMP_SCHEMA = new Schema([
 	...FAILSAFE_SCHEMA.tags,
 	nullYaml11Tag,
 	boolYaml11Tag,
@@ -1510,12 +1357,24 @@ var DEFAULT_TAG_HANDLERS = Object.assign(Object.create(null), {
 	"!": "!",
 	"!!": "tag:yaml.org,2002:"
 });
+function tagPercentEncode(source) {
+	return encodeURI(source).replace(/!/g, "%21");
+}
 function tagNameFull(rawTag, tagHandlers) {
 	if (rawTag.startsWith("!<") && rawTag.endsWith(">")) return decodeURIComponent(rawTag.slice(2, -1));
 	const handleEnd = rawTag.indexOf("!", 1);
 	const handle = handleEnd === -1 ? "!" : rawTag.slice(0, handleEnd + 1);
 	const prefix = tagHandlers?.[handle] ?? DEFAULT_TAG_HANDLERS[handle] ?? handle;
 	return decodeURIComponent(prefix) + decodeURIComponent(rawTag.slice(handle.length));
+}
+function tagNameShort(fullTag) {
+	let tag = fullTag;
+	if (tag.charCodeAt(0) === 33) {
+		tag = tag.slice(1);
+		return `!${tagPercentEncode(tag)}`;
+	}
+	if (tag.slice(0, 18) === "tag:yaml.org,2002:") return `!!${tagPercentEncode(tag.slice(18))}`;
+	return `!<${tagPercentEncode(tag)}>`;
 }
 var NO_RANGE$2 = -1;
 var MERGE_TAG_NAME = "tag:yaml.org,2002:merge";
@@ -2663,6 +2522,185 @@ function load(input, options) {
 	if (documents.length === 1) return documents[0];
 	throw new YAMLException("expected a single document in the stream, but found more");
 }
+var INVALID = Symbol("INVALID");
+function buildRepresentTypes(schema) {
+	const defaultTags = new Set([
+		schema.defaultScalarTag,
+		schema.defaultSequenceTag,
+		schema.defaultMappingTag
+	].filter((t) => t !== void 0));
+	const implicitScalars = schema.implicitScalarTags;
+	const explicitTags = schema.tags.filter((t) => !(t.nodeKind === "scalar" && t.implicit) && !defaultTags.has(t));
+	const defaultTagsLast = schema.tags.filter((t) => defaultTags.has(t));
+	return [
+		...implicitScalars.map((tag) => ({
+			tag,
+			implicitTag: true
+		})),
+		...explicitTags.map((tag) => ({
+			tag,
+			implicitTag: false
+		})),
+		...defaultTagsLast.map((tag) => ({
+			tag,
+			implicitTag: true
+		}))
+	];
+}
+function matchTag(state, object) {
+	for (let index = 0, length = state.representTypes.length; index < length; index += 1) {
+		const { tag, implicitTag } = state.representTypes[index];
+		if (tag.identify(object)) {
+			let tagName;
+			if (tag.matchByTagPrefix) tagName = tag.representTagName(object);
+			else tagName = tag.tagName;
+			return {
+				tag,
+				tagName,
+				implicitTag
+			};
+		}
+	}
+	return null;
+}
+function build(state, object) {
+	if (!state.noRefs && object !== null && typeof object === "object") {
+		const existing = state.refs.get(object);
+		if (existing) {
+			if (existing.anchor === void 0) existing.anchor = `ref_${state.refCounter++}`;
+			return {
+				kind: "alias",
+				anchor: existing.anchor
+			};
+		}
+	}
+	const matched = matchTag(state, object);
+	if (!matched) {
+		if (object === void 0) return INVALID;
+		if (state.skipInvalid) return INVALID;
+		throw new YAMLException(`unacceptable kind of an object to dump ${Object.prototype.toString.call(object)}`);
+	}
+	const { tag, tagName, implicitTag } = matched;
+	const nodeTagName = implicitTag ? tagName : tagNameShort(tagName);
+	if (tag.nodeKind === "scalar") return {
+		kind: "scalar",
+		tag: nodeTagName,
+		tagged: !implicitTag,
+		style: SCALAR_STYLE.PLAIN,
+		value: tag.represent(object)
+	};
+	if (tag.nodeKind === "sequence") {
+		const container = tag.represent(object);
+		const node = {
+			kind: "sequence",
+			tag: nodeTagName,
+			tagged: !implicitTag,
+			style: COLLECTION_STYLE.BLOCK,
+			items: []
+		};
+		if (!state.noRefs) state.refs.set(object, node);
+		for (let index = 0, length = container.length; index < length; index += 1) {
+			let item = build(state, container[index]);
+			if (item === INVALID && container[index] === void 0) item = build(state, null);
+			if (item === INVALID) continue;
+			node.items.push(item);
+		}
+		return node;
+	}
+	const map = tag.represent(object);
+	const node = {
+		kind: "mapping",
+		tag: nodeTagName,
+		tagged: !implicitTag,
+		style: COLLECTION_STYLE.BLOCK,
+		items: []
+	};
+	if (!state.noRefs) state.refs.set(object, node);
+	for (const [objectKey, objectValue] of map) {
+		const key = build(state, objectKey);
+		if (key === INVALID) continue;
+		const value = build(state, objectValue);
+		if (value === INVALID) continue;
+		node.items.push({
+			key,
+			value
+		});
+	}
+	return node;
+}
+/**
+* Convert JS object to AST. A JS value is one YAML document. An unrepresentable
+* root becomes an empty document, which the presenter renders as an empty
+* string.
+*
+* @category AST
+*/
+function jsToAst(input, schema, options = {}) {
+	const root = build({
+		representTypes: buildRepresentTypes(schema),
+		noRefs: options.noRefs ?? false,
+		skipInvalid: options.skipInvalid ?? false,
+		refs: /* @__PURE__ */ new Map(),
+		refCounter: 0
+	}, input);
+	return [{
+		contents: root === INVALID ? null : root,
+		directives: []
+	}];
+}
+/**
+* Return from a visitor to stop the whole traversal.
+*
+* @category AST
+*/
+var VISIT_BREAK = Symbol("visit:break");
+/**
+* Return from a visitor to skip the current node's children.
+*
+* @category AST
+*/
+var VISIT_SKIP = Symbol("visit:skip");
+function visitNode(node, visitor, ctx) {
+	const control = visitor(node, ctx);
+	if (control === VISIT_BREAK) return true;
+	if (control === VISIT_SKIP) return false;
+	const depth = ctx.depth + 1;
+	switch (node.kind) {
+		case "sequence":
+			for (const item of node.items) if (visitNode(item, visitor, {
+				depth,
+				parent: node,
+				isKey: false
+			})) return true;
+			break;
+		case "mapping": for (const { key, value } of node.items) {
+			if (visitNode(key, visitor, {
+				depth,
+				parent: node,
+				isKey: true
+			})) return true;
+			if (visitNode(value, visitor, {
+				depth,
+				parent: node,
+				isKey: false
+			})) return true;
+		}
+	}
+	return false;
+}
+/**
+* Walk every node in the documents, calling {@link Visitor} once per
+* node (pre-order).
+*
+* @category AST
+*/
+function visit(documents, visitor) {
+	for (const doc of documents) if (doc.contents && visitNode(doc.contents, visitor, {
+		depth: 0,
+		parent: null,
+		isKey: false
+	})) return;
+}
 function hasBit(mask, bit) {
 	return (mask & 1 << bit) !== 0;
 }
@@ -2735,6 +2773,9 @@ function quoteInvalidPlain(layout) {
 function fallbackToDoubleQuoted(layout) {
 	if (!hasBit(layout.allowedStylesMask, layout.style)) layout.style = SCALAR_STYLE.DOUBLE_QUOTED;
 }
+function setBit(mask, bit) {
+	return mask | 1 << bit;
+}
 var SRC_C_PRINTABLE = "[\\x09\\x0A\\x0D\\x20-\\x7E\\x85\\xA0-\\uD7FF\\uE000-\\uFFFD\\u{10000}-\\u{10FFFF}]";
 var SRC_B_CHAR = "[\\n\\r]";
 var SRC_C_BYTE_ORDER_MARK = "\\uFEFF";
@@ -2760,14 +2801,487 @@ var SRC_S_NS_PLAIN_NEXT_LINE_FLOW_OUT = `\\n+${SRC_NS_PLAIN_CHAR_FLOW_OUT}${SRC_
 var SRC_S_NS_PLAIN_NEXT_LINE_FLOW_IN = `\\n+${SRC_NS_PLAIN_CHAR_FLOW_IN}${SRC_NB_NS_PLAIN_IN_LINE_FLOW_IN}`;
 var SRC_NS_PLAIN_MULTI_LINE_FLOW_OUT = `${SRC_NS_PLAIN_ONE_LINE_FLOW_OUT}(?:${SRC_S_NS_PLAIN_NEXT_LINE_FLOW_OUT})*`;
 var SRC_NS_PLAIN_MULTI_LINE_FLOW_IN = `${SRC_NS_PLAIN_ONE_LINE_FLOW_IN}(?:${SRC_S_NS_PLAIN_NEXT_LINE_FLOW_IN})*`;
-new RegExp(`^(?:${SRC_NS_PLAIN_MULTI_LINE_FLOW_OUT})$`, "u");
-new RegExp(`^(?:${SRC_NS_PLAIN_MULTI_LINE_FLOW_IN})$`, "u");
-new RegExp(`^(?:${SRC_NS_PLAIN_ONE_LINE_BLOCK_KEY})$`, "u");
-new RegExp(`^(?:${SRC_NS_PLAIN_ONE_LINE_FLOW_KEY})$`, "u");
-new RegExp(`^(?:${SRC_NB_JSON})*$`, "u");
-new RegExp(`^(?:${SRC_NB_JSON}|\\n)*$`, "u");
-new RegExp(`^(?:${SRC_NB_CHAR}|\\n)*$`, "u");
-Object.keys(DEFAULT_SCALAR_STYLE_RULES).map((name) => Reflect.get(DEFAULT_SCALAR_STYLE_RULES, name));
+var NS_PLAIN_FLOW_OUT = new RegExp(`^(?:${SRC_NS_PLAIN_MULTI_LINE_FLOW_OUT})$`, "u");
+var NS_PLAIN_FLOW_IN = new RegExp(`^(?:${SRC_NS_PLAIN_MULTI_LINE_FLOW_IN})$`, "u");
+var NS_PLAIN_BLOCK_KEY = new RegExp(`^(?:${SRC_NS_PLAIN_ONE_LINE_BLOCK_KEY})$`, "u");
+var NS_PLAIN_FLOW_KEY = new RegExp(`^(?:${SRC_NS_PLAIN_ONE_LINE_FLOW_KEY})$`, "u");
+var NB_SINGLE_ONE_LINE = new RegExp(`^(?:${SRC_NB_JSON})*$`, "u");
+var NB_SINGLE_MULTI_LINE = new RegExp(`^(?:${SRC_NB_JSON}|\\n)*$`, "u");
+var BLOCK_SCALAR_CONTENT = new RegExp(`^(?:${SRC_NB_CHAR}|\\n)*$`, "u");
+var C_FORBIDDEN_FIRST_LINE = /^(?:---|\.\.\.)(?=$|[ \t\n\r])/;
+var C_FORBIDDEN_CONTENT = /^(?:---|\.\.\.)(?=$|[ \t\n\r])/m;
+function canUsePlain(layout) {
+	const str = layout.node.value;
+	if (str !== "") {
+		if (!(layout.isKey ? layout.flowOnly ? NS_PLAIN_FLOW_KEY : NS_PLAIN_BLOCK_KEY : layout.flowOnly ? NS_PLAIN_FLOW_IN : NS_PLAIN_FLOW_OUT).test(str)) return false;
+		if (layout.shiftOfFirstLine === 0 && C_FORBIDDEN_FIRST_LINE.test(str)) return false;
+		if (layout.shiftOfContent === 0) {
+			const firstLineBreak = str.indexOf("\n");
+			if (firstLineBreak !== -1) {
+				const content = str.slice(firstLineBreak + 1);
+				if (C_FORBIDDEN_CONTENT.test(content)) return false;
+			}
+		}
+	}
+	const resolvedTag = layout.presenterOptions.schema.resolveImplicitScalarTag(str).tag.tagName;
+	if (!layout.node.tagged && resolvedTag !== layout.node.tag) return false;
+	if (!layout.node.tagged && str === "=" && resolvedTag === layout.presenterOptions.schema.defaultScalarTag.tagName) return false;
+	return true;
+}
+function canUseSingleQuoted(layout) {
+	const str = layout.node.value;
+	if (!(layout.isKey ? NB_SINGLE_ONE_LINE : NB_SINGLE_MULTI_LINE).test(str)) return false;
+	if (/[ \t]\n|\n[ \t]/.test(str)) return false;
+	if (!layout.isKey && layout.shiftOfContent === 0) {
+		const firstLineBreak = str.indexOf("\n");
+		if (firstLineBreak !== -1 && C_FORBIDDEN_CONTENT.test(str.slice(firstLineBreak + 1))) return false;
+	}
+	return true;
+}
+function canUseBlock(layout) {
+	if (layout.flowOnly || !BLOCK_SCALAR_CONTENT.test(layout.node.value)) return false;
+	const contentIndent = layout.shiftOfContent - layout.shiftOfParent;
+	if (contentIndent < 1) return false;
+	if (contentIndent > 9 && /^\n* /.test(layout.node.value)) return false;
+	if (layout.shiftOfContent === 0 && C_FORBIDDEN_CONTENT.test(layout.node.value)) return false;
+	return true;
+}
+function detectAllowedStyles(layout) {
+	let mask = setBit(0, SCALAR_STYLE.DOUBLE_QUOTED);
+	if (canUsePlain(layout)) mask = setBit(mask, SCALAR_STYLE.PLAIN);
+	if (canUseSingleQuoted(layout)) mask = setBit(mask, SCALAR_STYLE.SINGLE_QUOTED);
+	if (canUseBlock(layout)) mask = setBit(setBit(mask, SCALAR_STYLE.LITERAL_BLOCK), SCALAR_STYLE.FOLDED_BLOCK);
+	layout.allowedStylesMask = mask;
+}
+function renderScalar(layout) {
+	switch (layout.style) {
+		case SCALAR_STYLE.PLAIN: return renderPlain(layout);
+		case SCALAR_STYLE.SINGLE_QUOTED: return renderSingleQuoted(layout);
+		case SCALAR_STYLE.LITERAL_BLOCK: return renderLiteralBlock(layout);
+		case SCALAR_STYLE.FOLDED_BLOCK: return renderFoldedBlock(layout);
+		case SCALAR_STYLE.DOUBLE_QUOTED: return renderDoubleQuoted(layout);
+	}
+}
+function renderPlain(layout) {
+	return encodeFlowBreaks(layout.node.value, layout.shiftOfContent);
+}
+function renderSingleQuoted(layout) {
+	return `'${encodeFlowBreaks(layout.node.value, layout.shiftOfContent).replace(/'/g, "''")}'`;
+}
+function renderLiteralBlock(layout) {
+	const value = layout.node.value;
+	return "|" + blockHeader(value, layout.shiftOfParent, layout.shiftOfContent) + dropEndingNewline(indentString(value, layout.shiftOfContent));
+}
+function renderFoldedBlock(layout) {
+	const value = layout.node.value;
+	const w = layout.presenterOptions.lineWidth;
+	let availableWidth = Infinity;
+	if (w !== -1) availableWidth = Math.max(Math.min(w, 40), w - layout.shiftOfContent);
+	return ">" + blockHeader(value, layout.shiftOfParent, layout.shiftOfContent) + dropEndingNewline(indentString(foldBlockScalar(value, availableWidth), layout.shiftOfContent));
+}
+function renderDoubleQuoted(layout) {
+	return `"${escapeString(layout.node.value)}"`;
+}
+function encodeFlowBreaks(string, shiftOfContent) {
+	let nextLF = string.indexOf("\n");
+	if (nextLF === -1) return string;
+	const pad = " ".repeat(shiftOfContent);
+	let result = string.slice(0, nextLF);
+	const lineRe = /(\n+)([^\n]*)/g;
+	lineRe.lastIndex = nextLF;
+	let match;
+	while (match = lineRe.exec(string)) {
+		const breaks = match[1].length;
+		const line = match[2];
+		result += "\n".repeat(breaks + 1) + pad + line;
+	}
+	return result;
+}
+function indentString(string, spaces) {
+	const indent = " ".repeat(spaces);
+	let position = 0;
+	let result = "";
+	const length = string.length;
+	while (position < length) {
+		let line;
+		const next = string.indexOf("\n", position);
+		if (next === -1) {
+			line = string.slice(position);
+			position = length;
+		} else {
+			line = string.slice(position, next + 1);
+			position = next + 1;
+		}
+		if (line.length && line !== "\n") result += indent;
+		result += line;
+	}
+	return result;
+}
+function needIndentIndicator(string) {
+	return /^\n* /.test(string);
+}
+function blockHeader(string, shiftOfParent, shiftOfContent) {
+	const indentIndicator = needIndentIndicator(string) ? String(shiftOfContent - shiftOfParent) : "";
+	const clip = string[string.length - 1] === "\n";
+	return `${indentIndicator}${clip && (string[string.length - 2] === "\n" || string === "\n") ? "+" : clip ? "" : "-"}\n`;
+}
+function dropEndingNewline(string) {
+	return string[string.length - 1] === "\n" ? string.slice(0, -1) : string;
+}
+function isMoreIndented(char) {
+	return char === " " || char === "	";
+}
+function foldLine(line, width) {
+	if (line === "" || isMoreIndented(line[0])) return line;
+	const breakRe = / [^ \t]/g;
+	let match;
+	let start = 0;
+	let end;
+	let curr = 0;
+	let next = 0;
+	let result = "";
+	while (match = breakRe.exec(line)) {
+		next = match.index;
+		if (next - start > width) {
+			end = curr > start ? curr : next;
+			result += `\n${line.slice(start, end)}`;
+			start = end + 1;
+		}
+		curr = next;
+	}
+	result += "\n";
+	if (line.length - start > width && curr > start) result += `${line.slice(start, curr)}\n${line.slice(curr + 1)}`;
+	else result += line.slice(start);
+	return result.slice(1);
+}
+function foldBlockScalar(string, width) {
+	const lineRe = /(\n+)([^\n]*)/g;
+	let nextLF = string.indexOf("\n");
+	if (nextLF === -1) nextLF = string.length;
+	lineRe.lastIndex = nextLF;
+	let result = foldLine(string.slice(0, nextLF), width);
+	let prevMoreIndented = string[0] === "\n" || isMoreIndented(string[0]);
+	let moreIndented;
+	let match;
+	while (match = lineRe.exec(string)) {
+		const prefix = match[1];
+		const line = match[2];
+		moreIndented = line !== "" && isMoreIndented(line[0]);
+		result += prefix + (!prevMoreIndented && !moreIndented && line !== "" ? "\n" : "") + foldLine(line, width);
+		prevMoreIndented = moreIndented;
+	}
+	return result;
+}
+var CHARACTERS_TO_ESCAPE = /["\\\x00-\x1F\x7F-\xA0\u2028\u2029\uD800-\uDFFF\uFEFF\uFFFE\uFFFF]/gu;
+function escapeCharacter(character) {
+	switch (character) {
+		case "\0": return "\\0";
+		case "\x07": return "\\a";
+		case "\b": return "\\b";
+		case "	": return "\\t";
+		case "\n": return "\\n";
+		case "\v": return "\\v";
+		case "\f": return "\\f";
+		case "\r": return "\\r";
+		case "\x1B": return "\\e";
+		case "\"": return "\\\"";
+		case "\\": return "\\\\";
+		case "": return "\\N";
+		case "\xA0": return "\\_";
+		case "\u2028": return "\\L";
+		case "\u2029": return "\\P";
+	}
+	const code = character.charCodeAt(0);
+	const hex = code.toString(16).toUpperCase();
+	if (code <= 255) return `\\x${"0".repeat(2 - hex.length)}${hex}`;
+	return `\\u${"0".repeat(4 - hex.length)}${hex}`;
+}
+function escapeString(string) {
+	return string.replace(CHARACTERS_TO_ESCAPE, escapeCharacter);
+}
+var CHAR_LINE_FEED = 10;
+var DEFAULT_PRESENTER_OPTIONS = {
+	indent: 2,
+	seqNoIndent: false,
+	seqInlineFirst: true,
+	lineWidth: 80,
+	flowBracketPadding: false,
+	flowSkipCommaSpace: false,
+	flowSkipColonSpace: false,
+	quoteFlowKeys: false,
+	quoteStyle: "single",
+	forceQuotes: false,
+	scalarStyleRules: Object.keys(DEFAULT_SCALAR_STYLE_RULES).map((name) => Reflect.get(DEFAULT_SCALAR_STYLE_RULES, name)),
+	tagBeforeAnchor: false
+};
+function nodeTagShort(node) {
+	return node.tagged ? node.tag : tagNameShort(node.tag);
+}
+function createPresenterState(options) {
+	const opts = {
+		...DEFAULT_PRESENTER_OPTIONS,
+		...options
+	};
+	if (opts.flowSkipColonSpace) opts.quoteFlowKeys = true;
+	return {
+		...opts,
+		defaultScalarTagName: opts.schema.defaultScalarTag.tagName,
+		openEnded: false
+	};
+}
+function generateNextLine(state, level) {
+	return `\n${" ".repeat(state.indent * level)}`;
+}
+function scalarLayout(state, node, parent, level, isKey, flowOnly) {
+	return {
+		node,
+		parent,
+		level,
+		isKey,
+		flowOnly,
+		shiftOfParent: level === 0 ? -1 : state.indent * (level - 1),
+		shiftOfContent: state.indent * Math.max(1, level),
+		shiftOfFirstLine: level === 0 ? 0 : state.indent * level,
+		presenterOptions: state,
+		allowedStylesMask: 0,
+		style: node.style
+	};
+}
+function writeFlowSequence(state, level, node) {
+	let result = "";
+	for (let index = 0, length = node.items.length; index < length; index += 1) {
+		const item = writeNode(state, level, node.items[index], node, {}).text;
+		if (index > 0) result += `,${!state.flowSkipCommaSpace ? " " : ""}`;
+		result += item;
+	}
+	const pad = state.flowBracketPadding && node.items.length > 0 ? " " : "";
+	return `[${pad}${result}${pad}]`;
+}
+function writeBlockSequence(state, level, node, compact) {
+	let result = "";
+	for (let index = 0, length = node.items.length; index < length; index += 1) {
+		const item = writeNode(state, level + 1, node.items[index], node, {
+			block: true,
+			compact: state.seqInlineFirst,
+			isblockseq: true
+		}).text;
+		if (!compact || result !== "") result += generateNextLine(state, level);
+		if (item === "" || CHAR_LINE_FEED === item.charCodeAt(0)) result += "-";
+		else result += "- ";
+		result += item;
+	}
+	return result;
+}
+function writeFlowMapping(state, level, node) {
+	let result = "";
+	for (const { key, value } of node.items) {
+		let pairBuffer = "";
+		if (result !== "") pairBuffer += `,${!state.flowSkipCommaSpace ? " " : ""}`;
+		const keyRender = writeNode(state, level, key, node, { iskey: true });
+		const keyText = keyRender.text;
+		const valueText = writeNode(state, level, value, node, {}).text;
+		const sep = state.flowSkipColonSpace || valueText === "" ? "" : " ";
+		const keyIsBareProps = key.kind === "scalar" && keyRender.noBody && (key.tagged || key.anchor !== void 0);
+		const keyColonSep = key.kind === "alias" || keyIsBareProps ? " " : "";
+		pairBuffer += `${keyText}${keyColonSep}:${sep}${valueText}`;
+		result += pairBuffer;
+	}
+	const pad = state.flowBracketPadding && result !== "" ? " " : "";
+	return `{${pad}${result}${pad}}`;
+}
+function writeBlockMapping(state, level, node, compact) {
+	let result = "";
+	for (let index = 0, length = node.items.length; index < length; index += 1) {
+		let pairBuffer = "";
+		if (!compact || result !== "") pairBuffer += generateNextLine(state, level);
+		const { key, value } = node.items[index];
+		const keyIsBlock = (key.kind === "mapping" || key.kind === "sequence") && key.style === COLLECTION_STYLE.BLOCK && key.items.length !== 0 || key.kind === "scalar" && (key.style === SCALAR_STYLE.LITERAL_BLOCK || key.style === SCALAR_STYLE.FOLDED_BLOCK);
+		const keyRender = keyIsBlock ? writeNode(state, level + 1, key, node, {
+			block: true,
+			compact: true,
+			isblockseq: !cannotBeCompact(state, key, level + 1)
+		}) : writeNode(state, level + 1, key, node, {
+			block: true,
+			compact: true,
+			iskey: true
+		});
+		const keyText = keyRender.text;
+		const keyHasLineBreak = key.kind === "scalar" && key.value.indexOf("\n") !== -1;
+		const keyIsTooLong = keyText.length > 1024 && /^[\s\S]{1025}/u.test(keyText);
+		const explicitPair = keyIsBlock || keyHasLineBreak || keyIsTooLong;
+		if (explicitPair) if (keyText && CHAR_LINE_FEED === keyText.charCodeAt(0)) pairBuffer += "?";
+		else pairBuffer += "? ";
+		pairBuffer += keyText;
+		if (explicitPair) pairBuffer += generateNextLine(state, level);
+		const valueText = writeNode(state, level + 1, value, node, {
+			block: true,
+			compact: explicitPair,
+			isblockseq: explicitPair && !cannotBeCompact(state, value, level + 1)
+		}).text;
+		const keyIsBareProps = key.kind === "scalar" && keyRender.noBody && (key.tagged || key.anchor !== void 0);
+		const keyColonSep = !explicitPair && (key.kind === "alias" || keyIsBareProps) ? " " : "";
+		if (valueText === "" || CHAR_LINE_FEED === valueText.charCodeAt(0)) pairBuffer += `${keyColonSep}:`;
+		else pairBuffer += `${keyColonSep}: `;
+		pairBuffer += valueText;
+		result += pairBuffer;
+	}
+	return result;
+}
+function cannotBeCompact(state, node, level) {
+	if (node.kind === "alias") return true;
+	return node.tagged || node.anchor !== void 0 || state.indent < 2 && level > 0;
+}
+function writeNode(state, level, node, parent, ctx) {
+	if (node.kind === "alias") {
+		state.openEnded = false;
+		return {
+			text: `*${node.anchor}`,
+			noBody: false
+		};
+	}
+	const { block = false, iskey = false, isblockseq = false } = ctx;
+	let compact = ctx.compact ?? false;
+	const hasAnchor = node.anchor !== void 0;
+	if (cannotBeCompact(state, node, level)) compact = false;
+	let body;
+	let shouldPrintTag = node.tagged;
+	const useBlockCollection = block && (node.kind === "mapping" || node.kind === "sequence") && node.style === COLLECTION_STYLE.BLOCK && node.items.length !== 0;
+	if (node.kind === "mapping") if (useBlockCollection) body = writeBlockMapping(state, level, node, compact);
+	else body = writeFlowMapping(state, level, node);
+	else if (node.kind === "sequence") if (useBlockCollection) if (state.seqNoIndent && !isblockseq && level > 0) body = writeBlockSequence(state, level - 1, node, compact);
+	else body = writeBlockSequence(state, level, node, compact);
+	else body = writeFlowSequence(state, level, node);
+	else {
+		const layout = scalarLayout(state, node, parent, level, iskey, !block);
+		detectAllowedStyles(layout);
+		for (const rule of state.scalarStyleRules) rule(layout);
+		body = renderScalar(layout);
+		state.openEnded = (layout.style === SCALAR_STYLE.LITERAL_BLOCK || layout.style === SCALAR_STYLE.FOLDED_BLOCK) && (node.value === "\n" || node.value.endsWith("\n\n"));
+		shouldPrintTag = node.tagged || body === "" && layout.flowOnly && parent?.kind === "sequence" && !hasAnchor || layout.style !== SCALAR_STYLE.PLAIN && node.tag !== state.defaultScalarTagName;
+	}
+	if ((node.kind === "mapping" || node.kind === "sequence") && !useBlockCollection) state.openEnded = false;
+	if (useBlockCollection && compact && level > 0 && state.indent > 2) body = `${" ".repeat(state.indent - 2)}${body}`;
+	const noBody = body === "";
+	let text = body;
+	if (shouldPrintTag || hasAnchor) {
+		const props = [];
+		const tag = shouldPrintTag ? nodeTagShort(node) : null;
+		const anchor = hasAnchor ? `&${node.anchor}` : null;
+		if (state.tagBeforeAnchor) {
+			if (tag !== null) props.push(tag);
+			if (anchor !== null) props.push(anchor);
+		} else {
+			if (anchor !== null) props.push(anchor);
+			if (tag !== null) props.push(tag);
+		}
+		const sep = body === "" || body.charCodeAt(0) === CHAR_LINE_FEED ? "" : " ";
+		text = `${props.join(" ")}${sep}${body}`;
+	}
+	return {
+		text,
+		noBody
+	};
+}
+function rootStartsOwnLine(node) {
+	return (node.kind === "sequence" || node.kind === "mapping") && node.style === COLLECTION_STYLE.BLOCK && node.items.length !== 0 && !node.tagged && node.anchor === void 0;
+}
+function writeDocumentDirectives(doc) {
+	let result = "";
+	for (const directive of doc.directives) {
+		if (directive.kind === "yaml") {
+			result += `%YAML ${directive.version}\n`;
+			continue;
+		}
+		const { handle, prefix } = directive;
+		result += `%TAG ${handle} ${prefix}\n`;
+	}
+	return result;
+}
+/**
+* Build YAML from AST.
+*
+* @category AST
+*/
+function present(documents, options) {
+	const state = createPresenterState(options);
+	let result = "";
+	let previousEnded = false;
+	for (let index = 0; index < documents.length; index += 1) {
+		const doc = documents[index];
+		state.openEnded = false;
+		const directives = writeDocumentDirectives(doc);
+		const hasDirectives = directives !== "";
+		const marker = doc.explicitStart || hasDirectives || index > 0 && !previousEnded;
+		result += directives;
+		if (doc.contents === null) {
+			if (marker) result += "---\n";
+		} else if (marker) {
+			const body = writeNode(state, 0, doc.contents, null, {
+				block: true,
+				compact: true
+			}).text;
+			const sep = body === "" ? "" : hasDirectives || rootStartsOwnLine(doc.contents) ? "\n" : " ";
+			result += `---${sep}${body}\n`;
+		} else result += writeNode(state, 0, doc.contents, null, {
+			block: true,
+			compact: true
+		}).text + "\n";
+		previousEnded = doc.explicitEnd || state.openEnded;
+		if (previousEnded) result += "...\n";
+	}
+	return result;
+}
+var DEFAULT_DUMP_OPTIONS = {
+	...DEFAULT_PRESENTER_OPTIONS,
+	schema: DUMP_SCHEMA,
+	skipInvalid: false,
+	noRefs: false,
+	flowLevel: -1,
+	sortKeys: false,
+	transform: () => {}
+};
+function defaultCompareFn(a, b) {
+	const x = String(a);
+	const y = String(b);
+	if (x < y) return -1;
+	if (x > y) return 1;
+	return 0;
+}
+/**
+* Serializes JS object as a YAML document. By default it can dump every
+* supported YAML type, so it throws an exception if you try to dump regexps or
+* functions. However, you can disable exceptions by setting the
+* {@link DumpOptions.skipInvalid} option to `true`.
+*
+* @category Main
+*/
+function dump(input, options = {}) {
+	const opts = {
+		...DEFAULT_DUMP_OPTIONS,
+		...options
+	};
+	const documents = jsToAst(input, opts.schema, {
+		noRefs: opts.noRefs,
+		skipInvalid: opts.skipInvalid
+	});
+	if (opts.flowLevel >= 0) visit(documents, (node, ctx) => {
+		if (ctx.depth < opts.flowLevel) return;
+		if (node.kind === "sequence" || node.kind === "mapping") node.style = COLLECTION_STYLE.FLOW;
+		return VISIT_SKIP;
+	});
+	if (opts.sortKeys) {
+		const compareFn = opts.sortKeys === true ? defaultCompareFn : opts.sortKeys;
+		visit(documents, (node) => {
+			if (node.kind !== "mapping") return;
+			node.items.sort((a, b) => compareFn(a.key.kind === "scalar" ? a.key.value : "", b.key.kind === "scalar" ? b.key.value : ""));
+		});
+	}
+	opts.transform(documents);
+	return present(documents, {
+		...pick(opts, Object.keys(DEFAULT_PRESENTER_OPTIONS)),
+		schema: opts.schema
+	});
+}
 EVENT_ID.DOCUMENT;
 EVENT_ID.SEQUENCE;
 EVENT_ID.MAPPING;
@@ -2785,11 +3299,1453 @@ CHOMPING_MODE.CLIP;
 CHOMPING_MODE.STRIP;
 CHOMPING_MODE.KEEP;
 //#endregion
+//#region tools/lib/author-context.mjs
+const estimateTokens = (text) => Math.ceil(Buffer.byteLength(text, "utf8") / 4);
+function loadContext(root) {
+	const base = realpathSync(root);
+	const manifest = load(readFileSync(join(base, "manifest.yaml"), "utf8"));
+	if (!manifest?.modules || !manifest?.phases) throw new Error("context manifest needs modules and phases");
+	const modules = Object.entries(manifest.modules).map(([id, value]) => {
+		const spec = typeof value === "string" ? { file: value } : value;
+		const path = resolve(base, spec.file);
+		if (!path.startsWith(base + sep) || !existsSync(path) || !realpathSync(path).startsWith(base + sep)) throw new Error(`invalid context module ${id}: ${spec.file}`);
+		return {
+			...spec,
+			id,
+			path,
+			text: readFileSync(path, "utf8")
+		};
+	});
+	const byId = new Map(modules.map((m) => [m.id, m]));
+	for (const module of modules) for (const id of module.requires || []) if (!byId.has(id)) throw new Error(`context ${module.id} requires missing module ${id}`);
+	for (const [phase, ids] of Object.entries(manifest.phases)) for (const id of ids) if (!byId.has(id)) throw new Error(`phase ${phase} names missing module ${id}`);
+	const version = createHash("sha256").update(JSON.stringify(manifest));
+	for (const m of modules) version.update(m.id).update(m.text);
+	return {
+		root: base,
+		manifest,
+		modules,
+		byId,
+		version: version.digest("hex").slice(0, 12)
+	};
+}
+function selectContext(context, { phase = "write", role = "single", needs = [], full = false } = {}) {
+	const warnings = [];
+	if (!context.manifest.phases[phase]) throw new Error(`unknown phase ${phase}`);
+	const ids = /* @__PURE__ */ new Set();
+	const eligible = (m) => !m.roles?.length || m.roles.includes(role);
+	const add = (id, trail = []) => {
+		if (ids.has(id)) return;
+		if (trail.includes(id)) throw new Error(`cyclic context dependency: ${[...trail, id].join(" -> ")}`);
+		const module = context.byId.get(id);
+		for (const other of module.requires || []) add(other, [...trail, id]);
+		ids.add(id);
+	};
+	for (const id of context.manifest.phases[phase]) if (eligible(context.byId.get(id))) add(id);
+	for (const m of context.modules) if (eligible(m) && (full || (m.needs || []).some((n) => needs.includes(n)))) add(m.id);
+	for (const need of needs) if (!context.modules.some((m) => m.needs?.includes(need))) warnings.push(`no context module for ${need}; choose a suitable representation`);
+	const modules = [...ids].map((id) => context.byId.get(id));
+	const text = modules.map((m) => m.text.trim()).join("\n\n");
+	return {
+		modules,
+		text,
+		warnings,
+		estimatedTokens: estimateTokens(text)
+	};
+}
+function shapeNeeds(unit = {}) {
+	const needs = /* @__PURE__ */ new Set();
+	for (const block of unit.blocks || []) {
+		if (block?.t) needs.add(`block:${block.t}`);
+		if (block?.t === "figure" && block.kind) needs.add(`figure:${block.kind}`);
+	}
+	for (const q of unit.quiz || []) {
+		if (q?.response?.kind) needs.add(`question:${q.response.kind}`);
+		if (q?.type === "Synthesis") needs.add("question:synthesis");
+		if (q?.stimulus?.t) needs.add(`stimulus:${q.stimulus.t}`);
+		if (q?.stimulus?.kind) needs.add(`figure:${q.stimulus.kind}`);
+	}
+	return [...needs];
+}
+//#endregion
 //#region tools/lib/load.mjs
 function parseFile(path) {
 	const raw = readFileSync(path, "utf8");
 	if (extname(path) === ".json") return JSON.parse(raw);
 	return load(raw);
+}
+//#endregion
+//#region tools/lib/author-packets.mjs
+const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
+const fileHash = (path) => fingerprint(readFileSync(path));
+const readPlan = (dir) => {
+	const path = join(dir, "materials", "plan.yaml");
+	const legacy = ["plan.md", "source-family-review.md"].map((f) => join(dir, "materials", f)).filter(existsSync);
+	return existsSync(path) ? {
+		path,
+		hash: fileHash(path),
+		data: parseFile(path) || {}
+	} : {
+		path,
+		data: {},
+		legacy
+	};
+};
+const asList = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
+const named = (value) => typeof value === "string" ? value : value?.id;
+const tags = (item) => asList(item?.objectives ?? item?.objective).map(named);
+const active = (item) => ![
+	"excluded",
+	"moved",
+	"prerequisite"
+].includes(item?.disposition);
+function indexPlan(plan) {
+	const objectives = asList(plan.data.objectives);
+	const byLesson = /* @__PURE__ */ new Map(), uses = /* @__PURE__ */ new Map();
+	for (const lesson of asList(plan.data.lessons ?? plan.data.subsections)) for (const id of asList(lesson.objectives).map(named)) uses.set(id, (uses.get(id) || 0) + 1);
+	for (const o of objectives) {
+		const id = o.lesson || o.subsection;
+		if (id) {
+			if (!byLesson.has(id)) byLesson.set(id, []);
+			byLesson.get(id).push(o);
+		}
+	}
+	return {
+		lessons: new Map(asList(plan.data.lessons ?? plan.data.subsections).map((s) => [s.id, s])),
+		objectives: new Map(objectives.map((o) => [o.id, o])),
+		families: new Map(asList(plan.data.families).map((f) => [f.id, f])),
+		byLesson,
+		uses
+	};
+}
+function planSignature(plan, sub, index = indexPlan(plan)) {
+	const lesson = index.lessons.get(sub);
+	const local = [.../* @__PURE__ */ new Set([...asList(lesson?.objectives).map(named), ...(index.byLesson.get(sub) || []).map((o) => o.id)])].map((id) => index.objectives.get(id)).filter(Boolean);
+	const dependencies = [...new Set(local.flatMap((o) => asList(o.prerequisites).map(named)))].map((id) => index.objectives.get(id)).filter(Boolean);
+	const families = [...new Set(asList(lesson?.families ?? local.flatMap((o) => asList(o.families))).map(named))].map((id) => index.families.get(id)).filter(Boolean).filter(active);
+	return fingerprint(JSON.stringify({
+		lesson,
+		local,
+		dependencies,
+		families,
+		reader: plan.data.reader
+	}));
+}
+function selectItem(unit, selector) {
+	const match = /^(block|quiz):(\d+)$/.exec(selector || "");
+	if (!match || Number(match[2]) < 1) throw new Error("--item needs block:N or quiz:N (1-based)");
+	const item = (match[1] === "block" ? unit.blocks : unit.quiz)?.[Number(match[2]) - 1];
+	if (!item) throw new Error(`no ${selector}`);
+	return item;
+}
+function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase, mode = "single", role, needs = [], item, issue, sourceRefs = [], sources = [], warnings = [] }) {
+	const unit = subsection ? parseFile(subsection.file) || {} : {};
+	const lesson = index.lessons.get(subsection?.id);
+	const selected = item ? selectItem(unit, item) : null;
+	const wanted = new Set(asList(lesson?.objectives).map(named));
+	if (selected) {
+		wanted.clear();
+		for (const id of tags(selected)) wanted.add(id);
+	}
+	if (!wanted.size && subsection && !selected) for (const o of index.byLesson.get(subsection.id) || []) wanted.add(o.id);
+	const local = [...wanted].map((id) => index.objectives.get(id)).filter(Boolean);
+	const shared = local.some((o) => (index.uses.get(o.id) || 0) > 1);
+	const prerequisiteIds = new Set(local.flatMap((o) => asList(o.prerequisites).map(named)));
+	const familyIds = new Set(lesson && Object.hasOwn(lesson, "families") ? asList(lesson.families).map(named) : shared ? [] : local.flatMap((o) => asList(o.families).map(named)));
+	const prerequisites = [...prerequisiteIds].map((id) => index.objectives.get(id)).filter(Boolean).map((o) => ({
+		id: o.id,
+		outcome: o.outcome
+	}));
+	const families = [...familyIds].map((id) => index.families.get(id)).filter(Boolean).filter(active);
+	const effectiveRole = mode === "single" ? "single" : role || (phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer");
+	const rules = selectContext(context, {
+		phase,
+		role: effectiveRole,
+		needs: [.../* @__PURE__ */ new Set([
+			...needs,
+			...asList(selected ? null : lesson?.needs),
+			...shapeNeeds(selected ? item.startsWith("block:") ? { blocks: [selected] } : { quiz: [selected] } : unit)
+		])]
+	});
+	const refs = sourceRefs.length ? sourceRefs : selected ? asList(selected.sourceRefs) : phase === "write" ? lesson && Object.hasOwn(lesson, "sourceRefs") ? asList(lesson.sourceRefs) : lesson && Object.hasOwn(lesson, "sources") ? asList(lesson.sources) : shared ? [] : local.flatMap((o) => asList(o.sources)) : [];
+	const reader = plan.data.reader || {};
+	const readerContext = phase === "write" ? {
+		...reader.goal ? { goal: reader.goal } : {},
+		...reader.background ? { background: reader.background } : {}
+	} : selected && reader.background ? { background: reader.background } : null;
+	const packet = {
+		phase,
+		mode,
+		role: effectiveRole,
+		rules: rules.modules.map((m) => m.path),
+		...plan.hash && !(phase === "review" && selected) ? { plan: {
+			path: plan.path,
+			hash: plan.hash
+		} } : {},
+		...subsection ? { target: subsection.file } : {},
+		...readerContext && Object.keys(readerContext).length ? { reader: readerContext } : {},
+		...phase === "write" && plan.data.scope ? { scope: plan.data.scope } : {},
+		...phase === "plan" ? { inventory: plan.path } : {},
+		...local.length ? { objectives: local.map((o) => ({
+			id: o.id,
+			outcome: o.outcome,
+			...o.risk ? { risk: o.risk } : {}
+		})) } : {},
+		...phase === "write" && prerequisites.length ? { prerequisites } : {},
+		...phase === "write" && families.length ? { families } : {},
+		...phase !== "review" && lesson?.directives ? { directives: lesson.directives } : {},
+		...refs.length ? { sourceRefs: [...new Map(refs.map((r) => [JSON.stringify(r), r])).values()] } : {},
+		...sources.length ? { sources } : {},
+		...selected ? { item: {
+			selector: item,
+			hash: fingerprint(JSON.stringify(selected)),
+			content: selected
+		} } : {},
+		...issue ? { issue } : {},
+		warnings: [...warnings, ...rules.warnings]
+	};
+	if (phase === "write" && shared && !Object.hasOwn(lesson || {}, "families") && local.some((o) => asList(o.families).length)) packet.warnings.push("shared objective needs lesson-local families; broad family definitions were not included");
+	if (phase === "write" && shared && !Object.hasOwn(lesson || {}, "sources") && !Object.hasOwn(lesson || {}, "sourceRefs") && local.some((o) => asList(o.sources).length)) packet.warnings.push("shared objective needs lesson-local sources; broad source text was not included");
+	if (phase === "review" && !selected) packet.warnings.push("no item selected; coverage metadata only, not a content review");
+	if (phase === "review" && selected && !refs.length) packet.warnings.push("no source span selected; expand evidence before a source-grounded judgment");
+	if (phase === "review" && selected && refs.some((ref) => !ref.lines)) packet.warnings.push("source reference has no exact line span; source text was not included");
+	if (!plan.hash) packet.warnings.push("no materials/plan.yaml; scope coverage is unavailable");
+	return packet;
+}
+function planCoverage(plan, subsections) {
+	const objectives = asList(plan.data.objectives).filter(active);
+	const familyIndex = new Map(asList(plan.data.families).map((f) => [f.id, f]));
+	const found = new Map(subsections.map((s) => [s.id, parseFile(s.file) || {}]));
+	const evidence = /* @__PURE__ */ new Map(), assessedFamilies = /* @__PURE__ */ new Map();
+	for (const [sub, unit] of found) for (const kind of ["teaching", "questions"]) {
+		const items = kind === "teaching" ? unit.blocks : unit.quiz;
+		for (const [i, item] of (items || []).entries()) for (const id of tags(item)) {
+			if (!evidence.has(id)) evidence.set(id, {
+				teaching: [],
+				questions: []
+			});
+			evidence.get(id)[kind].push(`${sub}/${kind === "teaching" ? "block" : "quiz"}:${i + 1}`);
+			if (kind === "questions") {
+				if (!assessedFamilies.has(id)) assessedFamilies.set(id, /* @__PURE__ */ new Set());
+				for (const family of [
+					...asList(item.families).map(named),
+					item.family,
+					item.type
+				]) if (family) assessedFamilies.get(id).add(family);
+			}
+		}
+	}
+	const locations = (objective, kind) => {
+		const out = [...evidence.get(objective.id)?.[kind] || []];
+		for (const ref of asList(objective.evidence?.[kind])) try {
+			selectItem(found.get(ref.sub) || {}, ref.item);
+			if (ref.item.startsWith(kind === "teaching" ? "block:" : "quiz:")) out.push(`${ref.sub}/${ref.item}`);
+		} catch {}
+		return out;
+	};
+	const rows = objectives.map((o) => {
+		const teaching = locations(o, "teaching"), questions = locations(o, "questions");
+		const families = asList(o.families).map(named).filter((id) => active(familyIndex.get(id)));
+		const assessed = families.filter((f) => assessedFamilies.get(o.id)?.has(f));
+		return {
+			id: o.id,
+			teaching,
+			questions,
+			families: families.length,
+			assessed: assessed.length,
+			complete: !!teaching.length && !!questions.length && assessed.length === families.length
+		};
+	});
+	return {
+		available: !!plan.hash,
+		total: rows.length,
+		percent: rows.length ? Math.round(100 * rows.filter((r) => r.complete).length / rows.length) : null,
+		rows,
+		message: "Explicit teaching/question links; author judgments, not proof of mastery."
+	};
+}
+function packetText(packet) {
+	return dump(packet, {
+		lineWidth: -1,
+		noRefs: true
+	}).trim() + "\n";
+}
+//#endregion
+//#region node_modules/fflate/esm/index.mjs
+var require = createRequire("/");
+var _a;
+try {
+	_a = require("worker_threads"), _a.Worker, _a.isMarkedAsUntransferable;
+} catch (e) {}
+var u8 = Uint8Array;
+var u16 = Uint16Array;
+var i32 = Int32Array;
+var fleb = new u8([
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	1,
+	1,
+	1,
+	1,
+	2,
+	2,
+	2,
+	2,
+	3,
+	3,
+	3,
+	3,
+	4,
+	4,
+	4,
+	4,
+	5,
+	5,
+	5,
+	5,
+	0,
+	0,
+	0,
+	0
+]);
+var fdeb = new u8([
+	0,
+	0,
+	0,
+	0,
+	1,
+	1,
+	2,
+	2,
+	3,
+	3,
+	4,
+	4,
+	5,
+	5,
+	6,
+	6,
+	7,
+	7,
+	8,
+	8,
+	9,
+	9,
+	10,
+	10,
+	11,
+	11,
+	12,
+	12,
+	13,
+	13,
+	0,
+	0
+]);
+var clim = new u8([
+	16,
+	17,
+	18,
+	0,
+	8,
+	7,
+	9,
+	6,
+	10,
+	5,
+	11,
+	4,
+	12,
+	3,
+	13,
+	2,
+	14,
+	1,
+	15
+]);
+var freb = function(eb, start) {
+	var b = new u16(31);
+	for (var i = 0; i < 31; ++i) b[i] = start += 1 << eb[i - 1];
+	var r = new i32(b[30]);
+	for (var i = 1; i < 30; ++i) for (var j = b[i]; j < b[i + 1]; ++j) r[j] = j - b[i] << 5 | i;
+	return {
+		b,
+		r
+	};
+};
+var _a = freb(fleb, 2);
+var fl = _a.b;
+var revfl = _a.r;
+fl[28] = 258, revfl[258] = 28;
+var _b = freb(fdeb, 0);
+var fd = _b.b;
+_b.r;
+var rev = new u16(32768);
+for (var i = 0; i < 32768; ++i) {
+	var x = (i & 43690) >> 1 | (i & 21845) << 1;
+	x = (x & 52428) >> 2 | (x & 13107) << 2;
+	x = (x & 61680) >> 4 | (x & 3855) << 4;
+	rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+}
+var hMap = (function(cd, mb, r) {
+	var s = cd.length;
+	var i = 0;
+	var l = new u16(mb);
+	for (; i < s; ++i) if (cd[i]) ++l[cd[i] - 1];
+	var le = new u16(mb);
+	for (i = 1; i < mb; ++i) le[i] = le[i - 1] + l[i - 1] << 1;
+	var co;
+	if (r) {
+		co = new u16(1 << mb);
+		var rvb = 15 - mb;
+		for (i = 0; i < s; ++i) if (cd[i]) {
+			var sv = i << 4 | cd[i];
+			var r_1 = mb - cd[i];
+			var v = le[cd[i] - 1]++ << r_1;
+			for (var m = v | (1 << r_1) - 1; v <= m; ++v) co[rev[v] >> rvb] = sv;
+		}
+	} else {
+		co = new u16(s);
+		for (i = 0; i < s; ++i) if (cd[i]) co[i] = rev[le[cd[i] - 1]++] >> 15 - cd[i];
+	}
+	return co;
+});
+var flt = new u8(288);
+for (var i = 0; i < 144; ++i) flt[i] = 8;
+for (var i = 144; i < 256; ++i) flt[i] = 9;
+for (var i = 256; i < 280; ++i) flt[i] = 7;
+for (var i = 280; i < 288; ++i) flt[i] = 8;
+var fdt = new u8(32);
+for (var i = 0; i < 32; ++i) fdt[i] = 5;
+var flrm = /*#__PURE__*/ hMap(flt, 9, 1);
+var fdrm = /*#__PURE__*/ hMap(fdt, 5, 1);
+var max = function(a) {
+	var m = a[0];
+	for (var i = 1; i < a.length; ++i) if (a[i] > m) m = a[i];
+	return m;
+};
+var bits = function(d, p, m) {
+	var o = p / 8 | 0;
+	return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+};
+var bits16 = function(d, p) {
+	var o = p / 8 | 0;
+	return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+};
+var shft = function(p) {
+	return (p + 7) / 8 | 0;
+};
+var slc = function(v, s, e) {
+	if (s == null || s < 0) s = 0;
+	if (e == null || e > v.length) e = v.length;
+	return new u8(v.subarray(s, e));
+};
+var ec = [
+	"unexpected EOF",
+	"invalid block type",
+	"invalid length/literal",
+	"invalid distance",
+	"stream finished",
+	"no stream handler",
+	,
+	"no callback",
+	"invalid UTF-8 data",
+	"extra field too long",
+	"date not in range 1980-2099",
+	"filename too long",
+	"stream finishing",
+	"invalid zip data"
+];
+var err = function(ind, msg, nt) {
+	var e = new Error(msg || ec[ind]);
+	e.code = ind;
+	if (Error.captureStackTrace) Error.captureStackTrace(e, err);
+	if (!nt) throw e;
+	return e;
+};
+var inflt = function(dat, st, buf, dict) {
+	var sl = dat.length, dl = dict ? dict.length : 0;
+	if (!sl || st.f && !st.l) return buf || new u8(0);
+	var noBuf = !buf;
+	var resize = noBuf || st.i != 2;
+	var noSt = st.i;
+	if (noBuf) buf = new u8(sl * 3);
+	var cbuf = function(l) {
+		var bl = buf.length;
+		if (l > bl) {
+			var nbuf = new u8(Math.max(bl * 2, l));
+			nbuf.set(buf);
+			buf = nbuf;
+		}
+	};
+	var final = st.f || 0, pos = st.p || 0, bt = st.b || 0, lm = st.l, dm = st.d, lbt = st.m, dbt = st.n;
+	var tbts = sl * 8;
+	do {
+		if (!lm) {
+			final = bits(dat, pos, 1);
+			var type = bits(dat, pos + 1, 3);
+			pos += 3;
+			if (!type) {
+				var s = shft(pos) + 4, l = dat[s - 4] | dat[s - 3] << 8, t = s + l;
+				if (t > sl) {
+					if (noSt) err(0);
+					break;
+				}
+				if (resize) cbuf(bt + l);
+				buf.set(dat.subarray(s, t), bt);
+				st.b = bt += l, st.p = pos = t * 8, st.f = final;
+				continue;
+			} else if (type == 1) lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
+			else if (type == 2) {
+				var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
+				var tl = hLit + bits(dat, pos + 5, 31) + 1;
+				pos += 14;
+				var ldt = new u8(tl);
+				var clt = new u8(19);
+				for (var i = 0; i < hcLen; ++i) clt[clim[i]] = bits(dat, pos + i * 3, 7);
+				pos += hcLen * 3;
+				var clb = max(clt), clbmsk = (1 << clb) - 1;
+				var clm = hMap(clt, clb, 1);
+				for (var i = 0; i < tl;) {
+					var r = clm[bits(dat, pos, clbmsk)];
+					pos += r & 15;
+					var s = r >> 4;
+					if (s < 16) ldt[i++] = s;
+					else {
+						var c = 0, n = 0;
+						if (s == 16) n = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i - 1];
+						else if (s == 17) n = 3 + bits(dat, pos, 7), pos += 3;
+						else if (s == 18) n = 11 + bits(dat, pos, 127), pos += 7;
+						while (n--) ldt[i++] = c;
+					}
+				}
+				var lt = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
+				lbt = max(lt);
+				dbt = max(dt);
+				lm = hMap(lt, lbt, 1);
+				dm = hMap(dt, dbt, 1);
+			} else err(1);
+			if (pos > tbts) {
+				if (noSt) err(0);
+				break;
+			}
+		}
+		if (resize) cbuf(bt + 131072);
+		var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+		var lpos = pos;
+		for (;; lpos = pos) {
+			var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
+			pos += c & 15;
+			if (pos > tbts) {
+				if (noSt) err(0);
+				break;
+			}
+			if (!c) err(2);
+			if (sym < 256) buf[bt++] = sym;
+			else if (sym == 256) {
+				lpos = pos, lm = null;
+				break;
+			} else {
+				var add = sym - 254;
+				if (sym > 264) {
+					var i = sym - 257, b = fleb[i];
+					add = bits(dat, pos, (1 << b) - 1) + fl[i];
+					pos += b;
+				}
+				var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
+				if (!d) err(3);
+				pos += d & 15;
+				var dt = fd[dsym];
+				if (dsym > 3) {
+					var b = fdeb[dsym];
+					dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
+				}
+				if (pos > tbts) {
+					if (noSt) err(0);
+					break;
+				}
+				if (resize) cbuf(bt + 131072);
+				var end = bt + add;
+				if (bt < dt) {
+					var shift = dl - dt, dend = Math.min(dt, end);
+					if (shift + bt < 0) err(3);
+					for (; bt < dend; ++bt) buf[bt] = dict[shift + bt];
+				}
+				for (; bt < end; ++bt) buf[bt] = buf[bt - dt];
+			}
+		}
+		st.l = lm, st.p = lpos, st.b = bt, st.f = final;
+		if (lm) final = 1, st.m = lbt, st.d = dm, st.n = dbt;
+	} while (!final);
+	return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
+};
+var et = /*#__PURE__*/ new u8(0);
+var b2 = function(d, b) {
+	return d[b] | d[b + 1] << 8;
+};
+var b4 = function(d, b) {
+	return (d[b] | d[b + 1] << 8 | d[b + 2] << 16 | d[b + 3] << 24) >>> 0;
+};
+var b8 = function(d, b) {
+	return b4(d, b) + b4(d, b + 4) * 4294967296;
+};
+function inflateSync(data, opts) {
+	return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
+}
+var td = typeof TextDecoder != "undefined" && /*#__PURE__*/ new TextDecoder();
+try {
+	td.decode(et, { stream: true });
+} catch (e) {}
+var dutf8 = function(d) {
+	for (var r = "", i = 0;;) {
+		var c = d[i++];
+		var eb = (c > 127) + (c > 223) + (c > 239);
+		if (i + eb > d.length) return {
+			s: r,
+			r: slc(d, i - 1)
+		};
+		if (!eb) r += String.fromCharCode(c);
+		else if (eb == 3) c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | d[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+		else if (eb & 1) r += String.fromCharCode((c & 31) << 6 | d[i++] & 63);
+		else r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | d[i++] & 63);
+	}
+};
+/**
+* Converts a Uint8Array to a string
+* @param dat The data to decode to string
+* @param latin1 Whether or not to interpret the data as Latin-1. This should
+*               not need to be true unless encoding to binary string.
+* @returns The original UTF-8/Latin-1 string
+*/
+function strFromU8(dat, latin1) {
+	if (latin1) {
+		var r = "";
+		for (var i = 0; i < dat.length; i += 16384) r += String.fromCharCode.apply(null, dat.subarray(i, i + 16384));
+		return r;
+	} else if (td) return td.decode(dat);
+	else {
+		var _a = dutf8(dat), s = _a.s, r = _a.r;
+		if (r.length) err(8);
+		return s;
+	}
+}
+var slzh = function(d, b) {
+	return b + 30 + b2(d, b + 26) + b2(d, b + 28);
+};
+var zh = function(d, b, z) {
+	var fnl = b2(d, b + 28), efl = b2(d, b + 30), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl;
+	var _a = z64hs(d, es, efl, z, b4(d, b + 20), b4(d, b + 24), b4(d, b + 42)), sc = _a[0], su = _a[1], off = _a[2];
+	return [
+		b2(d, b + 10),
+		sc,
+		su,
+		fn,
+		es + efl + b2(d, b + 32),
+		off
+	];
+};
+var z64hs = function(d, b, l, z, sc, su, off) {
+	var nsc = sc == 4294967295, nsu = su == 4294967295, noff = off == 4294967295, e = b + l;
+	var nf = nsc + nsu + noff;
+	if (z && nf) {
+		for (; b + 4 < e; b += 4 + b2(d, b + 2)) if (b2(d, b) == 1) return [
+			nsc ? b8(d, b + 4 + 8 * nsu) : sc,
+			nsu ? b8(d, b + 4) : su,
+			noff ? b8(d, b + 4 + 8 * (nsu + nsc)) : off,
+			1
+		];
+		if (z < 2) err(13);
+	}
+	return [
+		sc,
+		su,
+		off,
+		0
+	];
+};
+/**
+* Synchronously decompresses a ZIP archive. Prefer using `unzip` for better
+* performance with more than one file.
+* @param data The raw compressed ZIP file
+* @param opts The ZIP extraction options
+* @returns The decompressed files
+*/
+function unzipSync(data, opts) {
+	var files = {};
+	var e = data.length - 22;
+	for (; b4(data, e) != 101010256; --e) if (!e || data.length - e > 65558) err(13);
+	var c = b2(data, e + 8);
+	if (!c) return {};
+	var o = b4(data, e + 16);
+	var z = b4(data, e - 20) == 117853008;
+	if (z) {
+		var ze = b4(data, e - 12);
+		z = b4(data, ze) == 101075792;
+		if (z) {
+			c = b4(data, ze + 32);
+			o = b4(data, ze + 48);
+		}
+	}
+	var fltr = opts && opts.filter;
+	for (var i = 0; i < c; ++i) {
+		var _a = zh(data, o, z), c_2 = _a[0], sc = _a[1], su = _a[2], fn = _a[3], no = _a[4], off = _a[5], b = slzh(data, off);
+		o = no;
+		if (!fltr || fltr({
+			name: fn,
+			size: sc,
+			originalSize: su,
+			compression: c_2
+		})) {
+			if (!c_2) files[fn] = slc(data, b, b + sc);
+			else if (c_2 == 8) files[fn] = inflateSync(data.subarray(b, b + sc), { out: new u8(su) });
+			else err(14, "unknown compression type " + c_2);
+		}
+	}
+	return files;
+}
+//#endregion
+//#region tools/lib/sources.mjs
+const SYSTEM = [
+	"/bin",
+	"/boot",
+	"/dev",
+	"/etc",
+	"/lib",
+	"/proc",
+	"/sbin",
+	"/sys",
+	"/usr",
+	"/private/etc",
+	"/System",
+	"/Library",
+	"/Applications"
+];
+const BROAD = [
+	"/var",
+	"/private",
+	"/private/var",
+	"/Users",
+	"/home",
+	"/opt",
+	"/Volumes",
+	"/mnt"
+];
+const within$1 = (child, parent) => child === parent || child.startsWith(parent + sep);
+function roots(courseDir, paths = [], base = process.cwd()) {
+	const repo = resolve(courseDir, "..", "..");
+	const courses = join(repo, "courses");
+	const own = join(courseDir, "sources");
+	const out = existsSync(own) ? [realpathSync(own)] : [];
+	for (const p of paths) {
+		const abs = resolve(base, p.replace(/^~(?=$|\/)/, homedir()));
+		if (!existsSync(abs)) throw new Error(`--source ${p}: ${abs} does not exist`);
+		const real = realpathSync(abs);
+		const home = realpathSync(homedir());
+		const refuse = (why) => {
+			throw new Error(`--source ${p}: refused, ${why}`);
+		};
+		if (real === sep || real === home || within$1(home, real)) refuse("it contains your whole home folder or more");
+		if (SYSTEM.some((s) => within$1(real, s))) refuse("it is a system folder");
+		if (BROAD.includes(real)) refuse("it is too broad; name the folder you mean");
+		if (within$1(realpathSync(repo), real)) refuse("it contains this repository, and with it every private course");
+		if (within$1(real, realpathSync(courses)) && !within$1(real, realpathSync(courseDir))) refuse("it is inside another course");
+		if (!out.some((r) => within$1(real, r))) out.push(real);
+	}
+	return out;
+}
+const DOC = /* @__PURE__ */ new Set([
+	".md",
+	".markdown",
+	".mdx",
+	".txt",
+	".tex",
+	".html",
+	".htm",
+	".rst",
+	".adoc",
+	".org"
+]);
+const CODE = /* @__PURE__ */ new Set([
+	".js",
+	".mjs",
+	".cjs",
+	".jsx",
+	".ts",
+	".tsx",
+	".py",
+	".rb",
+	".go",
+	".rs",
+	".java",
+	".kt",
+	".swift",
+	".c",
+	".h",
+	".cc",
+	".cpp",
+	".hpp",
+	".cs",
+	".php",
+	".scala",
+	".sh",
+	".sql",
+	".r",
+	".jl",
+	".lua",
+	".dart",
+	".vue",
+	".svelte",
+	".css",
+	".scss",
+	".json",
+	".yaml",
+	".yml",
+	".toml",
+	".ini",
+	".csv",
+	".xml",
+	".proto",
+	".graphql",
+	".ipynb"
+]);
+/** Extraction registration only. `doc` and `text` retain their older meaning:
+binary teaching sources are catalogued, but never read as UTF-8 here. */
+const SOURCE_FORMATS = new Map([
+	...[...DOC, ...CODE].map((ext) => [ext, "text"]),
+	[".pdf", "pdf"],
+	[".pptx", "pptx"],
+	[".ppt", "ppt"],
+	[".png", "image"],
+	[".jpg", "image"],
+	[".jpeg", "image"],
+	[".gif", "image"],
+	[".webp", "image"],
+	[".svg", "image"]
+]);
+const SECRET = /(^|\/)(\.env[^/]*|.*\.(pem|key|p12|pfx|keystore|jks)|id_(rsa|dsa|ecdsa|ed25519)[^/]*|\.?(credentials|secrets?)(\.[^/]*)?|\.netrc|\.npmrc|\.pypirc)$/i;
+const BULK_DIR = /(^|\/)(node_modules|vendor|dist|build|out|target|coverage|__pycache__|\.[^/]*)(\/|$)/;
+const BULK_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|go\.sum|[^/]*\.min\.(js|css)|[^/]*\.map)$/;
+const LIMIT = 2e4;
+const skip = (rel) => SECRET.test(rel) || BULK_DIR.test(rel) || BULK_FILE.test(rel);
+function gitFiles(dir) {
+	const git = (args) => execFileSync("git", [
+		"-C",
+		dir,
+		...args
+	], {
+		encoding: "utf8",
+		maxBuffer: 268435456,
+		stdio: [
+			"ignore",
+			"pipe",
+			"ignore"
+		]
+	});
+	try {
+		git(["rev-parse", "--show-toplevel"]);
+	} catch {
+		return null;
+	}
+	try {
+		git([
+			"check-ignore",
+			"-q",
+			"."
+		]);
+		return null;
+	} catch {}
+	try {
+		return git([
+			"ls-files",
+			"-co",
+			"--exclude-standard",
+			"-z",
+			"--",
+			"."
+		]).split("\0").filter(Boolean);
+	} catch {
+		return null;
+	}
+}
+function walk(dir) {
+	const out = [];
+	const go = (d) => {
+		for (const f of readdirSync(d).sort()) {
+			if (out.length >= LIMIT) return;
+			const path = join(d, f);
+			const rel = relative(dir, path);
+			if (skip(rel)) continue;
+			const st = lstatSync(path);
+			if (st.isDirectory()) go(path);
+			else if (st.isFile() || st.isSymbolicLink()) out.push(rel);
+		}
+	};
+	go(dir);
+	return out;
+}
+/** Every material file under the roots, sorted, each checked to stay inside
+its root (a symlink pointing out is dropped, not followed). */
+function list(rootsList) {
+	const out = [];
+	for (const root of rootsList) {
+		if (statSync(root).isFile()) {
+			out.push(entry$1(dirname(root), basename(root), root));
+			continue;
+		}
+		const rels = (gitFiles(root) || walk(root)).filter((r) => !skip(r)).sort().slice(0, LIMIT);
+		for (const rel of rels) {
+			const path = join(root, rel);
+			let real;
+			try {
+				real = realpathSync(path);
+			} catch {
+				continue;
+			}
+			if (!within$1(real, root) || !statSync(real).isFile()) continue;
+			out.push(entry$1(root, rel, path));
+		}
+	}
+	return out;
+}
+function entry$1(root, rel, path) {
+	const ext = extname(rel).toLowerCase();
+	return {
+		root,
+		rel,
+		path,
+		doc: DOC.has(ext),
+		text: DOC.has(ext) || CODE.has(ext),
+		bytes: statSync(path).size,
+		format: SOURCE_FORMATS.get(ext) || "binary"
+	};
+}
+const mapPath = (repo, id) => join(repo, ".author", id, "map.txt");
+function loadMap(repo, id) {
+	const p = mapPath(repo, id);
+	const out = {};
+	if (!existsSync(p)) return out;
+	for (const line of readFileSync(p, "utf8").split("\n")) {
+		const m = /^(\S[^:]*\.(?:ya?ml|json)):\s*(.*)$/.exec(line.trim());
+		if (m) out[m[1]] = m[2].split("|").map((x) => x.trim()).filter((x) => x && !/^none$/i.test(x));
+	}
+	return out;
+}
+//#endregion
+//#region tools/lib/source-catalog.mjs
+const EXTRACTOR_VERSION = 1;
+const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const within = (child, parent) => child === parent || child.startsWith(parent + sep);
+const warning = {
+	pdf: "PDF text extraction does not verify equations, diagrams, or reading order; inspect the original pages.",
+	scanned: "No PDF text was extracted. Treat the pages as unresolved visual sources; empty extraction is not evidence of empty content.",
+	slide: "Slide artwork or images require visual review of the original slide.",
+	slideText: "Slide text extraction does not verify drawings, charts, SmartArt, layout, or visual reading order; inspect the original slide.",
+	slideOrder: "Presentation order metadata was unavailable; slides are indexed in numeric filename order.",
+	image: "Visual source requires review of the original image; no OCR was performed.",
+	ppt: "Legacy .ppt extraction is unresolved. Convert a copy to .pptx or PDF with an available office application, then index that copy."
+};
+const sourceId = (path) => `source-${sha256(path).slice(0, 16)}`;
+const unitId = (source, locator) => `unit-${sha256(`${source}\0${locator}`).slice(0, 16)}`;
+const unitFile = (source) => `units/${source.id}.yaml`;
+function formatOf(file) {
+	if (file.format) return file.format;
+	return SOURCE_FORMATS.get(extname(file.path || file).toLowerCase()) || "binary";
+}
+function safeFile(file) {
+	const named = typeof file === "string" ? { path: file } : file;
+	if (!named?.path) throw new Error("source entry has no path");
+	const path = realpathSync(named.path);
+	if (!statSync(path).isFile()) throw new Error(`source is not a file: ${path}`);
+	if (named.root) {
+		const root = realpathSync(named.root);
+		if (!within(path, root)) throw new Error(`source escapes its registered root: ${named.path}`);
+	}
+	return {
+		...named,
+		path,
+		rel: named.rel || basename(path),
+		format: formatOf({
+			...named,
+			path
+		})
+	};
+}
+function exactTextUnits(source, raw) {
+	const starts = [0];
+	let offset = 0;
+	let blank = false;
+	for (const line of raw.split(/(?<=\n)/)) {
+		if (offset && (/^\s{0,3}#{1,6}\s+\S/.test(line) || blank && line.trim())) starts.push(offset);
+		blank = !line.trim();
+		offset += line.length;
+	}
+	starts.push(raw.length);
+	return starts.slice(0, -1).map((start, i) => {
+		const end = starts[i + 1];
+		const before = raw.slice(0, start);
+		const lineStart = before ? (before.match(/\n/g) || []).length + 1 : 1;
+		const text = raw.slice(start, end);
+		const lineEnd = lineStart + (text.match(/\n/g) || []).length - (text.endsWith("\n") ? 1 : 0);
+		const locator = `${source.path}:lines ${lineStart}-${Math.max(lineStart, lineEnd)}`;
+		return {
+			id: unitId(source.id, locator),
+			locator,
+			lineStart,
+			lineEnd: Math.max(lineStart, lineEnd),
+			text
+		};
+	});
+}
+function runPdf(source, options) {
+	const exec = options.exec || execFileSync;
+	let output;
+	try {
+		output = exec("pdftotext", [
+			"-layout",
+			source.path,
+			"-"
+		], {
+			encoding: "utf8",
+			timeout: options.timeout || 3e4,
+			maxBuffer: Infinity,
+			stdio: [
+				"ignore",
+				"pipe",
+				"pipe"
+			]
+		});
+		if (output && typeof output === "object" && "stdout" in output) output = output.stdout;
+		output = Buffer.isBuffer(output) ? output.toString("utf8") : String(output ?? "");
+	} catch (error) {
+		const detail = error?.code === "ENOENT" ? "pdftotext is unavailable" : `pdftotext failed: ${error?.message || error}`;
+		return {
+			status: "unresolved",
+			warnings: [detail, warning.scanned],
+			units: [visualUnit(source, "PDF", `${detail}. ${warning.scanned}`)]
+		};
+	}
+	const pages = output.replace(/\f$/, "").split("\f");
+	if (!output.trim()) return {
+		status: "unresolved",
+		warnings: [warning.scanned],
+		units: [visualUnit(source, "page 1", warning.scanned)]
+	};
+	let partial = false;
+	const units = pages.map((text, i) => {
+		const locator = `${source.path}:page ${i + 1}`;
+		const unit = {
+			id: unitId(source.id, locator),
+			locator,
+			lineStart: 1,
+			lineEnd: lineCount(text),
+			lineMode: "local",
+			text,
+			asset: source.path,
+			warning: warning.pdf
+		};
+		if (!text.trim()) {
+			unit.warning = `${warning.scanned} ${warning.pdf}`;
+			partial = true;
+		}
+		return unit;
+	});
+	return {
+		status: partial ? "partial" : "extracted",
+		warnings: [warning.pdf],
+		units
+	};
+}
+function decodeXml(text) {
+	return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, "\"").replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/&#x([\da-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+}
+function xmlText(bytes) {
+	if (!bytes) return "";
+	const xml = new TextDecoder().decode(bytes);
+	const runs = (value) => [...value.matchAll(/<a:t(?:\s[^>]*)?>([\s\S]*?)<\/a:t>|<a:br\b[^>]*\/?\s*>|<a:tab\b[^>]*\/?\s*>/g)].map((match) => match[1] != null ? decodeXml(match[1]) : match[0].startsWith("<a:tab") ? "	" : "\n").join("");
+	const paragraphs = [...xml.matchAll(/<a:p(?:\s[^>]*)?>([\s\S]*?)<\/a:p>/g)].map((m) => runs(m[1])).filter((value) => value !== "");
+	return paragraphs.length ? paragraphs.join("\n") : runs(xml);
+}
+function lineCount(text) {
+	return Math.max(1, text.split("\n").length - (text.endsWith("\n") ? 1 : 0));
+}
+function attributes(tag) {
+	return Object.fromEntries([...tag.matchAll(/([\w:-]+)=(?:"([^"]*)"|'([^']*)')/g)].map((match) => [match[1], match[2] ?? match[3]]));
+}
+function relationships(bytes) {
+	if (!bytes) return [];
+	return [...new TextDecoder().decode(bytes).matchAll(/<Relationship\b[^>]*>/g)].map((match) => attributes(match[0]));
+}
+function zipTarget(from, target) {
+	if (!target) return null;
+	return target.startsWith("/") ? target.slice(1) : posix.normalize(posix.join(posix.dirname(from), target));
+}
+function orderedSlides(zip) {
+	const presentation = zip["ppt/presentation.xml"];
+	const relationList = relationships(zip["ppt/_rels/presentation.xml.rels"]);
+	if (presentation && relationList.length) {
+		const byId = new Map(relationList.map((rel) => [rel.Id, zipTarget("ppt/presentation.xml", rel.Target)]));
+		const ordered = [...new TextDecoder().decode(presentation).matchAll(/<p:sldId\b[^>]*>/g)].map((match) => byId.get(attributes(match[0])["r:id"]));
+		if (ordered.length && ordered.every((name) => name && zip[name])) return {
+			slides: ordered,
+			warned: false
+		};
+	}
+	return {
+		slides: Object.keys(zip).filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort((a, b) => Number(/slide(\d+)/.exec(a)[1]) - Number(/slide(\d+)/.exec(b)[1])),
+		warned: true
+	};
+}
+function runPptx(source) {
+	try {
+		const zip = unzipSync(new Uint8Array(readFileSync(source.path)));
+		const ordered = orderedSlides(zip);
+		const slides = ordered.slides;
+		if (!slides.length) throw new Error("no slides were found in the presentation");
+		const units = slides.map((name, position) => {
+			const number = Number(/slide(\d+)/.exec(name)[1]);
+			const slide = xmlText(zip[name]);
+			const relName = `ppt/slides/_rels/slide${number}.xml.rels`;
+			const rels = relationships(zip[relName]);
+			const noteTarget = rels.find((rel) => rel.Type?.endsWith("notesSlide"))?.Target;
+			const noteName = zipTarget(name, noteTarget) || `ppt/notesSlides/notesSlide${number}.xml`;
+			const notes = xmlText(zip[noteName]);
+			const text = [slide, notes && `Notes:\n${notes}`].filter(Boolean).join("\n");
+			const locator = `${source.path}:slide ${position + 1} (part ${number})`;
+			const xml = new TextDecoder().decode(zip[name]);
+			const hasImage = /<p:pic\b|<a:blip\b/.test(xml) || rels.some((rel) => rel.Type?.endsWith("image"));
+			const unit = {
+				id: unitId(source.id, locator),
+				locator,
+				asset: source.path,
+				warning: hasImage ? `${warning.slideText} ${warning.slide}` : warning.slideText
+			};
+			if (text) Object.assign(unit, {
+				text,
+				lineStart: 1,
+				lineEnd: lineCount(text),
+				lineMode: "local"
+			});
+			return unit;
+		});
+		return {
+			status: "partial",
+			warnings: [warning.slideText, ...ordered.warned ? [warning.slideOrder] : []],
+			units
+		};
+	} catch (error) {
+		const detail = `PPTX extraction failed: ${error?.message || error}`;
+		return {
+			status: "unresolved",
+			warnings: [detail],
+			units: [visualUnit(source, "presentation", detail)]
+		};
+	}
+}
+function visualUnit(source, label, note) {
+	const locator = `${source.path}:${label}`;
+	return {
+		id: unitId(source.id, locator),
+		locator,
+		asset: source.path,
+		warning: note
+	};
+}
+function extract(source, options) {
+	if (source.format === "text") return {
+		status: "extracted",
+		warnings: [],
+		units: exactTextUnits(source, readFileSync(source.path, "utf8"))
+	};
+	if (source.format === "pdf") return runPdf(source, options);
+	if (source.format === "pptx") return runPptx(source);
+	if (source.format === "ppt") return {
+		status: "unresolved",
+		warnings: [warning.ppt],
+		units: [visualUnit(source, "presentation", warning.ppt)]
+	};
+	if (source.format === "image") return {
+		status: "visual",
+		warnings: [warning.image],
+		units: [visualUnit(source, "image", warning.image)]
+	};
+	const note = `Unsupported binary source format: ${extname(source.path).toLowerCase() || "unknown"}`;
+	return {
+		status: "unresolved",
+		warnings: [note],
+		units: [visualUnit(source, "binary", note)]
+	};
+}
+function loadCache(outDir) {
+	const path = join(outDir, "catalog.yaml");
+	if (!existsSync(path)) return /* @__PURE__ */ new Map();
+	try {
+		const old = load(readFileSync(path, "utf8"));
+		if (old?.extractorVersion !== EXTRACTOR_VERSION) return /* @__PURE__ */ new Map();
+		return new Map((old?.sources || []).map((source) => [`${source.path}\0${source.hash}`, source]));
+	} catch {
+		return /* @__PURE__ */ new Map();
+	}
+}
+function publicUnit(unit) {
+	const { text: _text, lineStart: _start, lineEnd: _end, lineMode: _mode, ...descriptor } = unit;
+	return descriptor;
+}
+function indexSources(files, outDir, options = {}) {
+	if (!Array.isArray(files)) throw new Error("indexSources files must be an array");
+	const directory = resolve(outDir);
+	mkdirSync(join(directory, "units"), { recursive: true });
+	const cached = loadCache(directory);
+	const seen = /* @__PURE__ */ new Set();
+	const sources = [];
+	for (const input of files) {
+		const file = safeFile(input);
+		if (seen.has(file.path)) continue;
+		seen.add(file.path);
+		const bytes = readFileSync(file.path);
+		const hash = sha256(bytes);
+		const source = {
+			id: sourceId(file.path),
+			path: file.path,
+			hash,
+			format: file.format
+		};
+		const old = cached.get(`${file.path}\0${hash}`);
+		const stored = old && join(directory, unitFile(old));
+		let result;
+		if (!options.refresh && old && existsSync(stored)) try {
+			const body = load(readFileSync(stored, "utf8"));
+			if (body?.extractorVersion === EXTRACTOR_VERSION && body?.source === old.id && body?.path === file.path && body?.hash === hash && Array.isArray(body.units)) result = {
+				status: old.status,
+				warnings: old.warnings || [],
+				units: body.units
+			};
+		} catch {}
+		if (!result) result = extract(source, options);
+		const unitsPath = unitFile(source);
+		writeFileSync(join(directory, unitsPath), dump({
+			version: 1,
+			extractorVersion: EXTRACTOR_VERSION,
+			source: source.id,
+			path: source.path,
+			hash,
+			format: source.format,
+			status: result.status,
+			units: result.units
+		}, {
+			noRefs: true,
+			lineWidth: -1
+		}));
+		sources.push({
+			...source,
+			status: result.status,
+			units: result.units.map(publicUnit),
+			warnings: result.warnings
+		});
+	}
+	const catalog = {
+		version: 1,
+		extractorVersion: EXTRACTOR_VERSION,
+		directory,
+		sources,
+		warnings: sources.flatMap((source) => source.warnings.map((message) => `${source.id}: ${message}`))
+	};
+	writeFileSync(join(directory, "catalog.yaml"), dump(catalog, {
+		noRefs: true,
+		lineWidth: -1
+	}));
+	return catalog;
+}
+function catalogDirectory(catalog) {
+	if (typeof catalog === "string") return catalog.endsWith(".yaml") ? dirname(resolve(catalog)) : resolve(catalog);
+	return catalog?.directory;
+}
+function readUnit(catalog, reference) {
+	if (!reference?.source || !reference?.unit) throw new Error("unit reference requires source and unit IDs");
+	let value = catalog;
+	let directory = catalogDirectory(catalog);
+	if (typeof catalog === "string") {
+		const path = catalog.endsWith(".yaml") ? resolve(catalog) : join(resolve(catalog), "catalog.yaml");
+		value = load(readFileSync(path, "utf8"));
+		directory = resolve(path, "..");
+	}
+	if (!directory) throw new Error("catalog must be returned by indexSources or loaded from a catalog path");
+	const source = value?.sources?.find((item) => item.id === reference.source);
+	if (!source) throw new Error(`unknown source: ${reference.source}`);
+	const relativeFile = unitFile(source);
+	const file = resolve(directory, relativeFile);
+	if (!within(file, directory)) throw new Error(`unit file escapes catalog directory: ${relativeFile}`);
+	let stale = false;
+	try {
+		const current = realpathSync(source.path);
+		stale = current !== source.path || sha256(readFileSync(current)) !== source.hash;
+	} catch {
+		stale = true;
+	}
+	if (stale) {
+		const descriptor = source.units.find((item) => item.id === reference.unit);
+		if (!descriptor) throw new Error(`unknown unit: ${reference.unit}`);
+		return {
+			reference,
+			locator: descriptor.locator,
+			...descriptor.asset ? { asset: descriptor.asset } : {},
+			warning: "Source changed or disappeared since indexing; re-index before reading this unit."
+		};
+	}
+	const stored = load(readFileSync(file, "utf8"));
+	if (stored?.extractorVersion !== EXTRACTOR_VERSION || stored?.source !== source.id || stored?.hash !== source.hash) throw new Error(`unit cache does not match source: ${source.id}`);
+	const unit = stored.units?.find((item) => item.id === reference.unit);
+	if (!unit) throw new Error(`unknown unit: ${reference.unit}`);
+	let text = unit.text;
+	let locator = unit.locator;
+	if (reference.lines) {
+		if (!Array.isArray(reference.lines) || reference.lines.length !== 2 || !reference.lines.every(Number.isInteger)) throw new Error("reference lines must be [start, end]");
+		if (text == null || unit.lineStart == null) throw new Error("line narrowing is only available for text units");
+		const [start, end] = reference.lines;
+		if (start < unit.lineStart || end < start || end > unit.lineEnd) throw new Error(`line range is outside ${unit.locator}`);
+		text = text.split(/(?<=\n)/).slice(start - unit.lineStart, end - unit.lineStart + 1).join("");
+		locator = unit.lineMode === "local" ? `${unit.locator}:lines ${start}-${end}` : `${source.path}:lines ${start}-${end}`;
+	}
+	return {
+		reference,
+		locator,
+		...text != null ? { text } : {},
+		...unit.asset ? { asset: unit.asset } : {},
+		...unit.warning ? { warning: unit.warning } : {}
+	};
+}
+//#endregion
+//#region tools/lib/author-flow.mjs
+function loadWorkflow(context) {
+	const path = realpathSync(resolve(context.root, context.manifest.workflow));
+	if (!path.startsWith(context.root + sep)) throw new Error("workflow path escapes authoring context");
+	const flow = load(readFileSync(path, "utf8"));
+	for (const stage of [
+		"plan",
+		"migrate",
+		"setup",
+		"write",
+		"review",
+		"correct",
+		"finish",
+		"complete"
+	]) if (!flow?.stages?.[stage]?.phase || !flow.stages[stage].paired_role || !flow.stages[stage].action) throw new Error(`workflow needs stage ${stage}`);
+	return flow;
+}
+function courseBatches(subs, plan, workflow) {
+	const remaining = new Map(subs.map((s) => [s.id, s]));
+	const batches = [], warnings = [];
+	for (const [i, spec] of (plan.data.batches || []).entries()) {
+		const members = [];
+		for (const id of spec.subsections || []) if (remaining.has(id)) {
+			members.push(remaining.get(id));
+			remaining.delete(id);
+		} else warnings.push(`batch ${spec.id || i + 1}: unknown or duplicate subsection ${id}; ignored`);
+		if (members.length) batches.push({
+			id: spec.id || `planned-${i + 1}`,
+			members
+		});
+	}
+	const target = workflow.batching?.target_size ?? 4;
+	if (!Number.isInteger(target) || target < 1) throw new Error("batching.target_size needs a positive integer");
+	const sections = /* @__PURE__ */ new Map();
+	for (const sub of remaining.values()) {
+		const section = sub.id.split("-")[0];
+		if (!sections.has(section)) sections.set(section, []);
+		sections.get(section).push(sub);
+	}
+	for (const [section, members] of sections) {
+		const count = Math.ceil(members.length / target);
+		const size = Math.ceil(members.length / count);
+		for (let i = 0; i < members.length; i += size) batches.push({
+			id: `${section}-${Math.floor(i / size) + 1}`,
+			members: members.slice(i, i + size)
+		});
+	}
+	const starts = new Map(batches.map((batch) => [batch.members[0].id, batch]));
+	return {
+		batches: subs.flatMap((sub) => starts.has(sub.id) ? [starts.get(sub.id)] : []),
+		warnings
+	};
+}
+function flowState({ mode, handoff = "auto", progress, plan, records = {}, workflow }) {
+	let stage, subsection, batch;
+	const planIndex = indexPlan(plan);
+	const done = new Set(progress.done.map((s) => s.id));
+	const states = /* @__PURE__ */ new Map();
+	const state = (sub) => {
+		if (states.has(sub.id)) return states.get(sub.id);
+		const value = compute(sub);
+		states.set(sub.id, value);
+		return value;
+	};
+	const compute = (sub) => {
+		const record = records[sub.id];
+		const samePlan = record?.plan === planSignature(plan, sub.id, planIndex);
+		const fresh = samePlan && record?.hash === fileHash(sub.file);
+		if (samePlan && record.status === "correct") return "correct";
+		if (!done.has(sub.id)) return "write";
+		if (fresh && record.status === "reviewed") return "complete";
+		return fresh && record.status === "recheck" ? "recheck" : "review";
+	};
+	const grouping = mode === "paired" && handoff === "manual" ? {
+		batches: [{
+			id: "course",
+			members: progress.d.subs
+		}],
+		warnings: []
+	} : mode === "paired" ? courseBatches(progress.d.subs, plan, workflow) : {
+		batches: progress.d.subs.map((s) => ({
+			id: s.id,
+			members: [s]
+		})),
+		warnings: []
+	};
+	if (!plan.hash) stage = plan.legacy?.length ? "migrate" : "plan";
+	else if (!progress.courseDone || !progress.d.subs.length) stage = "setup";
+	else {
+		for (const candidate of grouping.batches) {
+			const next = [
+				"write",
+				"review",
+				"correct",
+				"recheck"
+			].find((kind) => candidate.members.some((s) => state(s) === kind));
+			if (!next) continue;
+			const tasks = candidate.members.filter((s) => state(s) === next);
+			stage = next === "recheck" ? "review" : next;
+			subsection = tasks[0];
+			batch = {
+				id: candidate.id,
+				members: candidate.members.map((s) => s.id),
+				tasks: tasks.map((s) => s.id),
+				...next === "recheck" ? { recheck: true } : {}
+			};
+			break;
+		}
+		stage ||= progress.finished ? "complete" : "finish";
+	}
+	const definition = workflow.stages[stage];
+	return {
+		mode,
+		handoff,
+		stage,
+		phase: definition.phase,
+		role: mode === "single" ? "single" : definition.paired_role,
+		...batch ? { batch } : {},
+		...grouping.warnings.length ? { warnings: grouping.warnings } : {},
+		...subsection ? {
+			subsection: subsection.id,
+			target: subsection.file
+		} : {},
+		...stage === "correct" && records[subsection.id]?.corrections ? { corrections: records[subsection.id].corrections } : {},
+		action: definition.action
+	};
 }
 //#endregion
 //#region tools/lib/digest.mjs
@@ -2915,333 +4871,15 @@ function digest(dir) {
 }
 //#endregion
 //#region tools/lib/reader.mjs
-const HELP = "It says who the course is for, and every prompt carries it — §1.1 of\ndocs/create_course.md derives seven authoring defaults from it. Copy the\n`reader:` block from §1 into courses/_reader.yaml and fill it in.\n\nThe file is gitignored, like the courses it calibrates.";
+const HELP = "It says who the course is for, and every prompt carries it — §1.1 of\nauthoring/reader.yaml defines the editable reader profile. Copy the\n`reader:` block from §1 into courses/_reader.yaml and fill it in.\n\nThe file is gitignored, like the courses it calibrates.";
 /** The profile as text. Throws with a fixable message when it cannot be used. */
 function readReader(path) {
 	if (!existsSync(path)) throw new Error(`${path} does not exist.\n\n${HELP}`);
 	const text = readFileSync(path, "utf8");
 	const unset = (text.match(/:\s*UNSET\b/g) || []).length;
-	if (unset) throw new Error(`${path} still has ${unset} UNSET field${unset === 1 ? "" : "s"}. Fill them in — a course written against UNSET is calibrated to nobody (create_course.md 0.3).`);
+	if (unset) throw new Error(`${path} still has ${unset} UNSET field${unset === 1 ? "" : "s"}. Fill them in — a course written against UNSET is calibrated to nobody (authoring/core.md).`);
 	if (!/^\s*reader\s*:/m.test(text)) throw new Error(`${path} has no \`reader:\` block.\n\n${HELP}`);
 	return text.trim();
-}
-//#endregion
-//#region tools/lib/sources.mjs
-const SYSTEM = [
-	"/bin",
-	"/boot",
-	"/dev",
-	"/etc",
-	"/lib",
-	"/proc",
-	"/sbin",
-	"/sys",
-	"/usr",
-	"/private/etc",
-	"/System",
-	"/Library",
-	"/Applications"
-];
-const BROAD = [
-	"/var",
-	"/private",
-	"/private/var",
-	"/Users",
-	"/home",
-	"/opt",
-	"/Volumes",
-	"/mnt"
-];
-const within = (child, parent) => child === parent || child.startsWith(parent + sep);
-function roots(courseDir, paths = [], base = process.cwd()) {
-	const repo = resolve(courseDir, "..", "..");
-	const courses = join(repo, "courses");
-	const own = join(courseDir, "sources");
-	const out = existsSync(own) ? [realpathSync(own)] : [];
-	for (const p of paths) {
-		const abs = resolve(base, p.replace(/^~(?=$|\/)/, homedir()));
-		if (!existsSync(abs)) throw new Error(`--source ${p}: ${abs} does not exist`);
-		const real = realpathSync(abs);
-		const home = realpathSync(homedir());
-		const refuse = (why) => {
-			throw new Error(`--source ${p}: refused, ${why}`);
-		};
-		if (real === sep || real === home || within(home, real)) refuse("it contains your whole home folder or more");
-		if (SYSTEM.some((s) => within(real, s))) refuse("it is a system folder");
-		if (BROAD.includes(real)) refuse("it is too broad; name the folder you mean");
-		if (within(realpathSync(repo), real)) refuse("it contains this repository, and with it every private course");
-		if (within(real, realpathSync(courses)) && !within(real, realpathSync(courseDir))) refuse("it is inside another course");
-		if (!out.some((r) => within(real, r))) out.push(real);
-	}
-	return out;
-}
-const DOC = /* @__PURE__ */ new Set([
-	".md",
-	".markdown",
-	".mdx",
-	".txt",
-	".tex",
-	".html",
-	".htm",
-	".rst",
-	".adoc",
-	".org"
-]);
-const CODE = /* @__PURE__ */ new Set([
-	".js",
-	".mjs",
-	".cjs",
-	".jsx",
-	".ts",
-	".tsx",
-	".py",
-	".rb",
-	".go",
-	".rs",
-	".java",
-	".kt",
-	".swift",
-	".c",
-	".h",
-	".cc",
-	".cpp",
-	".hpp",
-	".cs",
-	".php",
-	".scala",
-	".sh",
-	".sql",
-	".r",
-	".jl",
-	".lua",
-	".dart",
-	".vue",
-	".svelte",
-	".css",
-	".scss",
-	".json",
-	".yaml",
-	".yml",
-	".toml",
-	".ini",
-	".csv",
-	".xml",
-	".proto",
-	".graphql",
-	".ipynb"
-]);
-const SECRET = /(^|\/)(\.env[^/]*|.*\.(pem|key|p12|pfx|keystore|jks)|id_(rsa|dsa|ecdsa|ed25519)[^/]*|\.?(credentials|secrets?)(\.[^/]*)?|\.netrc|\.npmrc|\.pypirc)$/i;
-const BULK_DIR = /(^|\/)(node_modules|vendor|dist|build|out|target|coverage|__pycache__|\.[^/]*)(\/|$)/;
-const BULK_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|go\.sum|[^/]*\.min\.(js|css)|[^/]*\.map)$/;
-const LIMIT = 2e4;
-const skip = (rel) => SECRET.test(rel) || BULK_DIR.test(rel) || BULK_FILE.test(rel);
-function gitFiles(dir) {
-	const git = (args) => execFileSync("git", [
-		"-C",
-		dir,
-		...args
-	], {
-		encoding: "utf8",
-		maxBuffer: 268435456,
-		stdio: [
-			"ignore",
-			"pipe",
-			"ignore"
-		]
-	});
-	try {
-		git(["rev-parse", "--show-toplevel"]);
-	} catch {
-		return null;
-	}
-	try {
-		git([
-			"check-ignore",
-			"-q",
-			"."
-		]);
-		return null;
-	} catch {}
-	try {
-		return git([
-			"ls-files",
-			"-co",
-			"--exclude-standard",
-			"-z",
-			"--",
-			"."
-		]).split("\0").filter(Boolean);
-	} catch {
-		return null;
-	}
-}
-function walk(dir) {
-	const out = [];
-	const go = (d) => {
-		for (const f of readdirSync(d).sort()) {
-			if (out.length >= LIMIT) return;
-			const path = join(d, f);
-			const rel = relative(dir, path);
-			if (skip(rel)) continue;
-			const st = lstatSync(path);
-			if (st.isDirectory()) go(path);
-			else if (st.isFile() || st.isSymbolicLink()) out.push(rel);
-		}
-	};
-	go(dir);
-	return out;
-}
-/** Every material file under the roots, sorted, each checked to stay inside
-its root (a symlink pointing out is dropped, not followed). */
-function list(rootsList) {
-	const out = [];
-	for (const root of rootsList) {
-		if (statSync(root).isFile()) {
-			out.push(entry$1(dirname(root), basename(root), root));
-			continue;
-		}
-		const rels = (gitFiles(root) || walk(root)).filter((r) => !skip(r)).sort().slice(0, LIMIT);
-		for (const rel of rels) {
-			const path = join(root, rel);
-			let real;
-			try {
-				real = realpathSync(path);
-			} catch {
-				continue;
-			}
-			if (!within(real, root) || !statSync(real).isFile()) continue;
-			out.push(entry$1(root, rel, path));
-		}
-	}
-	return out;
-}
-function entry$1(root, rel, path) {
-	const ext = extname(rel).toLowerCase();
-	return {
-		root,
-		rel,
-		path,
-		doc: DOC.has(ext),
-		text: DOC.has(ext) || CODE.has(ext),
-		bytes: statSync(path).size
-	};
-}
-const tok = (bytes) => Math.round(bytes / 4);
-const opening = (path) => readFileSync(path, "utf8").slice(0, 4e3).replace(/<!--[\s\S]*?-->/g, "").split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 2).map((l) => l.length > 110 ? l.slice(0, 110) + "…" : l);
-const PER_FILE = 300;
-/** The material at a glance: every file with its opening lines, or, for a
-large root, every folder two levels deep with its size. */
-function index(rootsList, files = list(rootsList)) {
-	return rootsList.map((root) => {
-		const mine = files.filter((f) => f.root === root || f.path === root);
-		const head = `${root}  (${mine.length} files, ~${tok(mine.reduce((n, f) => n + f.bytes, 0))} tok)`;
-		if (mine.length <= PER_FILE) return [head, ...mine.map((f) => f.text ? `  ${f.rel}  (~${tok(f.bytes)} tok)  | ${opening(f.path).join(" / ")}` : `  ${f.rel}  (not text)`)].join("\n");
-		const dirs = /* @__PURE__ */ new Map();
-		for (const f of mine) {
-			const key = f.rel.split("/").slice(0, 2).join("/");
-			const d = f.rel.includes("/") ? f.rel.split("/").length > 2 ? key + "/" : dirname(f.rel) + "/" : f.rel;
-			const x = dirs.get(d) || {
-				n: 0,
-				bytes: 0,
-				readme: null
-			};
-			x.n++;
-			x.bytes += f.bytes;
-			if (!x.readme && /(^|\/)readme(\.[a-z]+)?$/i.test(f.rel) && f.rel.split("/").length <= 3) x.readme = opening(f.path)[0];
-			dirs.set(d, x);
-		}
-		return [head + "  — large: folders two levels deep; use Glob/Grep inside them", ...[...dirs].map(([d, x]) => `  ${d}  (${x.n} files, ~${tok(x.bytes)} tok)` + (x.readme ? `  | ${x.readme}` : ""))].join("\n");
-	}).join("\n\n");
-}
-const OUTLINE_LIMIT = 6e4;
-/** Headings of every document file: the material's table of contents,
-whatever shape its files take. */
-function outline(rootsList, files = list(rootsList)) {
-	const parts = [];
-	let size = 0;
-	for (const f of files.filter((x) => x.doc)) {
-		const [first, ...rest] = topics(readFileSync(f.path, "utf8"));
-		const block = [`${f.path} — ${first.heading}`, ...rest.map((t) => `  - ${t.heading}`)].join("\n");
-		if (size + block.length > OUTLINE_LIMIT) {
-			parts.push(`(outline cut at ${OUTLINE_LIMIT} characters; Grep for headings in the rest)`);
-			break;
-		}
-		parts.push(block);
-		size += block.length;
-	}
-	return parts.join("\n");
-}
-const mapPath = (repo, id) => join(repo, ".author", id, "map.txt");
-function loadMap(repo, id) {
-	const p = mapPath(repo, id);
-	const out = {};
-	if (!existsSync(p)) return out;
-	for (const line of readFileSync(p, "utf8").split("\n")) {
-		const m = /^(\S[^:]*\.(?:ya?ml|json)):\s*(.*)$/.exec(line.trim());
-		if (m) out[m[1]] = m[2].split("|").map((x) => x.trim()).filter((x) => x && !/^none$/i.test(x));
-	}
-	return out;
-}
-const SMALL = /^(a|an|and|as|at|by|for|from|in|of|on|or|the|to|vs\.?|with)$/;
-const NOT_TOPIC = /^(Figure|Example|Solution|Remark|Table|Interactive|Continued|Historical|Note|Theorem|Definition|Rule|Algorithm|Principle|Proof|Corollary)\b/;
-const titleCase = (s) => {
-	const w = s.trim().split(/\s+/);
-	if (w.length < 2 || w.length > 9 || NOT_TOPIC.test(s)) return false;
-	if (/[.,;:!?)]$/.test(s) || !/^[\w\s’'\-–,&]+$/.test(s)) return false;
-	return /^[A-Z0-9]/.test(w[0]) && /^[A-Z]/.test(w[w.length - 1]) && w.every((x) => /^[A-Z0-9]/.test(x) || SMALL.test(x));
-};
-/** A line's heading and the prose it runs into, or null when it is not one. */
-function headingOf(line) {
-	if (line.length > 1e3) return null;
-	const marked = /^##+\s+(.+?)\s*$/.exec(line);
-	if (marked) return {
-		heading: marked[1],
-		rest: "",
-		kind: "marked"
-	};
-	if (titleCase(line)) return {
-		heading: line.trim(),
-		rest: "",
-		kind: "inferred"
-	};
-	for (const m of line.matchAll(/[a-z](?=[A-Z])/g)) {
-		const head = line.slice(0, m.index + 1);
-		if (titleCase(head.replace(/^\d+(\.\d+)*\s+/, "X "))) return {
-			heading: head,
-			rest: line.slice(m.index + 1),
-			kind: "inferred"
-		};
-	}
-	return null;
-}
-const bare = (s) => s.replace(/^\d+(\.\d+)*\s+/, "").replace(/\s+/g, " ").trim();
-function readableHtml(html) {
-	return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<img\b[^>]*>/gi, " ").replace(/<h1\b[^>]*>/gi, "\n# ").replace(/<h[2-6]\b[^>]*>/gi, "\n## ").replace(/<\/h[1-6]>/gi, "\n").replace(/<\/(?:p|li|section|div)>/gi, "\n\n").replace(/<[^>]+>/g, " ").replace(/&(?:nbsp|#160);/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&#(?:39|x27);/gi, "'");
-}
-/** Text split into the topics its headings name. Text before any heading
-belongs to the `# ` title, or to "(untitled)". */
-function topics(md) {
-	if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
-	const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
-	const out = [{
-		heading: title,
-		lines: [],
-		kind: "title"
-	}];
-	for (const line of md.replace(/^#\s.*$/m, "").replace(/<!--[\s\S]*?-->/g, "").split("\n")) {
-		const h = headingOf(line);
-		if (h && bare(h.heading) !== bare(title)) out.push({
-			heading: h.heading,
-			lines: [h.rest],
-			kind: h.kind
-		});
-		else out[out.length - 1].lines.push(h ? h.rest : line);
-	}
-	return out.map((t) => ({
-		heading: t.heading,
-		body: t.lines.join("\n").trim(),
-		kind: t.kind
-	})).filter((t, i) => i === 0 || t.body);
 }
 //#endregion
 //#region tools/lib/paths.mjs
@@ -3253,11 +4891,14 @@ function findEngine(from) {
 /** The folder the running script was installed in (this repo, or the package). */
 const ENGINE = findEngine(dirname(fileURLToPath(import.meta.url)));
 const here = () => resolve(process.env.INIT_CWD || process.cwd());
-const WORKSPACE = process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : existsSync(join(ENGINE, "courses")) ? ENGINE : here();
+const workspaceAt = process.argv.indexOf("--workspace");
+const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : null;
+if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--"))) throw new Error("--workspace needs a directory path");
+const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : here();
 const COURSES = join(WORKSPACE, "courses");
 const STATE = join(WORKSPACE, ".author");
 const TEMPLATE = existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");
-const DOCS = existsSync(join(ENGINE, "docs")) ? join(ENGINE, "docs") : ENGINE;
+existsSync(join(ENGINE, "docs")) && join(ENGINE, "docs");
 //#endregion
 //#region tools/author-log.mjs
 const LOG = ".authoring-log.md";
@@ -3274,9 +4915,69 @@ function lines(path) {
 	});
 }
 const textOf = (c) => (typeof c === "string" ? c : (c || []).map((x) => x.text || "").join(" ")).replace(/\s+/g, " ").trim();
+const outputText = (value) => typeof value === "string" ? value : Array.isArray(value) ? value.map(outputText).join(" ") : value && typeof value === "object" ? outputText(value.text || value.output || value.content || "") : "";
+function summarizeCodex(events) {
+	const models = {}, courses = /* @__PURE__ */ new Set(), told = [], calls = /* @__PURE__ */ new Map(), turns = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
+	const byTurn = new Map(events.filter((e) => e.type === "turn_context" && e.payload?.turn_id && e.payload.model).map((e) => [e.payload.turn_id, e.payload.model]));
+	let first = null, last = null, agents = 0;
+	for (const e of events) {
+		if (e.timestamp) {
+			first ??= e.timestamp;
+			last = e.timestamp > (last || "") ? e.timestamp : last;
+		}
+		const p = e.payload || {};
+		if (e.type === "token_usage_record" && p.response_id && !seen.has(p.response_id)) {
+			seen.add(p.response_id);
+			const model = byTurn.get(p.turn_id) || "unknown";
+			const x = models[model] ??= {
+				calls: 0,
+				input: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+				output: 0
+			};
+			const usage = p.usage || {};
+			x.calls++;
+			x.input += usage.input_tokens || 0;
+			x.cacheRead += usage.cached_input_tokens || 0;
+			x.cacheWrite += usage.cache_write_input_tokens || 0;
+			x.output += usage.output_tokens || 0;
+			if (p.turn_id) turns.add(p.turn_id);
+		}
+		if (e.type !== "response_item") continue;
+		if (p.type === "custom_tool_call" || p.type === "function_call") {
+			const target = String(p.input || p.arguments || "").replace(/\s+/g, " ").trim();
+			calls.set(p.call_id, {
+				name: p.name || "tool",
+				target
+			});
+			if (/spawn_agent|Agent/.test(p.name || "") || /spawn_agent\s*\(/.test(target)) agents++;
+			for (const match of target.matchAll(AUTHOR_CMD)) courses.add(match[1]);
+		}
+		if (p.type === "custom_tool_call_output" || p.type === "function_call_output") {
+			const call = calls.get(p.call_id) || {
+				name: "tool",
+				target: ""
+			};
+			const result = outputText(p.output);
+			if (/tools\/author\.mjs|npm run author/.test(call.target) && /(^|\n| )not finished:/.test(result)) told.push(`author refused: ${call.target.slice(0, 60)} — ${result.slice(0, 200)}`);
+			else if (/validate/.test(call.target) && /✗/.test(result)) told.push(`validate: ${result.split(/(?=✗)/).slice(0, 6).map((x) => x.trim()).join(" ").slice(0, 300)}`);
+		}
+	}
+	return {
+		models,
+		courses: [...courses],
+		told,
+		first,
+		last,
+		turns: turns.size,
+		agents
+	};
+}
 /** Everything the log needs from one transcript and its subagents. */
 function summarize(transcript) {
 	const events = lines(transcript);
+	if (events.some((e) => e.type === "session_meta" || e.type === "token_usage_record")) return summarizeCodex(events);
 	const subDir = join(dirname(transcript), basename(transcript, ".jsonl"), "subagents");
 	const subs = existsSync(subDir) ? readdirSync(subDir).filter((f) => f.endsWith(".jsonl")).map((f) => ({
 		agent: true,
@@ -3373,7 +5074,7 @@ function entry(sessionId, s) {
 		`<!-- /session ${sessionId} -->`
 	].join("\n");
 }
-const HEAD = "# Authoring log\n\nWritten by `tools/author-log.mjs` from each session's transcript: the tokens each model used and what the model was told went wrong. Nothing here is written by a model.\n";
+const HEAD = "# Authoring log\n\nWritten by `tools/author-log.mjs` from each session's transcript: available model tokens and errors reported to the model. Nothing here is written by a model.\n";
 /**
 * A line from a command, for the log. This is the half that works under any
 * CLI: the transcript half only exists where the agent keeps one this can
@@ -3414,134 +5115,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) try {
 } catch {}
 //#endregion
 //#region tools/author.mjs
-const est = (s) => Math.round(s.length / 4);
-const CC = loadSpec(join(DOCS, "create_course.md"));
-const MT = loadSpec(join(DOCS, "material_truth.md"));
-const WR = loadSpec(join(DOCS, "writing.md"));
+const est = estimateTokens;
+const context = loadContext(join(ENGINE, "authoring"));
+const workflow = loadWorkflow(context);
 const READER = process.env.AUTHOR_READER || join(COURSES, "_reader.yaml");
-const PROSE = [
-	"1*",
-	"2*",
-	"3*",
-	"4*",
-	"4a*",
-	"5*",
-	"6*"
-];
-const COURSE_STEPS = {
-	calibrate: {
-		cc: [
-			"0",
-			"1*",
-			"3",
-			"11*"
-		],
-		mt: ["6*", "9*"]
-	},
-	sequence: {
-		cc: [
-			"0",
-			"1*",
-			"2*",
-			"3"
-		],
-		mt: ["4*"]
-	},
-	taxonomy: {
-		cc: [
-			"0",
-			"1*",
-			"2*",
-			"5a"
-		],
-		mt: ["10*"]
-	},
-	conceptSet: {
-		cc: [
-			"0",
-			"1*",
-			"5*"
-		],
-		mt: ["4*"]
-	}
-};
-const WRITING_STEPS = {
-	spine: {
-		cc: [
-			"0",
-			"1*",
-			"6",
-			"6.1",
-			"6.2",
-			"6.4",
-			"6.6",
-			"5a",
-			"10*"
-		],
-		wr: PROSE,
-		mt: [
-			"2*",
-			"3*",
-			"5*",
-			"10*"
-		]
-	},
-	quizzes: {
-		cc: [
-			"0",
-			"1*",
-			"6.5",
-			"7*",
-			"9"
-		],
-		mt: ["2*"]
-	},
-	tiers: {
-		cc: [
-			"0",
-			"1*",
-			"6.3*",
-			"14"
-		],
-		wr: PROSE,
-		mt: ["7*"]
-	},
-	verify: {
-		cc: [
-			"0",
-			"1*",
-			"12*"
-		],
-		mt: ["6*", "9*"]
-	}
-};
-const DRAFTER = {
-	concepts: {
-		cc: [
-			"0",
-			"1*",
-			"5*"
-		],
-		mt: ["4*"]
-	},
-	variants: {
-		cc: [
-			"0",
-			"1*",
-			"8*"
-		],
-		mt: ["8*"]
-	}
-};
-const LEAN_DROPS = /* @__PURE__ */ new Set(["12*", "14"]);
-const union = (steps, key) => [...new Set(Object.values(steps).flatMap((s) => s[key] || []))];
-const specOf = (steps, lean = false) => [
-	CC.pick(union(steps, "cc").filter((h) => !(lean && LEAN_DROPS.has(h)))),
-	!lean && union(steps, "wr").length ? WR.pick(union(steps, "wr")) : "",
-	lean ? "" : "# Evidence (material_truth.md)\n\n" + MT.pick(union(steps, "mt"))
-].filter(Boolean).join("\n\n");
 const [cmd, id, ...rest] = process.argv.slice(2);
-const USAGE = "usage: author.mjs <begin|write|rules|done|finish|status|redo|reset|plan> <course-id> [args]";
+const USAGE = "usage: author.mjs <begin|sources|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
 const say = (s) => console.log(s);
 const fail = (s) => {
 	console.log(s);
@@ -3552,20 +5131,130 @@ const fail = (s) => {
 };
 if (!cmd || !id) fail(USAGE);
 const courseDir = join(COURSES, id);
+process.env.AUTHOR_WORKSPACE = WORKSPACE;
+const valueFlags = /* @__PURE__ */ new Set([
+	"--source",
+	"--need",
+	"--mode",
+	"--phase",
+	"--role",
+	"--sub",
+	"--item",
+	"--issue",
+	"--workspace",
+	"--handoff"
+]);
+const booleanFlags = /* @__PURE__ */ new Set([
+	"--all",
+	"--confident",
+	"--corrections",
+	"--digest",
+	"--expand",
+	"--full-spec",
+	"--lean",
+	"--no-validate",
+	"--repeat-warnings",
+	"--research",
+	"--show",
+	"--staging",
+	"--refresh"
+]);
+const unknownFlag = rest.find((a) => a.startsWith("--") && !valueFlags.has(a) && !booleanFlags.has(a));
+if (unknownFlag) fail(`unknown option ${unknownFlag}; use --workspace PATH to select the course workspace`);
 if (!existsSync(courseDir)) fail(`courses/${id} does not exist (npm run new -- ${id} "Title")`);
 const flag = (f) => rest.includes(f);
-const positional = rest.filter((a, i) => !a.startsWith("--") && rest[i - 1] !== "--source");
-const lean = flag("--lean");
-const research = flag("--research");
-const confident = flag("--confident");
+const positional = rest.filter((a, i) => !a.startsWith("--") && !valueFlags.has(rest[i - 1]));
+const option = (name, fallback) => {
+	const at = rest.indexOf(name);
+	if (at < 0) return fallback;
+	if (!rest[at + 1] || rest[at + 1].startsWith("--")) fail(`${name} needs a value`);
+	return rest[at + 1];
+};
+const options = (name) => rest.flatMap((a, i) => a === name ? (rest[i + 1] || "").split(",") : []);
+flag("--lean");
+flag("--research");
+flag("--confident");
 const stateDir = join(STATE, id);
 const marker = (name) => join(stateDir, `${name}.done`);
 const stagedPath = join(stateDir, "staged.txt");
 const rootsFile = join(stateDir, "roots.txt");
 const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+const settingsFile = join(stateDir, "settings.yaml");
+const flowFile = join(stateDir, "flow.yaml");
+const settings = existsSync(settingsFile) ? parseFile(settingsFile) || {} : {};
+const requestedMode = option("--mode", settings.mode || "single");
+const mode = requestedMode === "paried" ? "paired" : requestedMode;
+if (!["single", "paired"].includes(mode)) fail("--mode needs single or paired");
+const handoff = option("--handoff", settings.handoff || context.manifest.profiles?.[mode]?.handoff || "direct");
+if (![
+	"auto",
+	"manual",
+	"direct"
+].includes(handoff)) fail("--handoff needs auto or manual (direct for single)");
+if (rest.includes("--mode") || rest.includes("--handoff")) {
+	mkdirSync(stateDir, { recursive: true });
+	writeFileSync(settingsFile, dump({
+		...settings,
+		mode,
+		handoff
+	}));
+}
+const flowRecords = () => existsSync(flowFile) ? parseFile(flowFile) || {} : {};
+const currentFlow = (p = progress()) => flowState({
+	mode,
+	handoff,
+	progress: p,
+	plan: readPlan(courseDir),
+	records: flowRecords(),
+	workflow
+});
+const defaultRole = (phase) => mode === "single" ? "single" : phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer";
+const selection = (phase, needs = [], full = false) => selectContext(context, {
+	phase,
+	role: option("--role", defaultRole(phase)),
+	needs,
+	full
+});
 const script = (name) => {
+	if (process.env.AUTHOR_TOOL_DIR) return join(process.env.AUTHOR_TOOL_DIR, `${name}.mjs`);
 	const local = join(ENGINE, "tools", `${name}.mjs`);
 	return existsSync(local) ? local : join(ENGINE, "scripts", `${name}.mjs`);
+};
+const diagnostics = [];
+const runDiagnostic = (name, ...args) => {
+	const result = spawnSync(process.execPath, [script(name), ...args], { encoding: "utf8" });
+	diagnostics.push({
+		name,
+		args,
+		status: result.status,
+		signal: result.signal,
+		error: result.error?.message,
+		stdout: result.stdout || "",
+		stderr: result.stderr || ""
+	});
+	return result;
+};
+const saveDiagnostics = () => {
+	mkdirSync(stateDir, { recursive: true });
+	const path = join(stateDir, `finish-diagnostics-${Date.now()}.md`);
+	writeFileSync(path, diagnostics.map((d) => [
+		`## ${d.name} ${d.args.join(" ")}`,
+		`status: ${d.status ?? "unavailable"}`,
+		`signal: ${d.signal || "none"}`,
+		`error: ${d.error || "none"}`,
+		"### stdout",
+		"```",
+		d.stdout,
+		"```",
+		"### stderr",
+		"```",
+		d.stderr,
+		"```",
+		""
+	].join("\n")).join("\n"));
+	const summary = diagnostics.map((d) => `${d.name}: ${d.status === 0 ? "ok" : `failed (status ${d.status ?? "unavailable"})`}`).join(", ");
+	say(`Subprocesses: ${summary}. Full diagnostics: ${path}`);
+	return path;
 };
 function savedRoots() {
 	const extra = existsSync(rootsFile) ? readFileSync(rootsFile, "utf8").split("\n").filter(Boolean) : [];
@@ -3595,13 +5284,21 @@ function progress() {
 	const map = loadMap(WORKSPACE, id);
 	const staged = existsSync(stagedPath) ? new Set(readFileSync(stagedPath, "utf8").split("\n").filter(Boolean).map((l) => l.split(":")[0].trim())) : /* @__PURE__ */ new Set();
 	const key = (u) => relative(courseDir, u.file);
+	const checksFile = join(stateDir, "checks.yaml");
+	const checks = existsSync(checksFile) ? parseFile(checksFile) || {} : {};
+	const plan = readPlan(courseDir);
+	const planIndex = indexPlan(plan), freshness = /* @__PURE__ */ new Map();
+	const fresh = (u) => {
+		if (!freshness.has(u.id)) freshness.set(u.id, !checks[key(u)] || checks[key(u)].hash === fileHash(u.file) && checks[key(u)].plan === planSignature(plan, u.id, planIndex));
+		return freshness.get(u.id);
+	};
 	return {
 		d,
-		done: d.subs.filter((u) => key(u) in map),
+		done: d.subs.filter((u) => key(u) in map && fresh(u)),
 		staged: d.subs.filter((u) => staged.has(key(u))),
-		todo: d.subs.filter((u) => !(key(u) in map) && !staged.has(key(u))),
+		todo: d.subs.filter((u) => (!(key(u) in map) || !fresh(u)) && !staged.has(key(u))),
 		courseDone: existsSync(marker("course")),
-		finished: existsSync(marker("finish"))
+		finished: existsSync(marker("finish")) && d.subs.every((u) => fresh(u))
 	};
 }
 const thin = (u) => !u.spine ? "no spine blocks" : !u.quiz ? "no quiz items" : null;
@@ -3613,56 +5310,147 @@ function recordLine(path, file, sources = null) {
 		writeFileSync(path, kept.join("\n") + "\n");
 	} else rmSync(path, { force: true });
 }
-const researchFile = (u) => join(courseDir, "sources", "research", `${relative(join(courseDir, "sections"), dirname(u.file))}.md`);
 const warn = (text) => {
+	const path = join(stateDir, "warnings.yaml");
+	const seen = existsSync(path) ? parseFile(path) || {} : {};
+	const revision = [
+		context.version,
+		readPlan(courseDir).hash,
+		...digest(courseDir).subs.map((u) => fileHash(u.file))
+	].join("/");
+	if (seen[text] === revision && !flag("--repeat-warnings")) return;
+	seen[text] = revision;
+	mkdirSync(stateDir, { recursive: true });
+	writeFileSync(path, dump(seen, { lineWidth: -1 }));
 	say(`warning: ${text}`);
 	try {
 		note(courseDir, `\`author ${process.argv.slice(2).join(" ")}\` → warning: ${text}`);
 	} catch {}
 };
 function pointer(p) {
-	if (!p.courseDone) return `Next: steps 0-4 above, then \`author write ${id}\`.`;
-	const u = p.todo[0];
-	if (!u) return p.staged.length ? `Next: finish staged ${p.staged.map((x) => x.id).join(", ")} with \`author done ${id} <sN-M> <source>...\`, then finish.` : `Next: add useful practice variants, then \`author finish ${id}\`.`;
-	const sec = p.d.sections.find((s) => s.subs.includes(u));
+	const flow = currentFlow(p);
 	return [
-		`Next: ${u.id} ${u.title}  (${p.done.length}/${p.d.subs.length} done)`,
-		`  file:    courses/${id}/${relative(courseDir, u.file)}` + (u.blocks ? `  — has ${u.blocks} blocks, ${u.quiz} quiz items: read it and continue` : ""),
-		`  section: ${sec.id} ${sec.title} (${sec.subs.map((x) => x.id).join(", ")})`,
-		research && !existsSync(researchFile(u)) ? `  research: none for this section yet — course-researcher writes courses/${id}/${relative(courseDir, researchFile(u))}, one \`## \` per subsection title` : "",
-		`  then:    author done ${id} ${u.id} <source>...`
-	].filter(Boolean).join("\n");
+		`Flow: ${flow.mode} · stage: ${flow.stage} · role: ${flow.role}` + (flow.subsection ? ` · subsection: ${flow.subsection}` : ""),
+		...flow.batch ? [`Batch: ${flow.batch.id} · members: ${flow.batch.members.join(", ")} · assigned: ${flow.batch.tasks.join(", ")}`] : [],
+		`Handoff: ${flow.handoff}`,
+		`Next: ${flow.action}`,
+		...flow.target ? [`  file: ${flow.target}`] : [],
+		...flow.corrections ? [`  corrections: ${flow.corrections}`] : [],
+		...(flow.warnings || []).map((w) => `warning: ${w}`)
+	].join("\n");
+}
+function taskPacket(p, flow, phase, sub, plan, catalog) {
+	const subsection = sub ? p.d.subs.find((s) => s.id === sub) : void 0;
+	if (sub && !subsection) fail(`no subsection ${sub}`);
+	const refs = options("--source").map((value) => {
+		const match = /^([^/]+)\/([^@]+)(?:@L(\d+)-L?(\d+))?$/.exec(value);
+		return match ? {
+			source: match[1],
+			unit: match[2],
+			...match[3] ? { lines: [+match[3], +match[4]] } : {}
+		} : { source: value };
+	});
+	const packet = buildPacket({
+		context,
+		plan,
+		index: plan.index ||= indexPlan(plan),
+		subsection,
+		phase,
+		mode,
+		role: option("--role"),
+		needs: options("--need"),
+		item: option("--item"),
+		issue: option("--issue"),
+		sourceRefs: refs
+	});
+	packet.workflow = {
+		mode: flow.mode,
+		handoff: flow.handoff,
+		stage: flow.stage,
+		role: flow.role,
+		...flow.subsection ? { subsection: flow.subsection } : {},
+		action: flow.action
+	};
+	packet.catalog = join(stateDir, "sources/catalog.yaml");
+	if (flow.stage === "migrate") {
+		packet.legacy = plan.legacy;
+		packet.contract = join(context.root, "plan.md");
+	}
+	const record = flowRecords()[sub];
+	if (phase === "write" && record?.status === "correct" && record.plan === planSignature(plan, sub)) {
+		const directives = parseFile(record.corrections) || {};
+		packet.corrections = record.corrections;
+		const findings = directives.findings || directives.items || [];
+		packet.sourceRefs = refs.length ? refs : findings.flatMap((i) => i.sourceRefs || []);
+		delete packet.families;
+		delete packet.prerequisites;
+		delete packet.directives;
+		if (packet.objectives) packet.objectives = packet.objectives.map((o) => ({
+			id: o.id,
+			outcome: o.outcome
+		}));
+		if (!packet.sourceRefs.length) packet.warnings.push("read correction evidence locators; request exact spans only if needed");
+	}
+	if (flag("--expand") && phase === "review" && !packet.sourceRefs?.length) packet.sourceRefs = (plan.data.objectives || []).filter((o) => packet.objectives?.some((p) => p.id === o.id)).flatMap((o) => o.sources || []);
+	if (phase === "write" || phase === "review") for (const ref of packet.sourceRefs || []) {
+		if ((phase === "review" || packet.corrections) && !flag("--expand") && !ref.lines) {
+			packet.warnings.push("source reference has no exact line span; source text was not included");
+			continue;
+		}
+		try {
+			const evidence = readUnit(catalog, ref);
+			if (phase === "write" && !packet.corrections) {
+				const path = join(stateDir, "sources", "excerpts", `${fingerprint(JSON.stringify(evidence))}.yaml`);
+				mkdirSync(dirname(path), { recursive: true });
+				if (!existsSync(path)) writeFileSync(path, packetText(evidence));
+				(packet.sources ||= []).push({
+					reference: ref,
+					locator: evidence.locator,
+					excerpt: path,
+					...evidence.warning ? { warning: evidence.warning } : {}
+				});
+			} else (packet.sources ||= []).push(evidence);
+		} catch (e) {
+			packet.warnings.push(e.message);
+		}
+	}
+	if (phase === "plan") packet.profile = context.manifest.profiles?.[mode];
+	const name = [
+		phase,
+		sub,
+		option("--item")?.replace(":", "-")
+	].filter(Boolean).join("-");
+	const path = join(stateDir, "packets", `${name}.yaml`);
+	mkdirSync(dirname(path), { recursive: true });
+	writeFileSync(path, packetText(packet));
+	return {
+		path,
+		packet
+	};
 }
 function briefText(which, reader) {
-	const steps = which === "course" ? COURSE_STEPS : WRITING_STEPS;
-	const procedure = which === "course" ? [
-		research ? "0. Research, if the sources are thin: course-researcher works out the scope and saves it to sources/research/scope.md (one `## ` per topic, in teaching order, with URLs). Use an authoritative outline (syllabus, exam spec, standard textbook) where one exists and fits the reader's goal; many subjects have none, so build it from the best reference material and say so. Never present an invented outline as official." : "",
-		"1. materials/expectations.md: every source topic taught, bridged, or under Skip with a reason.",
-		"2. sections/NN-slug/_section.yaml for each section, and for each subsection a sections/NN-slug/N-slug.yaml holding only its title.",
-		"3. categories/<key>.yaml, or none if the material has no such kinds.",
-		`4. The concept set: ideas used in three or more places. course-drafter writes each concepts/<key>.yaml (rules: .author/${id}/rules-concepts.md).`,
-		`Then \`author write ${id}\`, which gives you the writing rules and the first subsection.`
-	] : [
-		"For each subsection, finished before the next begins:",
-		"  - Read what it needs from its sources in one turn (parallel reads; part of a large file only).",
-		"  - Write the file once: spine (§6), then quizzes (§7), then depth and apply (§6.3)" + (lean ? " — lean: keep optional material focused; retain any examples or depth needed for understanding" : "") + ".",
-		"    Work every quiz answer out before writing it; `verified: <today>` only on answers you worked out.",
-		"    A source topic you do not teach gets a YAML comment at the top of the file: `# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",
-		confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",
-		`  - \`author done ${id} <sN-M> <source>...\` checks it and names the next one. Fix minimum-content and local validation errors before moving on; use --staging only for a draft.`,
-		`When none are left: add practice/<key>.yaml variants where another surface is needed (rules: .author/${id}/rules-variants.md)` + (confident ? ", then independently check their answers" : "") + `; then \`author finish ${id}\`.`
-	];
+	const phase = which === "course" ? "plan" : "write";
+	const selected = selection(phase, [], flag("--full-spec"));
 	return [
-		`# ${which === "course" ? "Steps 0-4: the shape of the course" : "Steps 5-7: writing it"}${lean ? " (lean)" : ""}. Today is ${today}.`,
-		"Keep these rules for the rest of the conversation; ask for them again only after a compaction.",
-		procedure.filter(Boolean).join("\n"),
-		`## The reader\n\n\`\`\`yaml\n${reader}\n\`\`\``,
-		flag("--full-spec") ? `## The full spec (§-numbers are create_course.md)\n\n${specOf(steps)}` : digestRules(which, CC, [
-			CC,
-			MT,
-			WR
-		], { lean })
+		`# ${phase} · ${mode} · context ${context.version}`,
+		`Reader:\n${reader.trim()}`,
+		selected.text,
+		...selected.warnings.map((w) => `warning: ${w}`)
 	].join("\n\n");
+}
+function catalogSources() {
+	const cached = join(stateDir, "sources/catalog.yaml");
+	if (!["begin", "sources"].includes(cmd) && !flag("--refresh") && existsSync(cached)) return {
+		...parseFile(cached),
+		directory: join(stateDir, "sources")
+	};
+	return indexSources(list(savedRoots()), join(stateDir, "sources"), { refresh: rest.includes("--refresh") });
+}
+function coverageSummary() {
+	const report = planCoverage(readPlan(courseDir), progress().d.subs);
+	say(`Plan coverage: ${report.percent == null ? "unavailable" : report.percent + "%"} (${report.total} required objectives). ${report.message}`);
+	for (const row of report.rows.filter((r) => !r.complete)) say(`  ! ${row.id}: teaching ${row.teaching.length}, questions ${row.questions.length}, families ${row.assessed}/${row.families}`);
+	return report;
 }
 function readerOrDie() {
 	try {
@@ -3677,7 +5465,7 @@ const commands = {
 		if (sourceArgs.some((s) => !s || s.startsWith("--"))) fail("--source needs a path");
 		let roots$1;
 		try {
-			roots$1 = sourceArgs.length || !existsSync(rootsFile) ? roots(courseDir, sourceArgs, process.env.INIT_CWD || process.cwd()) : savedRoots();
+			roots$1 = sourceArgs.length || !existsSync(rootsFile) ? roots(courseDir, sourceArgs, rest.includes("--workspace") ? WORKSPACE : process.env.INIT_CWD || process.cwd()) : savedRoots();
 		} catch (e) {
 			fail(e.message);
 		}
@@ -3688,22 +5476,21 @@ const commands = {
 		}
 		mkdirSync(stateDir, { recursive: true });
 		writeFileSync(rootsFile, roots$1.join("\n") + "\n");
-		for (const [name, steps] of Object.entries(DRAFTER)) writeFileSync(join(stateDir, `rules-${name}.md`), specOf({ [name]: steps }));
-		const files = list(roots$1);
+		writeFileSync(settingsFile, dump({
+			...settings,
+			mode,
+			handoff
+		}));
+		for (const [name, need] of [["concepts", "concepts"], ["variants", "variants"]]) writeFileSync(join(stateDir, `rules-${name}.md`), selection("write", [need]).text);
+		const catalog = catalogSources();
 		const p = progress();
 		if (left.length) say(`removed untouched template examples: ${left.join(", ")}`);
-		say(`# ${id}: ${p.done.length}/${p.d.subs.length} subsections written${p.finished ? ", finished" : ""}\n`);
-		if (files.some((f) => f.text)) {
-			say("## Sources (read what a subsection needs when you reach it, not all of this now)\n");
-			say(index(roots$1, files));
-			say("\n### Headings of the document files\n");
-			say(outline(roots$1, files) || "(none)");
-			say("");
-		} else say("## Sources\n\nNone. Research them (course-researcher), rerun with --source PATH, or write from what you know and mark every def, key and trap `source: generated`.\n");
-		say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-variants.md\n`);
+		say(`# ${id}: ${p.done.length}/${p.d.subs.length} subsections written${p.finished ? ", finished" : ""}`);
+		say(`Sources: ${catalog.sources.length}; catalog ${join(stateDir, "sources/catalog.yaml")}`);
+		for (const warning of catalog.warnings || []) warn(warning);
 		if (p.courseDone || p.d.subs.length) {
-			say(`The course already has its sections. \`author write ${id}\` for the writing rules.`);
-			if (!p.courseDone) warn("steps 0-4 were never recorded; `author write` records them");
+			say("Course artifacts exist; resume from the flow below.");
+			if (!p.courseDone) warn("setup was not recorded; follow the reported stage");
 		} else say(briefText("course", readerOrDie()));
 		say("\n" + pointer(p));
 	},
@@ -3716,43 +5503,165 @@ const commands = {
 				!p.d.concepts.length && "concept files",
 				p.d.concepts.some((c) => !c.body) && "bodies in every concept file"
 			].filter(Boolean);
-			if (missing.length) warn(`steps 0-4 look unfinished: no ${missing.join(", no ")}. Carry on if that is deliberate.`);
+			if (missing.length) warn(`setup looks unfinished: no ${missing.join(", no ")}. Carry on if that is deliberate.`);
 			mkdirSync(stateDir, { recursive: true });
 			writeFileSync(marker("course"), today);
 		}
 		say(briefText("writing", readerOrDie()));
 		say("\n" + pointer(progress()));
-		say(`On-demand details: author rules ${id} [--need block:<type>|figure:<kind>|question:<kind>]`);
+		say(`Task packet: author packet ${id} --phase write [--sub sN-M]`);
+	},
+	sources() {
+		const catalog = catalogSources();
+		say(`Sources: ${catalog.sources.length}; ${join(stateDir, "sources/catalog.yaml")}`);
+		for (const source of catalog.sources) {
+			say(`${source.id}: ${source.path} (${source.format}, ${source.status}, ${source.units.length} units)`);
+			if (flag("--all")) for (const unit of source.units) say(`  ${source.id}/${unit.id}: ${JSON.stringify(unit.locator)}`);
+		}
+		for (const warning of catalog.warnings || []) warn(warning);
+	},
+	packet() {
+		const p = progress();
+		const flow = currentFlow(p);
+		const phase = option("--phase", flow.phase);
+		const { path, packet } = taskPacket(p, flow, phase, option("--sub", phase === "plan" ? null : flow.subsection || (p.todo[0] || p.staged[0])?.id), readPlan(courseDir), catalogSources());
+		say(pointer(p));
+		say(`Packet: ${path} (~${est(packetText(packet))} tokens; rule files separate)`);
+		if (flag("--show")) say(packetText(packet));
+	},
+	batch() {
+		const p = progress(), flow = currentFlow(p), plan = readPlan(courseDir), catalog = catalogSources();
+		const assigned = flow.batch?.tasks || [];
+		const tasks = (assigned.length ? assigned : [null]).map((sub) => {
+			const { path } = taskPacket(p, flow, flow.phase, sub, plan, catalog);
+			const record = flowRecords()[sub];
+			return {
+				...sub ? {
+					subsection: sub,
+					target: p.d.subs.find((s) => s.id === sub).file
+				} : {},
+				packet: path,
+				...flow.stage === "correct" && record?.corrections ? { corrections: record.corrections } : {}
+			};
+		});
+		const path = join(stateDir, "batch.yaml");
+		const profile = context.manifest.profiles?.[mode] || {};
+		const task = {
+			version: 1,
+			course: id,
+			mode,
+			stage: flow.stage,
+			role: flow.role,
+			workspace: WORKSPACE,
+			engine: ENGINE,
+			command: script("author"),
+			status_command: [
+				process.execPath,
+				script("author"),
+				"status",
+				id,
+				"--workspace",
+				WORKSPACE
+			],
+			entrypoint: join(context.root, context.manifest.entrypoint),
+			orchestration: join(context.root, context.manifest.orchestration),
+			profile,
+			...flow.batch ? {
+				batch: flow.batch.id,
+				members: flow.batch.members
+			} : {},
+			...flow.stage === "migrate" ? { legacy: plan.legacy } : {},
+			...plan.hash ? { plan: {
+				path: plan.path,
+				hash: plan.hash
+			} } : {},
+			tasks
+		};
+		mkdirSync(stateDir, { recursive: true });
+		writeFileSync(path, packetText(task));
+		say(pointer(p));
+		say(`Task: ${path} (~${est(packetText(task))} tokens; packet files separate)`);
 	},
 	rules() {
 		const p = progress();
 		const next = p.todo[0] || p.staged[0];
-		const explicit = rest.flatMap((a, i) => a === "--need" ? (rest[i + 1] || "").split(",") : []);
-		if (explicit.some((n) => !n || n.startsWith("--"))) fail("--need requires a value");
-		let inferred = [];
-		if (next) try {
-			inferred = needsIn(parseFile(next.file));
-		} catch (e) {
-			fail(`cannot read ${next.id}: ${e.message}`);
+		const inferred = next ? shapeNeeds(parseFile(next.file)) : [];
+		const selected = selection(option("--phase", currentFlow(p).phase), options("--need").length ? options("--need") : inferred, flag("--full-spec"));
+		say(`# Context ${context.version}\n${selected.text}`);
+		for (const warning of selected.warnings) warn(warning);
+	},
+	pilot() {
+		const p = progress(), sub = option("--sub", p.d.subs[0]?.id);
+		const unit = p.d.subs.find((s) => s.id === sub);
+		if (!unit) fail("pilot needs an existing subsection (--sub sN-M)");
+		const result = runDiagnostic("audit-content", "--profile", "publish", "--sub", sub, id);
+		const path = saveDiagnostics();
+		const planIndex = indexPlan(readPlan(courseDir)), lesson = planIndex.lessons.get(sub);
+		const data = parseFile(unit.file) || {}, issues = [];
+		const objectives = lesson?.objectives || [];
+		const families = lesson?.families || objectives.flatMap((id) => planIndex.objectives.get(typeof id === "string" ? id : id.id)?.families || []);
+		const tags = (item) => Array.isArray(item?.objectives) ? item.objectives : item?.objectives ? [item.objectives] : [];
+		for (const id of objectives) {
+			if (!(data.blocks || []).some((b) => tags(b).includes(id))) issues.push(`missing teaching objective tag ${id}`);
+			if (!(data.quiz || []).some((q) => tags(q).includes(id))) issues.push(`missing question objective tag ${id}`);
 		}
-		const needs = [...new Set(explicit.length ? explicit : inferred)];
-		if (flag("--full-spec")) {
-			say(`# Full writing spec for ${id}\n\n${specOf(WRITING_STEPS)}`);
-			return;
-		}
-		if (!needs.length) {
-			say(`No block, figure, or question shapes are declared in the next subsection. Use --need with one of: ${availableNeeds.join(", ")}`);
-			return;
-		}
-		let selected;
-		try {
-			selected = needSections(CC, needs);
-		} catch (e) {
-			fail(e.message);
-		}
-		say(`# On-demand rules for ${next ? next.id : id}: ${needs.join(", ")}\n\n${selected}`);
+		for (const id of families.filter((id) => ![
+			"excluded",
+			"moved",
+			"prerequisite"
+		].includes(planIndex.families.get(id)?.disposition))) if (!(data.quiz || []).some((q) => q.family === id || q.type === id || q.families?.includes(id))) issues.push(`missing assessed family tag ${id}`);
+		if (!(data.quiz || []).length) issues.push("missing quiz");
+		const ok = result.status === 0 && !result.error && !result.signal && !issues.length;
+		writeFileSync(join(stateDir, "pilot.yaml"), dump({
+			subsection: sub,
+			hash: fileHash(unit.file),
+			ready: ok,
+			diagnostics: path,
+			issues
+		}));
+		say(`${ok ? "Pilot ready" : "Pilot needs attention"}: ${sub}; publish-format check only, not quality approval.`);
+		for (const issue of issues) say(`warning: ${sub}: ${issue}`);
+		if (result.status !== 0) say((result.stdout || result.stderr || result.error?.message || "audit failed").trim());
 	},
 	done() {
+		if (flag("--all")) {
+			if (flag("--staging") || flag("--no-validate")) fail("done --all requires checked completion");
+			const p = progress(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
+			if (!p.d.subs.length) fail("done --all needs existing subsections");
+			const result = runDiagnostic("validate", id);
+			if (result.status !== 0 || result.error || result.signal) fail(`not finished: ${(result.stdout || result.stderr || result.error?.message || "validation failed").trim()}`);
+			const checks = existsSync(join(stateDir, "checks.yaml")) ? parseFile(join(stateDir, "checks.yaml")) || {} : {};
+			const records = flowRecords(), map = loadMap(WORKSPACE, id);
+			const catalogPath = join(stateDir, "sources/catalog.yaml");
+			const sourcePaths = new Map((existsSync(catalogPath) ? parseFile(catalogPath)?.sources || [] : []).map((s) => [s.id, s.path]));
+			for (const u of p.d.subs) {
+				const file = relative(courseDir, u.file), signature = planSignature(plan, u.id, planIndex);
+				checks[file] = {
+					hash: fileHash(u.file),
+					plan: signature,
+					status: "structural"
+				};
+				const lesson = planIndex.lessons.get(u.id);
+				const refs = lesson?.sources || lesson?.sourceRefs || (lesson?.objectives || []).flatMap((id) => planIndex.objectives.get(typeof id === "string" ? id : id.id)?.sources || []);
+				const paths = [...new Set(refs.map((ref) => sourcePaths.get(ref.source)).filter(Boolean))];
+				map[file] = map[file]?.length ? map[file] : paths.length ? paths : ["NONE"];
+				if (records[u.id]?.status === "correct") records[u.id] = {
+					status: "recheck",
+					hash: checks[file].hash,
+					plan: signature
+				};
+				else if (records[u.id]?.hash !== checks[file].hash || records[u.id]?.plan !== signature) delete records[u.id];
+			}
+			mkdirSync(stateDir, { recursive: true });
+			writeFileSync(join(stateDir, "checks.yaml"), dump(checks));
+			writeFileSync(flowFile, dump(records));
+			writeFileSync(mapPath(WORKSPACE, id), Object.entries(map).map(([file, refs]) => `${file}: ${Array.isArray(refs) ? refs.join(" | ") : refs}`).join("\n") + "\n");
+			rmSync(stagedPath, { force: true });
+			rmSync(marker("finish"), { force: true });
+			say(`Checked ${p.d.subs.length} subsections in one validation pass.`);
+			say(pointer(progress()));
+			return;
+		}
 		const [sub, ...sources] = positional;
 		if (!sub) fail(`usage: author done ${id} <sN-M> [source]...`);
 		if (flag("--no-validate") && !flag("--staging")) fail("--no-validate requires --staging; a completed subsection needs local validation");
@@ -3764,7 +5673,8 @@ const commands = {
 		recordLine(stagedPath, file);
 		rmSync(marker("finish"), { force: true });
 		const why = thin(u);
-		const problems = why ? [`${sub} has ${why}`] : [];
+		const problems = [];
+		if (why) warn(`${sub} has ${why}; this is a teaching decision, not a structural failure`);
 		let advice = [];
 		if (!flag("--no-validate")) {
 			const v = spawnSync(process.execPath, [script("validate"), id], { encoding: "utf8" });
@@ -3779,33 +5689,94 @@ const commands = {
 		const unknown = sources.filter((x) => !x.startsWith("/") || !existsSync(x.split("#")[0]));
 		if (unknown.length) warn(`sources should be absolute paths that exist: ${unknown.join(", ")}`);
 		recordLine(flag("--staging") ? stagedPath : mapPath(WORKSPACE, id), file, sources);
+		const path = join(stateDir, "checks.yaml");
+		const checks = existsSync(path) ? parseFile(path) || {} : {};
+		checks[file] = {
+			hash: fileHash(u.file),
+			plan: planSignature(readPlan(courseDir), u.id),
+			status: flag("--staging") ? "staged" : "structural"
+		};
+		writeFileSync(path, dump(checks));
+		const records = flowRecords();
+		if (records[sub]?.status === "correct" && !flag("--staging")) records[sub] = {
+			status: "recheck",
+			hash: fileHash(u.file),
+			plan: planSignature(readPlan(courseDir), sub)
+		};
+		else delete records[sub];
+		writeFileSync(flowFile, dump(records));
 		if (flag("--staging")) say(`${sub} staged; it is not complete until done passes without --staging.`);
 		say(pointer(progress()));
 	},
+	reviewed() {
+		const [sub] = positional;
+		const p = progress();
+		if (flag("--all")) {
+			if (flag("--corrections")) fail("record correction outcomes individually; reviewed --all is a clean review declaration");
+			if (p.done.length !== p.d.subs.length) fail("run checked done for every subsection before reviewed --all");
+			const records = flowRecords(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
+			for (const unit of p.d.subs) records[unit.id] = {
+				status: "reviewed",
+				hash: fileHash(unit.file),
+				plan: planSignature(plan, unit.id, planIndex)
+			};
+			mkdirSync(stateDir, { recursive: true });
+			writeFileSync(flowFile, dump(records));
+			rmSync(marker("finish"), { force: true });
+			say("All clean review outcomes recorded by the agent; not an independent quality certificate.");
+			say(pointer(progress()));
+			return;
+		}
+		const unit = p.d.subs.find((s) => s.id === sub);
+		if (!unit) fail(`reviewed needs an existing subsection ID`);
+		if (!p.done.some((s) => s.id === sub)) fail(`run done for ${sub} before recording review`);
+		const records = flowRecords();
+		const corrections = flag("--corrections") ? join(courseDir, "materials", "review", `${sub}.yaml`) : null;
+		if (corrections && !existsSync(corrections)) fail(`save correction directives at ${corrections} before recording them`);
+		records[sub] = {
+			status: corrections ? "correct" : "reviewed",
+			hash: fileHash(unit.file),
+			plan: planSignature(readPlan(courseDir), sub),
+			...corrections ? { corrections } : {}
+		};
+		mkdirSync(stateDir, { recursive: true });
+		writeFileSync(flowFile, dump(records));
+		rmSync(marker("finish"), { force: true });
+		say(`Review outcome recorded by the agent; not an independent quality certificate.`);
+		say(pointer(progress()));
+	},
 	finish() {
-		const run = (name, ...a) => spawnSync(process.execPath, [script(name), ...a], { encoding: "utf8" });
+		const run = runDiagnostic;
 		const refuse = (message) => {
 			rmSync(marker("finish"), { force: true });
 			fail(`not finished: ${message}`);
 		};
 		const p = progress();
+		if (currentFlow(p).stage !== "finish") warn(`workflow still reports ${currentFlow(p).stage}; finish checks structure only, not semantic review`);
 		const required = [
-			!p.courseDone && "steps 0-4 were not recorded with author write",
+			!p.courseDone && "setup was not recorded with author write",
 			!existsSync(join(courseDir, "materials", "expectations.md")) && "materials/expectations.md is missing",
 			!p.d.subs.length && "no subsection files",
 			p.todo.length && `not written yet: ${p.todo.map((u) => u.id).join(", ")}`,
-			p.staged.length && `staged, not completed: ${p.staged.map((u) => u.id).join(", ")}`,
-			...p.d.subs.filter(thin).map((u) => `${u.id} has ${thin(u)}`)
+			p.staged.length && `staged, not completed: ${p.staged.map((u) => u.id).join(", ")}`
 		].filter(Boolean);
 		if (required.length) refuse(required.join("\n"));
+		for (const u of p.d.subs.filter(thin)) warn(`${u.id} has ${thin(u)}; inspect the declared teaching decision`);
+		coverageSummary();
 		const g = run("gen-materials", id);
 		say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
-		if (g.status !== 0) refuse("materials generation failed");
+		if (g.status !== 0) {
+			saveDiagnostics();
+			refuse("materials generation failed");
+		}
 		const v = run("validate", id);
 		const errs = (v.stdout || "").split("\n").filter((l) => /✗/.test(l));
 		const advice = (v.stdout || "").split("\n").filter((l) => /^\s+! /.test(l));
 		say(errs.length ? `validate: ${errs.length} errors\n${errs.slice(0, 30).join("\n")}` : v.status === 0 ? "validate: ok" : `validate: FAILED\n${(v.stderr || v.stdout || "unknown failure").trim()}`);
-		if (v.status !== 0) refuse("validation failed; fix the reported errors and run finish again");
+		if (v.status !== 0) {
+			saveDiagnostics();
+			refuse("validation failed; fix the reported errors and run finish again");
+		}
 		if (advice.length) warn(`validate: ${advice.length} quality warnings\n${advice.slice(0, 12).join("\n")}` + (advice.length > 12 ? `\n${advice.length - 12} more warnings in validate output` : ""));
 		const c = run("coverage", id);
 		const lines = (c.stdout || c.stderr || "").split("\n");
@@ -3813,19 +5784,22 @@ const commands = {
 		const summary = lines.filter((l) => /topics below/.test(l)).join(" ") || "no report";
 		say(`coverage: ${summary}` + (flagged.length ? `\n${flagged.slice(0, 60).join("\n")}` : ""));
 		if (c.status !== 0) warn(`coverage could not be scored: ${(c.stderr || c.stdout || "unknown failure").trim()}`);
+		saveDiagnostics();
 		mkdirSync(stateDir, { recursive: true });
 		writeFileSync(marker("finish"), today);
 		note(courseDir, `\`author finish ${id}\` → materials ${g.status === 0 ? "ok" : "FAILED"}, validate ${errs.length ? errs.length + " errors" : "ok"}, coverage: ${summary}`);
-		say(`\nRecorded as finished. Review flagged coverage topics as teaching or Skip decisions. \`author redo ${id} <sN-M>\` to revise.`);
+		say(`
+Recorded as finished (structural checks only; semantic review is separate). Review flagged coverage topics as teaching or Skip decisions. \`author redo ${id} <sN-M>\` to revise.`);
 	},
 	status() {
 		const p = progress();
-		say(`${id}: steps 0-4 ${p.courseDone ? "done" : "to do"} · ${p.done.length}/${p.d.subs.length} subsections${p.staged.length ? ` · ${p.staged.length} staged` : ""} · finish ${p.finished ? "done" : "to do"}`);
+		say(`${id}: setup ${p.courseDone ? "done" : "to do"} · ${p.done.length}/${p.d.subs.length} subsections${p.staged.length ? ` · ${p.staged.length} staged` : ""} · finish ${p.finished ? "done" : "to do"}`);
 		if (p.todo.length) say(`to write: ${p.todo.map((u) => u.id).join(", ")}`);
 		const thinDone = p.done.filter(thin);
 		if (thinDone.length) say(`recorded but thin: ${thinDone.map((u) => `${u.id} (${thin(u)})`).join(", ")}`);
 		const left = placeholders();
 		if (left.length) say(`untouched template examples (begin removes them): ${left.join(", ")}`);
+		coverageSummary();
 		say(pointer(p));
 		if (flag("--digest") && p.d.text) say(`\nWhat the course already covers:\n${p.d.text}`);
 	},
@@ -3838,6 +5812,10 @@ const commands = {
 		const map = mapPath(WORKSPACE, id);
 		if (files.size && existsSync(map)) writeFileSync(map, readFileSync(map, "utf8").split("\n").filter((l) => !files.has(l.split(":")[0].trim())).join("\n"));
 		if (files.size) for (const file of files) recordLine(stagedPath, file);
+		const records = flowRecords();
+		for (const sub of positional) delete records[sub];
+		if (positional.includes("course")) for (const sub of Object.keys(records)) delete records[sub];
+		if (existsSync(flowFile)) writeFileSync(flowFile, dump(records));
 		if (positional.includes("course")) rmSync(marker("course"), { force: true });
 		if (files.size || positional.includes("finish")) rmSync(marker("finish"), { force: true });
 		say(`reopened ${positional.join(", ")}: read each file, change what was asked, then \`author done ${id} <sN-M>\` again.`);
@@ -3848,35 +5826,23 @@ const commands = {
 			mapPath(WORKSPACE, id),
 			stagedPath,
 			marker("course"),
-			marker("finish")
+			marker("finish"),
+			flowFile
 		]) rmSync(f, { force: true });
 		say(`forgot progress for ${id}; the course files are untouched`);
 	},
 	plan() {
-		const p = progress();
-		let files = [];
-		try {
-			files = list(savedRoots());
-		} catch {}
-		const text = files.filter((f) => f.text);
-		for (const l of [false, true]) say(`compact${l ? " --lean" : "       "}: begin ~${est(digestRules("course", CC, [
-			CC,
-			MT,
-			WR
-		], { lean: l }))} tok; write ~${est(digestRules("writing", CC, [
-			CC,
-			MT,
-			WR
-		], { lean: l }))} tok`);
-		say(`full-spec          : begin ~${est(specOf(COURSE_STEPS))} tok; write ~${est(specOf(WRITING_STEPS))} tok`);
-		const next = p.todo[0] || p.staged[0];
-		if (next) try {
-			const needs = needsIn(parseFile(next.file));
-			if (needs.length) say(`next ${next.id} on-demand sections (${needs.join(", ")}): ~${est(needSections(CC, needs))} tok`);
-		} catch {}
-		say(`sources: ${text.length} readable files, ~${Math.round(text.reduce((n, f) => n + f.bytes, 0) / 4)} tok in all (read per subsection, not at once)`);
-		say(`subsections: ${p.done.length} written, ${p.todo.length} left`);
-		say("Estimates count rule text at four characters per token; reader, sources, and procedure are separate. Use author rules for needed sections and --full-spec for the entire phase spec.");
+		for (const phase of [
+			"plan",
+			"write",
+			"review"
+		]) {
+			const selected = selection(phase);
+			say(`${mode} ${phase}: ~${selected.estimatedTokens} instruction tokens (${selected.modules.map((m) => m.id).join(", ")})`);
+		}
+		say(`full reference: ~${selection("write", [], true).estimatedTokens} tokens; on-demand, not a default prompt`);
+		coverageSummary();
+		say("Estimates use UTF-8 bytes/4; not measured model usage. Reader and selected sources are separate.");
 	}
 };
 if (!commands[cmd]) fail(USAGE);

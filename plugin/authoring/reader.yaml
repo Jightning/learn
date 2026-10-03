@@ -1,0 +1,10 @@
+reader:
+  goal: UNSET            # "mastery" (default), or "exam: <what, when>" (§1.2)
+  background: UNSET      # THE PREREQUISITE SET, enumerated, with how firmly
+                         # each is held. Anything off it is taught in full (0.2)
+  failures: UNSET        # which modes below actually go wrong for them
+  not_failures: UNSET    # the rest, named: §1.1 reads absence as a switch
+  onboarding: UNSET      # concrete anchor first, or formal statement first
+  priorities: UNSET      # ranked; breaks ties no rule settles
+  session_length: UNSET  # ask before assuming (0.5)
+  audience: UNSET        # "this reader" or "median student in the class"

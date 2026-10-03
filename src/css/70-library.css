@@ -93,7 +93,6 @@
    whatever length the description happened to be. */
 .lcard .lstat{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-3);
   display:flex;flex-wrap:wrap;gap:10px;margin-top:auto;align-items:baseline}
-.laudit{font:500 var(--fs-meta) var(--mono);color:var(--wn-ink);margin-top:8px}
 
 .lbar{height:3px;background:var(--rule-2);border-radius:2px;margin-top:11px;overflow:hidden}
 .lbar i{display:block;height:100%;background:var(--hi)}

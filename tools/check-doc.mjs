@@ -25,16 +25,21 @@
  * and exits; it adds nothing to what an author has to read, which is the only
  * budget that matters here.
  */
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as YAML from "js-yaml";
+import { checkResponse } from "./lib/question-schema.mjs";
+import { checkFigure } from "./lib/figures.mjs";
+import { checkSlides } from "./lib/slides.mjs";
 import { INTERACTIVE } from "../src/blocks/interactive.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /* Both authoring documents: `writing.md` carries the YAML mapping trap and
    shows it in fences, so it needs the same gate. */
-const DOCS = ["docs/create_course.md", "docs/writing.md"];
+const moduleFiles = dir => readdirSync(dir, { withFileTypes: true }).flatMap(f =>
+  f.isDirectory() ? moduleFiles(join(dir, f.name)) : f.name.endsWith(".md") ? [join(dir, f.name)] : []);
+const DOCS = moduleFiles(join(ROOT, "authoring")).map(path => relative(ROOT, path));
 
 /* Block types, read from the registry rather than listed here, for the reason
    validate.mjs reads them the same way: a list kept by hand is a list that
@@ -62,8 +67,10 @@ const FIELDS = new Set([
   "cat",       /* lib/cats.js    — principal category */
   "tags",      /* lib/cats.js    — secondary memberships */
   "verified",  /* validate.mjs   — the re-derivation date */
+  "sourceReview", /* audit-content.mjs — checked or disclosed claim origin */
   "alt",       /* blocks/index.js image alt text */
-  "frames"     /* Slides.jsx — sequenced visual frames */
+  "frames",    /* Slides.jsx — sequenced visual frames */
+  "objectives", "objective", "family", "sourceRefs" /* Authoring evidence only. */
 ]);
 
 let fail = 0;
@@ -81,6 +88,17 @@ for (const rel of DOCS) {
       open = null;
     }
   });
+}
+
+/* Responses and visuals must agree with the runtime, not just parse as YAML. */
+function shapes(value, where, errors) {
+  if (Array.isArray(value)) value.forEach(v => shapes(v, where, errors));
+  else if (value && typeof value === "object") {
+    if (value.response) checkResponse(value, where, errors);
+    if (value.t === "figure") checkFigure(value, where, errors);
+    if (value.t === "slides") checkSlides(value, where, errors);
+    for (const child of Object.values(value)) shapes(child, where, errors);
+  }
 }
 
 /* --------------------------------------------------------------- the walk */
@@ -136,6 +154,9 @@ for (const f of fences) {
   catch (e) { bad(f, `does not parse: ${String(e.message).split("\n")[0]}`); continue; }
   if (doc == null) continue;
   examples++;
+  const shapeErrors = [];
+  shapes(doc, `${f.doc}:${f.line}`, shapeErrors);
+  for (const error of shapeErrors) bad(f, error);
 
   for (const b of blocks(doc)) {
     if (!TYPES.has(b.t))

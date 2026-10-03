@@ -1,0 +1,197 @@
+version: 1
+entrypoint: entrypoint.md
+agents: agents.toml
+workflow: workflow.yaml
+orchestration: orchestration.md
+
+modules:
+  core:
+    file: core.md
+    phases: [plan, write, review]
+    roles: [planner, writer, reviewer, single]
+  plan:
+    file: plan.md
+    phases: [plan]
+    roles: [planner, single]
+  sources:
+    file: sources.md
+    phases: [plan, write, review]
+    roles: [planner, writer, reviewer, single]
+  schema:
+    file: schema.md
+    phases: [plan, write, review]
+    roles: [writer, single]
+  blocks:
+    file: blocks.md
+    phases: []
+    needs: ['block:p', 'block:def', 'block:key', 'block:trap', 'block:ex', 'block:note', 'block:list', 'block:table', 'block:code', 'block:math', 'block:figure', 'block:image', 'block:slides', 'block:attempt']
+    roles: [writer, single]
+  questions:
+    file: questions.md
+    phases: []
+    needs: ['question:single', 'question:multi', 'question:number', 'question:self']
+    roles: [writer, single]
+  practice:
+    file: practice.md
+    phases: []
+    needs: [practice, variants]
+    roles: [writer, single]
+  figures:
+    file: figures.md
+    phases: []
+    needs: ['figure:graph', 'figure:circuit', 'figure:drawing', 'figure:plot', 'figure:flow', 'figure:grid', 'figure:timing', 'figure:bar', 'figure:scatter', 'figure:matrix', 'figure:svg']
+    roles: [writer, single]
+  review:
+    file: review.md
+    phases: [review]
+    roles: [reviewer, single]
+  trust:
+    file: trust.md
+    phases: [plan, write, review]
+    roles: [planner, writer, reviewer, single]
+  prose:
+    file: prose.md
+    phases: [write]
+    roles: [writer, single]
+  checklist:
+    file: checklist.md
+    phases: []
+    needs: [checklist]
+    roles: [reviewer, single]
+  examples-blocks:
+    file: examples/blocks.md
+    phases: [write]
+    needs: [examples]
+    roles: [writer, single]
+  examples-questions:
+    file: examples/questions.md
+    phases: [write]
+    needs: [examples]
+    roles: [writer, single]
+  inline:
+    file: formats/inline.md
+    phases: []
+    needs: [inline]
+    roles: [writer, single]
+  formats-depth:
+    file: formats/depth.md
+    needs: [depth, asides, follows]
+    roles: [writer, single]
+  formats-blocks:
+    file: formats/blocks.md
+    phases: []
+    needs: [formats, 'block:p', 'block:def', 'block:key', 'block:trap', 'block:ex', 'block:note', 'block:list', 'block:table', 'block:code', 'block:attempt']
+    roles: [writer, single]
+    requires: [blocks, formats-depth, inline]
+  formats-questions:
+    file: formats/questions.md
+    phases: []
+    needs: [formats, 'question:single', 'question:multi', 'question:number', 'question:self', 'question:synthesis']
+    roles: [writer, single]
+    requires: [questions, inline]
+  formats-stimulus:
+    file: formats/stimulus.md
+    phases: []
+    needs: ['stimulus:passage', 'stimulus:image', 'stimulus:figure']
+    roles: [writer, single]
+  formats-course:
+    file: formats/course-yaml.md
+    phases: []
+    needs: [course]
+    roles: [writer, single]
+  formats-concepts:
+    file: formats/concepts.md
+    phases: []
+    needs: [concepts, variants]
+    roles: [writer, single]
+  formats-figure-graph:
+    file: formats/figure-graph.md
+    phases: []
+    needs: ['figure:graph']
+    roles: [writer, single]
+  formats-figure-circuit:
+    file: formats/figure-circuit.md
+    phases: []
+    needs: ['figure:circuit']
+    roles: [writer, single]
+  formats-figure-drawing:
+    file: formats/figure-drawing.md
+    phases: []
+    needs: ['figure:drawing']
+    roles: [writer, single]
+  formats-figure-plot:
+    file: formats/figure-plot.md
+    phases: []
+    needs: ['figure:plot']
+    roles: [writer, single]
+  formats-figure-flow:
+    file: formats/figure-flow.md
+    phases: []
+    needs: ['figure:flow']
+    roles: [writer, single]
+  formats-figure-grid:
+    file: formats/figure-grid.md
+    phases: []
+    needs: ['figure:grid']
+    roles: [writer, single]
+  formats-figure-timing:
+    file: formats/figure-timing.md
+    phases: []
+    needs: ['figure:timing']
+    roles: [writer, single]
+  formats-figure-bar:
+    file: formats/figure-bar.md
+    phases: []
+    needs: ['figure:bar']
+    roles: [writer, single]
+  formats-figure-scatter:
+    file: formats/figure-scatter.md
+    phases: []
+    needs: ['figure:scatter']
+    roles: [writer, single]
+  formats-figure-matrix:
+    file: formats/figure-matrix.md
+    phases: []
+    needs: ['figure:matrix']
+    roles: [writer, single]
+  formats-figure-svg:
+    file: formats/figure-svg.md
+    phases: []
+    needs: ['figure:svg']
+    roles: [writer, single]
+  formats-slides:
+    file: formats/slides.md
+    phases: []
+    needs: ['block:slides']
+    roles: [writer, single]
+  formats-images:
+    file: formats/images.md
+    phases: []
+    needs: ['block:image']
+    roles: [writer, single]
+  formats-math:
+    file: formats/math.md
+    phases: []
+    needs: ['block:math']
+    roles: [writer, single]
+  formats-cross-course:
+    file: formats/cross-course.md
+    phases: []
+    needs: [cross-course]
+    roles: [writer, single]
+profiles:
+  single:
+    planner: gpt-6-sol
+    writer: gpt-6-sol
+    reasoning: medium
+    handoff: direct
+  paired:
+    planner: gpt-6-sol
+    writer: gpt-6-luna
+    reasoning: medium
+    handoff: auto
+
+phases:
+  plan: [core, plan, sources, trust]
+  write: [core, sources, schema, prose, trust]
+  review: [core, sources, review, trust]

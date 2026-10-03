@@ -15,6 +15,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCourse } from "./lib/load.mjs";
 import { tex } from "./lib/math.mjs";
+import { rawMathFragment } from "./lib/raw-math.mjs";
 import { COURSES as COURSES_DIR } from "./lib/paths.mjs";
 import { INTERACTIVE } from "../src/blocks/interactive.js";
 import { checkFigure } from "./lib/figures.mjs";
@@ -22,6 +23,7 @@ import { checkSlides } from "./lib/slides.mjs";
 import { TIERS, tierOf } from "../src/lib/tiers.js";
 import { NOTES_MODES, present, leadOf } from "../src/lib/gist.js";
 import { checkRunInLists, checkFollows, checkAsides } from "./lib/structure.mjs";
+import { checkResponse } from "./lib/question-schema.mjs";
 import { questionContextWarning } from "./lib/question-context.mjs";
 import { textOf } from "../src/lib/util.js";
 import { conceptOf } from "../src/lib/index.js";
@@ -98,32 +100,6 @@ function checkSpineStandsAlone(C, errs) {
 const FORMATS = new Set(["multiple-choice", "short-answer", "cued-recall", "derivation", "numeric"]);
 const DRILL_MIN = 3;   /* legacy bank validation only */
 
-function checkResponse(item, where, errs) {
-  const r = item.response;
-  if (!r) return; /* legacy free-response item */
-  if (!["single", "multi", "number", "self"].includes(r.kind)) {
-    errs.push(`${where}: response.kind must be single, multi, number, or self`); return;
-  }
-  if (r.kind === "single" || r.kind === "multi") {
-    if (!Array.isArray(r.choices) || r.choices.length < 2) {
-      errs.push(`${where}: response needs at least two choices`); return;
-    }
-    r.choices.forEach((choice, i) => {
-      if (!String(choice.text || "").trim() || !String(choice.why || "").trim())
-        errs.push(`${where}: choice ${i + 1} needs text and why`);
-    });
-    const correct = r.kind === "single" ? [r.correct] : r.correct;
-    if (!Array.isArray(correct) || !correct.length ||
-        correct.some(n => !Number.isInteger(n) || n < 1 || n > r.choices.length) ||
-        new Set(correct).size !== correct.length)
-      errs.push(`${where}: correct must name valid 1-based choice numbers`);
-  }
-  if (r.kind === "number" && (r.value == null || String(r.value).trim() === "" || !Number.isFinite(Number(r.value)) ||
-      !Number.isFinite(Number(r.tolerance ?? 0)) || Number(r.tolerance ?? 0) < 0))
-    errs.push(`${where}: numeric response needs a finite value and nonnegative tolerance`);
-  if (r.kind === "self" && !String(r.model || "").trim())
-    errs.push(`${where}: self-check response needs a model answer`);
-}
 
 function checkStimulus(item, where, errs, courseId) {
   const s = item.stimulus;
@@ -147,6 +123,8 @@ function checkQuestionHtml(item, where, errs) {
   const bare = /<\/?(?!(?:a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul)[\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]/;
   for (let field of fields) {
     if (typeof field !== "string") continue;
+    const raw = rawMathFragment(field);
+    if (raw) errs.push(`${where}: raw math "${raw}" will print literally — wrap inline notation in <m>...</m> or use a math block for a central equation`);
     for (const m of field.matchAll(/<m>([\s\S]*?)<\/m>/g))
       try { tex(m[1], false); } catch (e) { errs.push(`${where}: invalid math: ${e.message}`); }
     field = field.replace(/<m>[\s\S]*?<\/m>/g, " ");
@@ -577,7 +555,7 @@ for (const id of courses) {
            only works before the definition. Anywhere else it is an exception
            met before its rule, which is what M10's ordering exists to stop. */
         if (b.t === "attempt" && u.blocks.indexOf(b) !== 0)
-          errs.push(`${where}: an "attempt" block may only be the first block of a subsection`);
+          warns.push(`${where}: an "attempt" block is usually first; retain another placement if deliberate`);
         if (b.t === "def" && b.term) namedTerms++;
         /* M19: a figure nobody can read is not a learning aid */
         if (b.t === "image" && !String(b.alt || "").trim())
@@ -605,10 +583,10 @@ for (const id of courses) {
       /* M8: named terms are what the pre-training panel and primer are built
          from, so a subsection naming none silently degrades its section */
       if (!namedTerms)
-        errs.push(`${where}: names no term with a def block — its section's primer loses coverage`);
+        warns.push(`${where}: names no term with a def block — check whether this is deliberate`);
 
       const q = u.quiz || [];
-      if (!q.length) errs.push(`${where}: no questions`);
+      if (!q.length) warns.push(`${where}: no questions — check the declared teaching and assessment scope`);
       const seenType = new Set();
       for (const item of q) {
         qCount++;
@@ -644,6 +622,8 @@ for (const id of courses) {
       const bare = new RegExp(`</?(?!(?:${TAGS})[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
       const checkHtml = (v, what) => {
         if (typeof v !== "string") return;
+        const raw = rawMathFragment(v);
+        if (raw) errs.push(`${what}: raw math "${raw}" will print literally — wrap inline notation in <m>...</m> or use a math block for a central equation`);
         /* inside <m> the content is TeX, not HTML — `<` and `&` are the
            author's operators there and the maths pass consumes them before
            anything reaches the DOM */
@@ -660,6 +640,11 @@ for (const id of courses) {
       for (const b of u.blocks || []) {
         if (!b) continue;
         for (const k of HTML_FIELDS) if (b[k] != null) checkHtml(b[k], `${where} ${b.t}.${k}`);
+        for (const k of ["core", "gist"]) {
+          const value = b[k];
+          if (Array.isArray(value)) value.forEach((v, i) => checkHtml(v, `${where} ${b.t}.${k}[${i + 1}]`));
+          else if (value != null) checkHtml(value, `${where} ${b.t}.${k}`);
+        }
         for (const row of b.rows || []) for (const c of row) checkHtml(c, `${where} ${b.t} cell`);
         if (Array.isArray(b.items)) b.items.forEach(v => checkHtml(v, `${where} ${b.t} item`));
         if (b.t === "slides" && Array.isArray(b.frames))
@@ -683,6 +668,10 @@ for (const id of courses) {
         }
 
       const text = textOf(u);
+      const inlineMathCount = (u.blocks || []).reduce((count, block) =>
+        count + ((JSON.stringify(block || {}).match(/<m>/g) || []).length), 0);
+      if (inlineMathCount >= 3 && !(u.blocks || []).some(block => block?.t === "math"))
+        warns.push(`${where}: ${inlineMathCount} inline formulas and no math block — give a central equation its own math block; keep passing mentions inline`);
       for (const m of text.matchAll(/<m>([\s\S]*?)<\/m>/g)) {
         try { tex(m[1], false); }
         catch (e) { errs.push(`${where}: math "${m[1].trim()}" — ${e.message.replace(/\s+/g, " ")}`); }

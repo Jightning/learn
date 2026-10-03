@@ -2,36 +2,71 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadSpec } from "../../tools/lib/spec.mjs";
-import { checklist, digestRules, needSections, needsIn, version } from "../../tools/lib/author-rules.mjs";
+import { mkdtempSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as YAML from "js-yaml";
+import { loadContext, selectContext, shapeNeeds } from "../../tools/lib/author-context.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const cc = loadSpec(join(root, "docs/create_course.md"));
-const mt = loadSpec(join(root, "docs/material_truth.md"));
-const wr = loadSpec(join(root, "docs/writing.md"));
+const context = loadContext(join(root, "authoring"));
 
-test("compact briefs preserve every source checklist item, including continued lines", () => {
-  const source = cc.pick(["12a", "12b"]);
-  const sourceItems = source.split("\n").filter(line => /^- \[ \] /.test(line));
-  const items = checklist(cc);
-  assert.equal(items.length, sourceItems.length);
-  for (const which of ["course", "writing"]) {
-    for (const lean of [false, true]) {
-      const output = digestRules(which, cc, [cc, mt, wr], { lean });
-      for (const item of items) assert.ok(output.includes(item), `${which} omitted ${item}`);
-      assert.ok(output.includes(version([cc, mt, wr])));
+test("every phase resolves whole modules with preserved core requirements", () => {
+  for (const role of ["single", "planner", "writer", "reviewer"])
+    for (const phase of ["plan", "write", "review"]) {
+      const s = selectContext(context, { phase, role });
+      assert.equal(new Set(s.modules.map(m => m.path)).size, s.modules.length);
+      assert.ok(s.modules.some(m => m.id === "core"));
+      assert.ok(s.modules.every(m => s.text.includes(m.text.trim())));
     }
+  assert.ok(selectContext(context, { role: "writer" }).estimatedTokens <
+    selectContext(context, { role: "writer", full: true }).estimatedTokens / 3);
+});
+
+test("new shape modules are selected before content exists, unknown shapes only warn", () => {
+  const selected = selectContext(context, { role: "writer", needs: ["figure:plot", "question:multi"] });
+  assert.ok(selected.modules.some(m => m.needs?.includes("figure:plot")));
+  assert.ok(selected.modules.some(m => m.needs?.includes("question:multi")));
+  assert.ok(!selected.modules.some(m => m.id === "formats-figure-circuit"));
+  const unknown = selectContext(context, { needs: ["figure:custom"] });
+  assert.equal(unknown.warnings.length, 1);
+  assert.ok(unknown.text);
+});
+
+test("expensive roles do not receive formatting modules even with explicit shape needs", () => {
+  for (const role of ["planner", "reviewer"]) {
+    const s = selectContext(context, { phase: role === "planner" ? "plan" : "review",
+      role, needs: ["figure:plot", "question:multi"], full: true });
+    assert.ok(!s.modules.some(m => m.path.includes("/formats/")));
+    assert.ok(!s.modules.some(m => m.id === "schema"));
   }
 });
 
-test("on-demand sections cover the detected block, figure and question shapes", () => {
-  const found = needsIn({
-    blocks: [{ t: "figure", kind: "plot" }, { t: "math" }],
-    quiz: [{ response: { kind: "multi" } }, { type: "Synthesis", response: { kind: "self" } }]
-  });
-  assert.deepEqual(found, ["block:figure", "figure:plot", "block:math", "question:multi", "question:synthesis"]);
-  const selected = needSections(cc, found);
-  for (const heading of ["### 6.1 Block types", "### 7.1 The synthesis item", "### 10.1 Figures", "### 10.2 Maths"])
-    assert.ok(selected.includes(heading), `missing ${heading}`);
-  assert.throws(() => needSections(cc, ["block:unknown"]), /unknown rule need/);
+test("shape detection includes stimuli and does not depend on writing a draft first", () => {
+  const found = shapeNeeds({ blocks: [{ t: "figure", kind: "plot" }, { t: "math" }],
+    quiz: [{ response: { kind: "multi" }, stimulus: { t: "passage" } }] });
+  assert.deepEqual(found, ["block:figure", "figure:plot", "block:math", "question:multi", "stimulus:passage"]);
+});
+
+test("broken manifests, cycles, and symlink escapes cannot silently empty context", () => {
+  const dir = mkdtempSync(join(tmpdir(), "context-"));
+  try {
+    writeFileSync(join(dir, "core.md"), "Keep original evidence.");
+    const put = data => writeFileSync(join(dir, "manifest.yaml"), YAML.dump(data));
+    put({ modules: { core: { file: "core.md", requires: ["missing"] } }, phases: { write: ["core"] } });
+    assert.throws(() => loadContext(dir), /missing module/);
+    put({ modules: { core: { file: "core.md", requires: ["core"] } }, phases: { write: ["core"] } });
+    assert.throws(() => selectContext(loadContext(dir)), /cyclic/);
+    symlinkSync(join(root, "README.md"), join(dir, "escape.md"));
+    put({ modules: { core: "escape.md" }, phases: { write: ["core"] } });
+    assert.throws(() => loadContext(dir), /invalid context module/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+
+test("modular math rules preserve main-checkout raw math and display guidance", () => {
+  const output = selectContext(context, { phase: "write", role: "writer", needs: ["block:math"] }).text;
+  assert.match(output, /bare TeX prints literally/);
+  assert.match(output, /<m>e\^\{2x\}<\/m>/);
+  assert.match(output, /math block for a central equation/);
+  assert.match(output, /YAML newline alone/);
 });

@@ -2816,7 +2816,10 @@ function findEngine(from) {
 /** The folder the running script was installed in (this repo, or the package). */
 const ENGINE = findEngine(dirname(fileURLToPath(import.meta.url)));
 const here = () => resolve(process.env.INIT_CWD || process.cwd());
-const WORKSPACE = process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : existsSync(join(ENGINE, "courses")) ? ENGINE : here();
+const workspaceAt = process.argv.indexOf("--workspace");
+const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : null;
+if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--"))) throw new Error("--workspace needs a directory path");
+const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : here();
 const COURSES$1 = join(WORKSPACE, "courses");
 join(WORKSPACE, ".author");
 existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");

@@ -46,7 +46,7 @@ test("imported CSS cannot hide app controls or load a remote URL", async () => {
       fixture("style-value", { valueStyles: { "1": "v1" },
         styles: ".v1{color:var(--hi-ink);font-weight:700}" })
     ]);
-    await page.locator(".modal .cio-msg:not(.bad)").waitFor();
+    await page.locator('.lcard .lhit[href="#/style-value"]').waitFor();
     await page.keyboard.press("Escape");
 
     let controlRule = "";

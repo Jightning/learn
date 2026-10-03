@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import { importCourse, importedIndex } from "../lib/courses.js";
+import { importCourse } from "../lib/courses.js";
 import { INDEX, refresh } from "../lib/library.js";
 import { fromFolder, fromZip, fromJSON } from "../lib/intake.js";
 import { MAX_BYTES, MAX_FILES, MAX_ENTRY, kb, tooManyFiles, oversizedEntry, oversizedCourse } from "../lib/intake-limits.js";
@@ -51,7 +51,6 @@ function refuse(files) {
 export default function CourseIO({ onChange }) {
   const [msg, setMsg] = useState(null);
   const [busy, setBusy] = useState(false);
-  const installed = Object.keys(importedIndex());
 
   /* Throws on refusal; callers collect failures so one bad course in a
      selection does not stop the others. */
@@ -71,19 +70,16 @@ export default function CourseIO({ onChange }) {
       error.details = r.errors;
       throw error;
     }
-    return (r.index.title || id) + (installed.includes(id) ? " (updated)" : "");
   };
 
-  const report = (ok, failed) => {
+  const report = failed => {
     refresh();
     onChange && onChange();
     setBusy(false);
-    setMsg({
-      ok: failed.length === 0,
-      installed: ok.length ? `Installed ${ok.join(", ")}. Content not audited; this import did not verify sources or answers.` : "",
+    setMsg(failed.length ? {
       failedCount: failed.length,
       failed: failed.flatMap(({ label, errors }) => errors.map(error => `${label}: ${error}`))
-    });
+    } : null);
   };
 
   const failure = (label, error) => ({ label, errors: error.details || [error.message] });
@@ -98,8 +94,8 @@ export default function CourseIO({ onChange }) {
        the failure can name it even when the course id could not be derived. */
     const folder = (list[0].webkitRelativePath || list[0].name || "").split("/")[0]
       || "that folder";
-    try { report([await install(await fromFolder(list))], []); }
-    catch (err) { report([], [failure(folder, err)]); }
+    try { await install(await fromFolder(list)); report([]); }
+    catch (err) { report([failure(folder, err)]); }
   };
 
   /* Zips and packed JSON, any number at once. */
@@ -109,17 +105,16 @@ export default function CourseIO({ onChange }) {
     if (!picked.length) return;
     setBusy(true); setMsg(null);
 
-    const ok = [], failed = [];
+    const failed = [];
     for (const f of picked) {
       try {
         if (f.size > MAX_BYTES) throw new Error(`${kb(f.size)} exceeds the ${kb(MAX_BYTES)} limit`);
-        ok.push(await install(
-          /\.zip$/i.test(f.name) ? await fromZip(f) : await fromJSON(f)));
+        await install(/\.zip$/i.test(f.name) ? await fromZip(f) : await fromJSON(f));
       } catch (err) {
         failed.push(failure(f.name, err));
       }
     }
-    report(ok, failed);
+    report(failed);
   };
 
   return (
@@ -154,8 +149,7 @@ export default function CourseIO({ onChange }) {
         </p>
       )}
 
-      {msg && <div class={"cio-msg" + (msg.ok ? "" : " bad")} role="status">
-        {msg.installed && <p>{msg.installed}</p>}
+      {msg && <div class="cio-msg bad" role="status">
         {msg.failed.length > 0 && <>
           <p>Could not import {msg.failedCount === 1 ? "this course" : `${msg.failedCount} courses`}. Fix every issue below and try again:</p>
           <ul>{msg.failed.map((error, i) => <li key={i}>{error}</li>)}</ul>

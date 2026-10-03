@@ -11,8 +11,8 @@
  *   WORKSPACE  courses/ and .author/ live here
  *
  * The rule is simple enough to keep in one place: a workspace is named by
- * AUTHOR_WORKSPACE, else it is the engine folder when that folder has a
- * courses/ directory (this repository), else it is where the command was run.
+ * AUTHOR_WORKSPACE, else it is where the command was run. The installed engine never selects
+ * another checkout as the course workspace.
  * ==========================================================================*/
 import { existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
@@ -33,10 +33,14 @@ function findEngine(from) {
 export const ENGINE = findEngine(dirname(fileURLToPath(import.meta.url)));
 
 const here = () => resolve(process.env.INIT_CWD || process.cwd());
+const workspaceAt = process.argv.indexOf("--workspace");
+const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : null;
+if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--")))
+  throw new Error("--workspace needs a directory path");
 
-export const WORKSPACE = process.env.AUTHOR_WORKSPACE
+export const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE
   ? resolve(process.env.AUTHOR_WORKSPACE)
-  : existsSync(join(ENGINE, "courses")) ? ENGINE : here();
+  : here();
 
 export const COURSES = join(WORKSPACE, "courses");
 export const STATE = join(WORKSPACE, ".author");

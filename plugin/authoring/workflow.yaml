@@ -1,0 +1,36 @@
+version: 1
+batching:
+  target_size: 4
+stages:
+  plan:
+    phase: plan
+    paired_role: planner
+    action: Inventory sources and problem families; write materials/plan.yaml. Hand off its path to the writer in paired mode.
+  migrate:
+    phase: write
+    paired_role: writer
+    action: Mechanically migrate existing planning artifacts to plan.yaml; preserve approved scope and progress, and flag ambiguous mappings for planner judgment.
+  setup:
+    phase: write
+    paired_role: writer
+    action: Use the plan to create course metadata, expectations, categories, concepts and subsection files; run author write to record setup.
+  write:
+    phase: write
+    paired_role: writer
+    action: Run author batch; write all assigned members with verified answers and checked done, then return for review (manual completes all course members first).
+  review:
+    phase: review
+    paired_role: reviewer
+    action: Run author batch; review all assigned members against sources, check writer answer evidence, high-risk claims and family samples with exact spans; record every outcome before writer corrections.
+  correct:
+    phase: write
+    paired_role: writer
+    action: Run author batch; apply all assigned saved corrections and checked done before returning for targeted rechecks.
+  finish:
+    phase: review
+    paired_role: reviewer
+    action: Run global coverage and reader checks once; the writer adds any required content. Run author finish after review, then audit and pack.
+  complete:
+    phase: review
+    paired_role: reviewer
+    action: Structural finish is recorded; report review evidence and remaining uncertainty. Reopen requested revisions with author redo.

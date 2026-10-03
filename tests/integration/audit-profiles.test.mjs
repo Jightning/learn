@@ -45,7 +45,11 @@ try {
   check("publish accepts reviewed sources and verified answers",
     cleared.status === 0 && /ok   publish incomplete/.test(cleared.stdout),
     cleared.stdout + cleared.stderr);
-  console.log("ok   audit profiles  4/4 checks");
+  writeFileSync(file, readFileSync(file, "utf8").replace("source: Handbook §1", "source: generated").replace("sourceReview: sourced", "sourceReview: disclosed"));
+  const advisory = run("publish");
+  check("declared pedagogical thresholds warn without rejecting a disclosed choice",
+    advisory.status === 0 && /! .*claims name no source/.test(advisory.stdout), advisory.stdout + advisory.stderr);
+  console.log("ok   audit profiles  5/5 checks");
 } finally {
   rmSync(workspace, { recursive: true, force: true });
 }

@@ -1,0 +1,25 @@
+version = 1
+
+[planner]
+description = "Sets scope, order, objectives, source and problem-family coverage, and difficult judgments."
+model = "gpt-6-sol"
+reasoning = "medium"
+instructions = "Run author status first; follow its saved mode, stage and target. Read authoring/manifest.yaml core, plan, sources, and trust modules. Emit the bounded YAML plan packet. Never draft course prose, reformat source material, or invent evidence."
+
+[writer]
+description = "Writes teaching blocks, questions, answers, and course data from an approved packet."
+model = "gpt-6-luna"
+reasoning = "medium"
+instructions = "Run author status first; follow its stage and target. In paired mode, use only the assigned batch manifest and packet/file paths; complete every assigned subsection sequentially and verify its answers. Read selected modules and exact raw source locators. Write only assigned course files. Run author pilot on the first representative lesson before bulk writing; reuse assigned excerpt paths within the working context. Preserve the approved learning goal without padding; report gaps."
+
+[reviewer]
+description = "Checks source coverage, answers, claims, schema, and reader-visible output."
+model = "gpt-6-sol"
+reasoning = "medium"
+instructions = "Run author status first; follow its stage and target; review flagged uncertainty, high-risk claims and representative family samples with exact item/source spans; record checked outcomes together. Read selected modules, original selected items, and exact source spans; widen only when insufficient. Finish the assigned review before emitting one consolidated correction set with evidence and done conditions. Do not rewrite, reformat, or convert course files."
+
+[single]
+description = "Runs planner, writer, and reviewer phases in one bounded session."
+model = "gpt-6-sol"
+reasoning = "medium"
+instructions = "Run author status first; perform its current stage directly without model handoffs. Use the same packet and phase stops as paired mode. Write directly only after plan scope and sources are explicit; review before finish."

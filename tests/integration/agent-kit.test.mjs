@@ -17,7 +17,7 @@ const check = () => spawnSync(process.execPath, ["tools/build-agent-kit.mjs", "-
   cwd: tmp, encoding: "utf8"
 });
 try {
-  for (const rel of ["package.json", "tools/build-agent-kit.mjs", "tools/agent", "docs",
+  for (const rel of ["package.json", "tools/build-agent-kit.mjs", "tools/agent", "docs", "authoring",
     "AGENTS.md", ".agents/skills/create-course", ".codex/agents", ".claude/agents",
     ".claude/skills/create-course", ".claude-plugin", "plugin"]) copy(rel);
   symlinkSync(join(ROOT, "node_modules"), join(tmp, "node_modules"), "dir");
@@ -31,15 +31,13 @@ try {
   assert.ok(result.stdout.includes(skill), result.stdout);
   copy(skill);
 
-  for (const name of ["course-drafter", "course-researcher"]) {
-    const source = `tools/agent/${name}.toml`;
-    const original = readFileSync(join(tmp, source), "utf8");
-    writeFileSync(join(tmp, source), original + "\n# changed source configuration\n");
-    result = check();
-    assert.equal(result.status, 1);
-    assert.ok(result.stdout.includes(`.codex/agents/${name}.toml`), result.stdout);
-    writeFileSync(join(tmp, source), original);
-  }
+  const source = "authoring/agents.toml";
+  const original = readFileSync(join(tmp, source), "utf8");
+  writeFileSync(join(tmp, source), original.replace('model = "gpt-6-luna"', 'model = "gpt-6-sol"'));
+  result = check();
+  assert.equal(result.status, 1);
+  assert.ok(result.stdout.includes(".codex/agents/course-drafter.toml"), result.stdout);
+  writeFileSync(join(tmp, source), original);
   result = check();
   assert.equal(result.status, 0, result.stdout + result.stderr);
   console.log("ok   agent-kit  detects missing Codex skills and stale worker configurations");

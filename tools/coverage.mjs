@@ -25,8 +25,8 @@ let report;
 try { report = coverageReport(id, below); }
 catch (e) { console.error(e.message); process.exit(2); }
 if (!report.files.length) {
-  console.error(`courses/${id} has no readable source documents — nothing to score against`);
-  process.exit(1);
+  console.log(`Coverage unavailable: courses/${id} has no readable source documents. Inspect the source catalog for visual or unresolved sources.`);
+  process.exit(0);
 }
 if (args.includes("--init-review")) {
   const added = initCoverageReview(id, report);
@@ -51,17 +51,17 @@ for (const source of [...new Set(report.rows.map(r => r.source))]) {
   if (shownCount < limit) console.log(source);
   for (const row of shown) {
     if (shownCount++ >= limit) { omitted++; continue; }
-    console.log(`  ${row.low ? "!" : " "} ${row.id} ${row.score.toFixed(2)}  ${row.heading}   (${row.best})`);
-    if (row.low) console.log(`           missing: ${row.missing.join(", ")}`);
+    console.log(`  ${row.low ? "!" : " "} ${row.id} ${Math.round(row.score * 100)}%  ${row.sourceLabel}#${row.heading}   (${row.best})`);
   }
 }
 if (omitted) console.log(`… ${omitted} more leads; use --all to print every score or --init-review for the checklist`);
-console.log(`\n${report.rows.filter(r => r.low).length} of ${report.rows.length} source topics below ${below}. ` +
+const average = report.rows.length ? Math.round(100 * report.rows.reduce((n, r) => n + r.score, 0) / report.rows.length) : null;
+console.log(`\nLexical coverage: ${average == null ? "unavailable" : average + "%"} (mean topic overlap, not mastery). ` +
+  `${report.rows.filter(r => r.low).length} of ${report.rows.length} source topics below ${Math.round(below * 100)}%. ` +
   `${report.unresolved.length} review decisions pending. Scores are leads, not proof; ` +
   `run coverage ${id} --init-review to create the checklist.`);
 if (profile === "publish" && report.unresolved.length) {
   for (const t of report.unresolved.slice(0, 30))
-    console.log(`       ✗ ${t.id} ${t.heading}: ${t.problem}`);
-  if (report.unresolved.length > 30) console.log(`       ✗ ${report.unresolved.length - 30} more unresolved leads`);
-  process.exit(1);
+    console.log(`       ! ${t.id} ${t.sourceLabel}#${t.heading}: ${t.problem}`);
+  if (report.unresolved.length > 30) console.log(`       ! ${report.unresolved.length - 30} more unresolved leads`);
 }

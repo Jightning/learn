@@ -6,8 +6,7 @@ import { cpSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadSpec } from "./lib/spec.mjs";
-import { COURSES, TEMPLATE, DOCS, PACKAGED } from "./lib/paths.mjs";
+import { COURSES, TEMPLATE, ENGINE, PACKAGED } from "./lib/paths.mjs";
 
 /* A course's accent is one angle, and two courses that pick the same angle are
    indistinguishable in the library — the exact defect the rotation exists to
@@ -47,15 +46,7 @@ if (existsSync(dest)) { console.error(`courses/${id} already exists`); process.e
 function scaffoldReader(coursesDir) {
   const dest = join(coursesDir, "_reader.yaml");
   if (existsSync(dest)) return null;
-  const sec = loadSpec(join(DOCS, "create_course.md")).pick(["1"]);
-  const block = (/```yaml\n([\s\S]*?)```/.exec(sec) || [])[1];
-  if (!block) throw new Error("create_course.md §1 has no reader block to copy");
-  writeFileSync(dest,
-    "# Who these courses are written for. Read by tools/author.mjs, which sends\n" +
-    "# it with every authoring prompt, and by any model writing a course by hand.\n" +
-    "# docs/create_course.md §1.1 derives seven authoring defaults from it, so\n" +
-    "# every field has to be answered — UNSET is refused rather than guessed.\n" +
-    "#\n# Gitignored, like the courses beside it.\n\n" + block);
+  cpSync(join(ENGINE, "authoring", "reader.yaml"), dest);
   return dest;
 }
 

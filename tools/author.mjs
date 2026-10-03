@@ -1,42 +1,15 @@
 #!/usr/bin/env node
-/* ============================================================================
- * tools/author.mjs — the commands a CLI agent uses to write a course
- *
- *   author begin  <id> [--source PATH]... [--lean] [--research]
- *                     where the course stands, its sources, and the rules for its shape
- *   author write  <id> [--lean] [--confident]
- *                     the writing rules, once, and the first subsection
- *   author done   <id> <sN-M> [SOURCE]... [--staging]   check one, and name the next
- *   author finish <id>                      materials, validate and coverage, compactly
- *   author status <id> [--digest]   ·   redo <id> <sN-M|course|finish>...   ·   reset <id>
- *   author rules  <id> [--need KIND]...     on-demand sections for the next subsection
- *   author plan   <id>                      what the rules and sources weigh
- *
- * Four calls carry a whole course: begin, write, done per subsection, finish.
- * Each prints only what the one before it did not. Mechanical minimum-content
- * and validation failures refuse completion; --staging records a draft without
- * calling it done. Subjective coverage and writing judgments remain warnings.
- *
- * No command here runs a model. The agent the author is already talking to
- * (Claude Code, or any CLI agent) is the one that writes: it reads the rules
- * once, keeps its work in one cached conversation, and hands context-free work
- * (concept files, drills, digging through a large source) to its own
- * subagents (.claude/agents/). These commands do what code does better and
- * for free: slicing the spec, listing sources safely, knowing what is
- * finished, and refusing to call a subsection finished when it is not.
- *
- * The workflow the agent follows is .claude/skills/create-course/SKILL.md.
- * Progress is .author/<id>/: map.txt (checked subsections and sources),
- * staged.txt (drafts), course.done, finish.done, roots.txt.
- * The generation log is written by tools/author-log.mjs from the session
- * transcript, never by the model.
- * ==========================================================================*/
+/* Course commands select whole rules and exact sources, track workflow and
+   structural progress, and never run a model. Policy lives in authoring/. */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { loadSpec } from "./lib/spec.mjs";
-import { digestRules, needsIn, needSections, availableNeeds } from "./lib/author-rules.mjs";
+import * as YAML from "js-yaml";
+import { loadContext, selectContext, shapeNeeds, estimateTokens } from "./lib/author-context.mjs";
+import { readPlan, buildPacket, packetText, planCoverage, fileHash, planSignature, indexPlan, fingerprint } from "./lib/author-packets.mjs";
+import { indexSources, readUnit } from "./lib/source-catalog.mjs";
+import { loadWorkflow, flowState } from "./lib/author-flow.mjs";
 import { digest } from "./lib/digest.mjs";
 import { parseFile } from "./lib/load.mjs";
 import { readReader } from "./lib/reader.mjs";
@@ -44,53 +17,16 @@ import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from ".
 import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE } from "./lib/paths.mjs";
 import { note } from "./author-log.mjs";
 
-const est = s => Math.round(s.length / 4);   /* chars/4: an estimate, not a count */
-
-const CC = loadSpec(join(DOCS, "create_course.md"));
-const MT = loadSpec(join(DOCS, "material_truth.md"));
-const WR = loadSpec(join(DOCS, "writing.md"));
+const est = estimateTokens;
+const context = loadContext(join(ENGINE, "authoring"));
+const workflow = loadWorkflow(context);
 /* AUTHOR_READER exists for the test suite, which cannot use a person's own
    profile; everything else reads the one beside the courses. */
 const READER = process.env.AUTHOR_READER || join(COURSES, "_reader.yaml");
 
-/* ----------------------------------------------------------------- steps --
- * Which spec headings each step needs, by heading id (lib/spec.mjs):
- * create_course.md (cc), material_truth.md (mt), writing.md (wr). A brief
- * prints the union for its steps. `lean` drops the evidence, the prose craft
- * and the self-review checklists, and keeps every rule a check enforces.
- */
-const PROSE = ["1*", "2*", "3*", "4*", "4a*", "5*", "6*"];
-const COURSE_STEPS = {
-  calibrate: { cc: ["0", "1*", "3", "11*"], mt: ["6*", "9*"] },
-  sequence:  { cc: ["0", "1*", "2*", "3"], mt: ["4*"] },
-  taxonomy:  { cc: ["0", "1*", "2*", "5a"], mt: ["10*"] },
-  conceptSet:{ cc: ["0", "1*", "5*"], mt: ["4*"] }
-};
-const WRITING_STEPS = {
-  spine:     { cc: ["0", "1*", "6", "6.1", "6.2", "6.4", "6.6", "5a", "10*"], wr: PROSE,
-               mt: ["2*", "3*", "5*", "10*"] },
-  quizzes:   { cc: ["0", "1*", "6.5", "7*", "9"], mt: ["2*"] },
-  tiers:     { cc: ["0", "1*", "6.3*", "14"], wr: PROSE, mt: ["7*"] },
-  verify:    { cc: ["0", "1*", "12*"], mt: ["6*", "9*"] }
-};
-/* For the drafter subagent, which is pointed at these files rather than
-   handed the whole brief. */
-const DRAFTER = {
-  concepts:  { cc: ["0", "1*", "5*"], mt: ["4*"] },
-  variants:  { cc: ["0", "1*", "8*"], mt: ["8*"] }
-};
-const LEAN_DROPS = new Set(["12*", "14"]);
-
-const union = (steps, key) => [...new Set(Object.values(steps).flatMap(s => s[key] || []))];
-const specOf = (steps, lean = false) => [
-  CC.pick(union(steps, "cc").filter(h => !(lean && LEAN_DROPS.has(h)))),
-  !lean && union(steps, "wr").length ? WR.pick(union(steps, "wr")) : "",
-  lean ? "" : "# Evidence (material_truth.md)\n\n" + MT.pick(union(steps, "mt"))
-].filter(Boolean).join("\n\n");
-
 /* ------------------------------------------------------------- arguments --*/
 const [cmd, id, ...rest] = process.argv.slice(2);
-const USAGE = "usage: author.mjs <begin|write|rules|done|finish|status|redo|reset|plan> <course-id> [args]";
+const USAGE = "usage: author.mjs <begin|sources|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
 const say = s => console.log(s);
 /* Every refusal is logged where the course is, so the record of a build does
    not depend on the agent keeping a readable transcript. */
@@ -102,16 +38,45 @@ const fail = s => {
 };
 if (!cmd || !id) fail(USAGE);
 const courseDir = join(COURSES, id);
+// Diagnostics must operate on the same workspace even when it came from CLI.
+process.env.AUTHOR_WORKSPACE = WORKSPACE;
+const valueFlags = new Set(["--source", "--need", "--mode", "--phase", "--role", "--sub", "--item", "--issue", "--workspace", "--handoff"]);
+const booleanFlags = new Set(["--all", "--confident", "--corrections", "--digest", "--expand", "--full-spec", "--lean", "--no-validate", "--repeat-warnings", "--research", "--show", "--staging", "--refresh"]);
+const unknownFlag = rest.find(a => a.startsWith("--") && !valueFlags.has(a) && !booleanFlags.has(a));
+if (unknownFlag) fail(`unknown option ${unknownFlag}; use --workspace PATH to select the course workspace`);
 if (!existsSync(courseDir)) fail(`courses/${id} does not exist (npm run new -- ${id} "Title")`);
 
 const flag = f => rest.includes(f);
-const positional = rest.filter((a, i) => !a.startsWith("--") && rest[i - 1] !== "--source");
+const positional = rest.filter((a, i) => !a.startsWith("--") && !valueFlags.has(rest[i - 1]));
+const option = (name, fallback) => {
+  const at = rest.indexOf(name);
+  if (at < 0) return fallback;
+  if (!rest[at + 1] || rest[at + 1].startsWith("--")) fail(`${name} needs a value`);
+  return rest[at + 1];
+};
+const options = name => rest.flatMap((a, i) => a === name ? (rest[i + 1] || "").split(",") : []);
 const lean = flag("--lean"), research = flag("--research"), confident = flag("--confident");
 const stateDir = join(STATE, id);
 const marker = name => join(stateDir, `${name}.done`);
 const stagedPath = join(stateDir, "staged.txt");
 const rootsFile = join(stateDir, "roots.txt");
 const today = new Date().toISOString().slice(0, 10);
+const settingsFile = join(stateDir, "settings.yaml");
+const flowFile = join(stateDir, "flow.yaml");
+const settings = existsSync(settingsFile) ? parseFile(settingsFile) || {} : {};
+const requestedMode = option("--mode", settings.mode || "single");
+const mode = requestedMode === "paried" ? "paired" : requestedMode;
+if (!["single", "paired"].includes(mode)) fail("--mode needs single or paired");
+const handoff = option("--handoff", settings.handoff || context.manifest.profiles?.[mode]?.handoff || "direct");
+if (!["auto", "manual", "direct"].includes(handoff)) fail("--handoff needs auto or manual (direct for single)");
+if (rest.includes("--mode") || rest.includes("--handoff")) {
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(settingsFile, YAML.dump({ ...settings, mode, handoff }));
+}
+const flowRecords = () => existsSync(flowFile) ? parseFile(flowFile) || {} : {};
+const currentFlow = (p = progress()) => flowState({ mode, handoff, progress: p, plan: readPlan(courseDir), records: flowRecords(), workflow });
+const defaultRole = phase => mode === "single" ? "single" : phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer";
+const selection = (phase, needs = [], full = false) => selectContext(context, { phase, role: option("--role", defaultRole(phase)), needs, full });
 /* Beside this file in a package, under tools/ in the repository. */
 const script = name => {
   if (process.env.AUTHOR_TOOL_DIR) return join(process.env.AUTHOR_TOOL_DIR, `${name}.mjs`);
@@ -174,13 +139,22 @@ function progress() {
   const staged = existsSync(stagedPath) ? new Set(readFileSync(stagedPath, "utf8").split("\n")
     .filter(Boolean).map(l => l.split(":")[0].trim())) : new Set();
   const key = u => relative(courseDir, u.file);
+  const checksFile = join(stateDir, "checks.yaml");
+  const checks = existsSync(checksFile) ? parseFile(checksFile) || {} : {};
+  const plan = readPlan(courseDir);
+  const planIndex = indexPlan(plan), freshness = new Map();
+  const fresh = u => {
+    if (!freshness.has(u.id)) freshness.set(u.id, !checks[key(u)] || (checks[key(u)].hash === fileHash(u.file) &&
+      checks[key(u)].plan === planSignature(plan, u.id, planIndex)));
+    return freshness.get(u.id);
+  };
   return {
     d,
-    done: d.subs.filter(u => key(u) in map),
+    done: d.subs.filter(u => key(u) in map && fresh(u)),
     staged: d.subs.filter(u => staged.has(key(u))),
-    todo: d.subs.filter(u => !(key(u) in map) && !staged.has(key(u))),
+    todo: d.subs.filter(u => (!(key(u) in map) || !fresh(u)) && !staged.has(key(u))),
     courseDone: existsSync(marker("course")),
-    finished: existsSync(marker("finish"))
+    finished: existsSync(marker("finish")) && d.subs.every(u => fresh(u))
   };
 }
 
@@ -197,6 +171,14 @@ const researchFile = u => join(courseDir, "sources", "research",
 
 /* Warnings cover judgments the mechanical checks cannot settle. */
 const warn = text => {
+  const path = join(stateDir, "warnings.yaml");
+  const seen = existsSync(path) ? parseFile(path) || {} : {};
+  const revision = [context.version, readPlan(courseDir).hash,
+    ...digest(courseDir).subs.map(u => fileHash(u.file))].join("/");
+  if (seen[text] === revision && !flag("--repeat-warnings")) return;
+  seen[text] = revision;
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(path, YAML.dump(seen, { lineWidth: -1 }));
   say(`warning: ${text}`);
   try { note(courseDir, `\`author ${process.argv.slice(2).join(" ")}\` → warning: ${text}`); }
   catch { /* the log must never break a command */ }
@@ -204,65 +186,95 @@ const warn = text => {
 
 /* What to write next, in one line, so no command has to repeat the rules. */
 function pointer(p) {
-  if (!p.courseDone) return `Next: steps 0-4 above, then \`author write ${id}\`.`;
-  const u = p.todo[0];
-  if (!u) return p.staged.length
-    ? `Next: finish staged ${p.staged.map(x => x.id).join(", ")} with \`author done ${id} <sN-M> <source>...\`, then finish.`
-    : `Next: add useful practice variants, then \`author finish ${id}\`.`;
-  const sec = p.d.sections.find(s => s.subs.includes(u));
-  return [
-    `Next: ${u.id} ${u.title}  (${p.done.length}/${p.d.subs.length} done)`,
-    `  file:    courses/${id}/${relative(courseDir, u.file)}` +
-      (u.blocks ? `  — has ${u.blocks} blocks, ${u.quiz} quiz items: read it and continue` : ""),
-    `  section: ${sec.id} ${sec.title} (${sec.subs.map(x => x.id).join(", ")})`,
-    research && !existsSync(researchFile(u))
-      ? `  research: none for this section yet — course-researcher writes ` +
-        `courses/${id}/${relative(courseDir, researchFile(u))}, one \`## \` per subsection title` : "",
-    `  then:    author done ${id} ${u.id} <source>...`
-  ].filter(Boolean).join("\n");
+  const flow = currentFlow(p);
+  return [`Flow: ${flow.mode} · stage: ${flow.stage} · role: ${flow.role}` +
+    (flow.subsection ? ` · subsection: ${flow.subsection}` : ""),
+    ...(flow.batch ? [`Batch: ${flow.batch.id} · members: ${flow.batch.members.join(", ")} · assigned: ${flow.batch.tasks.join(", ")}`] : []),
+    `Handoff: ${flow.handoff}`,
+    `Next: ${flow.action}`,
+    ...(flow.target ? [`  file: ${flow.target}`] : []),
+    ...(flow.corrections ? [`  corrections: ${flow.corrections}`] : []),
+    ...(flow.warnings || []).map(w => `warning: ${w}`)].join("\n");
+}
+
+function taskPacket(p, flow, phase, sub, plan, catalog) {
+  const subsection = sub ? p.d.subs.find(s => s.id === sub) : undefined;
+  if (sub && !subsection) fail(`no subsection ${sub}`);
+  const refs = options("--source").map(value => {
+    const match = /^([^/]+)\/([^@]+)(?:@L(\d+)-L?(\d+))?$/.exec(value);
+    return match ? { source: match[1], unit: match[2], ...(match[3] ? { lines: [+match[3], +match[4]] } : {}) } : { source: value };
+  });
+  const packet = buildPacket({ context, plan, index: plan.index ||= indexPlan(plan), subsection, phase, mode,
+    role: option("--role"), needs: options("--need"), item: option("--item"), issue: option("--issue"), sourceRefs: refs });
+  packet.workflow = { mode: flow.mode, handoff: flow.handoff, stage: flow.stage, role: flow.role,
+    ...(flow.subsection ? { subsection: flow.subsection } : {}), action: flow.action };
+  packet.catalog = join(stateDir, "sources/catalog.yaml");
+  if (flow.stage === "migrate") {
+    packet.legacy = plan.legacy;
+    packet.contract = join(context.root, "plan.md");
+  }
+  const record = flowRecords()[sub];
+  if (phase === "write" && record?.status === "correct" && record.plan === planSignature(plan, sub)) {
+    const directives = parseFile(record.corrections) || {};
+    packet.corrections = record.corrections;
+    // A correction is not a request to reread the lesson's complete evidence.
+    const findings = directives.findings || directives.items || [];
+    packet.sourceRefs = refs.length ? refs : findings.flatMap(i => i.sourceRefs || []);
+    delete packet.families; delete packet.prerequisites; delete packet.directives;
+    if (packet.objectives) packet.objectives = packet.objectives.map(o => ({ id: o.id, outcome: o.outcome }));
+    if (!packet.sourceRefs.length) packet.warnings.push("read correction evidence locators; request exact spans only if needed");
+  }
+  if (flag("--expand") && phase === "review" && !packet.sourceRefs?.length)
+    packet.sourceRefs = (plan.data.objectives || []).filter(o => packet.objectives?.some(p => p.id === o.id)).flatMap(o => o.sources || []);
+  if (phase === "write" || phase === "review") for (const ref of packet.sourceRefs || []) {
+    if ((phase === "review" || packet.corrections) && !flag("--expand") && !ref.lines) {
+      packet.warnings.push("source reference has no exact line span; source text was not included");
+      continue;
+    }
+    try {
+      const evidence = readUnit(catalog, ref);
+      if (phase === "write" && !packet.corrections) {
+        const path = join(stateDir, "sources", "excerpts", `${fingerprint(JSON.stringify(evidence))}.yaml`);
+        mkdirSync(dirname(path), { recursive: true });
+        if (!existsSync(path)) writeFileSync(path, packetText(evidence));
+        (packet.sources ||= []).push({ reference: ref, locator: evidence.locator, excerpt: path,
+          ...(evidence.warning ? { warning: evidence.warning } : {}) });
+      } else (packet.sources ||= []).push(evidence);
+    }
+    catch (e) { packet.warnings.push(e.message); }
+  }
+  if (phase === "plan") packet.profile = context.manifest.profiles?.[mode];
+  const name = [phase, sub, option("--item")?.replace(":", "-")].filter(Boolean).join("-");
+  const path = join(stateDir, "packets", `${name}.yaml`);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, packetText(packet));
+  return { path, packet };
 }
 
 function briefText(which, reader) {
-  const steps = which === "course" ? COURSE_STEPS : WRITING_STEPS;
-  const procedure = which === "course" ? [
-    research ? "0. Research, if the sources are thin: course-researcher works out the scope and saves " +
-      "it to sources/research/scope.md (one `## ` per topic, in teaching order, with URLs). Use an " +
-      "authoritative outline (syllabus, exam spec, standard textbook) where one exists and fits the " +
-      "reader's goal; many subjects have none, so build it from the best reference material and say " +
-      "so. Never present an invented outline as official." : "",
-    "1. materials/expectations.md: every source topic taught, bridged, or under Skip with a reason.",
-    "2. sections/NN-slug/_section.yaml for each section, and for each subsection a " +
-      "sections/NN-slug/N-slug.yaml holding only its title.",
-    "3. categories/<key>.yaml, or none if the material has no such kinds.",
-    "4. The concept set: ideas used in three or more places. " +
-      `course-drafter writes each concepts/<key>.yaml (rules: .author/${id}/rules-concepts.md).`,
-    `Then \`author write ${id}\`, which gives you the writing rules and the first subsection.`
-  ] : [
-    "For each subsection, finished before the next begins:",
-    "  - Read what it needs from its sources in one turn (parallel reads; part of a large file only).",
-    "  - Write the file once: spine (§6), then quizzes (§7), then depth and apply (§6.3)" +
-      (lean ? " — lean: keep optional material focused; retain any examples or depth needed for understanding" : "") + ".",
-    "    Work every quiz answer out before writing it; `verified: <today>` only on answers you worked out.",
-    "    A source topic you do not teach gets a YAML comment at the top of the file: " +
-      "`# moved: <topic> -> sN-M` or `# skipped: <topic> — <reason>`.",
-    confident ? "  - Re-derive every answer from scratch as if you had not written it; fix what differs." : "",
-    `  - \`author done ${id} <sN-M> <source>...\` checks it and names the next one. ` +
-      "Fix minimum-content and local validation errors before moving on; use --staging only for a draft.",
-    "When none are left: add practice/<key>.yaml variants where another surface is needed " +
-      `(rules: .author/${id}/rules-variants.md)` +
-      (confident ? ", then independently check their answers" : "") +
-      `; then \`author finish ${id}\`.`
-  ];
+  const phase = which === "course" ? "plan" : "write";
+  const selected = selection(phase, [], flag("--full-spec"));
   return [
-    `# ${which === "course" ? "Steps 0-4: the shape of the course" : "Steps 5-7: writing it"}` +
-      `${lean ? " (lean)" : ""}. Today is ${today}.`,
-    "Keep these rules for the rest of the conversation; ask for them again only after a compaction.",
-    procedure.filter(Boolean).join("\n"),
-    `## The reader\n\n\`\`\`yaml\n${reader}\n\`\`\``,
-    flag("--full-spec")
-      ? `## The full spec (§-numbers are create_course.md)\n\n${specOf(steps)}`
-      : digestRules(which, CC, [CC, MT, WR], { lean })
+    `# ${phase} · ${mode} · context ${context.version}`,
+    `Reader:\n${reader.trim()}`,
+    selected.text,
+    ...selected.warnings.map(w => `warning: ${w}`)
   ].join("\n\n");
+}
+
+function catalogSources() {
+  const cached = join(stateDir, "sources/catalog.yaml");
+  if (!["begin", "sources"].includes(cmd) && !flag("--refresh") && existsSync(cached))
+    return { ...parseFile(cached), directory: join(stateDir, "sources") };
+  return indexSources(list(savedRoots()), join(stateDir, "sources"), { refresh: rest.includes("--refresh") });
+}
+
+function coverageSummary() {
+  const report = planCoverage(readPlan(courseDir), progress().d.subs);
+  say(`Plan coverage: ${report.percent == null ? "unavailable" : report.percent + "%"} (${report.total} required objectives). ${report.message}`);
+  for (const row of report.rows.filter(r => !r.complete))
+    say(`  ! ${row.id}: teaching ${row.teaching.length}, questions ${row.questions.length}, families ${row.assessed}/${row.families}`);
+  return report;
 }
 
 function readerOrDie() {
@@ -280,7 +292,7 @@ const commands = {
     let roots;
     try {
       roots = sourceArgs.length || !existsSync(rootsFile)
-        ? resolveRoots(courseDir, sourceArgs, process.env.INIT_CWD || process.cwd())
+        ? resolveRoots(courseDir, sourceArgs, rest.includes("--workspace") ? WORKSPACE : process.env.INIT_CWD || process.cwd())
         : savedRoots();
     } catch (e) { fail(e.message); }
 
@@ -292,28 +304,18 @@ const commands = {
     }
     mkdirSync(stateDir, { recursive: true });
     writeFileSync(rootsFile, roots.join("\n") + "\n");
-    for (const [name, steps] of Object.entries(DRAFTER))
-      writeFileSync(join(stateDir, `rules-${name}.md`), specOf({ [name]: steps }));
-
-    const files = list(roots);
+    writeFileSync(settingsFile, YAML.dump({ ...settings, mode, handoff }));
+    for (const [name, need] of [["concepts", "concepts"], ["variants", "variants"]])
+      writeFileSync(join(stateDir, `rules-${name}.md`), selection("write", [need]).text);
+    const catalog = catalogSources();
     const p = progress();
     if (left.length) say(`removed untouched template examples: ${left.join(", ")}`);
-    say(`# ${id}: ${p.done.length}/${p.d.subs.length} subsections written` +
-      `${p.finished ? ", finished" : ""}\n`);
-    if (files.some(f => f.text)) {
-      say("## Sources (read what a subsection needs when you reach it, not all of this now)\n");
-      say(index(roots, files));
-      say("\n### Headings of the document files\n");
-      say(outline(roots, files) || "(none)");
-      say("");
-    } else {
-      say("## Sources\n\nNone. Research them (course-researcher), rerun with --source PATH, or write " +
-        "from what you know and mark every def, key and trap `source: generated`.\n");
-    }
-    say(`Drafter rules for subagents: .author/${id}/rules-concepts.md, .author/${id}/rules-variants.md\n`);
+    say(`# ${id}: ${p.done.length}/${p.d.subs.length} subsections written${p.finished ? ", finished" : ""}`);
+    say(`Sources: ${catalog.sources.length}; catalog ${join(stateDir, "sources/catalog.yaml")}`);
+    for (const warning of catalog.warnings || []) warn(warning);
     if (p.courseDone || p.d.subs.length) {
-      say(`The course already has its sections. \`author write ${id}\` for the writing rules.`);
-      if (!p.courseDone) warn("steps 0-4 were never recorded; `author write` records them");
+      say("Course artifacts exist; resume from the flow below.");
+      if (!p.courseDone) warn("setup was not recorded; follow the reported stage");
     } else {
       say(briefText("course", readerOrDie()));
     }
@@ -330,42 +332,128 @@ const commands = {
         !p.d.concepts.length && "concept files",
         p.d.concepts.some(c => !c.body) && "bodies in every concept file"
       ].filter(Boolean);
-      if (missing.length) warn(`steps 0-4 look unfinished: no ${missing.join(", no ")}. ` +
+      if (missing.length) warn(`setup looks unfinished: no ${missing.join(", no ")}. ` +
         "Carry on if that is deliberate.");
       mkdirSync(stateDir, { recursive: true });
       writeFileSync(marker("course"), today);
     }
     say(briefText("writing", readerOrDie()));
     say("\n" + pointer(progress()));
-    say(`On-demand details: author rules ${id} [--need block:<type>|figure:<kind>|question:<kind>]`);
+    say(`Task packet: author packet ${id} --phase write [--sub sN-M]`);
+  },
+
+  sources() {
+    const catalog = catalogSources();
+    say(`Sources: ${catalog.sources.length}; ${join(stateDir, "sources/catalog.yaml")}`);
+    for (const source of catalog.sources) {
+      say(`${source.id}: ${source.path} (${source.format}, ${source.status}, ${source.units.length} units)`);
+      if (flag("--all")) for (const unit of source.units) say(`  ${source.id}/${unit.id}: ${JSON.stringify(unit.locator)}`);
+    }
+    for (const warning of catalog.warnings || []) warn(warning);
+  },
+
+  packet() {
+    const p = progress();
+    const flow = currentFlow(p);
+    const phase = option("--phase", flow.phase);
+    const sub = option("--sub", phase === "plan" ? null : flow.subsection || (p.todo[0] || p.staged[0])?.id);
+    const { path, packet } = taskPacket(p, flow, phase, sub, readPlan(courseDir), catalogSources());
+    say(pointer(p));
+    say(`Packet: ${path} (~${est(packetText(packet))} tokens; rule files separate)`);
+    if (flag("--show")) say(packetText(packet));
+  },
+
+  batch() {
+    const p = progress(), flow = currentFlow(p), plan = readPlan(courseDir), catalog = catalogSources();
+    const assigned = flow.batch?.tasks || [];
+    const tasks = (assigned.length ? assigned : [null]).map(sub => {
+      const { path } = taskPacket(p, flow, flow.phase, sub, plan, catalog);
+      const record = flowRecords()[sub];
+      return { ...(sub ? { subsection: sub, target: p.d.subs.find(s => s.id === sub).file } : {}),
+        packet: path, ...(flow.stage === "correct" && record?.corrections ? { corrections: record.corrections } : {}) };
+    });
+    const path = join(stateDir, "batch.yaml");
+    const profile = context.manifest.profiles?.[mode] || {};
+    const task = { version: 1, course: id, mode, stage: flow.stage, role: flow.role,
+      workspace: WORKSPACE, engine: ENGINE, command: script("author"),
+      status_command: [process.execPath, script("author"), "status", id, "--workspace", WORKSPACE],
+      entrypoint: join(context.root, context.manifest.entrypoint),
+      orchestration: join(context.root, context.manifest.orchestration),
+      profile, ...(flow.batch ? { batch: flow.batch.id, members: flow.batch.members } : {}),
+      ...(flow.stage === "migrate" ? { legacy: plan.legacy } : {}),
+      ...(plan.hash ? { plan: { path: plan.path, hash: plan.hash } } : {}), tasks };
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(path, packetText(task));
+    say(pointer(p));
+    say(`Task: ${path} (~${est(packetText(task))} tokens; packet files separate)`);
   },
 
   rules() {
     const p = progress();
     const next = p.todo[0] || p.staged[0];
-    const explicit = rest.flatMap((a, i) => a === "--need" ? (rest[i + 1] || "").split(",") : []);
-    if (explicit.some(n => !n || n.startsWith("--"))) fail("--need requires a value");
-    let inferred = [];
-    if (next) {
-      try { inferred = needsIn(parseFile(next.file)); }
-      catch (e) { fail(`cannot read ${next.id}: ${e.message}`); }
+    const inferred = next ? shapeNeeds(parseFile(next.file)) : [];
+    const selected = selection(option("--phase", currentFlow(p).phase), options("--need").length ? options("--need") : inferred, flag("--full-spec"));
+    say(`# Context ${context.version}\n${selected.text}`);
+    for (const warning of selected.warnings) warn(warning);
+  },
+
+  pilot() {
+    const p = progress(), sub = option("--sub", p.d.subs[0]?.id);
+    const unit = p.d.subs.find(s => s.id === sub);
+    if (!unit) fail("pilot needs an existing subsection (--sub sN-M)");
+    const result = runDiagnostic("audit-content", "--profile", "publish", "--sub", sub, id);
+    const path = saveDiagnostics();
+    const plan = readPlan(courseDir), planIndex = indexPlan(plan), lesson = planIndex.lessons.get(sub);
+    const data = parseFile(unit.file) || {}, issues = [];
+    const objectives = lesson?.objectives || [];
+    const families = lesson?.families || objectives.flatMap(id => planIndex.objectives.get(typeof id === "string" ? id : id.id)?.families || []);
+    const tags = item => Array.isArray(item?.objectives) ? item.objectives : item?.objectives ? [item.objectives] : [];
+    for (const id of objectives) {
+      if (!(data.blocks || []).some(b => tags(b).includes(id))) issues.push(`missing teaching objective tag ${id}`);
+      if (!(data.quiz || []).some(q => tags(q).includes(id))) issues.push(`missing question objective tag ${id}`);
     }
-    const needs = [...new Set(explicit.length ? explicit : inferred)];
-    if (flag("--full-spec")) {
-      say(`# Full writing spec for ${id}\n\n${specOf(WRITING_STEPS)}`);
-      return;
-    }
-    if (!needs.length) {
-      say(`No block, figure, or question shapes are declared in the next subsection. Use --need with one of: ${availableNeeds.join(", ")}`);
-      return;
-    }
-    let selected;
-    try { selected = needSections(CC, needs); } catch (e) { fail(e.message); }
-    say(`# On-demand rules for ${next ? next.id : id}: ${needs.join(", ")}\n\n${selected}`);
+    for (const id of families.filter(id => !["excluded", "moved", "prerequisite"].includes(planIndex.families.get(id)?.disposition))) if (!(data.quiz || []).some(q => q.family === id || q.type === id || q.families?.includes(id)))
+      issues.push(`missing assessed family tag ${id}`);
+    if (!(data.quiz || []).length) issues.push("missing quiz");
+    const ok = result.status === 0 && !result.error && !result.signal && !issues.length;
+    writeFileSync(join(stateDir, "pilot.yaml"), YAML.dump({ subsection: sub, hash: fileHash(unit.file),
+      ready: ok, diagnostics: path, issues }));
+    say(`${ok ? "Pilot ready" : "Pilot needs attention"}: ${sub}; publish-format check only, not quality approval.`);
+    for (const issue of issues) say(`warning: ${sub}: ${issue}`);
+    if (result.status !== 0) say((result.stdout || result.stderr || result.error?.message || "audit failed").trim());
   },
 
   /* Once per subsection, and the only thing it adds is the next one. */
   done() {
+    if (flag("--all")) {
+      if (flag("--staging") || flag("--no-validate")) fail("done --all requires checked completion");
+      const p = progress(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
+      if (!p.d.subs.length) fail("done --all needs existing subsections");
+      const result = runDiagnostic("validate", id);
+      if (result.status !== 0 || result.error || result.signal)
+        fail(`not finished: ${(result.stdout || result.stderr || result.error?.message || "validation failed").trim()}`);
+      const checks = existsSync(join(stateDir, "checks.yaml")) ? parseFile(join(stateDir, "checks.yaml")) || {} : {};
+      const records = flowRecords(), map = loadMap(WORKSPACE, id);
+      const catalogPath = join(stateDir, "sources/catalog.yaml");
+      const sourcePaths = new Map((existsSync(catalogPath) ? parseFile(catalogPath)?.sources || [] : []).map(s => [s.id, s.path]));
+      for (const u of p.d.subs) {
+        const file = relative(courseDir, u.file), signature = planSignature(plan, u.id, planIndex);
+        checks[file] = { hash: fileHash(u.file), plan: signature, status: "structural" };
+        const lesson = planIndex.lessons.get(u.id);
+        const refs = lesson?.sources || lesson?.sourceRefs || (lesson?.objectives || []).flatMap(id => planIndex.objectives.get(typeof id === "string" ? id : id.id)?.sources || []);
+        const paths = [...new Set(refs.map(ref => sourcePaths.get(ref.source)).filter(Boolean))];
+        map[file] = map[file]?.length ? map[file] : paths.length ? paths : ["NONE"];
+        if (records[u.id]?.status === "correct") records[u.id] = { status: "recheck", hash: checks[file].hash, plan: signature };
+        else if (records[u.id]?.hash !== checks[file].hash || records[u.id]?.plan !== signature) delete records[u.id];
+      }
+      mkdirSync(stateDir, { recursive: true });
+      writeFileSync(join(stateDir, "checks.yaml"), YAML.dump(checks));
+      writeFileSync(flowFile, YAML.dump(records));
+      writeFileSync(mapPath(WORKSPACE, id), Object.entries(map).map(([file, refs]) => `${file}: ${Array.isArray(refs) ? refs.join(" | ") : refs}`).join("\n") + "\n");
+      rmSync(stagedPath, { force: true }); rmSync(marker("finish"), { force: true });
+      say(`Checked ${p.d.subs.length} subsections in one validation pass.`);
+      say(pointer(progress())); return;
+    }
     const [sub, ...sources] = positional;
     if (!sub) fail(`usage: author done ${id} <sN-M> [source]...`);
     if (flag("--no-validate") && !flag("--staging"))
@@ -380,7 +468,8 @@ const commands = {
     recordLine(stagedPath, file);
     rmSync(marker("finish"), { force: true });
     const why = thin(u);
-    const problems = why ? [`${sub} has ${why}`] : [];
+    const problems = [];
+    if (why) warn(`${sub} has ${why}; this is a teaching decision, not a structural failure`);
     let advice = [];
     if (!flag("--no-validate")) {
       const v = spawnSync(process.execPath, [script("validate"), id], { encoding: "utf8" });
@@ -401,7 +490,45 @@ const commands = {
     const unknown = sources.filter(x => !x.startsWith("/") || !existsSync(x.split("#")[0]));
     if (unknown.length) warn(`sources should be absolute paths that exist: ${unknown.join(", ")}`);
     recordLine(flag("--staging") ? stagedPath : mapPath(WORKSPACE, id), file, sources);
+    const path = join(stateDir, "checks.yaml");
+    const checks = existsSync(path) ? parseFile(path) || {} : {};
+    checks[file] = { hash: fileHash(u.file), plan: planSignature(readPlan(courseDir), u.id),
+      status: flag("--staging") ? "staged" : "structural" };
+    writeFileSync(path, YAML.dump(checks));
+    const records = flowRecords();
+    if (records[sub]?.status === "correct" && !flag("--staging"))
+      records[sub] = { status: "recheck", hash: fileHash(u.file), plan: planSignature(readPlan(courseDir), sub) };
+    else delete records[sub];
+    writeFileSync(flowFile, YAML.dump(records));
     if (flag("--staging")) say(`${sub} staged; it is not complete until done passes without --staging.`);
+    say(pointer(progress()));
+  },
+
+  reviewed() {
+    const [sub] = positional;
+    const p = progress();
+    if (flag("--all")) {
+      if (flag("--corrections")) fail("record correction outcomes individually; reviewed --all is a clean review declaration");
+      if (p.done.length !== p.d.subs.length) fail("run checked done for every subsection before reviewed --all");
+      const records = flowRecords(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
+      for (const unit of p.d.subs) records[unit.id] = { status: "reviewed", hash: fileHash(unit.file), plan: planSignature(plan, unit.id, planIndex) };
+      mkdirSync(stateDir, { recursive: true }); writeFileSync(flowFile, YAML.dump(records));
+      rmSync(marker("finish"), { force: true });
+      say("All clean review outcomes recorded by the agent; not an independent quality certificate.");
+      say(pointer(progress())); return;
+    }
+    const unit = p.d.subs.find(s => s.id === sub);
+    if (!unit) fail(`reviewed needs an existing subsection ID`);
+    if (!p.done.some(s => s.id === sub)) fail(`run done for ${sub} before recording review`);
+    const records = flowRecords();
+    const corrections = flag("--corrections") ? join(courseDir, "materials", "review", `${sub}.yaml`) : null;
+    if (corrections && !existsSync(corrections)) fail(`save correction directives at ${corrections} before recording them`);
+    records[sub] = { status: corrections ? "correct" : "reviewed", hash: fileHash(unit.file),
+      plan: planSignature(readPlan(courseDir), sub), ...(corrections ? { corrections } : {}) };
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(flowFile, YAML.dump(records));
+    rmSync(marker("finish"), { force: true });
+    say(`Review outcome recorded by the agent; not an independent quality certificate.`);
     say(pointer(progress()));
   },
 
@@ -410,15 +537,17 @@ const commands = {
     const run = runDiagnostic;
     const refuse = message => { rmSync(marker("finish"), { force: true }); fail(`not finished: ${message}`); };
     const p = progress();
+    if (currentFlow(p).stage !== "finish") warn(`workflow still reports ${currentFlow(p).stage}; finish checks structure only, not semantic review`);
     const required = [
-      !p.courseDone && "steps 0-4 were not recorded with author write",
+      !p.courseDone && "setup was not recorded with author write",
       !existsSync(join(courseDir, "materials", "expectations.md")) && "materials/expectations.md is missing",
       !p.d.subs.length && "no subsection files",
       p.todo.length && `not written yet: ${p.todo.map(u => u.id).join(", ")}`,
-      p.staged.length && `staged, not completed: ${p.staged.map(u => u.id).join(", ")}`,
-      ...p.d.subs.filter(thin).map(u => `${u.id} has ${thin(u)}`)
+      p.staged.length && `staged, not completed: ${p.staged.map(u => u.id).join(", ")}`
     ].filter(Boolean);
     if (required.length) refuse(required.join("\n"));
+    for (const u of p.d.subs.filter(thin)) warn(`${u.id} has ${thin(u)}; inspect the declared teaching decision`);
+    coverageSummary();
     const g = run("gen-materials", id);
     say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
     if (g.status !== 0) { saveDiagnostics(); refuse("materials generation failed"); }
@@ -441,19 +570,21 @@ const commands = {
     writeFileSync(marker("finish"), today);
     note(courseDir, `\`author finish ${id}\` → materials ${g.status === 0 ? "ok" : "FAILED"}, ` +
       `validate ${errs.length ? errs.length + " errors" : "ok"}, coverage: ${summary}`);
-    say(`\nRecorded as finished. Review flagged coverage topics as teaching or Skip decisions. ` +
+    say(`\nRecorded as finished (structural checks only; semantic review is separate). ` +
+      `Review flagged coverage topics as teaching or Skip decisions. ` +
       `\`author redo ${id} <sN-M>\` to revise.`);
   },
 
   status() {
     const p = progress();
-    say(`${id}: steps 0-4 ${p.courseDone ? "done" : "to do"} · ${p.done.length}/${p.d.subs.length} ` +
+    say(`${id}: setup ${p.courseDone ? "done" : "to do"} · ${p.done.length}/${p.d.subs.length} ` +
       `subsections${p.staged.length ? ` · ${p.staged.length} staged` : ""} · finish ${p.finished ? "done" : "to do"}`);
     if (p.todo.length) say(`to write: ${p.todo.map(u => u.id).join(", ")}`);
     const thinDone = p.done.filter(thin);
     if (thinDone.length) say(`recorded but thin: ${thinDone.map(u => `${u.id} (${thin(u)})`).join(", ")}`);
     const left = placeholders();
     if (left.length) say(`untouched template examples (begin removes them): ${left.join(", ")}`);
+    coverageSummary();
     say(pointer(p));
     if (flag("--digest") && p.d.text) say(`\nWhat the course already covers:\n${p.d.text}`);
   },
@@ -471,6 +602,10 @@ const commands = {
         .filter(l => !files.has(l.split(":")[0].trim())).join("\n"));
     }
     if (files.size) for (const file of files) recordLine(stagedPath, file);
+    const records = flowRecords();
+    for (const sub of positional) delete records[sub];
+    if (positional.includes("course")) for (const sub of Object.keys(records)) delete records[sub];
+    if (existsSync(flowFile)) writeFileSync(flowFile, YAML.dump(records));
     if (positional.includes("course")) rmSync(marker("course"), { force: true });
     if (files.size || positional.includes("finish")) rmSync(marker("finish"), { force: true });
     say(`reopened ${positional.join(", ")}: read each file, change what was asked, then ` +
@@ -479,33 +614,21 @@ const commands = {
   },
 
   reset() {
-    for (const f of [mapPath(WORKSPACE, id), stagedPath, marker("course"), marker("finish")]) rmSync(f, { force: true });
+    for (const f of [mapPath(WORKSPACE, id), stagedPath, marker("course"), marker("finish"), flowFile]) rmSync(f, { force: true });
     say(`forgot progress for ${id}; the course files are untouched`);
   },
 
-  /* What the rules weigh: they sit in context for the whole conversation. */
+  /* Estimates are explicitly approximate; no limits are imposed on teaching. */
   plan() {
-    const p = progress();
-    let files = [];
-    try { files = list(savedRoots()); } catch { /* sources moved since begin */ }
-    const text = files.filter(f => f.text);
-    for (const l of [false, true])
-      say(`compact${l ? " --lean" : "       "}: begin ~${est(digestRules("course", CC, [CC, MT, WR], { lean: l }))} tok; ` +
-          `write ~${est(digestRules("writing", CC, [CC, MT, WR], { lean: l }))} tok`);
-    say(`full-spec          : begin ~${est(specOf(COURSE_STEPS))} tok; ` +
-        `write ~${est(specOf(WRITING_STEPS))} tok`);
-    const next = p.todo[0] || p.staged[0];
-    if (next) try {
-      const needs = needsIn(parseFile(next.file));
-      if (needs.length) say(`next ${next.id} on-demand sections (${needs.join(", ")}): ` +
-        `~${est(needSections(CC, needs))} tok`);
-    } catch { /* a cost estimate also works on an unfinished draft */ }
-    say(`sources: ${text.length} readable files, ~${Math.round(text.reduce((n, f) => n + f.bytes, 0) / 4)} tok ` +
-      "in all (read per subsection, not at once)");
-    say(`subsections: ${p.done.length} written, ${p.todo.length} left`);
-    say("Estimates count rule text at four characters per token; reader, sources, and procedure are separate. " +
-      "Use author rules for needed sections and --full-spec for the entire phase spec.");
+    for (const phase of ["plan", "write", "review"]) {
+      const selected = selection(phase);
+      say(`${mode} ${phase}: ~${selected.estimatedTokens} instruction tokens (${selected.modules.map(m => m.id).join(", ")})`);
+    }
+    say(`full reference: ~${selection("write", [], true).estimatedTokens} tokens; on-demand, not a default prompt`);
+    coverageSummary();
+    say("Estimates use UTF-8 bytes/4; not measured model usage. Reader and selected sources are separate.");
   }
+
 };
 
 if (!commands[cmd]) fail(USAGE);

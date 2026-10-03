@@ -7,6 +7,7 @@ import test from "node:test";
 const { normalizeQuestion, gradeQuestion, practiceItems } = await import("../../src/lib/questions.js");
 const { legacyQuestionCounts } = await import("../../tools/lib/current-schema.mjs");
 const { questionContextWarning } = await import("../../tools/lib/question-context.mjs");
+const { checkResponse } = await import("../../tools/lib/question-schema.mjs");
 
 test("numeric answers accept their declared tolerance and reject blank or distant values", () => {
   const response = { kind: "number", value: 12.5, tolerance: 0.2 };
@@ -15,11 +16,41 @@ test("numeric answers accept their declared tolerance and reject blank or distan
   assert.equal(gradeQuestion(response, ""), false);
 });
 
+test("numeric answers default to zero tolerance when omitted", () => {
+  const response = { kind: "number", value: 12.5 };
+  const errs = [];
+  checkResponse({ response }, "numeric question", errs);
+  assert.deepEqual(errs, []);
+  assert.equal(gradeQuestion(response, "12.5"), true);
+  assert.equal(gradeQuestion(response, "12.6"), false);
+});
+
 test("multi-select answers require the complete set, independent of order", () => {
   const response = { kind: "multi", correct: [1, 3] };
   assert.equal(gradeQuestion(response, [3, 1]), true);
   assert.equal(gradeQuestion(response, [1]), false);
   assert.equal(gradeQuestion(response, [1, 2, 3]), false);
+});
+
+test("choice responses accept one or many options while checking correct references", () => {
+  const choices = n => Array.from({ length: n }, (_, i) => ({
+    text: `Option ${i + 1}`, why: `Reason ${i + 1}`
+  }));
+  for (const response of [
+    { kind: "single", correct: 1, choices: choices(1) },
+    { kind: "single", correct: 12, choices: choices(12) },
+    { kind: "multi", correct: [1], choices: choices(1) },
+    { kind: "multi", correct: [1, 12], choices: choices(12) }
+  ]) {
+    const errs = [];
+    checkResponse({ response }, "choice question", errs);
+    assert.deepEqual(errs, []);
+  }
+
+  const errs = [];
+  checkResponse({ response: { kind: "single", correct: 2, choices: choices(1) } },
+    "choice question", errs);
+  assert.match(errs.join(" "), /correct must name valid 1-based choice numbers/);
 });
 
 test("legacy text questions become self-check cards with a stable subsection id", () => {

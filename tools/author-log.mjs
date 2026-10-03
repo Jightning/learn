@@ -2,11 +2,12 @@
 /* ============================================================================
  * tools/author-log.mjs — the generation log, written from the transcript
  *
- *   (Claude Code Stop hook)            reads { session_id, transcript_path } on stdin
+ *   (Claude Code or Codex Stop hook)    reads { session_id, transcript_path } on stdin
  *   node tools/author-log.mjs FILE     the same, for a transcript named by hand
  *
  * A course authored in a CLI session gets a record nobody had to write:
- * which models ran and how many tokens each used (subagents included), and
+ * which models ran and how many tokens each used (where the transcript provides
+ * them), and
  * everything the model was told went wrong — refused and failed tool calls,
  * `author` commands that refused, validate errors. It is rebuilt from the
  * transcript each time the session stops, so it is current even if the
@@ -40,9 +41,55 @@ function lines(path) {
 const textOf = c => (typeof c === "string" ? c
   : (c || []).map(x => x.text || "").join(" ")).replace(/\s+/g, " ").trim();
 
+/* Codex stores tool output as nested content blocks, unlike Claude's flat text. */
+const outputText = value => typeof value === "string" ? value
+  : Array.isArray(value) ? value.map(outputText).join(" ")
+  : value && typeof value === "object" ? outputText(value.text || value.output || value.content || "") : "";
+
+function summarizeCodex(events) {
+  const models = {}, courses = new Set(), told = [], calls = new Map(), turns = new Set(), seen = new Set();
+  const byTurn = new Map(events.filter(e => e.type === "turn_context" && e.payload?.turn_id && e.payload.model)
+    .map(e => [e.payload.turn_id, e.payload.model]));
+  let first = null, last = null, agents = 0;
+  for (const e of events) {
+    if (e.timestamp) { first ??= e.timestamp; last = e.timestamp > (last || "") ? e.timestamp : last; }
+    const p = e.payload || {};
+    if (e.type === "token_usage_record" && p.response_id && !seen.has(p.response_id)) {
+      seen.add(p.response_id);
+      const model = byTurn.get(p.turn_id) || "unknown";
+      const x = models[model] ??= { calls: 0, input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };
+      const usage = p.usage || {};
+      x.calls++;
+      x.input += usage.input_tokens || 0;
+      x.cacheRead += usage.cached_input_tokens || 0;
+      x.cacheWrite += usage.cache_write_input_tokens || 0;
+      x.output += usage.output_tokens || 0;
+      if (p.turn_id) turns.add(p.turn_id);
+    }
+    if (e.type !== "response_item") continue;
+    if (p.type === "custom_tool_call" || p.type === "function_call") {
+      const target = String(p.input || p.arguments || "").replace(/\s+/g, " ").trim();
+      calls.set(p.call_id, { name: p.name || "tool", target });
+      if (/spawn_agent|Agent/.test(p.name || "") || /spawn_agent\s*\(/.test(target)) agents++;
+      for (const match of target.matchAll(AUTHOR_CMD)) courses.add(match[1]);
+    }
+    if (p.type === "custom_tool_call_output" || p.type === "function_call_output") {
+      const call = calls.get(p.call_id) || { name: "tool", target: "" };
+      const result = outputText(p.output);
+      if (/tools\/author\.mjs|npm run author/.test(call.target) && /(^|\n| )not finished:/.test(result))
+        told.push(`author refused: ${call.target.slice(0, 60)} — ${result.slice(0, 200)}`);
+      else if (/validate/.test(call.target) && /✗/.test(result))
+        told.push(`validate: ${result.split(/(?=✗)/).slice(0, 6).map(x => x.trim()).join(" ").slice(0, 300)}`);
+    }
+  }
+  return { models, courses: [...courses], told, first, last, turns: turns.size, agents };
+}
+
 /** Everything the log needs from one transcript and its subagents. */
 export function summarize(transcript) {
   const events = lines(transcript);
+  if (events.some(e => e.type === "session_meta" || e.type === "token_usage_record"))
+    return summarizeCodex(events);
   const subDir = join(dirname(transcript), basename(transcript, ".jsonl"), "subagents");
   const subs = existsSync(subDir)
     ? readdirSync(subDir).filter(f => f.endsWith(".jsonl")).map(f => ({ agent: true, events: lines(join(subDir, f)) }))
@@ -125,7 +172,7 @@ export function entry(sessionId, s) {
 }
 
 const HEAD = "# Authoring log\n\nWritten by `tools/author-log.mjs` from each session's transcript: " +
-  "the tokens each model used and what the model was told went wrong. Nothing here is written by a model.\n";
+  "available model tokens and errors reported to the model. Nothing here is written by a model.\n";
 
 /**
  * A line from a command, for the log. This is the half that works under any

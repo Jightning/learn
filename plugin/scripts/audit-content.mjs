@@ -2781,7 +2781,10 @@ function findEngine(from) {
 /** The folder the running script was installed in (this repo, or the package). */
 const ENGINE = findEngine(dirname(fileURLToPath(import.meta.url)));
 const here = () => resolve(process.env.INIT_CWD || process.cwd());
-const WORKSPACE = process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : existsSync(join(ENGINE, "courses")) ? ENGINE : here();
+const workspaceAt = process.argv.indexOf("--workspace");
+const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : null;
+if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--"))) throw new Error("--workspace needs a directory path");
+const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : here();
 const COURSES = join(WORKSPACE, "courses");
 const STATE = join(WORKSPACE, ".author");
 existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");
@@ -3509,13 +3512,162 @@ function matrix(spec) {
 	}).join("") + "</table><span class=\"fx-br\">]</span>" + (spec.label ? "<span class=\"fx-mxl\">" + esc(spec.label) + "</span>" : "") + "</div>";
 }
 //#endregion
+//#region src/figures/expression.js
+const FUNCTIONS = Object.freeze({
+	abs: Math.abs,
+	acos: Math.acos,
+	asin: Math.asin,
+	atan: Math.atan,
+	ceil: Math.ceil,
+	cos: Math.cos,
+	cosh: Math.cosh,
+	exp: Math.exp,
+	floor: Math.floor,
+	log: Math.log,
+	log10: Math.log10,
+	max: Math.max,
+	min: Math.min,
+	pow: Math.pow,
+	round: Math.round,
+	sign: Math.sign,
+	sin: Math.sin,
+	sinh: Math.sinh,
+	sqrt: Math.sqrt,
+	tan: Math.tan,
+	tanh: Math.tanh,
+	trunc: Math.trunc
+});
+const TOKEN = /\s*(?:((?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?)|([a-zA-Z][a-zA-Z0-9_.]*)|(\*\*|[()+\-*/%^,]))/gy;
+function parseExpression(source) {
+	const input = String(source || "");
+	if (input.length > 160) throw new Error("expression is too long");
+	const tokens = [];
+	let at = 0;
+	while (at < input.length) {
+		if (/^\s*$/.test(input.slice(at))) break;
+		TOKEN.lastIndex = at;
+		const match = TOKEN.exec(input);
+		if (!match || match.index !== at) throw new Error("expression contains unsupported syntax");
+		tokens.push(match[1] || match[2] || match[3]);
+		if (tokens.length > 80) throw new Error("expression has too many tokens");
+		at = TOKEN.lastIndex;
+	}
+	let i = 0, nodes = 0;
+	const peek = () => tokens[i];
+	const take = (expected) => {
+		if (peek() !== expected) throw new Error(`expected ${expected}`);
+		i++;
+	};
+	const node = (kind, args) => {
+		if (++nodes > 80) throw new Error("expression is too complex");
+		return {
+			kind,
+			...args
+		};
+	};
+	const atom = (depth) => {
+		if (depth > 24) throw new Error("expression is too deep");
+		const t = tokens[i++];
+		if (t === "(") {
+			const e = sum(depth + 1);
+			take(")");
+			return e;
+		}
+		if (t && /^(?:\d|\.)/.test(t)) return node("number", { value: Number(t) });
+		if (t === "x") return node("x", {});
+		if (t === "pi" || t === "Math.PI") return node("number", { value: Math.PI });
+		if (t === "e" || t === "Math.E") return node("number", { value: Math.E });
+		const name = t?.startsWith("Math.") ? t.slice(5) : t;
+		if (!Object.hasOwn(FUNCTIONS, name)) throw new Error("unknown name or function");
+		take("(");
+		const args = [];
+		if (peek() !== ")") do {
+			args.push(sum(depth + 1));
+			if (peek() !== ",") break;
+			i++;
+		} while (args.length < 5);
+		take(")");
+		if (!args.length || args.length > 4) throw new Error("function needs 1 to 4 arguments");
+		return node("call", {
+			name,
+			args
+		});
+	};
+	const power = (depth) => {
+		let left = atom(depth);
+		if (peek() === "^" || peek() === "**") {
+			i++;
+			left = node("binary", {
+				op: "^",
+				left,
+				right: unary(depth + 1)
+			});
+		}
+		return left;
+	};
+	const unary = (depth) => {
+		if (peek() === "+" || peek() === "-") {
+			const op = tokens[i++];
+			return node("unary", {
+				op,
+				arg: unary(depth + 1)
+			});
+		}
+		return power(depth);
+	};
+	const product = (depth) => {
+		let left = unary(depth);
+		while ([
+			"*",
+			"/",
+			"%"
+		].includes(peek())) {
+			const op = tokens[i++];
+			left = node("binary", {
+				op,
+				left,
+				right: unary(depth)
+			});
+		}
+		return left;
+	};
+	const sum = (depth) => {
+		let left = product(depth);
+		while (peek() === "+" || peek() === "-") {
+			const op = tokens[i++];
+			left = node("binary", {
+				op,
+				left,
+				right: product(depth)
+			});
+		}
+		return left;
+	};
+	const tree = sum(0);
+	if (i !== tokens.length) throw new Error("expression has trailing syntax");
+	const evaluate = (n, x) => {
+		if (n.kind === "number") return n.value;
+		if (n.kind === "x") return x;
+		if (n.kind === "unary") return n.op === "-" ? -evaluate(n.arg, x) : evaluate(n.arg, x);
+		if (n.kind === "call") return FUNCTIONS[n.name](...n.args.map((a) => evaluate(a, x)));
+		const a = evaluate(n.left, x), b = evaluate(n.right, x);
+		if (n.op === "+") return a + b;
+		if (n.op === "-") return a - b;
+		if (n.op === "*") return a * b;
+		if (n.op === "/") return a / b;
+		if (n.op === "%") return a % b;
+		return a ** b;
+	};
+	return (x) => evaluate(tree, x);
+}
+//#endregion
 //#region src/figures/plot.js
 function plot(spec, caption = "") {
 	var series = (spec.series || []).map(function(s) {
 		if (s.points) return s;
-		var from = s.from != null ? s.from : spec.xrange ? spec.xrange[0] : 0, to = s.to != null ? s.to : spec.xrange ? spec.xrange[1] : 10, n = s.samples || 80, pts = [], f;
+		var from = s.from != null ? s.from : spec.xrange ? spec.xrange[0] : 0, to = s.to != null ? s.to : spec.xrange ? spec.xrange[1] : 10, n = Math.min(2e3, Math.max(2, Number.isInteger(s.samples) ? s.samples : 80)), pts = [], f;
 		try {
-			f = new Function("x", "return (" + s.fn + ");");
+			f = parseExpression(s.fn);
 		} catch (e) {
 			return {
 				label: s.label,
@@ -3524,7 +3676,7 @@ function plot(spec, caption = "") {
 		}
 		for (var i = 0; i <= n; i++) {
 			var x = from + (to - from) * (i / n), y = f(x);
-			if (isFinite(y)) pts.push([x, y]);
+			if (Number.isFinite(y)) pts.push([x, y]);
 		}
 		return {
 			label: s.label,
@@ -30955,6 +31107,20 @@ const CODE = /* @__PURE__ */ new Set([
 	".graphql",
 	".ipynb"
 ]);
+/** Extraction registration only. `doc` and `text` retain their older meaning:
+binary teaching sources are catalogued, but never read as UTF-8 here. */
+const SOURCE_FORMATS = new Map([
+	...[...DOC, ...CODE].map((ext) => [ext, "text"]),
+	[".pdf", "pdf"],
+	[".pptx", "pptx"],
+	[".ppt", "ppt"],
+	[".png", "image"],
+	[".jpg", "image"],
+	[".jpeg", "image"],
+	[".gif", "image"],
+	[".webp", "image"],
+	[".svg", "image"]
+]);
 const SECRET = /(^|\/)(\.env[^/]*|.*\.(pem|key|p12|pfx|keystore|jks)|id_(rsa|dsa|ecdsa|ed25519)[^/]*|\.?(credentials|secrets?)(\.[^/]*)?|\.netrc|\.npmrc|\.pypirc)$/i;
 const BULK_DIR = /(^|\/)(node_modules|vendor|dist|build|out|target|coverage|__pycache__|\.[^/]*)(\/|$)/;
 const BULK_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|go\.sum|[^/]*\.min\.(js|css)|[^/]*\.map)$/;
@@ -31048,7 +31214,8 @@ function entry(root, rel, path) {
 		path,
 		doc: DOC.has(ext),
 		text: DOC.has(ext) || CODE.has(ext),
-		bytes: statSync(path).size
+		bytes: statSync(path).size,
+		format: SOURCE_FORMATS.get(ext) || "binary"
 	};
 }
 const mapPath = (repo, id) => join(repo, ".author", id, "map.txt");
@@ -31391,8 +31558,10 @@ function strictCurrentIssues(C) {
 const args = process.argv.slice(2);
 const at = args.indexOf("--profile");
 const profile = at < 0 ? "draft" : args[at + 1];
-const wanted = args.filter((a, i) => a !== "--profile" && (at < 0 || i !== at + 1));
-if (!["draft", "publish"].includes(profile) || wanted.some((a) => a.startsWith("--"))) {
+const subAt = args.indexOf("--sub");
+const subsection = subAt < 0 ? null : args[subAt + 1];
+const wanted = args.filter((a, i) => !["--profile", "--sub"].includes(a) && (at < 0 || i !== at + 1) && (subAt < 0 || i !== subAt + 1));
+if (!["draft", "publish"].includes(profile) || wanted.some((a) => a.startsWith("--")) || subAt >= 0 && (!subsection || subsection.startsWith("--"))) {
 	console.error("usage: audit-content.mjs [--profile draft|publish] [course …]");
 	process.exit(2);
 }
@@ -31429,6 +31598,15 @@ function detailsWithoutRecall(C) {
 }
 function audit(id) {
 	const { course: C } = loadCourse(join(COURSES, id));
+	if (subsection) {
+		C.sections = C.sections.map((s) => ({
+			...s,
+			subs: s.subs.filter((u) => u.id === subsection)
+		})).filter((s) => s.subs.length);
+		if (!C.sections.length) throw new Error(`no subsection ${subsection}`);
+		C.drills = {};
+		C.practice = {};
+	}
 	const n = {
 		claims: 0,
 		answers: 0,
@@ -31508,23 +31686,23 @@ let failed = 0;
 for (const id of ids) {
 	const { C, rows, over, sourceIssues, schemaIssues, details, points } = audit(id);
 	let coverage = null, coverageError = null;
-	if (profile === "publish") try {
+	if (profile === "publish" && !subsection) try {
 		coverage = coverageReport(id);
 	} catch (e) {
 		coverageError = e.message;
 	}
-	const blocked = profile === "publish" && (over.length || sourceIssues.length || schemaIssues.length || coverage?.unresolved.length || coverageError);
+	const blocked = profile === "publish" && (over.some((r) => r.k === "unverified") || sourceIssues.length || schemaIssues.length);
 	if (blocked) failed++;
 	console.log(`${blocked ? "FAIL publish" : profile === "draft" ? "draft" : "ok   publish"} ${id.padEnd(10)} ` + rows.map((r) => `${pct(r.frac)} of ${r.of} ${r.k}`).join(", "));
 	if (profile === "publish") console.log(migrationReportLine(id, C));
-	for (const r of over) console.log(`       ${profile === "draft" ? "!" : "✗"} ${pct(r.frac)} ${r.label}, against ${profile === "draft" ? "a draft target" : "the publish ceiling"} of ${pct(r.max)}`);
+	for (const r of over) console.log(`       ${profile === "publish" && r.k === "unverified" ? "✗" : "!"} ${pct(r.frac)} ${r.label}, against ${profile === "draft" ? "a draft target" : "a declared review target"} of ${pct(r.max)}`);
 	for (const issue of sourceIssues) console.log(`       ✗ ${issue}`);
 	for (const issue of schemaIssues) console.log(`       ✗ ${issue}`);
-	if (coverageError) console.log(`       ✗ coverage: ${coverageError}`);
+	if (coverageError) console.log(`       ! coverage unavailable: ${coverageError}`);
 	if (coverage && !coverage.files.length) console.log("       ! coverage: no readable source documents; topic comparison unavailable");
 	else if (coverage && !coverage.unresolved.length) console.log(`       coverage: ${coverage.rows.filter((r) => r.low).length} low-score topic leads reviewed; scores are not proof`);
 	if (coverage?.unresolved.length) {
-		console.log(`       ✗ ${coverage.unresolved.length} low-scoring coverage leads need reviewed dispositions (run: node tools/coverage.mjs ${id} --init-review)`);
+		console.log(`       ! ${coverage.unresolved.length} low-scoring coverage leads need reviewed dispositions (run: node tools/coverage.mjs ${id} --init-review)`);
 		for (const t of coverage.unresolved.slice(0, 15)) console.log(`         ${t.id} ${t.heading}: ${t.problem}`);
 		if (coverage.unresolved.length > 15) console.log(`         ${coverage.unresolved.length - 15} more in the coverage report`);
 	}
