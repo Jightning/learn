@@ -3,7 +3,7 @@
 The current course shape is positional: `sections/NN-slug/_section.yaml` and
 one subsection YAML file per reader-facing subsection. `course.yaml` holds
 identity and state; `categorize/{objectives,families,concepts}.yaml` owns new
-curriculum definitions. `categories/`, `practice/`, `materials/`, and `assets/`
+curriculum definitions. `questions/`, `categories/`, `practice/`, `materials/`, and `assets/`
 hold their named artifacts. Legacy `concepts/`, `q/a`, and `drills/` remain
 supported; new work uses typed `response:` and the current publish contract.
 
@@ -81,3 +81,15 @@ Questions allow one try by default. To allow more, add `tries: 3` beside
 `q:` and `response:` (not inside `response`). This means three total tries,
 including the first; use a positive integer. The same field works in quiz,
 practice, and legacy question items. See `formats/questions.md` for retry behavior.
+
+Bank courses use ordered `quiz: [q-id]` references and inherited metadata.
+Read `formats/question-bank.md` only for bank/type/assessment work; legacy
+inline questions keep the shape above. The index assigns bank `id` once and
+reuses it as its review handle.
+
+For an inline-to-bank migration only, run `node tools/migrate-question-ids.mjs`
+with the unchanged legacy snapshot and migrated course as directed by its
+usage. Unique prompt/response/tries/stimulus matches create stable aliases once
+in `questions/aliases.yaml`; resolve ambiguous matches explicitly. Do not
+regenerate aliases during routine author startup or rewrite learner history.
+Unknown first-try legacy evidence remains unknown.

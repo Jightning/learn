@@ -59,6 +59,8 @@ sweep();
 let ok = false, detail = "";
 try {
   run("new-course.mjs", [name, TITLE]);
+  for (const file of ["types.yaml", "bank.yaml", "assessment.yaml"])
+    if (!existsSync(join(dir, "questions", file))) throw new Error(`missing bank scaffold ${file}`);
   const built = run("build.mjs");
   if (built.includes(name)) throw new Error("the app build inspected the user-course probe");
   if (existsSync(join(dir, "blocks.js"))) throw new Error("probe course required custom code");

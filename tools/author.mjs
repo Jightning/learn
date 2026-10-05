@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { resolveAuthorQuiz } from "./lib/author-bank.mjs";
 /* Course commands select whole rules and exact sources, track workflow and
    structural progress, and never run a model. Policy lives in authoring/. */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
@@ -11,7 +12,7 @@ import { readPlan, buildPacket, packetText, planCoverage, fileHash, planSignatur
 import { indexSources, readUnit } from "./lib/source-catalog.mjs";
 import { loadWorkflow, flowState } from "./lib/author-flow.mjs";
 import { digest } from "./lib/digest.mjs";
-import { parseFile } from "./lib/load.mjs";
+import { parseFile, loadCourse } from "./lib/load.mjs";
 import { readReader } from "./lib/reader.mjs";
 import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from "./lib/sources.mjs";
 import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE } from "./lib/paths.mjs";
@@ -319,6 +320,11 @@ const commands = {
 
   screen(overrides = {}) {
     const indexed = reviewIndex(courseDir, stateDir), plan = readPlan(courseDir);
+    if (indexed.bankCoverage) {
+      const { course, errors } = loadCourse(courseDir);
+      if (errors.length) fail(errors.join("\n"));
+      indexed.blueprints = Object.values(course.assessmentBlueprints || {}).map(({ version, ...blueprint }) => blueprint);
+    }
     const changed = overrides.changed ?? flag("--changed"), paths = [];
     const contextPath = join(stateDir, "review-context.yaml");
     writeFileSync(contextPath, packetText(reviewContext(indexed, plan)));
@@ -470,7 +476,7 @@ const commands = {
       }
       const phase = option("--phase", currentFlow().phase), role = option("--role", defaultRole(phase));
       const needs = selected.flatMap(item => item.kind === "block" ? [...shapeNeeds({ blocks: [item.content] })] :
-        ["quiz", "practice"].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : []);
+        ["quiz", "practice", "bank"].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : []);
       const packet = { phase, mode, role, rules: selection(phase, needs).modules.map(m => m.path),
         ...(review?.status === "issues" ? { corrections: join(stateDir, "corrections.yaml") } : {}),
         reader: plan.data.reader || {}, items: selected, sources, warnings };
@@ -541,7 +547,7 @@ const commands = {
     const result = runDiagnostic("audit-content", "--profile", "publish", "--sub", sub, id);
     const path = saveDiagnostics();
     const plan = readPlan(courseDir), planIndex = indexPlan(plan), lesson = planIndex.lessons.get(sub);
-    const data = parseFile(unit.file) || {}, issues = [];
+    const data = resolveAuthorQuiz(courseDir, parseFile(unit.file) || {}), issues = [];
     const objectives = lesson?.objectives || [];
     const families = lesson?.families || objectives.flatMap(id => planIndex.objectives.get(typeof id === "string" ? id : id.id)?.families || []);
     const tags = item => Array.isArray(item?.objectives) ? item.objectives : item?.objectives ? [item.objectives] : [];
@@ -649,7 +655,7 @@ const commands = {
     if (flag("--all")) {
       if (flag("--corrections")) fail("record correction outcomes individually; reviewed --all is a clean review declaration");
       if (p.done.length !== p.d.subs.length) fail("run checked done for every subsection before reviewed --all");
-      acceptReview(stateDir, reviewIndex(courseDir, stateDir));
+      acceptReview(stateDir, reviewIndex(courseDir, stateDir), option("--report") ? parseFile(option("--report")) : null);
       const records = flowRecords(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
       for (const unit of p.d.subs) records[unit.id] = { status: "reviewed", hash: fileHash(unit.file), plan: planSignature(plan, unit.id, planIndex) };
       mkdirSync(stateDir, { recursive: true }); writeFileSync(flowFile, YAML.dump(records));

@@ -32,6 +32,8 @@ export function conceptOf(C, q, sub) {
   return seen.length === 1 ? seen[0] : null;
 }
 
+const bankMetadata = q => Object.fromEntries(["typeId", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "authorId"].filter(k => q[k] !== undefined).map(k => [k, q[k]]));
+
 export function buildIndex(C) {
   const SUBS = {}, CUSE = {}, XIN = {}, QALL = [], SEARCH = [], CQ = {}, BLOCKS = {};
   const ANNOTATIONS = [];
@@ -55,9 +57,9 @@ export function buildIndex(C) {
       for (const m of txt.matchAll(/href="#([^"]+)"/g)) if (m[1] !== sub.id) push(XIN, m[1], sub.id);
 
       (sub.quiz || []).forEach(q => {
-        const id = qid(sub.id, q.type);
+        const id = q.id || qid(sub.id, q.type);
         CQ[id] = conceptOf(C, q, sub);
-        QALL.push({ ...normalizeQuestion(q, { id, subId: sub.id, concept: CQ[id] }),
+        if (!QALL.some(item => item.id === id)) QALL.push({ ...normalizeQuestion(q, { id, subId: sub.id, concept: CQ[id] }), ...bankMetadata(q),
           num, subTitle: sub.title });
       });
 
@@ -102,8 +104,12 @@ export function buildIndex(C) {
                   ctx: "Core concept", cat: C.concepts[k].cat || null,
                   tags: C.concepts[k].tags || [], text: strip(C.concepts[k].body) }));
 
-  const PALL = practiceItems(C).map(q => ({ ...q, subId: q.subId || null }));
+  const bankItems = Object.values(C.questionBank || {}).map(q => ({ ...normalizeQuestion(q), ...bankMetadata(q) }));
+  const placed = new Set(QALL.map(q => q.id));
+  const PALL = [...practiceItems(C), ...bankItems.filter(q => q.use === "practice" && !placed.has(q.id))].map(q => ({ ...q, subId: q.subId || null }));
   return { SUBS, CUSE, XIN, QALL, PALL, SEARCH, CQ, BLOCKS, ANNOTATIONS,
+           TYPES: C.questionTypes || {}, BANK: C.questionBank || {}, BLUEPRINTS: C.assessmentBlueprints || {},
+           CHECK: bankItems.filter(q => q.use === "check"), DIAGNOSTIC: bankItems.filter(q => q.use === "diagnostic"),
            CAT: indexCats(C), FIG: numberFigures(C) };
 }
 

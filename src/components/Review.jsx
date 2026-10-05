@@ -1,3 +1,4 @@
+import { sessionId } from "../lib/attempt.js";
 import { useState, useMemo, useEffect } from "preact/hooks";
 import { INDEX, ORDER, getAll } from "../lib/library.js";
 import { buildIndex } from "../lib/index.js";
@@ -62,12 +63,12 @@ function DueReview({ only }) {
         return { cid, C, idx, state: stateFor(cid, C), items: [...idx.QALL, ...idx.PALL] };
       });
       setBooks(next);
-      setRun({ items: buildQueue(next, { limit: SESSION }), at: 0, retries: [], results: [] });
+      setRun({ sessionId: sessionId(), items: buildQueue(next, { limit: SESSION }), at: 0, retries: [], results: [] });
     });
     return () => { live = false; };
   }, [wanted.join("|")]);
 
-  const again = () => setRun({ items: buildQueue(books || [], { limit: SESSION }), at: 0,
+  const again = () => setRun({ sessionId: sessionId(), items: buildQueue(books || [], { limit: SESSION }), at: 0,
     retries: [], results: [] });
   if (!run) return <p>Loading questions…</p>;
   if (run.at >= run.items.length) return <div class="review-done">
@@ -81,7 +82,7 @@ function DueReview({ only }) {
   const book = books.find(b => b.cid === row.cid);
   const result = outcome => setRun(prev => {
     const next = { ...prev, results: [...prev.results, outcome] };
-    if (!outcome.correct && row.item.concept && !prev.retries.includes(row.item.concept)) {
+    if (!outcome.skipped && !outcome.correct && row.item.concept && !prev.retries.includes(row.item.concept)) {
       const used = new Set(prev.items.map(x => x.item.id));
       const item = retryVariant(book.items, row.item, used);
       if (item) {
@@ -98,7 +99,7 @@ function DueReview({ only }) {
     <div class="review-bar"><span class="review-t">Scheduled questions</span>
       <span class="review-n">{run.at + 1} of {run.items.length}</span></div>
     <QuestionCard key={`${run.at}:${row.item.id}`} item={row.item}
-      ctx={{ ...book, state: book.state }} reason={row.reason}
+      ctx={{ ...book, state: book.state }} sessionId={run.sessionId} context="review" reason={row.reason}
       onResult={result} onContinue={() => setRun(prev => ({ ...prev, at: prev.at + 1 }))} />
   </>;
 }

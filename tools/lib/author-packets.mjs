@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import * as YAML from "js-yaml";
+import { readAuthorBank, resolveAuthorQuiz, bankMatrix } from "./author-bank.mjs";
 import { parseFile } from "./load.mjs";
 import { selectContext, shapeNeeds } from "./author-context.mjs";
 import { curriculumSignature, mergePlanCurriculum, readCurriculumCollections, validateCurriculumReferences } from "../../src/lib/curriculum.js";
@@ -133,9 +134,11 @@ export function selectItem(unit, selector) {
 
 export function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase, mode = "single", role,
   needs = [], item, issue, sourceRefs = [], sources = [], warnings = [] }) {
+  const bank = readAuthorBank(join(plan.path, "../.."));
   const unit = subsection ? parseFile(subsection.file) || {} : {};
   const lesson = index.lessons.get(subsection?.id);
-  const selected = item ? selectItem(unit, item) : null;
+  const resolved = resolveAuthorQuiz(".", unit, bank);
+  const selected = item ? selectItem(resolved, item) : null;
   const wanted = new Set(asList(lesson?.objectives).map(named));
   if (selected) { wanted.clear(); for (const id of tags(selected)) wanted.add(id); }
   if (!wanted.size && subsection && !selected)
@@ -152,7 +155,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
     (phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer");
   const rules = selectContext(context, { phase, role: effectiveRole,
     needs: [...new Set([...needs, ...asList(selected ? null : lesson?.needs), ...shapeNeeds(selected
-      ? item.startsWith("block:") ? { blocks: [selected] } : { quiz: [selected] } : unit)])] });
+      ? item.startsWith("block:") ? { blocks: [selected] } : { quiz: [selected] } : resolved)])] });
   const refs = sourceRefs.length ? sourceRefs : selected
     ? asList(selected.sourceRefs)
     : phase === "write" ? (lesson && Object.hasOwn(lesson, "sourceRefs") ? asList(lesson.sourceRefs)
@@ -169,6 +172,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
     ...(readerContext && Object.keys(readerContext).length ? { reader: readerContext } : {}),
     ...(phase === "write" && plan.data.scope ? { scope: plan.data.scope } : {}),
     ...(phase === "plan" ? { inventory: plan.path } : {}),
+    ...(phase === "write" && bank.types.length ? { questionTypes: bank.types.filter(r => asList(r.content.teach).includes(subsection?.id) || resolved.quiz.some(q => q.typeId === r.content.id)).map(r => r.content), inventory: bankMatrix(bank).rows.filter(r => asList(r.teach).includes(subsection?.id) || resolved.quiz.some(q => q.typeId === r.type)) } : {}),
     ...(local.length ? { objectives: local.map(o => ({ id: o.id, outcome: o.outcome, ...(o.risk ? { risk: o.risk } : {}) })) } : {}),
     ...(phase === "write" && prerequisites.length ? { prerequisites } : {}),
     ...(phase === "write" && families.length ? { families } : {}),
@@ -194,9 +198,11 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
 
 /* A percentage of explicit evidence links, not a semantic mastery score. */
 export function planCoverage(plan, subsections) {
+  const dir = join(plan.path, "../..");
+  const bank = readAuthorBank(dir);
   const objectives = asList(plan.data.objectives).filter(active);
   const familyIndex = new Map(asList(plan.data.families).map(f => [f.id, f]));
-  const found = new Map(subsections.map(s => [s.id, parseFile(s.file) || {}]));
+  const found = new Map(subsections.map(s => [s.id, resolveAuthorQuiz(dir, parseFile(s.file) || {}, bank)]));
   const evidence = new Map(), assessedFamilies = new Map();
   for (const [sub, unit] of found) for (const kind of ["teaching", "questions"]) {
     const items = kind === "teaching" ? unit.blocks : unit.quiz;
@@ -208,6 +214,16 @@ export function planCoverage(plan, subsections) {
         for (const family of [...asList(item.families).map(named), item.family, item.type])
           if (family) assessedFamilies.get(id).add(family);
       }
+    }
+  }
+  for (const { content: item } of bank.items) {
+    const type = bank.types.find(r => r.content.id === item.typeId)?.content;
+    if (!type || item.use === "diagnostic") continue;
+    for (const id of type.objectives || []) {
+      if (!evidence.has(id)) evidence.set(id, { teaching: [], questions: [] });
+      evidence.get(id).questions.push(item.id);
+      if (!assessedFamilies.has(id)) assessedFamilies.set(id, new Set());
+      for (const family of type.families || []) assessedFamilies.get(id).add(family);
     }
   }
   const locations = (objective, kind) => {

@@ -4,6 +4,7 @@ import { existsSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:
 import { join, dirname, relative, extname, basename } from "node:path";
 import { randomUUID } from "node:crypto";
 import * as YAML from "js-yaml";
+import { readAuthorBank, bankMatrix } from "./author-bank.mjs";
 import { digest } from "./digest.mjs";
 import { parseFile } from "./load.mjs";
 import { readPlan, fingerprint, packetText, fileHash } from "./author-packets.mjs";
@@ -35,8 +36,11 @@ export function reviewIndex(dir, state, { assign = true, persist = true } = {}) 
     if (!id) {
       if (!assign) throw new Error(`${file}: missing authorId; run author index`);
       id = `${kind}-${randomUUID().slice(0, 12)}`;
-      item.authorId = id; doc(file).dirty = true;
+      if (kind === "bank") item.id = id;
+      else item.authorId = id; doc(file).dirty = true;
     }
+    if (kind === "bank" && item.id !== id) { item.id = id; doc(file).dirty = true; }
+    if (kind === "bank" && item.authorId && item.authorId !== id) throw new Error(`${file}: conflicting bank id and authorId`);
     if (typeof id !== "string" || !/^[a-zA-Z0-9][\w.-]*$/.test(id)) throw new Error(`${file}: invalid review ID ${id}`);
     if (seen.has(id)) throw new Error(`duplicate review ID ${id}`);
     seen.add(id);
@@ -44,14 +48,26 @@ export function reviewIndex(dir, state, { assign = true, persist = true } = {}) 
     entries.push({ id, kind, file: relative(dir, file), ...location, content,
       hash: fingerprint(JSON.stringify(content)) });
   };
+  const bank = readAuthorBank(dir);
+  // Read through the document cache so one-time IDs are persisted in source.
+  for (const r of bank.items) add("bank", doc(r.file).data[r.position - 1], r.file, { typeId: r.content.typeId, position: r.position }, r.content.id || r.content.authorId);
+  for (const r of bank.types) add("question-type", r.content, r.file, {}, `type-${r.content.id}`);
+  for (const r of bank.assessments) add("assessment", r.content, r.file, {}, `assessment-${r.content.scope}`);
   const d = digest(dir);
   for (const sub of d.subs) {
     const unit = doc(sub.file).data || {};
     for (const [key, kind] of [["blocks", "block"], ["quiz", "quiz"]]) {
       if (unit[key] != null && !Array.isArray(unit[key])) throw new Error(`${sub.file}: ${key} must be a sequence`);
-      for (const [position, item] of (unit[key] || []).entries())
+      for (const [position, item] of (unit[key] || []).entries()) {
+        if (key === "quiz" && typeof item === "string") {
+          if (!entries.some(e => e.kind === "bank" && e.id === item)) throw new Error(`${sub.file}: unknown bank question ${item}`);
+          continue;
+        }
         add(kind, item, sub.file, { sub: sub.id, section: sub.id.split("-")[0], position: position + 1 });
+      }
     }
+    if ((unit.quiz || []).some(q => typeof q === "string"))
+      add("placement", { quiz: unit.quiz.filter(q => typeof q === "string") }, sub.file, { sub: sub.id, section: sub.id.split("-")[0] }, `placement-${sub.id}`);
   }
   for (const folder of ["practice", "drills"]) for (const name of dataFiles(join(dir, folder))) {
     const file = join(dir, folder, name), unit = doc(file).data || {};
@@ -93,7 +109,7 @@ export function reviewIndex(dir, state, { assign = true, persist = true } = {}) 
   if (existsSync(catalogPath)) for (const source of parseFile(catalogPath)?.sources || []) {
     try { evidence[source.id] = fileHash(source.path); } catch { evidence[source.id] = "unavailable"; }
   }
-  const index = { version: 1, plan: fingerprint(JSON.stringify(plan.data)), evidence, entries };
+  const index = { version: 2, ...(bank.types.length ? { bankCoverage: bankMatrix(readAuthorBank(dir), plan.data.families || [], entries.filter(e => e.kind === "placement").map(e => ({ sub: e.sub, quiz: e.content.quiz }))) } : {}), plan: fingerprint(JSON.stringify(plan.data)), evidence, entries };
   if (persist) save(join(state, "items.yaml"), index);
   return index;
 }
@@ -109,7 +125,11 @@ export function findItems(index, ids) {
 const references = entry => {
   const c = entry.content;
   return [...list(c.objectives ?? c.objective), ...list(c.families ?? c.family),
-    ...list(c.prerequisites), ...list(c.concept ?? entry.concept), ...list(c.related), ...list(c.confusable_with),
+    ...list(c.prerequisites), ...list(c.requires).map(id => `type-${id}`),
+    ...(c.typeId ? [`type-${c.typeId}`] : []), ...list(c.diagnose),
+    ...list(c.demonstrates).map(id => `type-${id}`),
+    ...(entry.kind === "placement" ? list(c.quiz) : []),
+    ...(entry.kind === "assessment" ? [...Object.keys(c.typeWeights || {}).map(id => `type-${id}`), ...Object.keys(c.outcomes || {})] : []), ...list(c.concept ?? entry.concept), ...list(c.related), ...list(c.confusable_with),
     ...Array.from(JSON.stringify(c).matchAll(/<c\s+k=\\?"([^"\\]+)/g), m => m[1])]
     .map(x => typeof x === "string" ? x : x?.id).filter(Boolean);
 };
@@ -119,7 +139,7 @@ export function changedItems(before, after) {
   // every following item just because its positional number increased.
   const order = entries => {
     const groups = new Map(), positions = new Map();
-    for (const e of entries) if (old.has(e.id) && current.has(e.id)) {
+    for (const e of entries) if (old.has(e.id) && current.has(e.id) && !["bank", "question-type", "assessment"].includes(e.kind)) {
       const key = `${e.sub || e.file}/${e.kind}`;
       const peers = groups.get(key) || [];
       positions.set(e.id, peers.length); peers.push(e.id); groups.set(key, peers);
@@ -144,6 +164,10 @@ export function affectedItems(index, ids, before = null) {
   const selected = new Set(ids);
   if (selected.has("author-plan")) for (const e of index.entries) selected.add(e.id);
   const universe = [...(before?.entries || []), ...index.entries];
+  if (universe.some(e => e.kind === "assessment" && selected.has(e.id)))
+    for (const e of index.entries) if (["question-type", "bank", "placement"].includes(e.kind)) selected.add(e.id);
+  if (universe.some(e => ["question-type", "bank", "placement"].includes(e.kind) && selected.has(e.id)))
+    for (const e of index.entries) if (e.kind === "assessment") selected.add(e.id);
   const byId = new Map(universe.map(e => [e.id, e]));
   let grew;
   do {
@@ -154,12 +178,16 @@ export function affectedItems(index, ids, before = null) {
       selected.add(entry.id); grew = true;
     }
   } while (grew);
+  if (index.entries.some(e => ["question-type", "bank", "placement"].includes(e.kind) && selected.has(e.id)))
+    for (const e of index.entries) if (e.kind === "assessment") selected.add(e.id);
   for (const id of [...selected]) {
     const e = byId.get(id);
     if (!e) continue;
     for (const ref of references(e)) if (byId.has(ref)) selected.add(ref);
+    const teaching = e.kind === "question-type" ? list(e.content.teach) : [];
+    for (const other of index.entries) if (other.kind === "block" && teaching.includes(other.sub)) selected.add(other.id);
     if (e.sub) for (const other of index.entries)
-      if (other.sub === e.sub && other.kind === "block" && Math.abs(other.position - e.position) <= 1) selected.add(other.id);
+      if (other.sub === e.sub && other.kind === "block" && (e.kind === "placement" || Math.abs(other.position - e.position) <= 1)) selected.add(other.id);
   }
   return index.entries.filter(e => selected.has(e.id));
 }
@@ -252,6 +280,8 @@ export function screenPackets(index, plan, { section, changed = false, review, m
 
 export function reviewContext(index, plan) {
   return { reader: plan.data.reader || {}, lessons: plan.data.lessons || plan.data.subsections || [],
+    ...(index.bankCoverage ? { bankCoverage: index.bankCoverage } : {}),
+    ...(index.blueprints ? { blueprints: index.blueprints } : {}),
     map: index.entries.map(e => ({ id: e.id, kind: e.kind, ...(e.sub ? { subsection: e.sub } : {}),
       ...(e.kind === "block" ? { order: e.position, tier: e.content.tier || "spine" } : {}),
       ...(e.content.term ? { defines: e.content.term } : {}), references: references(e) })) };
@@ -264,7 +294,22 @@ export function recordReviewView(state, index, ids) {
   save(path, views);
 }
 
-export function fullItems(index, ids) { return findItems(index, ids).map(publicItem); }
+export function fullItems(index, ids) {
+  const seeds = findItems(index, ids);
+  const placementIds = seeds.filter(e => e.kind === "placement").flatMap(e => list(e.content.quiz));
+  const selected = findItems(index, [...ids, ...placementIds]), related = new Set([...ids, ...placementIds]);
+  for (const e of selected) {
+    const type = e.kind === "bank" ? e.content.typeId : e.kind === "question-type" ? e.content.id : null;
+    if (!type) continue;
+    const questionIds = new Set(index.entries.filter(e => e.kind === "bank" && e.content.typeId === type).map(e => e.id));
+    const anchors = new Set([...list(index.entries.find(t => t.id === `type-${type}`)?.content.teach),
+      ...index.entries.filter(e => e.kind === "placement" && list(e.content.quiz).some(id => questionIds.has(id))).map(e => e.sub)]);
+    for (const sibling of index.entries)
+      if (sibling.id === `type-${type}` || sibling.kind === "bank" && sibling.content.typeId === type ||
+          sibling.kind === "block" && (anchors.has(sibling.sub) || anchors.has(sibling.content.cat))) related.add(sibling.id);
+  }
+  return index.entries.filter(e => related.has(e.id)).map(publicItem);
+}
 
 export function saveIssues(state, index, report) {
   const findings = report.items || report.findings;
@@ -289,7 +334,7 @@ export function saveIssues(state, index, report) {
   }
   const old = readReview(state);
   if (old && old.status !== "accepted") throw new Error("finish the saved review before replacing its issue baseline");
-  const review = { status: "issues", baseline: index, issues };
+  const review = { status: "issues", baseline: index, issues, ...(old?.exceptions ? { exceptions: old.exceptions, exceptionVersions: old.exceptionVersions, inventoryExceptions: old.inventoryExceptions, inventoryExceptionVersions: old.inventoryExceptionVersions } : {}) };
   save(join(state, "review.yaml"), review);
   save(join(state, "corrections.yaml"), { items: issues });
   return review;
@@ -320,9 +365,50 @@ export function saveCorrections(state, index, report) {
   return review;
 }
 
-export function acceptReview(state, index) {
+export function acceptReview(state, index, report = null) {
   const review = readReview(state);
-  if (!review) return;
+  const supplied = report?.exceptions;
+  if (report && !report.exceptions && !report.inventoryExceptions) throw new Error("review report needs exceptions or inventoryExceptions mapping");
+  if (supplied && (typeof supplied !== "object" || Array.isArray(supplied))) throw new Error("review report needs exceptions mapping");
+  const exceptions = {}, exceptionVersions = {};
+  for (const [id, exception] of Object.entries(supplied ?? review?.exceptions ?? {})) {
+    const entry = index.entries.find(e => e.kind === "question-type" && e.content.id === id);
+    if (!entry || !exception || !["external-teaching", "assessment-only"].includes(exception.kind) || typeof exception.reason !== "string" || !exception.reason.trim())
+      throw new Error(`type ${id}: exception needs existing type, kind external-teaching|assessment-only and reason`);
+    // A changed type needs an explicit new judgment; do not silently attach
+    // an old exception rationale to a new accepted mapping.
+    if (!supplied && review.exceptionVersions?.[id] !== entry.hash) continue;
+    exceptions[id] = { kind: exception.kind, reason: exception.reason.trim() };
+    exceptionVersions[id] = entry.hash;
+  }
+  const inventory = () => {
+    const suppliedInventory = report?.inventoryExceptions;
+    if (suppliedInventory && (typeof suppliedInventory !== "object" || Array.isArray(suppliedInventory))) throw new Error("inventoryExceptions must be a mapping");
+    const inventoryExceptions = {}, inventoryExceptionVersions = {};
+    const currentTypes = index.entries.filter(e => e.kind === "question-type");
+    for (const id of Object.keys(suppliedInventory || {})) if (!currentTypes.some(e => e.content.id === id)) throw new Error(`unknown inventory exception type ${id}`);
+    for (const type of currentTypes) {
+      const items = index.entries.filter(e => e.kind === "bank" && e.content.typeId === type.content.id);
+      const version = fingerprint(JSON.stringify([type.hash, ...items.map(e => [e.id, e.hash]).sort((a, b) => a[0].localeCompare(b[0]))]));
+      const value = suppliedInventory?.[type.content.id] ?? (review?.inventoryExceptionVersions?.[type.content.id] === version ? review.inventoryExceptions?.[type.content.id] : null);
+      const reason = typeof value === "string" ? value.trim() : value?.reason?.trim();
+      const ordinary = items.some(e => !e.content.use || e.content.use === "practice"), reserved = items.some(e => e.content.use === "check");
+      if (type.content.assess !== false && (!ordinary || !reserved || items.length < 3) && !reason)
+        throw new Error(`type ${type.content.id}: limited inventory needs a current reviewed inventoryExceptions reason`);
+      if (value && !reason) throw new Error(`type ${type.content.id}: inventory exception needs reason`);
+      if (reason) { inventoryExceptions[type.content.id] = { reason }; inventoryExceptionVersions[type.content.id] = version; }
+    }
+    return { inventoryExceptions, inventoryExceptionVersions };
+  };
+  if (!review) {
+    if (index.entries.some(e => e.kind === "question-type")) {
+      const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
+      for (const e of index.entries) if (["bank", "question-type", "assessment", "placement"].includes(e.kind) && views[e.id]?.hash !== e.hash)
+        throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
+    }
+    save(join(state, "review.yaml"), { status: "accepted", accepted: index, baseline: index, issues: [], exceptions, exceptionVersions, ...inventory() });
+    return;
+  }
   if (!["recheck", "accepted"].includes(review.status)) throw new Error("record correction results, then re-review affected evidence before acceptance");
   const base = review.status === "accepted" ? review.accepted : review.baseline;
   const changes = changedItems(base, index);
@@ -337,6 +423,6 @@ export function acceptReview(state, index) {
     if (!view || view.hash !== e.hash || view.sub !== e.sub || view.position !== e.position || view.evidence !== fingerprint(JSON.stringify(index.evidence || {})))
       throw new Error(`review ID ${e.id} changed or needs recheck; run screen --changed or packet --ids before acceptance`);
   }
-  review.status = "accepted"; review.accepted = index;
+  review.status = "accepted"; review.accepted = index; review.exceptions = exceptions; review.exceptionVersions = exceptionVersions; Object.assign(review, inventory());
   save(join(state, "review.yaml"), review);
 }

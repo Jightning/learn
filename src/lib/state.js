@@ -48,6 +48,10 @@ export function stateFor(id, course) {
   return (cache[id] = {
     on,
     get: qi => d.q[qi],
+    getPolicy: () => d.policy || {},
+    getSession: () => d.session || null,
+    saveSession(session) { d.session = session; save(); return flush().catch(() => {}); },
+    savePolicy(policy) { d.policy = policy; save(); },
     getAttempt: (qi, signature) => d.answers?.[qi]?.signature === signature ? d.answers[qi] : null,
     saveAttempt(qi, attempt) {
       if (!on) return;

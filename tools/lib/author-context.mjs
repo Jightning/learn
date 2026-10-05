@@ -65,6 +65,7 @@ export function shapeNeeds(unit = {}) {
     if (containsInlineMath(block)) needs.add("block:math");
   }
   for (const q of unit.quiz || []) {
+    if (typeof q === "string" || q?.typeId) needs.add("bank");
     if (containsInlineMath(q)) needs.add("block:math");
     if (q?.response?.kind) needs.add(`question:${q.response.kind}`);
     if (q?.type === "Synthesis") needs.add("question:synthesis");

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { checkBankPublication } from "../src/lib/question-bank.js";
 /* Validates course data. Reads the source folder, not the built page, so
  * failures name something you can actually open and fix.
  *
@@ -123,6 +124,15 @@ function checkQuestionHtml(item, where, errs, warns) {
 }
 
 function checkPractice(C, errs, warns, courseId) {
+  checkBankPublication(C, errs);
+  warns.push(...(C.questionBankWarnings || []));
+  for (const item of Object.values(C.questionBank || {})) {
+    const where = `questions/bank ${item.id}`;
+    checkResponse(item, where, errs);
+    checkStimulus(item, where, errs, src => existsSync(join(COURSES, courseId, src)));
+    if (item.verified !== true) errs.push(`${where}: publish requires writer verification`);
+    if (item.response?.kind !== "self" && !String(item.why || "").trim()) errs.push(`${where}: needs usable explanatory feedback`);
+  }
   for (const [key, bank] of Object.entries(C.practice || {})) {
     const where = `practice/${key}`;
     if (!C.concepts[key]) errs.push(`${where}: concept is not defined`);
@@ -582,7 +592,7 @@ for (const id of courses) {
         qCount++;
         const t = String(item.type || "").trim().toLowerCase();
         if (!t) { errs.push(`${where}: a question has no type`); continue; }
-        if (seenType.has(t)) errs.push(`${where}: repeats question type "${item.type}"`);
+        if (!item.typeId && seenType.has(t)) errs.push(`${where}: repeats question type "${item.type}"`);
         seenType.add(t);
         if (!String(item.q || "").trim()) errs.push(`${where}: question "${item.type}" missing "q"`);
         const contextWarning = questionContextWarning(item, `${where} question "${item.type}"`);

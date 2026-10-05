@@ -19,6 +19,7 @@
  * rows being dropped. That is `prune`, and replay.js is the only caller.
  */
 import { logRows, appendRow, clearLog, mergeRows, dropRows } from "./store.js";
+import { migrateLegacyRows } from "./question-aliases.js";
 import { deviceId } from "./device.js";
 
 let seq = 0;
@@ -27,11 +28,13 @@ let seq = 0;
  *   latencyMs, predictedR, lane} — `ts` and `id` are added here */
 export function append(row) {
   const ts = Date.now();
-  appendRow({ id: `${deviceId()}:${ts}:${seq++}`, ts, ...row });
+  const event = { id: `${deviceId()}:${ts}:${seq++}`, ts, ...row };
+  appendRow(event);
+  return event;
 }
 
 export const all = () => logRows().slice();
-export const forCourse = cid => logRows().filter(r => r.course === cid);
+export const forCourse = (cid, course) => migrateLegacyRows(logRows().filter(r => r.course === cid), course?.legacyQuestionAliases);
 export const usage = () => ({ n: logRows().length });
 export const toJSON = () => JSON.stringify(logRows(), null, 1);
 

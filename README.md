@@ -14,7 +14,7 @@ A course is the specific thing you want to learn/study (like a class, or certain
 2. Click `Add Course` to browse the prebuilt library (which starts with DEMO), or import a course folder, .zip, or .course.json file from your device.
 3. Click on the course to enter. There'll be a sidebar with all the course sections, and the different features:
     - **Overview** has an Index link at the top for course concepts and categories.
-    - **Review** opens questions due from concepts you've attempted. Choose *Mixed practice* there to practice a range of subsections, including questions that are not due.
+    - **Review** opens questions due from concepts or question types you've attempted. Choose *Mixed practice* there to practice a range of subsections, including questions that are not due. Question-bank courses share the same questions and history across lessons and practice; reserved check questions stay separate.
     - **Dependency Map** demonstrates how sections connect to each other.
     - **Explore** lets you find information by search and filters.
     - **Saved** shows the blocks you saved with notes.

@@ -46,7 +46,7 @@ const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
 /* The scripts an authoring agent runs, bundled one by one so each stays a
    command a person can also type. */
 const SCRIPTS = ["author.mjs", "author-log.mjs", "coverage.mjs", "validate.mjs",
-                 "gen-materials.mjs", "pack.mjs", "new-course.mjs", "audit-content.mjs"];
+                 "gen-materials.mjs", "pack.mjs", "new-course.mjs", "audit-content.mjs", "migrate-question-ids.mjs"];
 /* Read at runtime by validate.mjs, so it travels with the scripts. */
 const ASSETS = [["src/blocks/index.js", "src/blocks/index.js"]];
 

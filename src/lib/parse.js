@@ -14,6 +14,7 @@
  * Measured cost on a low-tier phone: 87ms for ma26600's 458KB across 105
  * files, once per course open.
  * ==========================================================================*/
+import { readQuestionCollections, resolveQuestionBank } from "./question-bank.js";
 import { questionStimuli } from "./questions.js";
 import * as YAML from "js-yaml";
 import { curriculumMap, mergeCurriculumDefinitions, mergePlanCurriculum, readCurriculumCollections, validateCourseCurriculumReferences, validateCurriculumReferences } from "./curriculum.js";
@@ -180,6 +181,8 @@ export function parseCourse(files) {
   C.sections.sort((a, b) => a.num - b.num);
   if (!C.sections.length) errors.push("no sections found");
 
+  resolveQuestionBank(C, readQuestionCollections(files, read, errors), errors);
+
   /* Images travel as data URIs under their own path, so a course stays one
      self-contained map with nothing to fetch alongside it. Resolved here rather
      than in the renderer: block config is applied in an effect, which runs
@@ -208,6 +211,9 @@ export function parseCourse(files) {
   for (const bank of Object.values(C.drills))
     for (const item of bank.items) for (const part of questionStimuli(item?.stimulus))
       if (part?.t === "image") resolveImage(part, `drills/${bank.concept}`);
+
+  for (const item of Object.values(C.questionBank)) for (const part of questionStimuli(item.stimulus))
+    if (part?.t === "image") resolveImage(part, `questions/bank ${item.id}`);
 
   if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
 

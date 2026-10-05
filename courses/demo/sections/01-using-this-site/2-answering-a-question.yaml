@@ -85,10 +85,10 @@ quiz:
 
   - type: Try math in freeform
     concept: confidence
-    q: 'Write a sentence containing e^x or sqrt(x), and try inserting a symbol.'
+    q: 'Write a sentence containing <m>e^x</m> or <m>\sqrt{x}</m>, and try inserting a symbol.'
     response:
       kind: self
-      model: 'The function e^x describes exponential growth.'
+      model: 'The function <m>e^x</m> describes exponential growth.'
       formulaParsing: true
       mathSymbols: true
 

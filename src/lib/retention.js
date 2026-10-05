@@ -92,7 +92,7 @@ export function label(c) {
     case "new": return "not started";
     case "learning": return `learning, ${c.items.length} of ${c.criterion || CRITERION} items`;
     case "criterion": return `at criterion, ${c.relearnDays.length} of ${RELEARN} relearn sessions`;
-    default: return "durable";
+    default: return "retained over observed review sessions";
   }
 }
 

@@ -5,21 +5,27 @@ import { qid } from "./util.js";
 /* One attachment or an ordered sequence; old courses keep the same shape. */
 export const questionStimuli = value => value == null ? [] : Array.isArray(value) ? value : [value];
 
+export function questionHelpHref(cid, item, idx) {
+  if (!item.help) return null;
+  return `#/${cid}/${Object.hasOwn(idx?.CAT?.cats || {}, item.help) ? "cat/" : ""}${item.help}`;
+}
+
 export function questionTries(item) {
   const tries = item.tries === undefined ? 1 : item.tries;
   if (!Number.isSafeInteger(tries) || tries < 1) throw new Error("Question tries must be a positive integer.");
   return tries;
 }
 
-export const questionSignature = item => JSON.stringify(questionTries(item) === 1
-  ? [item.prompt, item.response] : [item.prompt, item.response, item.tries]);
+export const questionSignature = item => JSON.stringify(item.contentVersion
+  ? [item.prompt, item.response, item.tries, item.stimulus, item.contentVersion]
+  : questionTries(item) === 1 ? [item.prompt, item.response] : [item.prompt, item.response, item.tries]);
 
 export function normalizeQuestion(raw, { subId = null, concept = null, id = null } = {}) {
   const answer = raw.response || (raw.a != null
     ? { kind: "self", model: raw.a }
     : { kind: "self", model: raw.answer || "" });
   return {
-    id: id || (subId ? qid(subId, raw.type) : raw.id),
+    id: id || raw.id || (subId ? qid(subId, raw.type) : null),
     subId, concept: raw.concept || concept,
     type: raw.type || raw.format || "Practice",
     prompt: raw.q || raw.stem || "",
@@ -28,7 +34,8 @@ export function normalizeQuestion(raw, { subId = null, concept = null, id = null
     why: raw.why || (raw.steps || []).map(s => `<p>${s}</p>`).join(""),
     stimulus: raw.stimulus || null,
     difficulty: raw.difficulty || null,
-    verified: raw.verified || null
+    verified: raw.verified || null,
+    ...Object.fromEntries(["typeId", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "authorId"].filter(k => raw[k] !== undefined).map(k => [k, raw[k]]))
   };
 }
 

@@ -66,7 +66,9 @@ export function CatDetail({ ctx, k }) {
   if (!v) return null;
 
   /* Only encountered concepts in this category contribute to its due count. */
-  const due = dueKeys(cid).filter(k => v.drills.includes(k)).length;
+  const bankTypes = new Set(Object.values(idx.TYPES || {}).filter(t => t.scopes?.includes(k)).map(t => `type:${t.id}`));
+  const due = dueKeys(cid).filter(key => v.drills.includes(key) || bankTypes.has(key)).length;
+  const hasBankPractice = [...idx.QALL, ...idx.PALL].some(q => q.scopes?.includes(k));
 
   return (
     <div class="cdet catdet">
@@ -104,7 +106,7 @@ export function CatDetail({ ctx, k }) {
           ))}
         </span>
         <span class="catcount">{v.count} {v.count === 1 ? "item" : "items"}</span>
-        {v.drills.length > 0 && (
+        {(v.drills.length > 0 || hasBankPractice) && (
           <a class="dbtn ghost catpractice" href={`#/${cid}/review/mixed/${k}`}>
             Practise this category{due ? ` (${due} due)` : ""} →
           </a>

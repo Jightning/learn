@@ -1,0 +1,3 @@
+# Store each question once. Ordered lesson quiz lists reference item IDs.
+# Inherit concept/objective/family metadata from typeId; never repeat it.
+[]

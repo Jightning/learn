@@ -156,7 +156,7 @@ export async function init() {
   try {
     db = await open();
     for (const { key, value } of await readAll(KV)) mem.set(key, value);
-    rows = (await readAll(LOG)).map(r => r.value).sort((a, b) => a.ts - b.ts);
+    rows = (await readAll(LOG)).map(r => r.value).sort((a, b) => a.ts - b.ts || String(a.id).localeCompare(String(b.id)));
     for (const { value } of await readAll(COURSES)) books.set(value.id, value);
   } catch (e) {
     db = null;
@@ -272,6 +272,7 @@ export const logRows = () => rows;
 export function appendRow(row) {
   if (!row || typeof row.id !== "string" || !row.id)
     throw new Error("a log row needs an id: it is the store's key and the sync unit");
+  if (rows.some(r => r.id === row.id)) return;
   rows.push(row);
   pending.push(row);
   schedule();
@@ -285,7 +286,7 @@ export function mergeRows(incoming) {
     if (!r || !r.id || seen.has(r.id)) continue;
     seen.add(r.id); rows.push(r); pending.push(r); n++;
   }
-  if (n) { rows.sort((a, b) => a.ts - b.ts); schedule(); }
+  if (n) { rows.sort((a, b) => a.ts - b.ts || String(a.id).localeCompare(String(b.id))); schedule(); }
   return n;
 }
 

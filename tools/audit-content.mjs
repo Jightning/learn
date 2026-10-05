@@ -150,6 +150,13 @@ function audit(id) {
       }
     }
 
+  if (!subsection) {
+    const placed = new Set(C.sections.flatMap(s => s.subs.flatMap(u => (u.quiz || []).map(q => q.id))));
+    for (const item of Object.values(C.questionBank || {})) if (!placed.has(item.id)) {
+      n.answers++;
+      if (!verifiedAnswer(item.verified)) miss.unverified++;
+    }
+  }
   for (const file of Object.values(C.drills))
     for (const it of file.items || []) { n.answers++; if (!verifiedAnswer(it.verified)) miss.unverified++; }
   for (const file of Object.values(C.practice || {}))

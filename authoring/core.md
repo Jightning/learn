@@ -24,3 +24,12 @@ instructions. The writer creates teaching, questions, answers, and course files.
 The stronger model never rewrites, reformats, or mechanically converts the
 writer packet. Record deliberate choices and open freedom so local editorial
 decisions cannot silently change scope.
+
+For bank courses, define each task type once with approved curriculum links;
+store each question once and place lesson checks by ID. Generate related
+practice/check siblings together, verify every answer, then review grouped
+types and fresh-check representativeness. Keep shortages explicit; three
+copies are no sufficiency guarantee. Indexes derive inheritance and assessment
+weights; never ask a writer to synchronize duplicate inventories. Select
+`bank` rules for this format. Runtime policy mathematics do not belong in
+writer packets.

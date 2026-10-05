@@ -2,15 +2,17 @@ import { useState } from "preact/hooks";
 import { qid } from "../lib/util.js";
 import { normalizeQuestion, questionSignature } from "../lib/questions.js";
 import QuestionCard from "./QuestionCard.jsx";
+import { sessionId } from "../lib/attempt.js";
 
 /* One coverage question per distinct skill, shown one at a time. Cards remain
  * mounted while navigating so each question records one final outcome per run. */
 export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
   const [at, setAt] = useState(0);
   const [open, setOpen] = useState(false);
+  const [session] = useState(sessionId);
   const raw = sub.quiz || [];
   const items = raw.map(q => normalizeQuestion(q, {
-    subId: sub.id, concept: ctx.idx.CQ[qid(sub.id, q.type)]
+    subId: sub.id, concept: ctx.idx.CQ[q.id || qid(sub.id, q.type)]
   }));
   const [results, setResults] = useState(() => Object.fromEntries(items.flatMap(item => {
     const saved = ctx.state.getAttempt(item.id, questionSignature(item));
@@ -33,7 +35,7 @@ export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
     </div>
     {items.map((item, i) => <div key={item.id} hidden={at !== i}
       style={{ display: at === i ? "" : "none" }}>
-      <QuestionCard item={item} ctx={ctx} restore
+      <QuestionCard item={item} ctx={ctx} restore sessionId={session}
         onResult={r => setResults(prev => ({ ...prev, [item.id]: r }))}
         onContinue={() => setAt(i + 1 < total ? i + 1 : total)} />
     </div>)}

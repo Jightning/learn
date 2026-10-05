@@ -9,6 +9,16 @@ modules:
     file: core.md
     phases: [plan, write, review]
     roles: [planner, writer, reviewer, single]
+  question-bank-format:
+    file: formats/question-bank.md
+    phases: []
+    needs: [bank]
+    roles: [writer, single]
+  question-bank:
+    file: question-bank.md
+    phases: []
+    needs: [bank, types, assessment]
+    roles: [planner, writer, reviewer, single]
   plan:
     file: plan.md
     phases: [plan]

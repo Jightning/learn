@@ -17,7 +17,7 @@ export function buildQueue(books, { limit = 20, now = Date.now() } = {}) {
   const rows = [];
   for (const entry of due) {
     if (rows.length >= limit) break;
-    const candidates = (entry.items || []).filter(q => q.concept === entry.key);
+    const candidates = (entry.items || []).filter(q => (!q.use || q.use === "practice") && (q.typeId ? `type:${q.typeId}` === entry.key : q.concept === entry.key));
     if (!candidates.length) continue;
     const seen = new Set(entry.history?.items || []);
     const item = candidates.find(q => !seen.has(q.id)) || candidates[0];

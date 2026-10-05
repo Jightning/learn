@@ -323,6 +323,14 @@ if (ids.includes("ma26600")) {
      await page.locator('.review-options [aria-current="page"]').innerText() === "Due now" &&
      await page.locator(".review-practice").isHidden());
   await page.locator('.review-options a', { hasText: 'Mixed practice' }).click();
+  await page.locator('#p-run:visible, #p-start:visible').first().waitFor();
+  // The earlier course sweep leaves a resumable session. Finish it through the
+  // learner controls before testing the setup action and old route bookmark.
+  if (await page.locator('#p-run:visible').isVisible()) {
+    const finish = page.getByRole('button', { name: 'Finish session', exact: true });
+    if (await finish.isVisible()) await finish.click();
+    await page.getByRole('button', { name: 'Another set', exact: true }).click();
+  }
   await page.locator('#p-start:visible').waitFor();
   ck("Mixed practice opens within the same Review destination",
      await page.locator('#p-start').isVisible() &&

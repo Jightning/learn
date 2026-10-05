@@ -18,8 +18,9 @@
  * Both .yaml/.yml and .json are accepted for every file.
  * ==========================================================================*/
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { join, basename, extname } from "node:path";
+import { join, basename, extname, dirname } from "node:path";
 import * as YAML from "js-yaml";
+import { readQuestionCollections, resolveQuestionBank, bankSignature } from "../../src/lib/question-bank.js";
 import { curriculumMap, mergeCurriculumDefinitions, readCurriculumCollections, validateCourseCurriculumReferences } from "../../src/lib/curriculum.js";
 
 const DATA_EXT = new Set([".yaml", ".yml", ".json"]);
@@ -195,6 +196,31 @@ export function loadCourse(dir) {
 
   C.sections.sort((a, b) => a.num - b.num);
   if (!C.sections.length) errors.push("no sections found");
+  const questionFiles = {};
+  const walkQuestions = (path, relative) => {
+    if (!existsSync(path)) return;
+    for (const name of readdirSync(path)) {
+      const full = join(path, name), key = `${relative}/${name}`;
+      if (statSync(full).isDirectory()) walkQuestions(full, key);
+      else if (DATA_EXT.has(extname(name))) questionFiles[key] = full;
+    }
+  };
+  walkQuestions(join(dir, "questions"), "questions");
+  const questionSource = readQuestionCollections(questionFiles, key => parseFile(questionFiles[key]), errors);
+  const reviewPath = join(dirname(dirname(dir)), ".author", basename(dir), "review.yaml");
+  if (existsSync(reviewPath)) {
+    const review = parseFile(reviewPath);
+    if (review?.status === "accepted" && review.exceptions && typeof review.exceptions === "object") {
+      questionSource.reviewExceptions = Object.create(null);
+      for (const type of questionSource.types) {
+        const entry = review.accepted?.entries?.find(e => e.id === `type-${type.id}` && e.kind === "question-type");
+        const { authorId, ...content } = type;
+        if (entry && typeof entry.hash === "string" && review.exceptionVersions && Object.hasOwn(review.exceptionVersions, type.id) && review.exceptionVersions[type.id] === entry.hash && bankSignature(entry.content) === bankSignature(content) && Object.hasOwn(review.exceptions, type.id))
+          questionSource.reviewExceptions[type.id] = review.exceptions[type.id];
+      }
+    }
+  }
+  resolveQuestionBank(C, questionSource, errors);
   if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
   return { course: C, errors };
 }

@@ -65,3 +65,11 @@ role keeps the same artifacts and writes directly; paired mode hands the
 packet to a writer and then a reviewer.
 
 Assign lesson-local families and sources even when lessons share an objective.
+
+For bank courses, define `questions/types.yaml` alongside lesson planning: one
+task/method per type, exact existing concept/objective/family IDs, teaching
+anchors, and only genuine prerequisite judgments. Record sparse assessment
+criteria/weight exceptions in `questions/assessment.yaml`; tools derive
+bookkeeping. Ambiguous mappings stay explicit for review. Approve the expanded
+blueprint and source-to-type/type-to-source coverage before claiming readiness.
+Do not infer exam weights from question counts.

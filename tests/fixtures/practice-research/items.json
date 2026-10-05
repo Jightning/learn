@@ -1,0 +1,6 @@
+[
+  {"id":"research-fresh-equivalence","group":"research-representation","task":"Express 4y' + 12y = 8 in standard form and justify every coefficient.","model":"y' + 3y = 2; divide every term by four."},
+  {"id":"research-delayed-branch","group":"research-exceptional-branch","task":"Decide whether 0y = 7 has a solution, and explain why.","model":"No solution; the left side is zero for every y."},
+  {"id":"research-delayed-transfer","group":"research-product-derivative","task":"Solve (xy)' = 6x with y(1) = 2, x > 0, then verify.","model":"y = 3x - 1/x; (xy)' = 6x and y(1) = 2."},
+  {"id":"research-open-rubric","group":"research-explanation","task":"Explain how you would check whether an experimental comparison supports a causal conclusion.","model":"Discuss allocation, comparable conditions, confounders, missing outcomes and uncertainty; require human scoring of the explanation."}
+]

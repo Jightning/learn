@@ -29,6 +29,12 @@ export default function MathAnswer({ value, onInput, readOnly, editor, freeform 
       };
       field.readOnly = props.current.readOnly;
       field.setValue(props.current.value, { format: "ascii-math", silenceNotifications: true });
+      // MathLive defers keyboard-sink focus by 60 ms. Focus its exposed part
+      // immediately on primary clicks so fast typing cannot land on the page.
+      field.addEventListener("pointerdown", event => {
+        if (event.button === 0 && !field.readOnly)
+          field.shadowRoot?.querySelector('[part="keyboard-sink"]')?.focus({ preventScroll: true });
+      }, true);
       field.addEventListener("input", () => props.current.onInput(normalizeMathText(field.getValue("ascii-math"))));
       field.addEventListener("keydown", event => {
         if (event.key === "Enter") { event.preventDefault(); field.closest("form")?.requestSubmit(); }

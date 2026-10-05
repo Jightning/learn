@@ -27,20 +27,24 @@ const strip = h => String(h).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
 
 function problems(C) {
   const banks = { ...(C.drills || {}), ...(C.practice || {}) };
+  for (const [id, type] of Object.entries(C.questionTypes || {})) {
+    const items = Object.values(C.questionBank || {}).filter(q => q.typeId === id && q.use === "practice");
+    if (items.length) banks[`type:${id}`] = { items, term: type.task };
+  }
   const out = [BANNER, "", `# ${C.code}: Practice questions`, "",
     "These vary the surface of skills introduced by the subsection questions.", "",
     "Work them with a pencil. Solutions follow each set.", ""];
 
   for (const key of Object.keys(banks).sort()) {
     const items = banks[key].items || [];
-    const term = (C.concepts[key] || {}).term || key;
+    const term = banks[key].term || (C.concepts[key] || {}).term || key;
     out.push("---", "", `## ${term}`, "");
     items.forEach((it, i) => out.push(`${i + 1}. ${strip(it.q || it.stem)}`));
     out.push("", "**Solutions**", "");
     items.forEach((it, i) => {
       const r = it.response;
       const answer = !r ? it.answer : r.kind === "self" ? r.model :
-        r.kind === "number" ? `${r.value} ${r.unit || ""}` :
+        r.kind === "number" ? `${r.value} ${r.unit || ""}` : r.kind === "formula" ? r.answer :
         (r.kind === "single" ? [r.correct] : r.correct || [])
           .map(n => r.choices[n - 1]?.text || "").join("; ");
       const steps = (it.steps || []).map(strip).join(" → ");
@@ -53,9 +57,10 @@ function problems(C) {
 }
 
 function checklist(C) {
-  const out = [BANNER, "", `# ${C.code}: Mastery checklist`, "",
+  const out = [BANNER, "", `# ${C.code}: ${Object.keys(C.questionTypes || {}).length ? "Practice" : "Mastery"} checklist`, "",
     "Every line is something you must be able to do, phrased so the honest answer is",
     "yes or no. Question types come from subsection checks; concepts can return",
+    Object.keys(C.questionTypes || {}).length ? "through practice and delayed review. A tick is a personal checklist, not verified readiness." :
     "through Review, where a tick means durable rather than answered once.", ""];
 
   for (const s of C.sections) {
@@ -68,6 +73,11 @@ function checklist(C) {
     out.push("");
   }
 
+  if (Object.keys(C.questionTypes || {}).length) {
+    out.push("## Task types", "");
+    for (const type of Object.values(C.questionTypes)) out.push(`- [ ] ${strip(type.task)}`);
+    out.push("");
+  }
   const keys = Object.keys({ ...(C.drills || {}), ...(C.practice || {}) }).sort();
   if (keys.length) {
     out.push("## Concepts held over time", "");
@@ -86,7 +96,7 @@ const ids = readdirSync(COURSES, { withFileTypes: true })
 let stale = 0, wrote = 0;
 for (const id of ids) {
   const { course: C } = loadCourse(join(COURSES, id));
-  if (!Object.keys(C.drills || {}).length && !Object.keys(C.practice || {}).length) continue;
+  if (!Object.keys(C.drills || {}).length && !Object.keys(C.practice || {}).length && !Object.keys(C.questionBank || {}).length) continue;
   C.id = id;
 
   for (const [name, body] of [["problems.md", problems(C)], ["checklist.md", checklist(C)]]) {

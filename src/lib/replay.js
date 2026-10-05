@@ -21,6 +21,8 @@
  * ==========================================================================*/
 import { getItem, setItem, removeItem, logRows } from "./store.js";
 import { step as retentionStep, install as installRetention, configOf } from "./retention.js";
+import { migrateLegacyRows } from "./question-aliases.js";
+import { orderEvents, scoredEvents } from "./evidence.js";
 import { rateStep, forget, keyFor } from "./state.js";
 
 const DAY = 864e5;
@@ -38,17 +40,23 @@ export function fold(rows, cfg, start = { retain: {}, study: {} }) {
   const retain = { ...start.retain };
   const study = { ...start.study };
   let last = start.ts || 0;
+  const sessions = new Set(start.sessions || []);
 
-  for (const r of rows) {
+  for (const r of scoredEvents(rows)) {
     if (r.ts < last) continue;
     last = r.ts;
 
+    if (r.event === "exposure") continue;
     if (r.loop === "Q") {
       if (r.itemId) study[r.itemId] = rateStep(study[r.itemId] || null, null, r.correct, r.ts);
-      if (r.concept) retain[r.concept] = retentionStep(retain[r.concept] || null, {
-        itemId: r.itemId, correct: r.correct, conf: null, criterion: r.criterion,
+      const key = r.typeId ? `type:${r.typeId}` : r.concept;
+      const session = `${key}:${r.sessionId}`;
+      const eligible = !r.typeId || (r.firstUnaided != null && !r.assisted && !r.skipped && !sessions.has(session));
+      if (key && eligible) retain[key] = retentionStep(retain[key] || null, {
+        itemId: r.itemId, correct: r.typeId ? r.firstUnaided : r.correct, conf: null, criterion: r.criterion,
         target: cfg.target, deadline: cfg.deadline, now: r.ts
       });
+      if (r.typeId && eligible) sessions.add(session);
     } else if (r.loop === "B" && r.concept) {
       retain[r.concept] = retentionStep(retain[r.concept] || null, {
         itemId: r.itemId, correct: r.correct, conf: r.confidence,
@@ -69,7 +77,7 @@ export function fold(rows, cfg, start = { retain: {}, study: {} }) {
       }
     }
   }
-  return { retain, study, ts: last };
+  return { retain, study, ts: last, sessions: [...sessions] };
 }
 
 const blankish = () =>
@@ -81,17 +89,27 @@ const blankish = () =>
  */
 export function rebuild(cid, course) {
   const cfg = configOf(course);
-  const prior = readCkpt(cid);
-  const rows = logRows().filter(r => r.course === cid && (!prior || r.ts > prior.ts));
-  if (!rows.length && prior) return prior;
-
-  const next = fold(rows, cfg, prior || undefined);
+  let prior = readCkpt(cid);
+  const allRows = migrateLegacyRows(logRows().filter(r => r.course === cid), course.legacyQuestionAliases);
+  const mappingVersion = JSON.stringify(course.legacyQuestionAliases || {});
+  const covered = new Set(prior?.eventIds || []);
+  let rows = allRows.filter(r=>!covered.has(r.id));
+  if (prior && (prior.mappingVersion !== mappingVersion || !prior.eventIds ||
+    rows.some(r=>r.ts <= prior.ts || r.event === 'rubric-score'))) { prior = null; rows = allRows; }
+  // An imported older row, tied timestamp or new alias needs a complete fold.
+  const next = rows.length || !prior ? fold(rows, cfg, prior || undefined) : prior;
+  next.eventIds = allRows.map(r=>r.id);
+  next.mappingVersion = mappingVersion;
   installRetention(cid, next.retain);
 
   // Local lesson answers are not scheduling data and never enter the sync log.
-  let answers;
-  try { answers = JSON.parse(getItem(keyFor(cid, course.code)))?.answers; } catch {}
-  setItem(keyFor(cid, course.code), JSON.stringify({ q: next.study, ...(answers && { answers }) }));
+  let answers, policy, legacy, session;
+  try { const stored = JSON.parse(getItem(keyFor(cid, course.code))); answers = stored?.answers; policy = stored?.policy; legacy = stored?.q; session = stored?.session; } catch {}
+  for (const [oldId, newId] of Object.entries(course.legacyQuestionAliases || {})) {
+    if (legacy?.[oldId] && !legacy[newId]) legacy[newId] = legacy[oldId];
+    if (answers?.[oldId] && !answers[newId]) answers[newId] = answers[oldId];
+  }
+  setItem(keyFor(cid, course.code), JSON.stringify({ q: { ...legacy, ...next.study }, ...(answers && { answers }), ...(policy && { policy }), ...(session && { session }) }));
   setItem(ckptKey(cid), JSON.stringify(next));
   forget(cid);
   return next;

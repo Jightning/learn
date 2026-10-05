@@ -41,8 +41,17 @@ export async function testLearning(ctx, state) {
   let choiceChecked = false;
   for (const subId of secIds) {
     await go(`#/${cid}/${subId}`);
-    const choice = page.locator(".quiz > div:visible .q").filter({ has: page.locator(".qchoices") }).first();
+    const choice = page.locator(".quiz .q").filter({ has: page.locator(".qchoices") }).first();
     if (!(await choice.count())) continue;
+    // Ordered quizzes can put a choice after a self-check. Reach it through
+    // the reader's navigation instead of assuming it is the first question.
+    const owningQuiz = choice.locator("xpath=ancestor::section[contains(@class, 'quiz')]");
+    const nextQuestion = owningQuiz.getByRole("button", { name: "Next question", exact: true });
+    for (let i = 0; i < await owningQuiz.locator(".q").count() && !await choice.isVisible(); i++) {
+      if (!await nextQuestion.isEnabled()) break;
+      await nextQuestion.click();
+    }
+    if (!await choice.isVisible()) continue;
     const card = page.locator(`.q[data-qid="${await choice.getAttribute("data-qid")}"]`).first();
     const choices = choice.locator(".qchoice");
     const choiceCount = await choices.count();

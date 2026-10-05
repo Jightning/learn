@@ -12,11 +12,14 @@ import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const [file, ...rest] = process.argv.slice(2);
+import { WORKSPACE } from "./lib/paths.mjs";
+const args = process.argv.slice(2).filter((arg, i, all) => arg !== "--workspace" && all[i - 1] !== "--workspace");
+const [file, ...rest] = args;
 if (!file) { console.error("usage: unpack.mjs <file.course.json> [course-id]"); process.exit(1); }
 
-const id = rest[0] || basename(file).replace(/\.course\.json$/, "").replace(/\.json$/, "");
-const dest = join(ROOT, "courses", id);
+const id = rest.find(arg => !arg.startsWith("--")) || basename(file).replace(/\.course\.json$/, "").replace(/\.json$/, "");
+if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(id)) { console.error("course-id must be a simple folder name"); process.exit(1); }
+const dest = join(WORKSPACE, "courses", id);
 if (existsSync(dest) && !process.argv.includes("--force")) {
   console.error(`courses/${id} exists. Pass --force to overwrite it.`); process.exit(1);
 }

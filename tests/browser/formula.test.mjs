@@ -26,9 +26,10 @@ for (const width of [1440, 390]) test(`formula checking and independent freeform
     const page = await browser.newPage({ viewport: { width, height: 1000 } });
     await page.route("**/courses/demo.json", route => route.fulfill({ json: files }));
     await page.goto(server.origin + "/#/demo/s1-1");
-    const card = page.locator('.quiz .q:visible');
+    const quiz = page.getByRole("region", { name: "1.1 questions", exact: true });
+    const card = quiz.locator('.q:visible');
     await card.waitFor();
-    const next = () => page.locator('.quiz button[aria-label="Next question"]').click();
+    const next = () => quiz.getByRole("button", { name: "Next question", exact: true }).click();
     const enter = async text => {
       await card.locator("math-field").evaluate((field, source) => {
         field.setValue(source, { format: "ascii-math" });
@@ -37,6 +38,8 @@ for (const width of [1440, 390]) test(`formula checking and independent freeform
     };
     await card.locator("math-field").waitFor();
     await card.locator("math-field").click();
+    assert.equal(await card.locator("math-field").evaluate(field => document.activeElement === field), true,
+      "a click must focus the math editor before the first keystroke");
     await page.keyboard.type("sqrt(x)", { delay: 100 });
     assert.match(await card.locator("math-field").evaluate(field => field.value), /\\sqrt/);
     await enter("");
@@ -58,7 +61,7 @@ for (const width of [1440, 390]) test(`formula checking and independent freeform
     assert.equal(await card.locator(".qresult").innerText(), "Correct");
     await card.locator(".ans .katex").waitFor();
     assert.doesNotMatch(await card.locator(".ans").innerText(), /Answer:/);
-    assert.doesNotMatch(await card.locator(".ans annotation").innerText(), /\\cdot/);
+    assert.doesNotMatch(await card.locator(".ans annotation").textContent(), /\\cdot/);
     await next();
     assert.equal(await card.locator(".qpreview").count(), 0);
     await card.locator("textarea").fill("x+");

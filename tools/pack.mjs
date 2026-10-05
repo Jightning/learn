@@ -24,7 +24,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = COURSES_DIR;
 const OUT = join(WORKSPACE, "packed");
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((arg, i, all) => arg !== "--workspace" && all[i - 1] !== "--workspace");
 const all = readdirSync(COURSES, { withFileTypes: true })
   .filter(d => d.isDirectory() && !d.name.startsWith("_"))
   .map(d => d.name);

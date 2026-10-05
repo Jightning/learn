@@ -91,3 +91,39 @@ judgments.
 Finish the entire assigned review before dispatching any correction. A
 correction repairs the defect and should not add unrelated material. Recheck
 changed items and affected context; reuse accepted unchanged results.
+
+For bank courses, `review-context.yaml` includes a type/role/group matrix and
+missing source-family leads. `packet --ids q-id,type-id` expands the selected
+type, all sibling answers and linked teaching once. Type review handles are
+`type-<id>`, assessment handles `assessment-<scope>`; bank handles are the
+canonical item IDs. Review inherited links once, claimed group differences,
+diagnostic rationale, writer verification for every item, and representative
+independent checks for every distinct method/group and exceptional branch.
+Equivalent siblings may use a reviewed deterministic check; without a sound
+reusable check, expand answer review. Suspected duplicates and thin inventories
+are review leads, never automatic independence/sufficiency approval.
+
+Approval covers current type mappings, placements, groups and sparse assessment
+requirements; changing them invalidates affected content review. A clean
+`reviewed --all` records the private current index even on a first clean review.
+The paired reviewer remains read-only and accepts corrections separately in
+auto and manual handoffs; the single agent performs the same review checks.
+Keep reports small and consolidate corrections after the complete review.
+
+A type with intentionally external teaching needs a reviewed private exception.
+Use `reviewed --all --report PATH` with `exceptions: {type-id: {kind:
+external-teaching, reason: <specific scope/teaching rationale>}}` (or
+`assessment-only`). This records the judgment against the current type revision
+in `.author/<id>/review.yaml`. No course flag can assert approval. A changed
+type requires a fresh explicit exception judgment; old reasons never silently
+approve new mappings.
+
+For actual missing ordinary/reserved roles or an accepted thin inventory,
+include `inventoryExceptions: {type-id: {reason: <specific sufficiency or
+limitation judgment>}}` in the same optional review report. This is required
+when accepting a practice-critical type with missing alternatives or fewer
+than the starting three items; a narrow type may need fewer, with a reason.
+It is not a quota and never forces padding. Reasons are tied to the current
+type and sibling revisions; changed answers/groups need a fresh judgment.
+Routine duplicate leads alone do not require exception boilerplate. Keep
+learner limitations visible even when the private review accepts the scope.

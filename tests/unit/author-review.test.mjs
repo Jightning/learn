@@ -130,3 +130,104 @@ test("changed source evidence invalidates prior review even with identical cours
   const delta = changedItems(before, reviewIndex(dir, state));
   assert.deepEqual(delta, [{ id: "author-plan", change: "source-changed" }]);
 }));
+
+const inventoryReport = { inventoryExceptions: { sum: { reason: "Narrow fixture scope; two checked alternatives suffice for this demonstration, with limited transfer evidence." } } };
+
+function bankFixture(fn) {
+  fixture(({ dir, state, file, put }) => {
+    const unit = YAML.load(readFileSync(file, 'utf8')); unit.quiz = ['q-total']; put('sections/01-unit/1-start.yaml', unit);
+    put('questions/types.yaml', [{ id: 'sum', task: 'Compute a total.', concept: 'concept-total', objectives: ['obj-total'], families: ['family-total'], teach: ['s1-1'] }]);
+    put('questions/bank.yaml', [
+      { id: 'q-total', typeId: 'sum', q: 'Sum 1 and 2.', response: { kind: 'number', value: 3 }, why: 'Add both terms.', verified: true },
+      { typeId: 'sum', q: 'Sum 3 and 4.', response: { kind: 'number', value: 7 }, why: 'Add both terms.', verified: true, use: 'check', group: 'representation' }
+    ]);
+    put('questions/assessment.yaml', [{ scope: 'course', criteria: 'Compute independently.' }]);
+    fn({ dir, state, file, put });
+  });
+}
+
+test('bank IDs persist once and reordering never changes identities or review revisions', () => bankFixture(({ dir, state, put }) => {
+  const before = reviewIndex(dir, state);
+  const path = join(dir, 'questions/bank.yaml'), items = YAML.load(readFileSync(path, 'utf8'));
+  assert.match(items[1].id, /^bank-/); assert.equal(items[1].authorId, undefined);
+  items.reverse(); put('questions/bank.yaml', items);
+  const after = reviewIndex(dir, state);
+  assert.deepEqual(changedItems(before, after), []);
+  assert.deepEqual(after.entries.filter(e => e.kind === 'bank').map(e => e.id).sort(), before.entries.filter(e => e.kind === 'bank').map(e => e.id).sort());
+}));
+
+test('bank grouped review includes siblings, metadata once and inspectable linked teaching', t => bankFixture(({ dir, state }) => {
+  const index = reviewIndex(dir, state), packet = fullItems(index, ['q-total']);
+  assert.equal(packet.filter(e => e.kind === 'question-type').length, 1);
+  assert.equal(packet.filter(e => e.kind === 'bank').length, 2);
+  assert.ok(packet.some(e => e.kind === 'block'));
+  for (const item of packet.filter(e => e.kind === 'bank')) assert.equal(item.content.objectives, undefined);
+  const bytes = Buffer.byteLength(YAML.dump(packet));
+  t.diagnostic(`grouped tiny-bank full review: ${bytes} UTF-8 bytes (2 siblings, 1 type, linked teaching)`);
+  assert.ok(bytes < 2500, `tiny type packet is ${bytes} bytes`);
+  assert.equal(JSON.stringify(packet).includes('rho'), false);
+  assert.ok(index.bankCoverage.rows[0].warnings.some(w => w.includes('suspected template duplicate')));
+  assert.ok(index.bankCoverage.rows[0].warnings.some(w => w.includes('thin inventory')));
+}));
+
+test('clean bank approval must see current mapping and blueprint, and grouping or placement edits invalidate it', () => bankFixture(({ dir, state, file, put }) => {
+  const index = reviewIndex(dir, state);
+  assert.throws(() => acceptReview(state, index), /current screen/);
+  recordReviewView(state, index, index.entries.map(e => e.id)); acceptReview(state, index, inventoryReport);
+  assert.equal(readReview(state).status, 'accepted');
+  const items = YAML.load(readFileSync(join(dir, 'questions/bank.yaml'), 'utf8'));
+  items[1].group = 'boundary'; put('questions/bank.yaml', items);
+  const changed = reviewIndex(dir, state), affected = affectedItems(changed, changedItems(index, changed).map(e => e.id), index);
+  assert.ok(affected.some(e => e.id === 'type-sum'));
+  assert.ok(affected.some(e => e.id === 'assessment-course'));
+  assert.ok(affectedItems(changed, ['obj-total']).some(e => e.id === 'assessment-course'), 'objective scoring changes affect derived blueprint review');
+  assert.throws(() => acceptReview(state, changed), /needs recheck/);
+  recordReviewView(state, changed, affected.map(e => e.id)); acceptReview(state, changed, inventoryReport);
+  const unit = YAML.load(readFileSync(file, 'utf8')); unit.quiz = []; put('sections/01-unit/1-start.yaml', unit);
+  assert.ok(changedItems(changed, reviewIndex(dir, state)).some(e => e.id === 'placement-s1-1'));
+}));
+
+test('missing source families and role/group shortages remain explicit review leads', () => bankFixture(({ dir, state, put }) => {
+  put('categorize/families.yaml', [{ id: 'family-total' }, { id: 'family-boundary' }]);
+  put('questions/bank.yaml', [{ id: 'q-total', typeId: 'sum', q: 'Sum 1 and 2.', response: { kind: 'number', value: 3 } }]);
+  const index = reviewIndex(dir, state), row = index.bankCoverage.rows[0];
+  assert.deepEqual(index.bankCoverage.missingFamilies, ['family-boundary']);
+  assert.ok(row.warnings.includes('no reserved fresh check'));
+  assert.ok(row.warnings.includes('transfer diversity unproven'));
+}));
+
+test('external teaching exceptions are private, reasoned, current and never inherited by edited mappings', () => bankFixture(({ dir, state, put }) => {
+  const index = reviewIndex(dir, state); recordReviewView(state, index, index.entries.map(e => e.id));
+  assert.throws(() => acceptReview(state, index, { exceptions: { sum: { kind: 'external-teaching' } } }), /reason/);
+  assert.throws(() => acceptReview(state, index, { exceptions: { missing: { kind: 'external-teaching', reason: 'Elsewhere' } } }), /existing type/);
+  acceptReview(state, index, { ...inventoryReport, exceptions: { sum: { kind: 'external-teaching', reason: 'Prior course contains the full worked instruction.' } } });
+  assert.equal(readReview(state).exceptions.sum.kind, 'external-teaching');
+  assert.equal(JSON.stringify(YAML.load(readFileSync(join(dir, 'questions/types.yaml'), 'utf8'))).includes('external-teaching'), false);
+  const types = YAML.load(readFileSync(join(dir, 'questions/types.yaml'), 'utf8')); types[0].task = 'Compute a weighted total.'; put('questions/types.yaml', types);
+  const changed = reviewIndex(dir, state); recordReviewView(state, changed, changed.entries.map(e => e.id)); acceptReview(state, changed, inventoryReport);
+  assert.equal(readReview(state).exceptions.sum, undefined);
+}));
+
+test('derived teaching stays inspectable and missing explicit lesson checks are flagged', () => bankFixture(({ dir, state, put }) => {
+  const types = YAML.load(readFileSync(join(dir, 'questions/types.yaml'), 'utf8')); delete types[0].teach; put('questions/types.yaml', types);
+  const derived = reviewIndex(dir, state);
+  assert.ok(fullItems(derived, ['placement-s1-1']).some(e => e.id === 'q-total'));
+  assert.deepEqual(derived.bankCoverage.rows[0].teach, ['s1-1']);
+  assert.ok(fullItems(derived, ['q-total']).some(e => e.kind === 'block'));
+  types[0].teach = ['s1-2']; put('questions/types.yaml', types);
+  const explicit = reviewIndex(dir, state);
+  assert.ok(explicit.bankCoverage.rows[0].warnings.includes('missing lesson check at s1-2'));
+}));
+
+test('limited inventory needs a concise reviewer reason current for the type and sibling answers', () => bankFixture(({ dir, state, put }) => {
+  const initial = reviewIndex(dir, state); recordReviewView(state, initial, initial.entries.map(e => e.id));
+  assert.throws(() => acceptReview(state, initial), /limited inventory.*reason/);
+  acceptReview(state, initial, inventoryReport);
+  assert.ok(readReview(state).inventoryExceptions.sum.reason);
+  const items = YAML.load(readFileSync(join(dir, 'questions/bank.yaml'), 'utf8')); items[1].response.value = 8;
+  put('questions/bank.yaml', items);
+  const changed = reviewIndex(dir, state); recordReviewView(state, changed, changed.entries.map(e => e.id));
+  assert.throws(() => acceptReview(state, changed), /current reviewed inventoryExceptions/);
+  acceptReview(state, changed, inventoryReport);
+  assert.ok(readReview(state).inventoryExceptions.sum.reason);
+}));
