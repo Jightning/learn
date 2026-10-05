@@ -1,6 +1,6 @@
 term: Answer outcome
 body: |-
-  <p>An answer outcome is recorded after a learner answers or skips. Graded responses show correctness immediately; self-check responses show a model answer and let the learner choose Got it or Needs work.</p>
+  <p>An answer outcome is recorded after a learner answers or skips. Graded responses show correctness immediately; self-check responses show a model answer and let the learner choose Correct or Wrong.</p>
   <p>Every answered concept enters Review automatically. Missed and challenging outcomes receive more weight when Mixed Practice and Review select the next item.</p>
 src: Defined in §1.2
 review: true

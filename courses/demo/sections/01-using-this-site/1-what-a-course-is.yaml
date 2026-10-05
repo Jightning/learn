@@ -20,7 +20,7 @@ blocks:
     core: |-
       There is no subsection you can finish by reading alone.
     h: |-
-      <p>The quiz is not a checkpoint the author added if they felt like it: the build refuses a subsection without one. Each question uses the same flow as practice and review: answer or skip, see immediate feedback, then press <b>Continue</b>. Self-check questions reveal a model answer and offer <b>Got it</b> or <b>Needs work</b>. Reading something and being able to produce it are different states, and only one of them survives the week.</p>
+      <p>The quiz is not a checkpoint the author added if they felt like it: the build refuses a subsection without one. Each question uses the same flow as practice and review: answer or skip, see immediate feedback, then press <b>Continue</b>. Self-check questions reveal a model answer and offer <b>Correct</b> or <b>Wrong</b>. Reading something and being able to produce it are different states, and only one of them survives the week.</p>
 
   - t: note
     source: docs/deploy.md

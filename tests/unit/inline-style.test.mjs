@@ -18,6 +18,21 @@ test("authored visual cues survive prose, terms, and mapped table cells", () => 
   assert.match(table, /<td><mark>1<\/mark><\/td>/);
 });
 
+test("mono and mapped table cells retain authored markup for the shared sanitizer", () => {
+  const table = renderBlock({ t: "table", mono: true, map: { "1": "one" },
+    head: ["<strong>Input</strong>"], rows: [["<m>x^2</m>"], ["1"]] }, {});
+  assert.match(table, /<th><strong>Input<\/strong><\/th>/);
+  assert.match(table, /<td><m>x\^2<\/m><\/td>/);
+  assert.match(table, /<td><span class="one">1<\/span><\/td>/);
+});
+
+test("source attributions and image credits allow the same inline formatting as prose", () => {
+  const source = renderBlock({ t: "def", term: "Total", core: "Combine terms.", source: "<strong>Reference</strong> <m>\\sum_i x_i</m>" }, {});
+  assert.match(source, /class="bsrc"><strong>Reference<\/strong> <m>/);
+  const image = renderBlock({ t: "image", src: "assets/chart.png", alt: "A chart", credit: "<em>Author</em> <m>x_i</m>" }, {});
+  assert.match(image, /class="credit"><em>Author<\/em> <m>x_i<\/m>/);
+});
+
 test("one prose block keeps authored paragraphs and explicit line breaks", () => {
   const html = renderBlock({ t: "key", h: "<p>First thought.</p><p>Boundary:<br>At zero, stop.</p>" }, {});
   assert.match(html, /<p>First thought\.<\/p><p>Boundary:<br>At zero, stop\.<\/p>/);

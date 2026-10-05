@@ -100,18 +100,27 @@ export function digest(dir) {
     sections.push({ id, dir: path, title: s.title || d, blurb: !!s.blurb, subs });
   }
 
-  const concepts = dataFiles(join(dir, "concepts")).map(f => {
+  const conceptMap = new Map();
+  const canonicalPath = ["yaml", "yml", "json"].map(ext => join(dir, "categorize", `concepts.${ext}`))
+    .find(existsSync);
+  if (canonicalPath) {
+    const list = read(canonicalPath);
+    if (Array.isArray(list)) for (const c of list)
+      if (c && typeof c.id === "string") conceptMap.set(c.id, c);
+  }
+  for (const f of dataFiles(join(dir, "concepts"))) {
     const c = read(join(dir, "concepts", f));
-    const key = stem(f);
-    return {
+    const key = c.id || c.key || stem(f);
+    if (!conceptMap.has(key)) conceptMap.set(key, c);
+  }
+  const concepts = [...conceptMap].map(([key, c]) => ({
       key,
       term: c.term || key,
       review: !!c.review,
       body: !!c.body,
       variants: (read(join(dir, "practice", `${key}.yaml`)).items ||
         read(join(dir, "drills", `${key}.yaml`)).items || []).length
-    };
-  });
+  }));
 
   /* The declared taxonomy, so a unit tags into it rather than beside it. */
   const cats = dataFiles(join(dir, "categories")).map(f => {

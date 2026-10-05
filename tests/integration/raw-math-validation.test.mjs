@@ -45,6 +45,19 @@ test("validation catches raw TeX in claims and model answers", () => {
     const crowded = run();
     assert.equal(crowded.status, 0, crowded.stdout + crowded.stderr);
     assert.match(crowded.stdout, /\d+ inline formulas and no math block/);
+
+    const prose = data.blocks.find(b => b.t === "p");
+    prose.h = "<p>Σᵢ₌₁ⁿ aᵢ uses constructed Unicode notation.</p>";
+    writeFileSync(file, YAML.dump(data));
+    const unicode = run();
+    assert.equal(unicode.status, 0, unicode.stdout + unicode.stderr);
+    assert.match(unicode.stdout, /constructed Unicode math "Σᵢ₌₁ⁿ"/);
+
+    prose.h = "<p>Σ is a Greek letter used for a sum.</p>";
+    writeFileSync(file, YAML.dump(data));
+    const greek = run();
+    assert.equal(greek.status, 0, greek.stdout + greek.stderr);
+    assert.doesNotMatch(greek.stdout, /constructed Unicode math/);
   } finally {
     rmSync(workspace, { recursive: true, force: true });
   }

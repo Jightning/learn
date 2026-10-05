@@ -1,5 +1,5 @@
 /* Per-question outcomes for coverage and later practice. */
-import { getItem, setItem, removeItem } from "./store.js";
+import { getItem, setItem, removeItem, flush } from "./store.js";
 const DAY = 864e5;
 const cache = {};
 
@@ -48,6 +48,14 @@ export function stateFor(id, course) {
   return (cache[id] = {
     on,
     get: qi => d.q[qi],
+    getAttempt: (qi, signature) => d.answers?.[qi]?.signature === signature ? d.answers[qi] : null,
+    saveAttempt(qi, attempt) {
+      if (!on) return;
+      (d.answers ||= {})[qi] = attempt;
+      save();
+      // Start the transaction now so an immediate reload retains the answer.
+      return flush().catch(() => {});
+    },
     /* `conf` is accepted only for replaying legacy rows. */
     rate(qi, conf, got) {
       d.q[qi] = rateStep(d.q[qi], conf, got);

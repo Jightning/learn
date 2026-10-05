@@ -35,6 +35,7 @@ export default function SearchOverlay({ ctx, open, onClose }) {
   /* The results are a listbox, so the keyboard drives them from the input
      rather than requiring a tab through every hit (T6). */
   const onKey = e => {
+    if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
     if (!res.length) return;
     if (e.key === "ArrowDown") { e.preventDefault(); setSel(i => (i + 1) % res.length); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setSel(i => (i - 1 + res.length) % res.length); }

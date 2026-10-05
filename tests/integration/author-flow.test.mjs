@@ -114,7 +114,10 @@ for (const engine of ["tools", "plugin/scripts"]) test(`${engine}: paired batch 
     assert.ok(!JSON.stringify(exactReview).includes("UNRELATED_SOURCE"));
     const firstDone=explicit("done","s1-1");assert.equal(firstDone.status,0,firstDone.stdout+firstDone.stderr);
     assert.match(run("status"),/stage: write.*subsection: s1-2/);
-    run("done","s1-2");assert.equal(batch().stage,"review");
+    run("done","s1-2");assert.equal(batch().stage,"write");
+    run("done","s2-1");assert.equal(batch().stage,"review");
+    assert.ok(batch().review_packets.length >= 2);
+    run("reviewed","s2-1");
     for(const sub of ["s1-1","s1-2"]) {
       const finding={target:"quiz:1",issue:"Explain",done:"Reason explicit",sourceRefs:[{...ref,lines:[1,1]}]};
       put(join(course,`materials/review/${sub}.yaml`),YAML.dump(engine==="tools"&&sub==="s1-1"?{findings:[finding]}:{items:[finding]}));
@@ -126,7 +129,7 @@ for (const engine of ["tools", "plugin/scripts"]) test(`${engine}: paired batch 
     assert.ok(!JSON.stringify(packet).includes("UNRELATED_SOURCE"));assert.equal(packet.families,undefined);
     run("done","s1-1");assert.match(run("status"),/stage: correct.*subsection: s1-2/);
     run("done","s1-2");const recheck=batch();assert.equal(recheck.stage,"review");assert.equal(recheck.tasks.length,2);
-    run("reviewed","s1-1");run("reviewed","s1-2");assert.match(run("status"),/stage: write.*subsection: s2-1/);
+    run("reviewed","s1-1");run("reviewed","s1-2");assert.match(run("status"),/stage: finish/);
     put(join(course,"sections/01-one/1-start.yaml"),body+"\n");
     assert.match(run("status"),/stage: write.*subsection: s1-1/);
     run("status","--mode","single");assert.equal(batch().mode,"single");assert.equal(batch().tasks.length,1);

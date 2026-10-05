@@ -5,7 +5,7 @@ blocks:
     core: |-
       Answering or skipping is quick; feedback appears immediately and Continue moves you on.
     h: |-
-      <p>Every question follows one flow: answer or skip, see immediate feedback, then press <b>Continue</b>. A self-check question shows its model answer and asks whether you got it or need work. The recorded <c k="confidence">answer outcome</c> supports later Review; there is no confidence gate and no reason field to complete before feedback.</p>
+      <p>Every question follows one flow: answer or skip, see immediate feedback, then press <b>Continue</b>. A self-check question shows its model answer and asks whether your answer is correct or wrong. The recorded <c k="confidence">answer outcome</c> supports later Review; there is no confidence gate and no reason field to complete before feedback.</p>
 
   - t: def
     cat: retrieval-surfaces
@@ -24,7 +24,7 @@ blocks:
     core: |-
       Feedback is visible before the learner continues.
     h: |-
-      <p>Pressing <b>Continue</b> records the result and advances the queue. A skipped item remains an honest miss for later weighting; a self-check offers <b>Got it</b> and <b>Needs work</b> after its model answer.</p>
+      <p>Pressing <b>Continue</b> records the result and advances the queue. A skipped item remains an honest miss for later weighting; a self-check offers <b>Correct</b> and <b>Wrong</b> after its model answer.</p>
 
   - t: trap
     source: docs/code_truth.md T15
@@ -32,7 +32,7 @@ blocks:
     core: |-
       You may skip when you cannot answer; the result still becomes part of the learning history.
     h: |-
-      <p>If you cannot produce anything, press <b>Skip</b>. The card gives immediate feedback and Continue keeps the session moving. Self-check cards show their model answer and let you choose <b>Got it</b> or <b>Needs work</b>.</p>
+      <p>If you cannot produce anything, press <b>Skip</b>. The card gives immediate feedback and Continue keeps the session moving. Self-check cards show their model answer and let you choose <b>Correct</b> or <b>Wrong</b>.</p>
 
   - t: ex
     source: docs/architecture.md §3e
@@ -53,6 +53,16 @@ blocks:
     h: |-
       The same shape appears in <b>Mixed Practice</b> and in <b>Review</b>: answer or skip, see feedback, press Continue. Learning one interaction is enough for every surface in the site.
 
+  - t: p
+    h: |-
+      <p>A formula question typesets math inside the input as you type:
+      <code>e^x</code> becomes an exponential and <code>sqrt(x)</code> becomes a root.
+      Use the basic symbol buttons or <b>…</b> for more. Equivalent forms can
+      receive credit: <code>y=2x+1</code> and <code>y=1+2x</code> describe the
+      same line. Factored forms such as <code>y=2(x+1/2)</code> also match.
+      A valid formula that does not match is marked incorrect. Freeform questions can independently enable the
+      inline math editor, the symbol buttons, or both.</p>
+
   - t: note
     tier: depth
     source: docs/code_truth.md T18
@@ -63,6 +73,44 @@ blocks:
       <p>A miss is useful feedback, not a reason to stop. Review automatically enrolls answered concepts, then gives extra weight to missed and challenging items so the queue stays focused.</p>
 
 quiz:
+  - type: Try a formula
+    concept: confidence
+    q: 'Enter the line equation <m>y=2x+1</m>. Try reversing the order of the terms.'
+    response:
+      kind: formula
+      answer: 'y=2*x+1'
+      variables: [x, y]
+      solveFor: y
+    why: '<p>Adding <m>1+2x</m> gives the same result as <m>2x+1</m>.</p>'
+
+  - type: Try math in freeform
+    concept: confidence
+    q: 'Write a sentence containing e^x or sqrt(x), and try inserting a symbol.'
+    response:
+      kind: self
+      model: 'The function e^x describes exponential growth.'
+      formulaParsing: true
+      mathSymbols: true
+
+  - type: Try a derivative
+    concept: confidence
+    q: "Enter <m>y'=2x</m>. Try the prime or dy/dx button in the Calculus group."
+    response:
+      kind: formula
+      answer: "y'=2*x"
+      variables: [x, y]
+      solveFor: "y'"
+    why: "<p>The prime and differential forms denote the same derivative with respect to <m>x</m>.</p>"
+
+  - type: Try an integral
+    concept: confidence
+    q: 'Evaluate <m>\int_0^1 x^2\,dx</m>. You can enter the result or use the definite integral button.'
+    response:
+      kind: formula
+      answer: '1/3'
+      variables: [x]
+    why: '<p>The primitive is <m>x^3/3</m>; its value at 1 minus its value at 0 is <m>1/3</m>.</p>'
+
   - type: Interpret immediate feedback
     concept: confidence
     q: |-
@@ -88,15 +136,15 @@ quiz:
     a: |-
       Because producing the idea from memory is what builds it; reading a correct answer produces recognition, which feels like knowing and is not.
     why: |-
-      <p>A self-check reveals its model answer and offers Got it or Needs work, so the learner can record an honest outcome without a fake confidence step.</p>
+      <p>A self-check reveals its model answer and offers Correct or Wrong, so the learner can record an honest outcome without a fake confidence step.</p>
     verified: 2026-09-06
 
   - type: Spot the error
     concept: confidence
     q: |-
-      A reader selects Needs work after seeing a self-check model answer. What does that do?
+      A reader selects Wrong after seeing a self-check model answer. What does that do?
     a: |-
       It records a challenging outcome, so the concept receives more weight in later Review.
     why: |-
-        <p>Needs work is an honest self-check result. It helps the queue focus on material that still needs retrieval.</p>
+        <p>Wrong is an honest self-check result. It helps the queue focus on material that still needs retrieval.</p>
     verified: 2026-09-06

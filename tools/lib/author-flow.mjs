@@ -71,11 +71,11 @@ export function flowState({ mode, handoff = "auto", progress, plan, records = {}
   if (!plan.hash) stage = plan.legacy?.length ? "migrate" : "plan";
   else if (!progress.courseDone || !progress.d.subs.length) stage = "setup";
   else {
+    // Batches bound writer context, not the learning/review scope. Complete
+    // each course-wide phase before switching roles or dispatching fixes.
+    const next = ["write", "review", "correct", "recheck"].find(kind => progress.d.subs.some(s => state(s) === kind));
     for (const candidate of grouping.batches) {
-      // Collect initial reviews before corrections; finish all corrections
-      // before rechecking the first. Earlier batches always precede new work.
-      const next = ["write", "review", "correct", "recheck"].find(kind => candidate.members.some(s => state(s) === kind));
-      if (!next) continue;
+      if (!next || !candidate.members.some(s => state(s) === next)) continue;
       const tasks = candidate.members.filter(s => state(s) === next);
       stage = next === "recheck" ? "review" : next;
       subsection = tasks[0];

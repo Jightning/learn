@@ -336,6 +336,15 @@ Its answer input comes first. A structured response is graded immediately; an
 open response reveals a model answer and asks the reader to self-check. Skip
 records a miss. Each outcome is logged once and updates both question and
 concept state when the item has a concept.
+Questions default to one try. Authors can set a positive integer `tries` on
+an individual quiz or practice item. Wrong intermediate tries offer a compact
+retry button with tries remaining; success, exhaustion, or skipping records one
+final outcome. Checked answers and explanations appear only on completion.
+Single-choice retries disable rejected choices; multi-select retries preserve
+editable choices and reject repeated failed sets; number and formula inputs
+remain editable on retry. Self-check still reveals its model for comparison.
+Lesson retry budgets and rejected choices survive reloads; formula checker
+errors do not consume tries.
 
 **T15. Retrieval precedes reveal.** An answer is never visible before an attempt
 is possible. Showing it beside the question converts retrieval into re-reading.

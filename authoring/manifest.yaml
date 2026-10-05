@@ -29,7 +29,7 @@ modules:
   questions:
     file: questions.md
     phases: []
-    needs: ['question:single', 'question:multi', 'question:number', 'question:self']
+    needs: ['question:single', 'question:multi', 'question:number', 'question:formula', 'question:self']
     roles: [writer, single]
   practice:
     file: practice.md
@@ -86,14 +86,15 @@ modules:
   formats-questions:
     file: formats/questions.md
     phases: []
-    needs: [formats, 'question:single', 'question:multi', 'question:number', 'question:self', 'question:synthesis']
+    needs: [formats, 'question:single', 'question:multi', 'question:number', 'question:formula', 'question:self', 'question:synthesis']
     roles: [writer, single]
     requires: [questions, inline]
   formats-stimulus:
     file: formats/stimulus.md
     phases: []
-    needs: ['stimulus:passage', 'stimulus:image', 'stimulus:figure']
+    needs: ['stimulus:passage', 'stimulus:image', 'stimulus:figure', 'stimulus:p', 'stimulus:code', 'stimulus:table', 'stimulus:math', 'stimulus:note', 'stimulus:key', 'stimulus:def', 'stimulus:trap', 'stimulus:ex']
     roles: [writer, single]
+    requires: [formats-blocks, inline]
   formats-course:
     file: formats/course-yaml.md
     phases: []

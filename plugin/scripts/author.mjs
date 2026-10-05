@@ -3,11 +3,11 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSy
 import { basename, dirname, extname, join, posix, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createRequire } from "module";
 import { homedir } from "node:os";
 //#region node_modules/js-yaml/dist/js-yaml.mjs
-/*! js-yaml 5.4.1 https://github.com/nodeca/js-yaml @license MIT */
+/*! js-yaml 5.4.2 https://github.com/nodeca/js-yaml @license MIT */
 /**
 * Returned by a scalar resolver when the source does not match its tag.
 *
@@ -2737,6 +2737,7 @@ function doubleQuoteWhitespaceOnly(layout) {
 function applyForceQuotesOption(layout) {
 	if (!layout.presenterOptions.forceQuotes) return;
 	if (layout.isKey || layout.style !== SCALAR_STYLE.PLAIN) return;
+	if (layout.node.tag !== layout.presenterOptions.schema.defaultScalarTag.tagName) return;
 	layout.style = layout.node.value.includes("\n") ? SCALAR_STYLE.DOUBLE_QUOTED : _preferredQuotedStyle(layout);
 }
 function tryLongOrMultilineAsBlock(layout) {
@@ -3299,6 +3300,9 @@ CHOMPING_MODE.CLIP;
 CHOMPING_MODE.STRIP;
 CHOMPING_MODE.KEEP;
 //#endregion
+//#region src/lib/questions.js
+const questionStimuli = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
+//#endregion
 //#region tools/lib/author-context.mjs
 const estimateTokens = (text) => Math.ceil(Buffer.byteLength(text, "utf8") / 4);
 function loadContext(root) {
@@ -3355,18 +3359,190 @@ function selectContext(context, { phase = "write", role = "single", needs = [], 
 }
 function shapeNeeds(unit = {}) {
 	const needs = /* @__PURE__ */ new Set();
+	const containsInlineMath = (value) => {
+		if (typeof value === "string") return /<m>[\s\S]*?<\/m>/i.test(value);
+		if (Array.isArray(value)) return value.some(containsInlineMath);
+		return value && typeof value === "object" && Object.values(value).some(containsInlineMath);
+	};
 	for (const block of unit.blocks || []) {
 		if (block?.t) needs.add(`block:${block.t}`);
 		if (block?.t === "figure" && block.kind) needs.add(`figure:${block.kind}`);
+		if (containsInlineMath(block)) needs.add("block:math");
 	}
 	for (const q of unit.quiz || []) {
+		if (containsInlineMath(q)) needs.add("block:math");
 		if (q?.response?.kind) needs.add(`question:${q.response.kind}`);
 		if (q?.type === "Synthesis") needs.add("question:synthesis");
-		if (q?.stimulus?.t) needs.add(`stimulus:${q.stimulus.t}`);
-		if (q?.stimulus?.kind) needs.add(`figure:${q.stimulus.kind}`);
+		for (const part of questionStimuli(q?.stimulus)) {
+			if (part?.t) needs.add(`stimulus:${part.t}`);
+			if (part?.kind) needs.add(`figure:${part.kind}`);
+		}
 	}
 	return [...needs];
 }
+//#endregion
+//#region src/lib/curriculum.js
+const CURRICULUM_COLLECTIONS = Object.freeze([
+	"objectives",
+	"families",
+	"concepts"
+]);
+const mapping = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const singular = (collection) => collection === "families" ? "family" : collection.slice(0, -1);
+const stable = (value) => {
+	if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+	if (!mapping(value)) return JSON.stringify(value);
+	return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(",")}}`;
+};
+function sameDefinition(a, b, id, collection) {
+	const normalize = (value) => {
+		const out = { ...value };
+		delete out.id;
+		if (collection === "concepts") delete out.key;
+		return stable(out);
+	};
+	return normalize(a) === normalize(b) && (collection !== "concepts" || (a.key || a.id || id) === (b.key || b.id || id));
+}
+/** Read and validate fixed canonical YAML collection files from a text map. */
+function readCurriculumCollections(files, errors = []) {
+	const collections = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const candidates = [
+			`categorize/${name}.yaml`,
+			`categorize/${name}.yml`,
+			`categorize/${name}.json`
+		].filter((path) => Object.hasOwn(files, path));
+		if (candidates.length > 1) errors.push(`categorize/${name}: use only one collection file (${candidates.join(", ")})`);
+		const path = candidates[0];
+		if (!path) {
+			collections[name] = [];
+			continue;
+		}
+		let value;
+		try {
+			value = path.endsWith(".json") ? JSON.parse(files[path]) : awaitYaml(files[path]);
+		} catch (error) {
+			errors.push(`${path}: ${String(error.message).split("\n")[0]}`);
+			collections[name] = [];
+			continue;
+		}
+		if (!Array.isArray(value)) {
+			errors.push(`${path}: expected a list of definitions`);
+			collections[name] = [];
+			continue;
+		}
+		const ids = /* @__PURE__ */ new Set();
+		collections[name] = value.filter((item, i) => {
+			if (!mapping(item)) {
+				errors.push(`${path}[${i + 1}]: definition must be a mapping`);
+				return false;
+			}
+			if (typeof item.id !== "string" || !item.id.trim()) {
+				errors.push(`${path}[${i + 1}]: definition needs a nonempty id`);
+				return false;
+			}
+			if (ids.has(item.id)) {
+				errors.push(`${path}: duplicate ${name.slice(0, -1)} id "${item.id}"`);
+				return false;
+			}
+			ids.add(item.id);
+			return true;
+		});
+	}
+	return collections;
+}
+const awaitYaml = (text) => load(text);
+/** Merge canonical definitions with legacy definitions, reporting conflicts. */
+function mergeCurriculumDefinitions(canonical, legacy, errors = [], where = "legacy curriculum", strictLegacyDuplicates = false) {
+	const merged = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const byId = /* @__PURE__ */ new Map();
+		const old = legacy?.[name] || [];
+		for (const [index, value] of old.entries()) {
+			if (!mapping(value)) {
+				errors.push(`${where} ${name}[${index + 1}]: definition must be a mapping`);
+				continue;
+			}
+			const id = value.id || (name === "concepts" ? value.key : null);
+			if (typeof id !== "string" || !id.trim()) {
+				errors.push(`${where} ${name}[${index + 1}]: definition needs an id`);
+				continue;
+			}
+			if (byId.has(id) && strictLegacyDuplicates) errors.push(`${where}: duplicate ${name.slice(0, -1)} id "${id}"`);
+			else byId.set(id, value);
+		}
+		for (const value of canonical?.[name] || []) {
+			const id = value.id;
+			if (byId.has(id) && !sameDefinition(byId.get(id), value, id, name)) errors.push(`categorize/${name}.yaml conflicts with legacy ${name} definition "${id}"`);
+			else byId.set(id, value);
+		}
+		merged[name] = [...byId.values()];
+	}
+	return merged;
+}
+/** Resolve plan reference lists, retaining legacy definition copies for conflict checks. */
+function mergePlanCurriculum(plan, canonical, errors = [], where = "plan") {
+	const legacy = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const value = plan?.[name];
+		if (value == null) {
+			legacy[name] = [];
+			continue;
+		}
+		if (!Array.isArray(value)) {
+			errors.push(`${where}: ${name} must be a list`);
+			legacy[name] = [];
+			continue;
+		}
+		legacy[name] = value.flatMap((item, i) => {
+			if (typeof item === "string") {
+				const definition = (canonical[name] || []).find((entry) => entry.id === item);
+				if (!definition) errors.push(`${where}: ${name}[${i + 1}] references unknown ${singular(name)} "${item}"`);
+				return definition ? [definition] : [];
+			}
+			if (!mapping(item)) {
+				errors.push(`${where}: ${name}[${i + 1}] must be a definition mapping or id reference`);
+				return [];
+			}
+			return [item];
+		});
+	}
+	return mergeCurriculumDefinitions(canonical, legacy, errors, where, true);
+}
+/** Check references once canonical curriculum files make IDs authoritative. */
+function validateCurriculumReferences(plan, definitions, errors = []) {
+	const ids = Object.fromEntries(CURRICULUM_COLLECTIONS.map((name) => [name, new Set((definitions?.[name] || []).map((item) => item.id || item.key).filter(Boolean))]));
+	const background = new Set((Array.isArray(plan?.reader?.background) ? plan.reader.background : []).map((item) => typeof item === "string" ? item : item?.id).filter(Boolean));
+	const refs = (value, collection, where, label = singular(collection)) => {
+		if (value == null) return;
+		for (const item of Array.isArray(value) ? value : [value]) {
+			const id = typeof item === "string" ? item : item?.id;
+			if (typeof id !== "string" || !ids[collection].has(id) && !(label.includes("prerequisite") && background.has(id))) errors.push(`${where}: unknown ${label} reference "${id ?? item}"`);
+		}
+	};
+	for (const collection of CURRICULUM_COLLECTIONS) if (Array.isArray(plan?.[collection]) && plan[collection].every((item) => typeof item === "string")) refs(plan[collection], collection, `plan.${collection}`);
+	for (const [i, lesson] of (Array.isArray(plan?.lessons) ? plan.lessons : Array.isArray(plan?.subsections) ? plan.subsections : []).entries()) {
+		const where = `plan lesson ${lesson?.id || i + 1}`;
+		refs(lesson?.objectives ?? lesson?.objective, "objectives", where);
+		refs(lesson?.families ?? lesson?.family, "families", where);
+		refs(lesson?.concepts ?? lesson?.concept, "concepts", where);
+	}
+	for (const item of definitions?.objectives || []) {
+		const where = `objective "${item.id}"`;
+		refs(item.prerequisites ?? item.prerequisite, "objectives", where, "objective prerequisite");
+		refs(item.families ?? item.family, "families", where);
+		refs(item.concepts ?? item.concept, "concepts", where);
+	}
+	for (const item of definitions?.families || []) refs(item.concepts ?? item.concept, "concepts", `family "${item.id}"`);
+	for (const item of definitions?.concepts || []) {
+		const where = `concept "${item.id}"`;
+		refs(item.prerequisites ?? item.prerequisite, "concepts", where, "concept prerequisite");
+		refs(item.related, "concepts", where);
+		refs(item.confusable_with, "concepts", where);
+	}
+	return errors;
+}
+const curriculumSignature = (value) => stable(value);
 //#endregion
 //#region tools/lib/load.mjs
 function parseFile(path) {
@@ -3381,14 +3557,55 @@ const fileHash = (path) => fingerprint(readFileSync(path));
 const readPlan = (dir) => {
 	const path = join(dir, "materials", "plan.yaml");
 	const legacy = ["plan.md", "source-family-review.md"].map((f) => join(dir, "materials", f)).filter(existsSync);
-	return existsSync(path) ? {
+	const rawPlan = existsSync(path) ? parseFile(path) : {};
+	if (rawPlan != null && (typeof rawPlan !== "object" || Array.isArray(rawPlan))) throw new Error(`${path}: expected a mapping`);
+	const data = { ...rawPlan || {} };
+	const errors = [];
+	const canonicalFiles = {};
+	let canonical = false;
+	for (const name of [
+		"objectives",
+		"families",
+		"concepts"
+	]) for (const file of [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `${name}.${ext}`)).filter((candidate) => existsSync(candidate))) {
+		canonical = true;
+		canonicalFiles[`categorize/${name}.${file.slice(file.lastIndexOf(".") + 1)}`] = readFileSync(file, "utf8");
+	}
+	if (!canonical) return existsSync(path) ? {
 		path,
 		hash: fileHash(path),
-		data: parseFile(path) || {}
+		data: rawPlan || {},
+		canonical: false
 	} : {
 		path,
 		data: {},
+		canonical: false,
 		legacy
+	};
+	const canonicalDefinitions = readCurriculumCollections(canonicalFiles, errors);
+	const merged = mergePlanCurriculum(rawPlan || {}, canonicalDefinitions, errors, path);
+	if (canonical) validateCurriculumReferences(rawPlan || {}, merged, errors);
+	if (errors.length) throw new Error(errors.join("\n"));
+	for (const name of [
+		"objectives",
+		"families",
+		"concepts"
+	]) data[name] = merged[name];
+	const signature = fingerprint(curriculumSignature({
+		plan: rawPlan || {},
+		canonical: canonicalDefinitions
+	}));
+	return {
+		path,
+		...existsSync(path) ? { hash: signature } : {},
+		signature,
+		canonical,
+		data,
+		...!existsSync(path) ? { legacy } : {}
 	};
 };
 const asList = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
@@ -3400,10 +3617,60 @@ const active = (item) => ![
 	"prerequisite"
 ].includes(item?.disposition);
 function indexPlan(plan) {
+	const strict = !!plan.canonical;
 	const objectives = asList(plan.data.objectives);
 	const byLesson = /* @__PURE__ */ new Map(), uses = /* @__PURE__ */ new Map();
-	for (const lesson of asList(plan.data.lessons ?? plan.data.subsections)) for (const id of asList(lesson.objectives).map(named)) uses.set(id, (uses.get(id) || 0) + 1);
+	const families = asList(plan.data.families);
+	const objectiveIndex = /* @__PURE__ */ new Map(), familyIndex = /* @__PURE__ */ new Map();
 	for (const o of objectives) {
+		if (!o || typeof o.id !== "string" || !o.id.trim()) {
+			if (strict) throw new Error("plan objective definition needs a nonempty id");
+			continue;
+		}
+		if (strict && objectiveIndex.has(o.id)) throw new Error(`duplicate objective id "${o.id}"`);
+		objectiveIndex.set(o.id, o);
+	}
+	for (const f of families) {
+		if (!f || typeof f.id !== "string" || !f.id.trim()) {
+			if (strict) throw new Error("plan family definition needs a nonempty id");
+			continue;
+		}
+		if (strict && familyIndex.has(f.id)) throw new Error(`duplicate family id "${f.id}"`);
+		familyIndex.set(f.id, f);
+	}
+	const lessons = asList(plan.data.lessons ?? plan.data.subsections);
+	if (plan.canonical) {
+		const errors = validateCurriculumReferences(plan.data, {
+			objectives,
+			families,
+			concepts: asList(plan.data.concepts)
+		});
+		if (errors.length) throw new Error(errors.join("\n"));
+	}
+	const lessonIds = /* @__PURE__ */ new Set();
+	const requireRefs = (ids, index, kind, at) => {
+		if (!strict) return;
+		for (const id of asList(ids).map(named)) if (typeof id !== "string" || !index.has(id)) throw new Error(`${at} references unknown ${kind} "${id}"`);
+	};
+	const prerequisites = new Map(objectiveIndex);
+	for (const item of asList(plan.data.reader?.background)) {
+		const id = named(item);
+		if (id) prerequisites.set(id, item);
+	}
+	for (const lesson of lessons) {
+		if (!lesson || typeof lesson.id !== "string" || !lesson.id.trim()) {
+			if (strict) throw new Error("plan lesson needs a nonempty id");
+			continue;
+		}
+		if (strict && lessonIds.has(lesson.id)) throw new Error(`duplicate lesson id "${lesson.id}"`);
+		lessonIds.add(lesson.id);
+		requireRefs(lesson.objectives, objectiveIndex, "objective", `lesson "${lesson.id}"`);
+		requireRefs(lesson.families, familyIndex, "family", `lesson "${lesson.id}"`);
+		for (const id of asList(lesson.objectives).map(named)) uses.set(id, (uses.get(id) || 0) + 1);
+	}
+	for (const o of objectives) {
+		requireRefs(o.prerequisites, prerequisites, "objective prerequisite", `objective "${o.id}"`);
+		requireRefs(o.families, familyIndex, "family", `objective "${o.id}"`);
 		const id = o.lesson || o.subsection;
 		if (id) {
 			if (!byLesson.has(id)) byLesson.set(id, []);
@@ -3411,9 +3678,9 @@ function indexPlan(plan) {
 		}
 	}
 	return {
-		lessons: new Map(asList(plan.data.lessons ?? plan.data.subsections).map((s) => [s.id, s])),
-		objectives: new Map(objectives.map((o) => [o.id, o])),
-		families: new Map(asList(plan.data.families).map((f) => [f.id, f])),
+		lessons: new Map(lessons.map((s) => [s.id, s])),
+		objectives: objectiveIndex,
+		families: familyIndex,
 		byLesson,
 		uses
 	};
@@ -3478,10 +3745,7 @@ function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase
 		mode,
 		role: effectiveRole,
 		rules: rules.modules.map((m) => m.path),
-		...plan.hash && !(phase === "review" && selected) ? { plan: {
-			path: plan.path,
-			hash: plan.hash
-		} } : {},
+		...plan.hash && !(phase === "review" && selected) ? { plan: { path: plan.path } } : {},
 		...subsection ? { target: subsection.file } : {},
 		...readerContext && Object.keys(readerContext).length ? { reader: readerContext } : {},
 		...phase === "write" && plan.data.scope ? { scope: plan.data.scope } : {},
@@ -3497,9 +3761,8 @@ function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase
 		...refs.length ? { sourceRefs: [...new Map(refs.map((r) => [JSON.stringify(r), r])).values()] } : {},
 		...sources.length ? { sources } : {},
 		...selected ? { item: {
-			selector: item,
-			hash: fingerprint(JSON.stringify(selected)),
-			content: selected
+			...selected.authorId ? { id: selected.authorId } : { selector: item },
+			content: Object.fromEntries(Object.entries(selected).filter(([key]) => key !== "authorId"))
 		} } : {},
 		...issue ? { issue } : {},
 		warnings: [...warnings, ...rules.warnings]
@@ -4191,7 +4454,7 @@ function walk(dir) {
 }
 /** Every material file under the roots, sorted, each checked to stay inside
 its root (a symlink pointing out is dropped, not followed). */
-function list(rootsList) {
+function list$1(rootsList) {
 	const out = [];
 	for (const root of rootsList) {
 		if (statSync(root).isFile()) {
@@ -4709,14 +4972,14 @@ function flowState({ mode, handoff = "auto", progress, plan, records = {}, workf
 	if (!plan.hash) stage = plan.legacy?.length ? "migrate" : "plan";
 	else if (!progress.courseDone || !progress.d.subs.length) stage = "setup";
 	else {
+		const next = [
+			"write",
+			"review",
+			"correct",
+			"recheck"
+		].find((kind) => progress.d.subs.some((s) => state(s) === kind));
 		for (const candidate of grouping.batches) {
-			const next = [
-				"write",
-				"review",
-				"correct",
-				"recheck"
-			].find((kind) => candidate.members.some((s) => state(s) === kind));
-			if (!next) continue;
+			if (!next || !candidate.members.some((s) => state(s) === next)) continue;
 			const tasks = candidate.members.filter((s) => state(s) === next);
 			stage = next === "recheck" ? "review" : next;
 			subsection = tasks[0];
@@ -4754,7 +5017,7 @@ const DATA = /* @__PURE__ */ new Set([
 	".yml",
 	".json"
 ]);
-const dataFiles = (dir) => existsSync(dir) ? readdirSync(dir).filter((f) => DATA.has(extname(f))).sort() : [];
+const dataFiles$1 = (dir) => existsSync(dir) ? readdirSync(dir).filter((f) => DATA.has(extname(f))).sort() : [];
 const stem = (f) => basename(f, extname(f));
 const read = (p) => {
 	try {
@@ -4809,10 +5072,10 @@ function digest(dir) {
 		const path = join(secRoot, d);
 		if (!existsSync(path) || !statSync(path).isDirectory()) continue;
 		if (!readdirSync(path).length) continue;
-		const meta = dataFiles(path).find((f) => stem(f) === "_section");
+		const meta = dataFiles$1(path).find((f) => stem(f) === "_section");
 		const s = meta ? read(join(path, meta)) : {};
 		const id = `s${num(d)}`;
-		const subs = dataFiles(path).filter((f) => stem(f) !== "_section").map((f) => ({
+		const subs = dataFiles$1(path).filter((f) => stem(f) !== "_section").map((f) => ({
 			file: f,
 			n: num(f),
 			data: read(join(path, f))
@@ -4834,18 +5097,31 @@ function digest(dir) {
 			subs
 		});
 	}
-	const concepts = dataFiles(join(dir, "concepts")).map((f) => {
+	const conceptMap = /* @__PURE__ */ new Map();
+	const canonicalPath = [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `concepts.${ext}`)).find(existsSync);
+	if (canonicalPath) {
+		const list = read(canonicalPath);
+		if (Array.isArray(list)) {
+			for (const c of list) if (c && typeof c.id === "string") conceptMap.set(c.id, c);
+		}
+	}
+	for (const f of dataFiles$1(join(dir, "concepts"))) {
 		const c = read(join(dir, "concepts", f));
-		const key = stem(f);
-		return {
-			key,
-			term: c.term || key,
-			review: !!c.review,
-			body: !!c.body,
-			variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
-		};
-	});
-	const cats = dataFiles(join(dir, "categories")).map((f) => {
+		const key = c.id || c.key || stem(f);
+		if (!conceptMap.has(key)) conceptMap.set(key, c);
+	}
+	const concepts = [...conceptMap].map(([key, c]) => ({
+		key,
+		term: c.term || key,
+		review: !!c.review,
+		body: !!c.body,
+		variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
+	}));
+	const cats = dataFiles$1(join(dir, "categories")).map((f) => {
 		const c = read(join(dir, "categories", f));
 		return {
 			key: stem(f),
@@ -5114,13 +5390,475 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) try {
 	}
 } catch {}
 //#endregion
+//#region tools/lib/author-review.mjs
+const list = (x) => x == null ? [] : Array.isArray(x) ? x : [x];
+const dataFiles = (dir) => existsSync(dir) ? readdirSync(dir).filter((f) => /\.(yaml|yml|json)$/.test(f)).sort() : [];
+const collectionFile = (dir, kind) => [
+	"yaml",
+	"yml",
+	"json"
+].map((ext) => join(dir, "categorize", `${kind}.${ext}`)).find(existsSync);
+const save = (path, value) => {
+	mkdirSync(dirname(path), { recursive: true });
+	writeFileSync(path, packetText(value));
+};
+const readReview = (state) => existsSync(join(state, "review.yaml")) ? parseFile(join(state, "review.yaml")) : null;
+const withoutIdentity = (value) => {
+	const { authorId, ...content } = value;
+	return content;
+};
+/** Only files with missing identities are serialized, once. Existing IDs,
+citation keys and learner-state identities never change with an edit. */
+function reviewIndex(dir, state, { assign = true, persist = true } = {}) {
+	const documents = /* @__PURE__ */ new Map(), entries = [], seen = /* @__PURE__ */ new Set();
+	const doc = (file) => {
+		if (!documents.has(file)) documents.set(file, {
+			data: parseFile(file),
+			dirty: false
+		});
+		return documents.get(file);
+	};
+	const add = (kind, item, file, location, namedId) => {
+		if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error(`${file}: ${kind} must be a mapping`);
+		let id = namedId || item.authorId;
+		if (!id) {
+			if (!assign) throw new Error(`${file}: missing authorId; run author index`);
+			id = `${kind}-${randomUUID().slice(0, 12)}`;
+			item.authorId = id;
+			doc(file).dirty = true;
+		}
+		if (typeof id !== "string" || !/^[a-zA-Z0-9][\w.-]*$/.test(id)) throw new Error(`${file}: invalid review ID ${id}`);
+		if (seen.has(id)) throw new Error(`duplicate review ID ${id}`);
+		seen.add(id);
+		const content = withoutIdentity(item);
+		entries.push({
+			id,
+			kind,
+			file: relative(dir, file),
+			...location,
+			content,
+			hash: fingerprint(JSON.stringify(content))
+		});
+	};
+	const d = digest(dir);
+	for (const sub of d.subs) {
+		const unit = doc(sub.file).data || {};
+		for (const [key, kind] of [["blocks", "block"], ["quiz", "quiz"]]) {
+			if (unit[key] != null && !Array.isArray(unit[key])) throw new Error(`${sub.file}: ${key} must be a sequence`);
+			for (const [position, item] of (unit[key] || []).entries()) add(kind, item, sub.file, {
+				sub: sub.id,
+				section: sub.id.split("-")[0],
+				position: position + 1
+			});
+		}
+	}
+	for (const folder of ["practice", "drills"]) for (const name of dataFiles(join(dir, folder))) {
+		const file = join(dir, folder, name), unit = doc(file).data || {};
+		if (unit.items != null && !Array.isArray(unit.items)) throw new Error(`${file}: items must be a sequence`);
+		for (const [position, item] of (unit.items || []).entries()) add("practice", item, file, {
+			concept: unit.concept || basename(name, extname(name)),
+			position: position + 1
+		});
+	}
+	const plan = readPlan(dir);
+	if (plan.hash) {
+		const { objectives, families, concepts, ...schedule } = plan.data;
+		add("plan", schedule, plan.path, {}, "author-plan");
+	}
+	for (const kind of [
+		"objectives",
+		"families",
+		"concepts"
+	]) {
+		const canonical = collectionFile(dir, kind);
+		const canonicalIds = new Set(canonical ? doc(canonical).data.map((item) => item.id) : []);
+		const items = plan.data[kind] || [];
+		for (const item of items) if (typeof item !== "string") add({
+			objectives: "objective",
+			families: "family",
+			concepts: "concept"
+		}[kind], item, canonicalIds.has(item.id) ? canonical : plan.path, {}, item.id);
+	}
+	{
+		const metaFile = join(dir, "course.yaml");
+		const meta = existsSync(metaFile) ? doc(metaFile).data : {};
+		const concepts = new Map(Object.entries(meta?.concepts || {}).map(([key, item]) => [key, {
+			item,
+			file: metaFile
+		}]));
+		for (const name of dataFiles(join(dir, "concepts"))) {
+			const file = join(dir, "concepts", name), item = doc(file).data;
+			concepts.set(item.key || basename(name, extname(name)), {
+				item,
+				file
+			});
+		}
+		for (const [id, { item, file }] of concepts) {
+			const prior = entries.find((e) => e.id === id);
+			if (!prior) {
+				add("concept", item, file, {}, id);
+				continue;
+			}
+			const normalize = (value) => {
+				const copy = { ...value };
+				delete copy.id;
+				delete copy.key;
+				return dump(copy, { sortKeys: true });
+			};
+			if (prior.kind !== "concept" || normalize(prior.content) !== normalize(item)) throw new Error(`conflicting review ID ${id} in ${file}`);
+		}
+	}
+	for (const [file, document] of documents) if (document.dirty) writeFileSync(file, extname(file) === ".json" ? JSON.stringify(document.data, null, 2) + "\n" : packetText(document.data));
+	const evidence = {}, catalogPath = join(state, "sources/catalog.yaml");
+	if (existsSync(catalogPath)) for (const source of parseFile(catalogPath)?.sources || []) try {
+		evidence[source.id] = fileHash(source.path);
+	} catch {
+		evidence[source.id] = "unavailable";
+	}
+	const index = {
+		version: 1,
+		plan: fingerprint(JSON.stringify(plan.data)),
+		evidence,
+		entries
+	};
+	if (persist) save(join(state, "items.yaml"), index);
+	return index;
+}
+function findItems(index, ids) {
+	const byId = new Map(index.entries.map((e) => [e.id, e]));
+	return [...new Set(ids)].map((id) => {
+		if (!byId.has(id)) throw new Error(`unknown review ID ${id}`);
+		return byId.get(id);
+	});
+}
+const references = (entry) => {
+	const c = entry.content;
+	return [
+		...list(c.objectives ?? c.objective),
+		...list(c.families ?? c.family),
+		...list(c.prerequisites),
+		...list(c.concept ?? entry.concept),
+		...list(c.related),
+		...list(c.confusable_with),
+		...Array.from(JSON.stringify(c).matchAll(/<c\s+k=\\?"([^"\\]+)/g), (m) => m[1])
+	].map((x) => typeof x === "string" ? x : x?.id).filter(Boolean);
+};
+function changedItems(before, after) {
+	const old = new Map(before.entries.map((e) => [e.id, e])), current = new Map(after.entries.map((e) => [e.id, e]));
+	const order = (entries) => {
+		const groups = /* @__PURE__ */ new Map(), positions = /* @__PURE__ */ new Map();
+		for (const e of entries) if (old.has(e.id) && current.has(e.id)) {
+			const key = `${e.sub || e.file}/${e.kind}`;
+			const peers = groups.get(key) || [];
+			positions.set(e.id, peers.length);
+			peers.push(e.id);
+			groups.set(key, peers);
+		}
+		return positions;
+	};
+	const previousOrder = order(before.entries), nextOrder = order(after.entries);
+	const changes = after.entries.flatMap((e) => !old.has(e.id) ? [{
+		id: e.id,
+		change: "added"
+	}] : e.hash !== old.get(e.id).hash || e.sub !== old.get(e.id).sub || previousOrder.get(e.id) !== nextOrder.get(e.id) ? [{
+		id: e.id,
+		change: "changed"
+	}] : []);
+	for (const id of old.keys()) if (!current.has(id)) changes.push({
+		id,
+		change: "deleted"
+	});
+	if (fingerprint(JSON.stringify(before.evidence || {})) !== fingerprint(JSON.stringify(after.evidence || {}))) {
+		const id = current.has("author-plan") ? "author-plan" : after.entries[0]?.id;
+		if (id && !changes.some((c) => c.id === id)) changes.push({
+			id,
+			change: "source-changed"
+		});
+	}
+	return changes;
+}
+/** Include dependency closure and adjacent teaching context, not every lesson
+whenever one byte in its YAML file changes. */
+function affectedItems(index, ids, before = null) {
+	const selected = new Set(ids);
+	if (selected.has("author-plan")) for (const e of index.entries) selected.add(e.id);
+	const universe = [...before?.entries || [], ...index.entries];
+	const byId = new Map(universe.map((e) => [e.id, e]));
+	let grew;
+	do {
+		grew = false;
+		for (const id of [...selected]) for (const ref of references(byId.get(id) || { content: {} })) if (byId.has(ref) && !selected.has(ref)) {
+			selected.add(ref);
+			grew = true;
+		}
+		for (const entry of universe) if (!selected.has(entry.id) && references(entry).some((id) => selected.has(id))) {
+			selected.add(entry.id);
+			grew = true;
+		}
+	} while (grew);
+	for (const id of [...selected]) {
+		const e = byId.get(id);
+		if (!e) continue;
+		for (const ref of references(e)) if (byId.has(ref)) selected.add(ref);
+		if (e.sub) {
+			for (const other of index.entries) if (other.sub === e.sub && other.kind === "block" && Math.abs(other.position - e.position) <= 1) selected.add(other.id);
+		}
+	}
+	return index.entries.filter((e) => selected.has(e.id));
+}
+const publicItem = (entry) => {
+	const content = { ...entry.content };
+	if ([
+		"objective",
+		"family",
+		"concept"
+	].includes(entry.kind)) delete content.id;
+	return {
+		id: entry.id,
+		kind: entry.kind,
+		target: entry.file,
+		...entry.sub ? { subsection: entry.sub } : {},
+		content
+	};
+};
+const excerpt = (value, omitted, path = "", limit = 280, budget = { remaining: 2400 }) => {
+	if (budget.remaining <= 0) {
+		omitted.push(path);
+		return null;
+	}
+	if (typeof value === "string" && value.length > limit) {
+		omitted.push(path);
+		const cut = value.slice(0, limit).replace(/<m>(?:(?!<\/m>)[\s\S])*$/, "").replace(/<[^>]*$/, "");
+		budget.remaining -= cut.length;
+		return cut + "…";
+	}
+	if (Array.isArray(value)) {
+		if (value.length > 6) omitted.push(`${path}[6..${value.length - 1}]`);
+		return value.slice(0, 6).map((v, i) => excerpt(v, omitted, `${path}[${i}]`, limit, budget));
+	}
+	if (value && typeof value === "object") {
+		const fields = Object.entries(value);
+		if (fields.length > 20) omitted.push(`${path} additional fields`);
+		return Object.fromEntries(fields.slice(0, 20).map(([k, v]) => {
+			budget.remaining -= k.length;
+			return [k, excerpt(v, omitted, path ? `${path}.${k}` : k, limit, budget)];
+		}));
+	}
+	if (typeof value === "string") budget.remaining -= value.length;
+	return value;
+};
+function screenPackets(index, plan, { section, changed = false, review, maxBytes = 24e3, contextPath = "review-context.yaml", issuePath = "corrections.yaml", envelope = {} } = {}) {
+	if (section && !index.entries.some((e) => e.section === section)) throw new Error(`unknown section ${section}`);
+	if (changed && !review?.baseline) throw new Error("no saved review baseline; run author issues first");
+	const baseline = review?.status === "accepted" ? review.accepted : review?.baseline;
+	const delta = changed ? changedItems(baseline, index) : [];
+	const pending = changed && review.status !== "accepted";
+	const seeds = [
+		...delta.map((d) => d.id),
+		...(review?.results || []).flatMap((r) => r.affected || []),
+		...pending ? review.issues.flatMap((i) => i.targets) : []
+	];
+	if (!pending) seeds.splice(0, seeds.length, ...delta.map((d) => d.id));
+	let entries = changed ? affectedItems(index, seeds, baseline) : index.entries;
+	if (section) entries = entries.filter((e) => e.section === section || !e.section);
+	const bySection = /* @__PURE__ */ new Map();
+	for (const e of entries) {
+		const key = e.section || "curriculum";
+		if (!bySection.has(key)) bySection.set(key, []);
+		const omitted = [], item = publicItem(e);
+		item.content = excerpt(item.content, omitted);
+		if (omitted.length) item.truncated = omitted;
+		const change = delta.find((d) => d.id === e.id)?.change;
+		if (change) item.change = change;
+		if (changed) item.issues = review.issues.filter((i) => i.targets.includes(e.id) || review.results?.some((r) => r.issue === i.id && r.affected?.includes(e.id))).map((i) => i.id);
+		bySection.get(key).push(item);
+	}
+	if (changed) for (const deletion of delta.filter((d) => d.change === "deleted")) {
+		const old = baseline.entries.find((e) => e.id === deletion.id);
+		if (section && old.section && old.section !== section) continue;
+		const key = old.section || "curriculum", omitted = [], item = publicItem(old);
+		item.content = excerpt(item.content, omitted);
+		item.change = "deleted";
+		if (omitted.length) item.truncated = omitted;
+		if (!bySection.has(key)) bySection.set(key, []);
+		bySection.get(key).push(item);
+	}
+	const packets = [];
+	for (const [key, items] of bySection) {
+		const outline = index.entries.filter((e) => e.section === key && e.kind === "block").slice(0, 20).map((e) => ({
+			id: e.id,
+			subsection: e.sub,
+			...e.content.term ? { defines: String(e.content.term).slice(0, 100) } : {}
+		}));
+		const header = {
+			...envelope,
+			phase: "review",
+			section: key,
+			purpose: "Screen original excerpts; expand IDs before source or answer judgments.",
+			context: contextPath,
+			outline,
+			...changed ? { issueReport: issuePath } : {}
+		};
+		if (Buffer.byteLength(packetText(header)) > maxBytes / 2) delete header.outline;
+		if (Buffer.byteLength(packetText(header)) > maxBytes) throw new Error("screen header exceeds byte budget");
+		let chunk = [], part = 1;
+		for (const item of items) {
+			if (Buffer.byteLength(packetText({
+				...header,
+				items: [item]
+			})) > maxBytes) throw new Error(`screen item ${item.id} exceeds byte budget; request its full ID packet`);
+			if (chunk.length && Buffer.byteLength(packetText({
+				...header,
+				items: [...chunk, item]
+			})) > maxBytes) {
+				packets.push({
+					...header,
+					part: part++,
+					items: chunk
+				});
+				chunk = [];
+			}
+			chunk.push(item);
+		}
+		if (chunk.length) packets.push({
+			...header,
+			part,
+			items: chunk
+		});
+	}
+	if (changed && !packets.length) packets.push({
+		...envelope,
+		phase: "review",
+		purpose: "Check issue resolution evidence.",
+		issueReport: issuePath,
+		context: contextPath,
+		items: []
+	});
+	return packets;
+}
+function reviewContext(index, plan) {
+	return {
+		reader: plan.data.reader || {},
+		lessons: plan.data.lessons || plan.data.subsections || [],
+		map: index.entries.map((e) => ({
+			id: e.id,
+			kind: e.kind,
+			...e.sub ? { subsection: e.sub } : {},
+			...e.kind === "block" ? {
+				order: e.position,
+				tier: e.content.tier || "spine"
+			} : {},
+			...e.content.term ? { defines: e.content.term } : {},
+			references: references(e)
+		}))
+	};
+}
+function recordReviewView(state, index, ids) {
+	const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
+	for (const e of findItems(index, ids)) views[e.id] = {
+		hash: e.hash,
+		sub: e.sub,
+		position: e.position,
+		evidence: fingerprint(JSON.stringify(index.evidence || {}))
+	};
+	save(path, views);
+}
+function fullItems(index, ids) {
+	return findItems(index, ids).map(publicItem);
+}
+function saveIssues(state, index, report) {
+	const findings = report.items || report.findings;
+	if (!Array.isArray(findings) || !findings.length) throw new Error("issue report needs nonempty items");
+	const seen = /* @__PURE__ */ new Set();
+	const issues = findings.map((f) => {
+		const targets = list(f.targets || f.target);
+		findItems(index, targets);
+		if (!targets.length || !f.issue || !f.done) throw new Error("each issue needs targets, issue and done");
+		const id = f.id || `issue-${randomUUID().slice(0, 12)}`;
+		if (seen.has(id)) throw new Error(`duplicate issue ID ${id}`);
+		seen.add(id);
+		return {
+			id,
+			targets,
+			issue: f.issue,
+			done: f.done,
+			...f.sourceRefs ? { sourceRefs: f.sourceRefs } : {}
+		};
+	});
+	const screenPath = join(state, "screen-baseline.yaml");
+	if (existsSync(screenPath)) {
+		const screened = parseFile(screenPath);
+		for (const target of issues.flatMap((i) => i.targets)) {
+			const old = screened.entries.find((e) => e.id === target), now = index.entries.find((e) => e.id === target);
+			if (!old || old.hash !== now.hash) throw new Error(`stale issue target ${target}; screen or expand its current revision first`);
+		}
+	}
+	const old = readReview(state);
+	if (old && old.status !== "accepted") throw new Error("finish the saved review before replacing its issue baseline");
+	const review = {
+		status: "issues",
+		baseline: index,
+		issues
+	};
+	save(join(state, "review.yaml"), review);
+	save(join(state, "corrections.yaml"), { items: issues });
+	return review;
+}
+function saveCorrections(state, index, report) {
+	const review = readReview(state);
+	if (!review || review.status !== "issues") throw new Error("no pending consolidated issues");
+	const results = report.results;
+	if (!Array.isArray(results)) throw new Error("correction report needs results");
+	const seen = /* @__PURE__ */ new Set();
+	for (const r of results) {
+		if (!review.issues.some((i) => i.id === r.issue) || seen.has(r.issue)) throw new Error(`unknown or duplicate issue ${r.issue}`);
+		seen.add(r.issue);
+		if (!["fixed", "already-satisfied"].includes(r.disposition) || !Array.isArray(r.affected) || !r.affected.length) throw new Error(`${r.issue}: needs disposition fixed|already-satisfied and nonempty affected IDs`);
+		findItems(index, r.affected);
+	}
+	if (seen.size !== review.issues.length) throw new Error("every issue needs a correction result");
+	review.status = "recheck";
+	review.results = results;
+	review.changes = changedItems(review.baseline, index);
+	save(join(state, "review.yaml"), review);
+	save(join(state, "change-report.yaml"), {
+		changes: review.changes.map((change) => ({
+			...change,
+			issues: review.issues.filter((i) => i.targets.includes(change.id) || results.some((r) => r.issue === i.id && r.affected.includes(change.id))).map((i) => i.id)
+		})),
+		results
+	});
+	rmSync(join(state, "review-views.yaml"), { force: true });
+	return review;
+}
+function acceptReview(state, index) {
+	const review = readReview(state);
+	if (!review) return;
+	if (!["recheck", "accepted"].includes(review.status)) throw new Error("record correction results, then re-review affected evidence before acceptance");
+	const base = review.status === "accepted" ? review.accepted : review.baseline;
+	const changes = changedItems(base, index);
+	const seeds = [...changes.map((d) => d.id), ...review.status === "recheck" ? [...review.issues.flatMap((i) => i.targets), ...review.results.flatMap((r) => r.affected)] : []];
+	const viewsPath = join(state, "review-views.yaml"), views = existsSync(viewsPath) ? parseFile(viewsPath) : {};
+	for (const change of changes.filter((c) => c.change === "deleted")) {
+		const old = base.entries.find((e) => e.id === change.id);
+		if (views[change.id]?.hash !== old.hash) throw new Error(`deleted review ID ${change.id} needs a changed-content screen before acceptance`);
+	}
+	for (const e of affectedItems(index, seeds, base)) {
+		const view = views[e.id];
+		if (!view || view.hash !== e.hash || view.sub !== e.sub || view.position !== e.position || view.evidence !== fingerprint(JSON.stringify(index.evidence || {}))) throw new Error(`review ID ${e.id} changed or needs recheck; run screen --changed or packet --ids before acceptance`);
+	}
+	review.status = "accepted";
+	review.accepted = index;
+	save(join(state, "review.yaml"), review);
+}
+//#endregion
 //#region tools/author.mjs
 const est = estimateTokens;
 const context = loadContext(join(ENGINE, "authoring"));
 const workflow = loadWorkflow(context);
 const READER = process.env.AUTHOR_READER || join(COURSES, "_reader.yaml");
 const [cmd, id, ...rest] = process.argv.slice(2);
-const USAGE = "usage: author.mjs <begin|sources|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
+const USAGE = "usage: author.mjs <begin|sources|index|screen|issues|corrected|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
 const say = (s) => console.log(s);
 const fail = (s) => {
 	console.log(s);
@@ -5142,7 +5880,10 @@ const valueFlags = /* @__PURE__ */ new Set([
 	"--item",
 	"--issue",
 	"--workspace",
-	"--handoff"
+	"--handoff",
+	"--section",
+	"--ids",
+	"--report"
 ]);
 const booleanFlags = /* @__PURE__ */ new Set([
 	"--all",
@@ -5157,7 +5898,8 @@ const booleanFlags = /* @__PURE__ */ new Set([
 	"--research",
 	"--show",
 	"--staging",
-	"--refresh"
+	"--refresh",
+	"--changed"
 ]);
 const unknownFlag = rest.find((a) => a.startsWith("--") && !valueFlags.has(a) && !booleanFlags.has(a));
 if (unknownFlag) fail(`unknown option ${unknownFlag}; use --workspace PATH to select the course workspace`);
@@ -5200,14 +5942,49 @@ if (rest.includes("--mode") || rest.includes("--handoff")) {
 	}));
 }
 const flowRecords = () => existsSync(flowFile) ? parseFile(flowFile) || {} : {};
-const currentFlow = (p = progress()) => flowState({
-	mode,
-	handoff,
-	progress: p,
-	plan: readPlan(courseDir),
-	records: flowRecords(),
-	workflow
-});
+const currentFlow = (p = progress()) => {
+	const flow = flowState({
+		mode,
+		handoff,
+		progress: p,
+		plan: readPlan(courseDir),
+		records: flowRecords(),
+		workflow
+	});
+	const review = readReview(stateDir);
+	if (!review || [
+		"plan",
+		"migrate",
+		"setup",
+		"write"
+	].includes(flow.stage)) return flow;
+	if (review.status === "accepted") {
+		try {
+			if (!changedItems(review.accepted, reviewIndex(courseDir, stateDir, {
+				assign: false,
+				persist: false
+			})).length) return flow;
+		} catch (e) {
+			if (!e.message.includes("missing authorId")) throw e;
+		}
+		return {
+			...flow,
+			stage: "review",
+			phase: "review",
+			role: defaultRole("review"),
+			action: "Accepted content changed; screen --changed, expand relevant IDs, then reviewed --all before finish."
+		};
+	}
+	const stage = review.status === "issues" ? "correct" : "review";
+	return {
+		...flow,
+		stage,
+		phase: stage === "correct" ? "write" : "review",
+		role: mode === "single" ? "single" : stage === "correct" ? "writer" : "reviewer",
+		action: stage === "correct" ? "Apply all consolidated corrections; record corrected --report, then checked done --all." : "Review screen --changed; expand all suspect IDs together, then reviewed --all after acceptance.",
+		corrections: join(stateDir, "corrections.yaml")
+	};
+};
 const defaultRole = (phase) => mode === "single" ? "single" : phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer";
 const selection = (phase, needs = [], full = false) => selectContext(context, {
 	phase,
@@ -5292,13 +6069,24 @@ function progress() {
 		if (!freshness.has(u.id)) freshness.set(u.id, !checks[key(u)] || checks[key(u)].hash === fileHash(u.file) && checks[key(u)].plan === planSignature(plan, u.id, planIndex));
 		return freshness.get(u.id);
 	};
+	const review = readReview(stateDir);
+	let reviewFresh = !review || review.status === "accepted";
+	if (review?.status === "accepted") try {
+		reviewFresh = !changedItems(review.accepted, reviewIndex(courseDir, stateDir, {
+			assign: false,
+			persist: false
+		})).length;
+	} catch (e) {
+		if (!e.message.includes("missing authorId")) throw e;
+		reviewFresh = false;
+	}
 	return {
 		d,
 		done: d.subs.filter((u) => key(u) in map && fresh(u)),
 		staged: d.subs.filter((u) => staged.has(key(u))),
 		todo: d.subs.filter((u) => (!(key(u) in map) || !fresh(u)) && !staged.has(key(u))),
 		courseDone: existsSync(marker("course")),
-		finished: existsSync(marker("finish")) && d.subs.every((u) => fresh(u))
+		finished: existsSync(marker("finish")) && reviewFresh && d.subs.every((u) => fresh(u))
 	};
 }
 const thin = (u) => !u.spine ? "no spine blocks" : !u.quiz ? "no quiz items" : null;
@@ -5377,9 +6165,11 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
 		packet.contract = join(context.root, "plan.md");
 	}
 	const record = flowRecords()[sub];
-	if (phase === "write" && record?.status === "correct" && record.plan === planSignature(plan, sub)) {
-		const directives = parseFile(record.corrections) || {};
-		packet.corrections = record.corrections;
+	const consolidated = readReview(stateDir);
+	if (phase === "write" && (consolidated?.status === "issues" || record?.status === "correct" && record.plan === planSignature(plan, sub))) {
+		const correctionPath = consolidated?.status === "issues" ? join(stateDir, "corrections.yaml") : record.corrections;
+		const directives = parseFile(correctionPath) || {};
+		packet.corrections = correctionPath;
 		const findings = directives.findings || directives.items || [];
 		packet.sourceRefs = refs.length ? refs : findings.flatMap((i) => i.sourceRefs || []);
 		delete packet.families;
@@ -5444,7 +6234,7 @@ function catalogSources() {
 		...parseFile(cached),
 		directory: join(stateDir, "sources")
 	};
-	return indexSources(list(savedRoots()), join(stateDir, "sources"), { refresh: rest.includes("--refresh") });
+	return indexSources(list$1(savedRoots()), join(stateDir, "sources"), { refresh: rest.includes("--refresh") });
 }
 function coverageSummary() {
 	const report = planCoverage(readPlan(courseDir), progress().d.subs);
@@ -5460,6 +6250,74 @@ function readerOrDie() {
 	}
 }
 const commands = {
+	index() {
+		const indexed = reviewIndex(courseDir, stateDir);
+		say(`Indexed ${indexed.entries.length} stable review IDs. Hashes are internal change-detection state.`);
+	},
+	screen(overrides = {}) {
+		const indexed = reviewIndex(courseDir, stateDir), plan = readPlan(courseDir);
+		const changed = overrides.changed ?? flag("--changed"), paths = [];
+		const contextPath = join(stateDir, "review-context.yaml");
+		writeFileSync(contextPath, packetText(reviewContext(indexed, plan)));
+		const packets = screenPackets(indexed, plan, {
+			section: option("--section"),
+			changed,
+			review: readReview(stateDir),
+			contextPath,
+			issuePath: join(stateDir, "corrections.yaml"),
+			envelope: {
+				mode,
+				role: defaultRole("review"),
+				rules: selection("review").modules.map((m) => m.path)
+			}
+		});
+		if (!changed) writeFileSync(join(stateDir, "screen-baseline.yaml"), packetText(indexed));
+		for (const packet of packets) {
+			const review = readReview(stateDir), old = review?.status === "accepted" ? review.accepted : review?.baseline;
+			const lookup = {
+				evidence: indexed.evidence,
+				entries: [...indexed.entries, ...(old?.entries || []).filter((e) => !indexed.entries.some((now) => now.id === e.id))]
+			};
+			const path = join(stateDir, "packets", `screen-${packet.section || "changes"}-${packet.part || 1}.yaml`);
+			mkdirSync(dirname(path), { recursive: true });
+			writeFileSync(path, packetText(packet));
+			paths.push(path);
+			recordReviewView(stateDir, lookup, packet.items.map((i) => i.id));
+			say(`Screen: ${path} (~${est(packetText(packet))} tokens).`);
+			if (flag("--show")) say(packetText(packet));
+		}
+		return paths;
+	},
+	issues() {
+		const report = option("--report");
+		if (!report) fail("issues needs --report PATH containing items with target IDs, issue and done");
+		const indexed = reviewIndex(courseDir, stateDir);
+		const review = saveIssues(stateDir, indexed, parseFile(report));
+		const affected = affectedItems(indexed, review.issues.flatMap((i) => i.targets));
+		const records = flowRecords(), plan = readPlan(courseDir);
+		for (const sub of new Set(affected.map((e) => e.sub).filter(Boolean))) {
+			const unit = digest(courseDir).subs.find((s) => s.id === sub);
+			records[sub] = {
+				status: "correct",
+				hash: fileHash(unit.file),
+				plan: planSignature(plan, sub),
+				corrections: join(stateDir, "corrections.yaml")
+			};
+		}
+		mkdirSync(stateDir, { recursive: true });
+		writeFileSync(flowFile, packetText(records));
+		rmSync(marker("finish"), { force: true });
+		say(`Saved ${review.issues.length} consolidated issues: ${join(stateDir, "corrections.yaml")}.`);
+	},
+	corrected() {
+		const report = option("--report");
+		if (!report) fail("corrected needs --report PATH with results: [{issue, disposition, affected}]");
+		const indexed = reviewIndex(courseDir, stateDir);
+		const review = saveCorrections(stateDir, indexed, parseFile(report));
+		say(`Correction results saved; ${review.changes.length} actual item changes detected, including unreported edits.`);
+		say(`Changed IDs and issue links: ${join(stateDir, "change-report.yaml")}.`);
+		say(`Run checked done --all, then return to the reviewer for screen --changed and acceptance.`);
+	},
 	begin() {
 		const sourceArgs = rest.flatMap((a, i) => a === "--source" ? [rest[i + 1]] : []);
 		if (sourceArgs.some((s) => !s || s.startsWith("--"))) fail("--source needs a path");
@@ -5521,6 +6379,82 @@ const commands = {
 		for (const warning of catalog.warnings || []) warn(warning);
 	},
 	packet() {
+		if (options("--ids").length) {
+			const indexed = reviewIndex(courseDir, stateDir), review = readReview(stateDir);
+			const old = review?.status === "accepted" ? review.accepted : review?.baseline;
+			const lookup = {
+				evidence: indexed.evidence,
+				entries: [...indexed.entries, ...(old?.entries || []).filter((e) => !indexed.entries.some((now) => now.id === e.id))]
+			};
+			const selected = fullItems(lookup, options("--ids"));
+			for (const item of selected) if (!indexed.entries.some((e) => e.id === item.id)) item.change = "deleted";
+			const catalog = catalogSources(), plan = readPlan(courseDir);
+			const refs = selected.flatMap((item) => item.content.sourceRefs || []);
+			for (const raw of options("--source")) {
+				const m = /^([^/]+)\/([^@]+)(?:@L(\d+)-L?(\d+))?$/.exec(raw);
+				if (!m) fail(`invalid source locator ${raw}`);
+				refs.push({
+					source: m[1],
+					unit: m[2],
+					...m[3] ? { lines: [+m[3], +m[4]] } : {}
+				});
+			}
+			if (flag("--expand")) for (const item of selected) {
+				const entry = lookup.entries.find((e) => e.id === item.id);
+				const lessons = plan.data.lessons || plan.data.subsections || [];
+				const lesson = lessons.find((l) => l.id === entry.sub);
+				refs.push(...lesson?.sources || lesson?.sourceRefs || []);
+				refs.push(...(item.content.sources || []).filter((r) => r?.source && r?.unit));
+				if (item.kind === "plan") refs.push(...lessons.flatMap((l) => l.sources || l.sourceRefs || []));
+				for (const locus of item.content.source_loci || []) {
+					if (locus && typeof locus === "object") {
+						refs.push(locus);
+						continue;
+					}
+					const m = /^([^/]+)\/([^@]+)(?:@L(\d+)-L?(\d+))?$/.exec(locus);
+					if (m) refs.push({
+						source: m[1],
+						unit: m[2],
+						...m[3] ? { lines: [+m[3], +m[4]] } : {}
+					});
+				}
+			}
+			const sources = [], warnings = [];
+			for (const ref of new Map(refs.map((r) => [JSON.stringify(r), r])).values()) {
+				if (!ref.lines && !flag("--expand")) {
+					warnings.push("Source needs an exact span or explicit --expand.");
+					continue;
+				}
+				const evidence = readUnit(catalog, ref);
+				if (evidence.warning?.includes("Source changed or disappeared")) fail("source evidence is stale; run author sources --refresh before expanding IDs");
+				sources.push(evidence);
+			}
+			const phase = option("--phase", currentFlow().phase), role = option("--role", defaultRole(phase));
+			const needs = selected.flatMap((item) => item.kind === "block" ? [...shapeNeeds({ blocks: [item.content] })] : ["quiz", "practice"].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : []);
+			const packet = {
+				phase,
+				mode,
+				role,
+				rules: selection(phase, needs).modules.map((m) => m.path),
+				...review?.status === "issues" ? { corrections: join(stateDir, "corrections.yaml") } : {},
+				reader: plan.data.reader || {},
+				items: selected,
+				sources,
+				warnings
+			};
+			const path = join(stateDir, "packets", "review-items.yaml");
+			mkdirSync(dirname(path), { recursive: true });
+			writeFileSync(path, packetText(packet));
+			recordReviewView(stateDir, lookup, selected.map((i) => i.id));
+			const screened = join(stateDir, "screen-baseline.yaml");
+			const baseline = existsSync(screened) ? parseFile(screened) : { entries: [] };
+			const ids = new Set(selected.map((i) => i.id));
+			baseline.entries = [...baseline.entries.filter((e) => !ids.has(e.id)), ...lookup.entries.filter((e) => ids.has(e.id))];
+			writeFileSync(screened, packetText(baseline));
+			say(`Packet: ${path} (~${est(packetText(packet))} tokens).`);
+			if (flag("--show")) say(packetText(packet));
+			return;
+		}
 		const p = progress();
 		const flow = currentFlow(p);
 		const phase = option("--phase", flow.phase);
@@ -5545,6 +6479,8 @@ const commands = {
 			};
 		});
 		const path = join(stateDir, "batch.yaml");
+		const review = readReview(stateDir);
+		const reviewPackets = flow.phase === "review" && flow.stage === "review" ? commands.screen({ changed: !!review?.baseline && (!!flow.batch?.recheck || ["recheck", "accepted"].includes(review.status)) }) : [];
 		const profile = context.manifest.profiles?.[mode] || {};
 		const task = {
 			version: 1,
@@ -5569,6 +6505,10 @@ const commands = {
 			...flow.batch ? {
 				batch: flow.batch.id,
 				members: flow.batch.members
+			} : {},
+			...reviewPackets.length ? {
+				review_packets: reviewPackets,
+				review_context: join(stateDir, "review-context.yaml")
 			} : {},
 			...flow.stage === "migrate" ? { legacy: plan.legacy } : {},
 			...plan.hash ? { plan: {
@@ -5624,6 +6564,7 @@ const commands = {
 		if (result.status !== 0) say((result.stdout || result.stderr || result.error?.message || "audit failed").trim());
 	},
 	done() {
+		reviewIndex(courseDir, stateDir);
 		if (flag("--all")) {
 			if (flag("--staging") || flag("--no-validate")) fail("done --all requires checked completion");
 			const p = progress(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
@@ -5714,6 +6655,7 @@ const commands = {
 		if (flag("--all")) {
 			if (flag("--corrections")) fail("record correction outcomes individually; reviewed --all is a clean review declaration");
 			if (p.done.length !== p.d.subs.length) fail("run checked done for every subsection before reviewed --all");
+			acceptReview(stateDir, reviewIndex(courseDir, stateDir));
 			const records = flowRecords(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
 			for (const unit of p.d.subs) records[unit.id] = {
 				status: "reviewed",
@@ -5752,6 +6694,11 @@ const commands = {
 			fail(`not finished: ${message}`);
 		};
 		const p = progress();
+		const review = readReview(stateDir);
+		if (review) {
+			if (review.status !== "accepted") refuse("consolidated issues still need reviewer acceptance");
+			if (changedItems(review.accepted, reviewIndex(courseDir, stateDir)).length) refuse("reviewed content changed; screen and review its current revision before finishing");
+		}
 		if (currentFlow(p).stage !== "finish") warn(`workflow still reports ${currentFlow(p).stage}; finish checks structure only, not semantic review`);
 		const required = [
 			!p.courseDone && "setup was not recorded with author write",
@@ -5846,6 +6793,10 @@ Recorded as finished (structural checks only; semantic review is separate). Revi
 	}
 };
 if (!commands[cmd]) fail(USAGE);
-commands[cmd]();
+try {
+	commands[cmd]();
+} catch (e) {
+	fail(e.message);
+}
 //#endregion
 export {};

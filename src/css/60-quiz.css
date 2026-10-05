@@ -16,13 +16,29 @@
   border:1px solid color-mix(in srgb,var(--hi) 40%,transparent);padding:3px 7px;
   border-radius:3px;overflow-wrap:anywhere}
 .qreason{font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-2)}
-.qtext{font-size:1rem;overflow-wrap:anywhere}
+.qtext{font-size:1rem;overflow-wrap:anywhere;padding:8px 20px 16px}
 .qtext>*:first-child{margin-top:0}
-.qstim{margin:0 0 16px;max-width:100%;overflow-x:auto}
-.qstim img,.qstim svg{max-width:100%;height:auto}
-.qstim blockquote{margin:0;padding:14px 17px;border-left:3px solid var(--hi);
-  background:var(--surface);line-height:1.65;white-space:normal}
+.qtext>*:last-child{margin-bottom:0}
+.qstim{margin:0;max-width:100%;min-width:0;overflow-wrap:anywhere}
+.qstim-p,.qstim-passage{padding:12px 20px;line-height:1.65}
+.qstim-p>*:first-child{margin-top:0}
+.qstim-p>*:last-child{margin-bottom:0}
+.qstim blockquote{margin:0;padding:0;white-space:normal}
 .qstim figcaption{font-size:var(--fs-meta);color:var(--ink-2);margin-top:6px}
+.qstim-figure,.qstim-image,.qstim-code,.qstim-table,.qstim-math{
+  border-block:1px solid var(--rule);background:var(--surface);margin:8px 0 16px}
+.qstim .figure{border:0;border-radius:0;margin:0}
+/* Preserve drawing labels at their authored size; the viewport owns overflow. */
+.qstim .figure-scroll svg{max-width:none}
+.qstim .imgblock{margin:0;padding:16px 20px}
+.qstim .imgblock img{border:0;border-radius:0}
+.qstim .codewrap{margin:0}
+.qstim .codewrap pre{border:0;border-radius:0}
+.qstim-table,.qstim-math{padding:16px 20px;overflow-x:auto}
+.qstim-note,.qstim-key,.qstim-def,.qstim-trap,.qstim-ex{
+  padding:12px 20px;border-left:3px solid var(--hi);background:var(--surface);margin:8px 0 16px}
+.qstim-note>.note,.qstim-key>.key,.qstim-def>.def,.qstim-trap>.trap,.qstim-ex>.ex{
+  border:0;border-radius:0;padding:0;margin:0;background:none}
 .qform{padding:4px 20px 20px}
 .qchoices{border:0;padding:0;margin:0;min-width:0}
 .qchoices legend{font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-2);margin-bottom:8px}
@@ -49,6 +65,21 @@
   border:1px solid var(--rule);border-radius:3px;padding:10px;max-width:100%}
 .qentry input{width:12rem}
 .qentry textarea{width:100%;resize:vertical;line-height:1.5}
+.qanswer .qentry input{width:100%}
+.qsymbols{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.qsymbols .dbtn{min-width:44px;min-height:44px}
+.qpreview{overflow-x:auto;white-space:pre-wrap;min-height:1.5em;margin-top:10px}
+.qcheck-error{font-family:var(--ui);font-size:var(--fs-small);color:var(--ink-2)}
+.qmath{min-width:0}
+.qmath math-field{display:block;width:100%;min-height:48px;padding:8px;border:1px solid var(--rule);
+  border-radius:3px;background:var(--surface);color:var(--ink);font-size:1.2rem;--caret-color:var(--ink)}
+.qmath math-field::part(virtual-keyboard-toggle),.qmath math-field::part(menu-toggle){display:none}
+.qsymbol-dialog{color:var(--ink);background:var(--surface);border:1px solid var(--rule);
+  border-radius:4px;padding:20px;max-width:min(32rem,90vw);max-height:85dvh;overflow-y:auto}
+.qsymbol-dialog::backdrop{background:rgb(0 0 0 / .5)}
+.qsymbol-dialog>.dbtn{margin-top:16px;min-height:44px}
+.qsymbol-groups section{margin:16px 0}
+.qsymbol-groups h3{font-family:var(--ui);font-size:var(--fs-small);margin:0}
 .qactions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:16px}
 .qactions .dbtn{min-height:40px}
 .qactions .dbtn[disabled]{opacity:.55;cursor:default}

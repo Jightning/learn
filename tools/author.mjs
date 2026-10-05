@@ -16,6 +16,7 @@ import { readReader } from "./lib/reader.mjs";
 import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from "./lib/sources.mjs";
 import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE } from "./lib/paths.mjs";
 import { note } from "./author-log.mjs";
+import { reviewIndex, screenPackets, fullItems, saveIssues, saveCorrections, readReview, acceptReview, affectedItems, changedItems, reviewContext, recordReviewView } from "./lib/author-review.mjs";
 
 const est = estimateTokens;
 const context = loadContext(join(ENGINE, "authoring"));
@@ -26,7 +27,7 @@ const READER = process.env.AUTHOR_READER || join(COURSES, "_reader.yaml");
 
 /* ------------------------------------------------------------- arguments --*/
 const [cmd, id, ...rest] = process.argv.slice(2);
-const USAGE = "usage: author.mjs <begin|sources|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
+const USAGE = "usage: author.mjs <begin|sources|index|screen|issues|corrected|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
 const say = s => console.log(s);
 /* Every refusal is logged where the course is, so the record of a build does
    not depend on the agent keeping a readable transcript. */
@@ -40,8 +41,8 @@ if (!cmd || !id) fail(USAGE);
 const courseDir = join(COURSES, id);
 // Diagnostics must operate on the same workspace even when it came from CLI.
 process.env.AUTHOR_WORKSPACE = WORKSPACE;
-const valueFlags = new Set(["--source", "--need", "--mode", "--phase", "--role", "--sub", "--item", "--issue", "--workspace", "--handoff"]);
-const booleanFlags = new Set(["--all", "--confident", "--corrections", "--digest", "--expand", "--full-spec", "--lean", "--no-validate", "--repeat-warnings", "--research", "--show", "--staging", "--refresh"]);
+const valueFlags = new Set(["--source", "--need", "--mode", "--phase", "--role", "--sub", "--item", "--issue", "--workspace", "--handoff", "--section", "--ids", "--report"]);
+const booleanFlags = new Set(["--all", "--confident", "--corrections", "--digest", "--expand", "--full-spec", "--lean", "--no-validate", "--repeat-warnings", "--research", "--show", "--staging", "--refresh", "--changed"]);
 const unknownFlag = rest.find(a => a.startsWith("--") && !valueFlags.has(a) && !booleanFlags.has(a));
 if (unknownFlag) fail(`unknown option ${unknownFlag}; use --workspace PATH to select the course workspace`);
 if (!existsSync(courseDir)) fail(`courses/${id} does not exist (npm run new -- ${id} "Title")`);
@@ -74,7 +75,26 @@ if (rest.includes("--mode") || rest.includes("--handoff")) {
   writeFileSync(settingsFile, YAML.dump({ ...settings, mode, handoff }));
 }
 const flowRecords = () => existsSync(flowFile) ? parseFile(flowFile) || {} : {};
-const currentFlow = (p = progress()) => flowState({ mode, handoff, progress: p, plan: readPlan(courseDir), records: flowRecords(), workflow });
+const currentFlow = (p = progress()) => {
+  const flow = flowState({ mode, handoff, progress: p, plan: readPlan(courseDir), records: flowRecords(), workflow });
+  const review = readReview(stateDir);
+  if (!review || ["plan", "migrate", "setup", "write"].includes(flow.stage)) return flow;
+  if (review.status === "accepted") {
+    try {
+      if (!changedItems(review.accepted, reviewIndex(courseDir, stateDir, { assign: false, persist: false })).length) return flow;
+    } catch (e) {
+      if (!e.message.includes("missing authorId")) throw e;
+    }
+    return { ...flow, stage: "review", phase: "review", role: defaultRole("review"),
+      action: "Accepted content changed; screen --changed, expand relevant IDs, then reviewed --all before finish." };
+  }
+  const stage = review.status === "issues" ? "correct" : "review";
+  return { ...flow, stage, phase: stage === "correct" ? "write" : "review",
+    role: mode === "single" ? "single" : stage === "correct" ? "writer" : "reviewer",
+    action: stage === "correct" ? "Apply all consolidated corrections; record corrected --report, then checked done --all."
+      : "Review screen --changed; expand all suspect IDs together, then reviewed --all after acceptance.",
+    corrections: join(stateDir, "corrections.yaml") };
+};
 const defaultRole = phase => mode === "single" ? "single" : phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer";
 const selection = (phase, needs = [], full = false) => selectContext(context, { phase, role: option("--role", defaultRole(phase)), needs, full });
 /* Beside this file in a package, under tools/ in the repository. */
@@ -148,13 +168,19 @@ function progress() {
       checks[key(u)].plan === planSignature(plan, u.id, planIndex)));
     return freshness.get(u.id);
   };
+  const review = readReview(stateDir);
+  let reviewFresh = !review || review.status === "accepted";
+  if (review?.status === "accepted") {
+    try { reviewFresh = !changedItems(review.accepted, reviewIndex(courseDir, stateDir, { assign: false, persist: false })).length; }
+    catch (e) { if (!e.message.includes("missing authorId")) throw e; reviewFresh = false; }
+  }
   return {
     d,
     done: d.subs.filter(u => key(u) in map && fresh(u)),
     staged: d.subs.filter(u => staged.has(key(u))),
     todo: d.subs.filter(u => (!(key(u) in map) || !fresh(u)) && !staged.has(key(u))),
     courseDone: existsSync(marker("course")),
-    finished: existsSync(marker("finish")) && d.subs.every(u => fresh(u))
+    finished: existsSync(marker("finish")) && reviewFresh && d.subs.every(u => fresh(u))
   };
 }
 
@@ -214,9 +240,11 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
     packet.contract = join(context.root, "plan.md");
   }
   const record = flowRecords()[sub];
-  if (phase === "write" && record?.status === "correct" && record.plan === planSignature(plan, sub)) {
-    const directives = parseFile(record.corrections) || {};
-    packet.corrections = record.corrections;
+  const consolidated = readReview(stateDir);
+  if (phase === "write" && (consolidated?.status === "issues" || (record?.status === "correct" && record.plan === planSignature(plan, sub)))) {
+    const correctionPath = consolidated?.status === "issues" ? join(stateDir, "corrections.yaml") : record.corrections;
+    const directives = parseFile(correctionPath) || {};
+    packet.corrections = correctionPath;
     // A correction is not a request to reread the lesson's complete evidence.
     const findings = directives.findings || directives.items || [];
     packet.sourceRefs = refs.length ? refs : findings.flatMap(i => i.sourceRefs || []);
@@ -283,6 +311,60 @@ function readerOrDie() {
 
 /* ------------------------------------------------------------- commands --*/
 const commands = {
+
+  index() {
+    const indexed = reviewIndex(courseDir, stateDir);
+    say(`Indexed ${indexed.entries.length} stable review IDs. Hashes are internal change-detection state.`);
+  },
+
+  screen(overrides = {}) {
+    const indexed = reviewIndex(courseDir, stateDir), plan = readPlan(courseDir);
+    const changed = overrides.changed ?? flag("--changed"), paths = [];
+    const contextPath = join(stateDir, "review-context.yaml");
+    writeFileSync(contextPath, packetText(reviewContext(indexed, plan)));
+    const packets = screenPackets(indexed, plan, { section: option("--section"),
+      changed, review: readReview(stateDir), contextPath, issuePath: join(stateDir, "corrections.yaml"),
+      envelope: { mode, role: defaultRole("review"), rules: selection("review").modules.map(m => m.path) } });
+    if (!changed) writeFileSync(join(stateDir, "screen-baseline.yaml"), packetText(indexed));
+    for (const packet of packets) {
+      const review = readReview(stateDir), old = review?.status === "accepted" ? review.accepted : review?.baseline;
+      const lookup = { evidence: indexed.evidence, entries: [...indexed.entries, ...(old?.entries || []).filter(e => !indexed.entries.some(now => now.id === e.id))] };
+      const path = join(stateDir, "packets", `screen-${packet.section || "changes"}-${packet.part || 1}.yaml`);
+      mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, packetText(packet));
+      paths.push(path);
+      recordReviewView(stateDir, lookup, packet.items.map(i => i.id));
+      say(`Screen: ${path} (~${est(packetText(packet))} tokens).`);
+      if (flag("--show")) say(packetText(packet));
+    }
+    return paths;
+  },
+
+  issues() {
+    const report = option("--report");
+    if (!report) fail("issues needs --report PATH containing items with target IDs, issue and done");
+    const indexed = reviewIndex(courseDir, stateDir);
+    const review = saveIssues(stateDir, indexed, parseFile(report));
+    const affected = affectedItems(indexed, review.issues.flatMap(i => i.targets));
+    const records = flowRecords(), plan = readPlan(courseDir);
+    for (const sub of new Set(affected.map(e => e.sub).filter(Boolean))) {
+      const unit = digest(courseDir).subs.find(s => s.id === sub);
+      records[sub] = { status: "correct", hash: fileHash(unit.file), plan: planSignature(plan, sub),
+        corrections: join(stateDir, "corrections.yaml") };
+    }
+    mkdirSync(stateDir, { recursive: true }); writeFileSync(flowFile, packetText(records));
+    rmSync(marker("finish"), { force: true });
+    say(`Saved ${review.issues.length} consolidated issues: ${join(stateDir, "corrections.yaml")}.`);
+  },
+
+  corrected() {
+    const report = option("--report");
+    if (!report) fail("corrected needs --report PATH with results: [{issue, disposition, affected}]");
+    const indexed = reviewIndex(courseDir, stateDir);
+    const review = saveCorrections(stateDir, indexed, parseFile(report));
+    say(`Correction results saved; ${review.changes.length} actual item changes detected, including unreported edits.`);
+    say(`Changed IDs and issue links: ${join(stateDir, "change-report.yaml")}.`);
+    say(`Run checked done --all, then return to the reviewer for screen --changed and acceptance.`);
+  },
 
   /* The first call, and the only one that has to be made: what exists, what
      the sources are, and the rules for the part that is not written yet. */
@@ -353,6 +435,57 @@ const commands = {
   },
 
   packet() {
+    if (options("--ids").length) {
+      const indexed = reviewIndex(courseDir, stateDir), review = readReview(stateDir);
+      const old = review?.status === "accepted" ? review.accepted : review?.baseline;
+      const lookup = { evidence: indexed.evidence, entries: [...indexed.entries, ...(old?.entries || []).filter(e => !indexed.entries.some(now => now.id === e.id))] };
+      const selected = fullItems(lookup, options("--ids"));
+      for (const item of selected) if (!indexed.entries.some(e => e.id === item.id)) item.change = "deleted";
+      const catalog = catalogSources(), plan = readPlan(courseDir);
+      const refs = selected.flatMap(item => item.content.sourceRefs || []);
+      for (const raw of options("--source")) {
+        const m = /^([^/]+)\/([^@]+)(?:@L(\d+)-L?(\d+))?$/.exec(raw);
+        if (!m) fail(`invalid source locator ${raw}`);
+        refs.push({ source: m[1], unit: m[2], ...(m[3] ? { lines: [+m[3], +m[4]] } : {}) });
+      }
+      if (flag("--expand")) for (const item of selected) {
+        const entry = lookup.entries.find(e => e.id === item.id);
+        const lessons = plan.data.lessons || plan.data.subsections || [];
+        const lesson = lessons.find(l => l.id === entry.sub);
+        refs.push(...(lesson?.sources || lesson?.sourceRefs || []));
+        refs.push(...(item.content.sources || []).filter(r => r?.source && r?.unit));
+        if (item.kind === "plan") refs.push(...lessons.flatMap(l => l.sources || l.sourceRefs || []));
+        for (const locus of item.content.source_loci || []) {
+          if (locus && typeof locus === "object") { refs.push(locus); continue; }
+          const m = /^([^/]+)\/([^@]+)(?:@L(\d+)-L?(\d+))?$/.exec(locus);
+          if (m) refs.push({ source: m[1], unit: m[2], ...(m[3] ? { lines: [+m[3], +m[4]] } : {}) });
+        }
+      }
+      const sources = [], warnings = [];
+      for (const ref of new Map(refs.map(r => [JSON.stringify(r), r])).values()) {
+        if (!ref.lines && !flag("--expand")) { warnings.push("Source needs an exact span or explicit --expand."); continue; }
+        const evidence = readUnit(catalog, ref);
+        if (evidence.warning?.includes("Source changed or disappeared")) fail("source evidence is stale; run author sources --refresh before expanding IDs");
+        sources.push(evidence);
+      }
+      const phase = option("--phase", currentFlow().phase), role = option("--role", defaultRole(phase));
+      const needs = selected.flatMap(item => item.kind === "block" ? [...shapeNeeds({ blocks: [item.content] })] :
+        ["quiz", "practice"].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : []);
+      const packet = { phase, mode, role, rules: selection(phase, needs).modules.map(m => m.path),
+        ...(review?.status === "issues" ? { corrections: join(stateDir, "corrections.yaml") } : {}),
+        reader: plan.data.reader || {}, items: selected, sources, warnings };
+      const path = join(stateDir, "packets", "review-items.yaml");
+      mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, packetText(packet));
+      recordReviewView(stateDir, lookup, selected.map(i => i.id));
+      const screened = join(stateDir, "screen-baseline.yaml");
+      const baseline = existsSync(screened) ? parseFile(screened) : { entries: [] };
+      const ids = new Set(selected.map(i => i.id));
+      baseline.entries = [...baseline.entries.filter(e => !ids.has(e.id)), ...lookup.entries.filter(e => ids.has(e.id))];
+      writeFileSync(screened, packetText(baseline));
+      say(`Packet: ${path} (~${est(packetText(packet))} tokens).`);
+      if (flag("--show")) say(packetText(packet));
+      return;
+    }
     const p = progress();
     const flow = currentFlow(p);
     const phase = option("--phase", flow.phase);
@@ -373,6 +506,9 @@ const commands = {
         packet: path, ...(flow.stage === "correct" && record?.corrections ? { corrections: record.corrections } : {}) };
     });
     const path = join(stateDir, "batch.yaml");
+    const review = readReview(stateDir);
+    const reviewPackets = flow.phase === "review" && flow.stage === "review"
+      ? commands.screen({ changed: !!review?.baseline && (!!flow.batch?.recheck || ["recheck", "accepted"].includes(review.status)) }) : [];
     const profile = context.manifest.profiles?.[mode] || {};
     const task = { version: 1, course: id, mode, stage: flow.stage, role: flow.role,
       workspace: WORKSPACE, engine: ENGINE, command: script("author"),
@@ -380,6 +516,7 @@ const commands = {
       entrypoint: join(context.root, context.manifest.entrypoint),
       orchestration: join(context.root, context.manifest.orchestration),
       profile, ...(flow.batch ? { batch: flow.batch.id, members: flow.batch.members } : {}),
+      ...(reviewPackets.length ? { review_packets: reviewPackets, review_context: join(stateDir, "review-context.yaml") } : {}),
       ...(flow.stage === "migrate" ? { legacy: plan.legacy } : {}),
       ...(plan.hash ? { plan: { path: plan.path, hash: plan.hash } } : {}), tasks };
     mkdirSync(stateDir, { recursive: true });
@@ -425,6 +562,8 @@ const commands = {
 
   /* Once per subsection, and the only thing it adds is the next one. */
   done() {
+    // Assign identity before recording file hashes, not after completion.
+    reviewIndex(courseDir, stateDir);
     if (flag("--all")) {
       if (flag("--staging") || flag("--no-validate")) fail("done --all requires checked completion");
       const p = progress(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
@@ -510,6 +649,7 @@ const commands = {
     if (flag("--all")) {
       if (flag("--corrections")) fail("record correction outcomes individually; reviewed --all is a clean review declaration");
       if (p.done.length !== p.d.subs.length) fail("run checked done for every subsection before reviewed --all");
+      acceptReview(stateDir, reviewIndex(courseDir, stateDir));
       const records = flowRecords(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
       for (const unit of p.d.subs) records[unit.id] = { status: "reviewed", hash: fileHash(unit.file), plan: planSignature(plan, unit.id, planIndex) };
       mkdirSync(stateDir, { recursive: true }); writeFileSync(flowFile, YAML.dump(records));
@@ -537,6 +677,12 @@ const commands = {
     const run = runDiagnostic;
     const refuse = message => { rmSync(marker("finish"), { force: true }); fail(`not finished: ${message}`); };
     const p = progress();
+    const review = readReview(stateDir);
+    if (review) {
+      if (review.status !== "accepted") refuse("consolidated issues still need reviewer acceptance");
+      if (changedItems(review.accepted, reviewIndex(courseDir, stateDir)).length)
+        refuse("reviewed content changed; screen and review its current revision before finishing");
+    }
     if (currentFlow(p).stage !== "finish") warn(`workflow still reports ${currentFlow(p).stage}; finish checks structure only, not semantic review`);
     const required = [
       !p.courseDone && "setup was not recorded with author write",
@@ -632,4 +778,4 @@ const commands = {
 };
 
 if (!commands[cmd]) fail(USAGE);
-commands[cmd]();
+try { commands[cmd](); } catch (e) { fail(e.message); }

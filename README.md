@@ -55,8 +55,10 @@ npm run audit -- --profile publish ma26600  # required before calling it publish
 
 ### Write a course with AI
 
-You can write a course in either **paired** mode, or **single** mode.
-**Paired:** Use an expensive and cheap model. This is generally better for usage, and can either have the expensive model use subagents, you can open the two separate agents in different instances and prompt these in order
+You can write a course in either **paired**, **manual**, or **single** mode.
+**Single** uses a single model to generate the course automatically.
+**Paired** uses a strong planner/reviewer model and a cheaper writer (subagent).
+**Manual** uses the same 2 models as paired, but you have to be the one to switch between them using the prompt below:
 
 ```txt
 
@@ -76,7 +78,10 @@ Expensive Model (validation)
 This checks coverage and selected evidence, then finishes if clean or saves consolidated corrections.
 
 Cheap Model (only if corrections are needed)
-> Apply the saved corrections, verify the affected answers, and finish the working course.
+> Apply the saved corrections and verify affected answers. Save correction results with `author corrected`, then run checked `done --all`. Return the issue IDs and changed IDs to the reviewer; do not finish or accept the review.
+
+Expensive Model (required after corrections)
+> Review the changed items and affected context with `screen --changed`; expand any source or math evidence needed. Record acceptance with `reviewed --all`, then finish the course.
 
 ```
 
@@ -88,8 +93,15 @@ Cheap Model (only if corrections are needed)
 ```sh
 node tools/author.mjs begin ma26600 --mode paired --handoff manual --source /abs/textbook.pdf
 node tools/author.mjs status ma26600
+node tools/author.mjs index ma26600
 node tools/author.mjs pilot ma26600 --sub s1-1 # before bulk writing
 node tools/author.mjs done ma26600 --all
+node tools/author.mjs screen ma26600 --all
+node tools/author.mjs issues ma26600 --report .author/ma26600/issues-report.yaml
+# writer corrects; then:
+node tools/author.mjs corrected ma26600 --report .author/ma26600/correction-results.yaml
+node tools/author.mjs done ma26600 --all
+node tools/author.mjs screen ma26600 --changed
 node tools/author.mjs reviewed ma26600 --all
 node tools/author.mjs finish ma26600
 ```

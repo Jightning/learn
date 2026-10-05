@@ -16,7 +16,7 @@ items:
       correct: 1
     why: Review enrollment follows answered concepts; selection later weights misses and challenging outcomes.
     verified: 2026-09-06
-  - q: What does Needs work do on a self-check card?
+  - q: What does Wrong do on a self-check card?
     response:
       kind: self
       model: It records a challenging outcome, so the concept receives more weight in later Review.

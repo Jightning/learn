@@ -14,7 +14,9 @@
  * Measured cost on a low-tier phone: 87ms for ma26600's 458KB across 105
  * files, once per course open.
  * ==========================================================================*/
+import { questionStimuli } from "./questions.js";
 import * as YAML from "js-yaml";
+import { curriculumMap, mergeCurriculumDefinitions, mergePlanCurriculum, readCurriculumCollections, validateCourseCurriculumReferences, validateCurriculumReferences } from "./curriculum.js";
 
 const DATA = /\.(ya?ml|json)$/i;
 const stem = p => p.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
@@ -70,6 +72,21 @@ export function parseCourse(files) {
   C.sections = [];
   if (meta.concepts != null && !mapping(meta.concepts)) errors.push(`${metaPath}: concepts must be a mapping`);
   if (meta.cats != null && !mapping(meta.cats)) errors.push(`${metaPath}: cats must be a mapping`);
+  const canonical = readCurriculumCollections(files, errors);
+  const canonicalPresent = ["objectives", "families", "concepts"].some(name =>
+    ["yaml", "yml", "json"].some(ext => Object.hasOwn(files, `categorize/${name}.${ext}`)));
+  if (canonicalPresent && Object.hasOwn(files, "materials/plan.yaml")) {
+    const plan = read("materials/plan.yaml");
+    if (!mapping(plan)) errors.push("materials/plan.yaml: not a mapping");
+    else {
+      const planDefinitions = mergePlanCurriculum(plan, canonical, errors, "materials/plan.yaml");
+      validateCurriculumReferences(plan, planDefinitions, errors);
+    }
+  }
+  const concepts = Object.entries(mapping(meta.concepts) ? meta.concepts : {}).flatMap(([id, value]) => {
+    if (!mapping(value)) { errors.push(`${metaPath}: concepts.${id} must be a mapping`); return []; }
+    return [{ id, ...value }];
+  });
   C.concepts = Object.assign({}, mapping(meta.concepts) ? meta.concepts : {});
   C.drills = {};
   C.practice = {};
@@ -88,7 +105,15 @@ export function parseCourse(files) {
   for (const p of listing(files, "concepts/")) {
     const body = read(p);
     if (!mapping(body)) { errors.push(`${p}: not a mapping`); continue; }
-    C.concepts[body.key || stem(p)] = body;
+    if (canonicalPresent) concepts.push({ id: body.id || body.key || stem(p), ...body });
+    else C.concepts[body.key || stem(p)] = body;
+  }
+  if (canonicalPresent) {
+    const merged = mergeCurriculumDefinitions(canonical, { objectives: [], families: [], concepts }, errors,
+      "course legacy curriculum", true);
+    C.concepts = curriculumMap(merged.concepts);
+    C.objectives = curriculumMap(merged.objectives);
+    C.families = curriculumMap(merged.families);
   }
 
   for (const p of listing(files, "drills/")) {
@@ -174,15 +199,17 @@ export function parseCourse(files) {
           for (const [i, frame] of (Array.isArray(b.frames) ? b.frames : []).entries())
             resolveImage(frame?.image, `${u.id} slide ${i + 1}`);
       }
-      for (const q of u.quiz) if (q?.stimulus?.t === "image")
-        resolveImage(q.stimulus, `${u.id} question`);
+      for (const q of u.quiz) for (const part of questionStimuli(q?.stimulus))
+        if (part?.t === "image") resolveImage(part, `${u.id} question`);
     }
   for (const bank of Object.values(C.practice))
-    for (const item of bank.items) if (item?.stimulus?.t === "image")
-      resolveImage(item.stimulus, `practice/${bank.concept}`);
+    for (const item of bank.items) for (const part of questionStimuli(item?.stimulus))
+      if (part?.t === "image") resolveImage(part, `practice/${bank.concept}`);
   for (const bank of Object.values(C.drills))
-    for (const item of bank.items) if (item?.stimulus?.t === "image")
-      resolveImage(item.stimulus, `drills/${bank.concept}`);
+    for (const item of bank.items) for (const part of questionStimuli(item?.stimulus))
+      if (part?.t === "image") resolveImage(part, `drills/${bank.concept}`);
+
+  if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
 
   return { course: C, errors };
 }

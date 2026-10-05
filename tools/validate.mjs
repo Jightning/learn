@@ -14,8 +14,9 @@ import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCourse } from "./lib/load.mjs";
+import { readPlan, indexPlan } from "./lib/author-packets.mjs";
 import { tex } from "./lib/math.mjs";
-import { rawMathFragment } from "./lib/raw-math.mjs";
+import { rawMathFragment, unicodeConstructedMathFragment } from "./lib/raw-math.mjs";
 import { COURSES as COURSES_DIR } from "./lib/paths.mjs";
 import { INTERACTIVE } from "../src/blocks/interactive.js";
 import { checkFigure } from "./lib/figures.mjs";
@@ -23,6 +24,8 @@ import { checkSlides } from "./lib/slides.mjs";
 import { TIERS, tierOf } from "../src/lib/tiers.js";
 import { NOTES_MODES, present, leadOf } from "../src/lib/gist.js";
 import { checkRunInLists, checkFollows, checkAsides } from "./lib/structure.mjs";
+import { questionStimuli } from "../src/lib/questions.js";
+import { checkStimulus, stimulusHtml } from "./lib/question-stimulus.mjs";
 import { checkResponse } from "./lib/question-schema.mjs";
 import { questionContextWarning } from "./lib/question-context.mjs";
 import { textOf } from "../src/lib/util.js";
@@ -101,28 +104,15 @@ const FORMATS = new Set(["multiple-choice", "short-answer", "cued-recall", "deri
 const DRILL_MIN = 3;   /* legacy bank validation only */
 
 
-function checkStimulus(item, where, errs, courseId) {
-  const s = item.stimulus;
-  if (!s) return;
-  if (s.t === "figure") checkFigure(s, where, errs);
-  else if (s.t === "image") {
-    if (!String(s.alt || "").trim()) errs.push(`${where}: stimulus image needs alt text`);
-    if (typeof s.src !== "string" || !s.src.startsWith("assets/") ||
-        s.src.split("/").includes("..") || !existsSync(join(COURSES, courseId, s.src)))
-      errs.push(`${where}: missing stimulus image asset "${s.src}"`);
-  } else if (s.t === "passage") {
-    if (!String(s.text || "").trim() || !String(s.source || "").trim())
-      errs.push(`${where}: passage needs text and source`);
-  } else errs.push(`${where}: stimulus must be a figure, image, or passage`);
-}
-
-function checkQuestionHtml(item, where, errs) {
+function checkQuestionHtml(item, where, errs, warns) {
   const fields = [item.q, item.why, item.response?.model,
-    item.stimulus?.text, item.stimulus?.source,
+    ...questionStimuli(item.stimulus).flatMap(stimulusHtml),
     ...(item.response?.choices || []).flatMap(c => [c.text, c.why])];
-  const bare = /<\/?(?!(?:a|b|br|c|code|em|f|i|li|m|n|ol|p|span|strong|sub|sup|ul)[\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]/;
+  const bare = /<\/?(?!(?:a|b|br|c|code|em|f|i|li|m|mark|n|ol|p|s|span|strong|sub|sup|u|ul)[\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]/;
   for (let field of fields) {
     if (typeof field !== "string") continue;
+    const unicodeMath = unicodeConstructedMathFragment(field);
+    if (unicodeMath) warns.push(`${where}: constructed Unicode math "${unicodeMath}" may be pasted notation — use <m>...</m> for inline math or a math block for a central equation`);
     const raw = rawMathFragment(field);
     if (raw) errs.push(`${where}: raw math "${raw}" will print literally — wrap inline notation in <m>...</m> or use a math block for a central equation`);
     for (const m of field.matchAll(/<m>([\s\S]*?)<\/m>/g))
@@ -132,7 +122,7 @@ function checkQuestionHtml(item, where, errs) {
   }
 }
 
-function checkPractice(C, errs, courseId) {
+function checkPractice(C, errs, warns, courseId) {
   for (const [key, bank] of Object.entries(C.practice || {})) {
     const where = `practice/${key}`;
     if (!C.concepts[key]) errs.push(`${where}: concept is not defined`);
@@ -144,8 +134,8 @@ function checkPractice(C, errs, courseId) {
       const contextWarning = questionContextWarning(item, at);
       if (contextWarning) warns.push(contextWarning);
       checkResponse(item, at, errs);
-      checkStimulus(item, at, errs, courseId);
-      checkQuestionHtml(item, at, errs);
+      checkStimulus(item, at, errs, src => existsSync(join(COURSES, courseId, src)));
+      checkQuestionHtml(item, at, errs, warns);
     });
   }
 }
@@ -474,6 +464,11 @@ for (const id of courses) {
   try { const r = loadCourse(join(COURSES, id)); C = r.course; errs.push(...r.errors); }
   catch (e) { console.log(`FAIL ${id}  ${e.message}`); failed++; continue; }
 
+  try {
+    const plan = readPlan(join(COURSES, id));
+    if (plan.canonical) indexPlan(plan);
+  } catch (e) { errs.push(`curriculum: ${e.message}`); }
+
   const extraBlocks = existsSync(join(COURSES, id, "blocks.js"))
     ? new Set([...readFileSync(join(COURSES, id, "blocks.js"), "utf8")
         .matchAll(/register\(\s*"([a-z]+)"/g)].map(m => m[1]))
@@ -574,11 +569,6 @@ for (const id of courses) {
           else try { tex(b.tex, true); }
                catch (e) { errs.push(`${where}: math "${String(b.tex).trim()}" — ${e.message.replace(/\s+/g, " ")}`); }
         }
-        /* a mono or mapped table escapes its cells, so rendered TeX would show
-           as markup rather than as an equation */
-        if (b.t === "table" && (b.mono || b.map) &&
-            JSON.stringify(b.rows || []).includes("<m>"))
-          errs.push(`${where}: <m> inside a mono/map table — its cells are escaped`);
       }
       /* M8: named terms are what the pre-training panel and primer are built
          from, so a subsection naming none silently degrades its section */
@@ -600,7 +590,7 @@ for (const id of courses) {
         if (!item.response && (!String(item.a || "").trim() || !String(item.why || "").trim()))
           errs.push(`${where}: legacy question "${item.type}" needs a and why`);
         checkResponse(item, `${where} question "${item.type}"`, errs);
-        checkStimulus(item, `${where} question "${item.type}"`, errs, id);
+        checkStimulus(item, `${where} question "${item.type}"`, errs, src => existsSync(join(COURSES, id, src)));
         /* A concept key must resolve so an outcome can enter Review. */
         if (item.concept && !defined.has(item.concept))
           errs.push(`${where}: question "${item.type}" names concept "${item.concept}", which no concepts/ file defines`);
@@ -622,6 +612,8 @@ for (const id of courses) {
       const bare = new RegExp(`</?(?!(?:${TAGS})[\\s/>])[a-zA-Z]|&(?![a-zA-Z#][0-9a-zA-Z]*;)[a-zA-Z#]`);
       const checkHtml = (v, what) => {
         if (typeof v !== "string") return;
+        const unicodeMath = unicodeConstructedMathFragment(v);
+        if (unicodeMath) warns.push(`${what}: constructed Unicode math "${unicodeMath}" may be pasted notation — use <m>...</m> for inline math or a math block for a central equation`);
         const raw = rawMathFragment(v);
         if (raw) errs.push(`${what}: raw math "${raw}" will print literally — wrap inline notation in <m>...</m> or use a math block for a central equation`);
         /* inside <m> the content is TeX, not HTML — `<` and `&` are the
@@ -663,8 +655,8 @@ for (const id of courses) {
             checkHtml(choice.why, `${where} choice why`);
           }
           checkHtml(item.response?.model, `${where} model answer`);
-          checkHtml(item.stimulus?.text, `${where} passage text`);
-          checkHtml(item.stimulus?.source, `${where} passage source`);
+          for (const part of questionStimuli(item.stimulus))
+            for (const field of stimulusHtml(part)) checkHtml(field, `${where} question attachment`);
         }
 
       const text = textOf(u);
@@ -709,7 +701,7 @@ for (const id of courses) {
   checkCats(C, errs, warns);
   checkReviewSet(C, errs, warns);
   checkDrills(C, errs, warns);
-  checkPractice(C, errs, id);
+  checkPractice(C, errs, warns, id);
   checkExaminableInSpine(C, warns);
   checkClusters(C, errs);
   checkPrimers(C, errs);

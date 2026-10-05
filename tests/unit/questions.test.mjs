@@ -92,3 +92,27 @@ test("question context warns on detached references but accepts attached or self
   assert.equal(questionContextWarning({ q: "The scatterplot shows spaced practice rising twice as fast as massed practice. What does that mean?" },
     "s1 question"), null);
 });
+
+test("tries default to one and survive quiz and practice normalization", () => {
+  assert.equal(normalizeQuestion({ q: "Default", a: "Answer" }).tries, 1);
+  assert.equal(normalizeQuestion({ q: "Retry", a: "Answer", tries: 3 }).tries, 3);
+  assert.equal(practiceItems({ practice: { skill: { items: [{ q: "Retry", a: "Answer", tries: 2 }] } } })[0].tries, 2);
+});
+
+test("tries reject invalid author values including legacy questions", () => {
+  for (const tries of [0, -1, 1.5, "3", null, false, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    const item = { q: "Retry", a: "Answer", tries };
+    const errs = [];
+    checkResponse(item, "question", errs);
+    assert.match(errs.join(" "), /tries must be a positive integer/);
+    assert.throws(() => normalizeQuestion(item), /tries must be a positive integer/);
+  }
+});
+
+test("attempt signatures preserve default answers and invalidate changed tries", async () => {
+  const { questionSignature } = await import("../../src/lib/questions.js");
+  const item = normalizeQuestion({ q: "Retry", a: "Answer" });
+  assert.equal(questionSignature(item), JSON.stringify([item.prompt, item.response]));
+  assert.notEqual(questionSignature({ ...item, tries: 2 }), questionSignature(item));
+  assert.notEqual(questionSignature({ ...item, tries: 2 }), questionSignature({ ...item, tries: 3 }));
+});

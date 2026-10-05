@@ -2,6 +2,18 @@
  * Legacy text questions are adapted here, so every route uses one renderer. */
 import { qid } from "./util.js";
 
+/* One attachment or an ordered sequence; old courses keep the same shape. */
+export const questionStimuli = value => value == null ? [] : Array.isArray(value) ? value : [value];
+
+export function questionTries(item) {
+  const tries = item.tries === undefined ? 1 : item.tries;
+  if (!Number.isSafeInteger(tries) || tries < 1) throw new Error("Question tries must be a positive integer.");
+  return tries;
+}
+
+export const questionSignature = item => JSON.stringify(questionTries(item) === 1
+  ? [item.prompt, item.response] : [item.prompt, item.response, item.tries]);
+
 export function normalizeQuestion(raw, { subId = null, concept = null, id = null } = {}) {
   const answer = raw.response || (raw.a != null
     ? { kind: "self", model: raw.a }
@@ -12,6 +24,7 @@ export function normalizeQuestion(raw, { subId = null, concept = null, id = null
     type: raw.type || raw.format || "Practice",
     prompt: raw.q || raw.stem || "",
     response: answer,
+    tries: questionTries(raw),
     why: raw.why || (raw.steps || []).map(s => `<p>${s}</p>`).join(""),
     stimulus: raw.stimulus || null,
     difficulty: raw.difficulty || null,
@@ -21,6 +34,7 @@ export function normalizeQuestion(raw, { subId = null, concept = null, id = null
 
 export function gradeQuestion(response, value) {
   if (response.kind === "self") return null;
+  if (response.kind === "formula") throw new Error("Use the asynchronous formula checker for formula responses.");
   if (response.kind === "single") return Number(value) === Number(response.correct);
   if (response.kind === "multi") {
     const chosen = new Set(value || []);

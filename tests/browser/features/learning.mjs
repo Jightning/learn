@@ -31,8 +31,8 @@ export async function testLearning(ctx, state) {
     await check.click(); await page.waitForTimeout(150);
     ck(P("a self-check immediately shows the model answer"), await card.locator(".ans").count() === 1);
     ck(P("a self-check asks the reader to compare their answer"), await card.getByText("Compared with your answer:").count() === 1);
-    await card.getByRole("button", { name: "Needs work" }).click(); await page.waitForTimeout(150);
-    ck(P("a completed card gives immediate graded feedback"), /Needs work/.test(await card.locator(".qresult").innerText()));
+    await card.getByRole("button", { name: "Wrong" }).click(); await page.waitForTimeout(150);
+    ck(P("a completed card gives immediate graded feedback"), /Wrong/.test(await card.locator(".qresult").innerText()));
     ck(P("an answered card continues the run"), await card.getByRole("button", { name: /Continue/ }).count() === 1);
   }
 

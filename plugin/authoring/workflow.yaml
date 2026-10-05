@@ -5,7 +5,7 @@ stages:
   plan:
     phase: plan
     paired_role: planner
-    action: Inventory sources and problem families; write materials/plan.yaml. Hand off its path to the writer in paired mode.
+    action: Inventory sources and problem families; write categorize definitions and the compact materials/plan.yaml schedule. Hand off paths to the writer in paired mode.
   migrate:
     phase: write
     paired_role: writer
@@ -13,23 +13,23 @@ stages:
   setup:
     phase: write
     paired_role: writer
-    action: Use the plan to create course metadata, expectations, categories, concepts and subsection files; run author write to record setup.
+    action: Use the plan and categorize lists to create course metadata, reader-facing concept bodies and subsection files; run author write and author index to record setup and stable IDs.
   write:
     phase: write
     paired_role: writer
-    action: Run author batch; write all assigned members with verified answers and checked done, then return for review (manual completes all course members first).
+    action: Run author batch; write assigned members with verified answers and checked done. Complete all course writing before review; batches only bound writer context.
   review:
     phase: review
     paired_role: reviewer
-    action: Run author batch; review all assigned members against sources, check writer answer evidence, high-risk claims and family samples with exact spans; record every outcome before writer corrections.
+    action: Screen sections compactly; use full packets for source and math judgments; review answer evidence, high-risk claims and family samples; save one consolidated issues report before corrections.
   correct:
     phase: write
     paired_role: writer
-    action: Run author batch; apply all assigned saved corrections and checked done before returning for targeted rechecks.
+    action: Apply saved corrections, verify affected answers, run corrected with a separate results report and checked done --all, then return for reviewer recheck.
   finish:
     phase: review
     paired_role: reviewer
-    action: Run global coverage and reader checks once; the writer adds any required content. Run author finish after review, then audit and pack.
+    action: Screen changed items and affected context, record acceptance with reviewed, then run global coverage and reader checks once; finish, audit and pack.
   complete:
     phase: review
     paired_role: reviewer

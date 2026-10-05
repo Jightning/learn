@@ -10,6 +10,10 @@ through Review, where a tick means durable rather than answered once.
 
 - [ ] Locate a course's boundary, [1.1](../index.html#s1-1)
 - [ ] Predict the structure, [1.1](../index.html#s1-1)
+- [ ] Try a formula, [1.2](../index.html#s1-2)
+- [ ] Try math in freeform, [1.2](../index.html#s1-2)
+- [ ] Try a derivative, [1.2](../index.html#s1-2)
+- [ ] Try an integral, [1.2](../index.html#s1-2)
 - [ ] Interpret immediate feedback, [1.2](../index.html#s1-2)
 - [ ] Explain a design rule, [1.2](../index.html#s1-2)
 - [ ] Spot the error, [1.2](../index.html#s1-2)
@@ -57,9 +61,12 @@ through Review, where a tick means durable rather than answered once.
 
 - [ ] Choose the table mode, [5.1](../index.html#s5-1)
 - [ ] Add a language, [5.1](../index.html#s5-1)
+- [ ] Read an attached code listing, [5.1](../index.html#s5-1)
 - [ ] Choose the source value, [5.2](../index.html#s5-2)
 - [ ] Read the numbered-figure rule, [5.2](../index.html#s5-2)
 - [ ] Synthesis, [5.2](../index.html#s5-2)
+- [ ] Read an attached circuit, [5.2](../index.html#s5-2)
+- [ ] Compare an attached image, [5.2](../index.html#s5-2)
 
 ## Concepts held over time
 

@@ -13,7 +13,11 @@ courses match, ask only for the ID. Course content belongs in `courses/<id>/`;
 node "<KIT>/scripts/new-course.mjs" <id> "Title"
 node "<KIT>/scripts/author.mjs" begin <id> --mode single|paired --handoff manual|auto [--source PATH]...
 node "<KIT>/scripts/author.mjs" status <id>
-node "<KIT>/scripts/author.mjs" packet <id> [--sub sN-M] [--item block:N|quiz:N] [--source sourceID/unitID@Lx-Ly]
+node "<KIT>/scripts/author.mjs" index <id>
+node "<KIT>/scripts/author.mjs" screen <id> [--section s1] [--changed]
+node "<KIT>/scripts/author.mjs" packet <id> --ids id1,id2 [--expand]
+node "<KIT>/scripts/author.mjs" issues <id> --report PATH
+node "<KIT>/scripts/author.mjs" corrected <id> --report PATH
 node "<KIT>/scripts/author.mjs" write <id>
 node "<KIT>/scripts/author.mjs" pilot <id> --sub sN-M # first representative lesson only
 node "<KIT>/scripts/author.mjs" done <id> --all
@@ -23,12 +27,26 @@ node "<KIT>/scripts/author.mjs" finish <id>
 
 Read `<KIT>/authoring/orchestration.md` for the selected flow. Manual paired mode uses
 one planner prompt, one writer prompt for all remaining lessons, one validation
-prompt, and an optional writer correction prompt. Do not hand off per section.
-Automatic paired uses fresh cheap workers and `batch`; single works directly.
+prompt, and, only when needed, a writer correction prompt followed by reviewer
+validation. Do not hand off per section. Automatic paired uses fresh cheap
+workers and `batch`; single works directly on the same plan, issue, correction,
+and review artifacts without handoffs. In paired mode the writer never accepts
+its own corrections.
 Commands never run models. Use status at handoffs or compaction; read only named
-rules, local prerequisites and exact sources. Use item packets for review;
-`--expand` explicitly widens evidence when needed. `done`/`reviewed` also accept
-one subsection for targeted repairs. Reuse checks for unchanged content.
+rules, local prerequisites and exact sources. `index` assigns missing stable
+`authorId` values to blocks, quiz and practice items, and indexes named metadata.
+`screen` emits compact deterministic excerpts and a closure map; `--changed`
+adds actual changed items, affected context, and issue links after correction.
+Each screen links to shared `.author/<id>/review-context.yaml`; read it once
+per review, then use section outlines and excerpts. Screening is for triage
+only: expand the full packet before source or math judgments. IDs appear once in packet
+envelopes; hashes remain internal to `.author/`. `corrected` records issue
+dispositions from a separate results report and emits changed/added/deleted
+IDs with issue links. Run checked `done --all` after `corrected`; the reviewer
+alone accepts through `screen --changed` and `reviewed --all` after rechecking
+changed items and context. Acceptance requires a fresh screen or full packet
+for every current changed or affected item. The writer correction handoff does not include
+`finish`; reviewer validation is the next paired step.
 
 Size follows the learning need: one subject or a large course, without padding
 or omitted families. The planner owns scope and difficult judgment; the writer

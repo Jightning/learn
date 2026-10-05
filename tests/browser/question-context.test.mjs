@@ -16,7 +16,7 @@ test("the trend question keeps its scatterplot in subsection, Review, and Mixed 
     const miss = async card => {
       await card.locator("textarea").fill("A comparison of the slopes.");
       await card.getByRole("button", { name: "Check answer" }).click();
-      await card.getByRole("button", { name: "Needs work" }).click();
+      await card.getByRole("button", { name: "Wrong" }).click();
     };
 
     await page.goto(server.origin + "/#/demo/s4-2");

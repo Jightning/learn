@@ -24,14 +24,17 @@ function fixture(fn) {
 test("paired collects writing, initial reviews, corrections, then rechecks without skipping any member", () => fixture(({ subs, progress, records, set, flow }) => {
   assert.deepEqual(flow().batch.tasks, ["s1-1", "s1-2", "s1-3"]);
   progress.done.push(subs[0]); assert.equal(flow().stage, "write"); assert.equal(flow().subsection, "s1-2");
-  assert.equal(flow("single").stage, "review");
-  progress.done.push(subs[1],subs[2]); assert.equal(flow().stage, "review");
+  assert.equal(flow("single").stage, "write");
+  progress.done.push(subs[1],subs[2]); assert.equal(flow().stage, "write"); assert.equal(flow().subsection, "s2-1");
+  progress.done.push(subs[3]); assert.equal(flow().stage, "review");
   set("s1-1", "correct"); assert.equal(flow().subsection, "s1-2");
   set("s1-2", "correct"); set("s1-3", "reviewed");
+  assert.equal(flow().stage, "review"); assert.equal(flow().subsection, "s2-1");
+  set("s2-1", "reviewed");
   assert.equal(flow().stage, "correct"); assert.deepEqual(flow().batch.tasks,["s1-1","s1-2"]);
   set("s1-1", "recheck"); assert.equal(flow().stage,"correct"); assert.equal(flow().subsection,"s1-2");
   set("s1-2", "recheck"); assert.equal(flow().stage,"review"); assert.equal(flow().batch.recheck,true);
-  set("s1-1","reviewed"); set("s1-2","reviewed"); assert.equal(flow().subsection,"s2-1");
+  set("s1-1","reviewed"); set("s1-2","reviewed"); assert.equal(flow().stage,"finish");
   writeFileSync(subs[0].file,"title: Changed\n"); assert.equal(flow().stage,"review");
   delete records["s1-1"]; progress.done.shift(); assert.equal(flow().stage,"write");
 }));

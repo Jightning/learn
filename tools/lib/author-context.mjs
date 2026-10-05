@@ -1,3 +1,4 @@
+import { questionStimuli } from "../../src/lib/questions.js";
 /* Whole-file instruction selection. The manifest owns policy; this module only
    resolves references and reports malformed or unknown selections. */
 import { readFileSync, existsSync, realpathSync } from "node:fs";
@@ -53,15 +54,24 @@ export function selectContext(context, { phase = "write", role = "single", needs
 
 export function shapeNeeds(unit = {}) {
   const needs = new Set();
+  const containsInlineMath = value => {
+    if (typeof value === "string") return /<m>[\s\S]*?<\/m>/i.test(value);
+    if (Array.isArray(value)) return value.some(containsInlineMath);
+    return value && typeof value === "object" && Object.values(value).some(containsInlineMath);
+  };
   for (const block of unit.blocks || []) {
     if (block?.t) needs.add(`block:${block.t}`);
     if (block?.t === "figure" && block.kind) needs.add(`figure:${block.kind}`);
+    if (containsInlineMath(block)) needs.add("block:math");
   }
   for (const q of unit.quiz || []) {
+    if (containsInlineMath(q)) needs.add("block:math");
     if (q?.response?.kind) needs.add(`question:${q.response.kind}`);
     if (q?.type === "Synthesis") needs.add("question:synthesis");
-    if (q?.stimulus?.t) needs.add(`stimulus:${q.stimulus.t}`);
-    if (q?.stimulus?.kind) needs.add(`figure:${q.stimulus.kind}`);
+    for (const part of questionStimuli(q?.stimulus)) {
+      if (part?.t) needs.add(`stimulus:${part.t}`);
+      if (part?.kind) needs.add(`figure:${part.kind}`);
+    }
   }
   return [...needs];
 }

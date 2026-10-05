@@ -1,9 +1,20 @@
 /* Shared validation for authored response data and documentation examples. */
+import { checkFormulaResponse } from "../../src/lib/formula.js";
+import { questionTries } from "../../src/lib/questions.js";
+
 export function checkResponse(item, where, errs) {
+  try { questionTries(item); } catch (error) { errs.push(`${where}: ${error.message}`); }
   const r = item.response;
   if (!r) return; /* legacy free-response item */
-  if (!["single", "multi", "number", "self"].includes(r.kind)) {
-    errs.push(`${where}: response.kind must be single, multi, number, or self`); return;
+  if (!["single", "multi", "number", "formula", "self"].includes(r.kind)) {
+    errs.push(`${where}: response.kind must be single, multi, number, formula, or self`); return;
+  }
+  for (const field of ["mathSymbols", "formulaParsing"]) {
+    if (r[field] != null && (r.kind !== "self" || typeof r[field] !== "boolean"))
+      errs.push(`${where}: ${field} must be a boolean on a self response`);
+  }
+  if (r.kind === "formula") {
+    try { checkFormulaResponse(r); } catch (error) { errs.push(`${where}: ${error.message}`); }
   }
   if (r.kind === "single" || r.kind === "multi") {
     if (!Array.isArray(r.choices)) {

@@ -107,3 +107,30 @@ quiz:
     why: |-
       <p>Highlighting is configuration consumed by one generic highlighter. Writing a Verilog renderer would be new code for a job the data already does.</p>
     verified: 2026-09-02
+
+  - type: Read an attached code listing
+    concept: tier
+    stimulus:
+      - t: p
+        h: 'This question carries its own YAML listing, so you can answer it in Review without returning to the lesson.'
+      - t: code
+        lang: yaml
+        src: |-
+          - t: note
+            tier: depth
+            h: Optional background for curious readers.
+      - t: note
+        label: Reading rule
+        h: '<p><code>spine</code> is the required path. <code>depth</code> is optional background. <code>apply</code> is additional application.</p>'
+      - t: p
+        h: 'Read the <code>tier</code> field before choosing. The listing and this supporting card are both attached to the question.'
+    q: 'Which reading path does the listed block belong to?'
+    response:
+      kind: single
+      correct: 2
+      choices:
+        - {text: 'Spine: the required path', why: 'The listing explicitly says depth, rather than leaving the block on the default spine path.'}
+        - {text: 'Depth: optional background', why: 'The tier field is depth, matching the reading rule on the attached card.'}
+        - {text: 'Apply: additional application', why: 'The listing does not declare apply.'}
+    why: '<p>Code can be part of the problem itself. It occupies a full-width band; the supporting rule is a flat callout rather than another boxed card.</p>'
+    verified: 2026-10-04

@@ -88,7 +88,10 @@ export function rebuild(cid, course) {
   const next = fold(rows, cfg, prior || undefined);
   installRetention(cid, next.retain);
 
-  setItem(keyFor(cid, course.code), JSON.stringify({ q: next.study }));
+  // Local lesson answers are not scheduling data and never enter the sync log.
+  let answers;
+  try { answers = JSON.parse(getItem(keyFor(cid, course.code)))?.answers; } catch {}
+  setItem(keyFor(cid, course.code), JSON.stringify({ q: next.study, ...(answers && { answers }) }));
   setItem(ckptKey(cid), JSON.stringify(next));
   forget(cid);
   return next;

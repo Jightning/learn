@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 //#region node_modules/js-yaml/dist/js-yaml.mjs
-/*! js-yaml 5.4.1 https://github.com/nodeca/js-yaml @license MIT */
+/*! js-yaml 5.4.2 https://github.com/nodeca/js-yaml @license MIT */
 /**
 * Returned by a scalar resolver when the source does not match its tag.
 *
@@ -2736,6 +2736,7 @@ function doubleQuoteWhitespaceOnly(layout) {
 function applyForceQuotesOption(layout) {
 	if (!layout.presenterOptions.forceQuotes) return;
 	if (layout.isKey || layout.style !== SCALAR_STYLE.PLAIN) return;
+	if (layout.node.tag !== layout.presenterOptions.schema.defaultScalarTag.tagName) return;
 	layout.style = layout.node.value.includes("\n") ? SCALAR_STYLE.DOUBLE_QUOTED : _preferredQuotedStyle(layout);
 }
 function tryLongOrMultilineAsBlock(layout) {
@@ -3297,6 +3298,11 @@ COLLECTION_STYLE.FLOW;
 CHOMPING_MODE.CLIP;
 CHOMPING_MODE.STRIP;
 CHOMPING_MODE.KEEP;
+Object.freeze([
+	"objectives",
+	"families",
+	"concepts"
+]);
 //#endregion
 //#region tools/lib/load.mjs
 function parseFile(path) {
@@ -3391,17 +3397,30 @@ function digest(dir) {
 			subs
 		});
 	}
-	const concepts = dataFiles(join(dir, "concepts")).map((f) => {
+	const conceptMap = /* @__PURE__ */ new Map();
+	const canonicalPath = [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `concepts.${ext}`)).find(existsSync);
+	if (canonicalPath) {
+		const list = read(canonicalPath);
+		if (Array.isArray(list)) {
+			for (const c of list) if (c && typeof c.id === "string") conceptMap.set(c.id, c);
+		}
+	}
+	for (const f of dataFiles(join(dir, "concepts"))) {
 		const c = read(join(dir, "concepts", f));
-		const key = stem$1(f);
-		return {
-			key,
-			term: c.term || key,
-			review: !!c.review,
-			body: !!c.body,
-			variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
-		};
-	});
+		const key = c.id || c.key || stem$1(f);
+		if (!conceptMap.has(key)) conceptMap.set(key, c);
+	}
+	const concepts = [...conceptMap].map(([key, c]) => ({
+		key,
+		term: c.term || key,
+		review: !!c.review,
+		body: !!c.body,
+		variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
+	}));
 	const cats = dataFiles(join(dir, "categories")).map((f) => {
 		const c = read(join(dir, "categories", f));
 		return {

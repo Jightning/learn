@@ -6,13 +6,41 @@ import { createHash } from "node:crypto";
 import * as YAML from "js-yaml";
 import { parseFile } from "./load.mjs";
 import { selectContext, shapeNeeds } from "./author-context.mjs";
+import { curriculumSignature, mergePlanCurriculum, readCurriculumCollections, validateCurriculumReferences } from "../../src/lib/curriculum.js";
 
 export const fingerprint = value => createHash("sha256").update(value).digest("hex");
 export const fileHash = path => fingerprint(readFileSync(path));
 export const readPlan = dir => {
   const path = join(dir, "materials", "plan.yaml");
   const legacy = ["plan.md", "source-family-review.md"].map(f => join(dir, "materials", f)).filter(existsSync);
-  return existsSync(path) ? { path, hash: fileHash(path), data: parseFile(path) || {} } : { path, data: {}, legacy };
+  const rawPlan = existsSync(path) ? parseFile(path) : {};
+  if (rawPlan != null && (typeof rawPlan !== "object" || Array.isArray(rawPlan)))
+    throw new Error(`${path}: expected a mapping`);
+  const data = { ...(rawPlan || {}) };
+  const errors = [];
+  const canonicalFiles = {};
+  let canonical = false;
+  for (const name of ["objectives", "families", "concepts"]) {
+    for (const file of ["yaml", "yml", "json"].map(ext => join(dir, "categorize", `${name}.${ext}`))
+      .filter(candidate => existsSync(candidate))) {
+      canonical = true;
+      canonicalFiles[`categorize/${name}.${file.slice(file.lastIndexOf(".") + 1)}`] = readFileSync(file, "utf8");
+    }
+  }
+  if (!canonical) {
+    return existsSync(path)
+      ? { path, hash: fileHash(path), data: rawPlan || {}, canonical: false }
+      : { path, data: {}, canonical: false, legacy };
+  }
+  const canonicalDefinitions = readCurriculumCollections(canonicalFiles, errors);
+  const merged = mergePlanCurriculum(rawPlan || {}, canonicalDefinitions, errors, path);
+  if (canonical) validateCurriculumReferences(rawPlan || {}, merged, errors);
+  if (errors.length) throw new Error(errors.join("\n"));
+  for (const name of ["objectives", "families", "concepts"])
+    data[name] = merged[name];
+  const signature = fingerprint(curriculumSignature({ plan: rawPlan || {}, canonical: canonicalDefinitions }));
+  return { path, ...(existsSync(path) ? { hash: signature } : {}), signature, canonical, data,
+    ...(!existsSync(path) ? { legacy } : {}) };
 };
 const asList = value => value == null ? [] : Array.isArray(value) ? value : [value];
 const named = value => typeof value === "string" ? value : value?.id;
@@ -20,18 +48,66 @@ const tags = item => asList(item?.objectives ?? item?.objective).map(named);
 const active = item => !["excluded", "moved", "prerequisite"].includes(item?.disposition);
 
 export function indexPlan(plan) {
+  const strict = !!plan.canonical;
   const objectives = asList(plan.data.objectives);
   const byLesson = new Map(), uses = new Map();
-  for (const lesson of asList(plan.data.lessons ?? plan.data.subsections))
-    for (const id of asList(lesson.objectives).map(named)) uses.set(id, (uses.get(id) || 0) + 1);
+  const families = asList(plan.data.families);
+  const objectiveIndex = new Map(), familyIndex = new Map();
   for (const o of objectives) {
+    if (!o || typeof o.id !== "string" || !o.id.trim()) {
+      if (strict) throw new Error("plan objective definition needs a nonempty id");
+      continue;
+    }
+    if (strict && objectiveIndex.has(o.id)) throw new Error(`duplicate objective id "${o.id}"`);
+    objectiveIndex.set(o.id, o);
+  }
+  for (const f of families) {
+    if (!f || typeof f.id !== "string" || !f.id.trim()) {
+      if (strict) throw new Error("plan family definition needs a nonempty id");
+      continue;
+    }
+    if (strict && familyIndex.has(f.id)) throw new Error(`duplicate family id "${f.id}"`);
+    familyIndex.set(f.id, f);
+  }
+  const lessons = asList(plan.data.lessons ?? plan.data.subsections);
+  if (plan.canonical) {
+    const errors = validateCurriculumReferences(plan.data, {
+      objectives, families, concepts: asList(plan.data.concepts)
+    });
+    if (errors.length) throw new Error(errors.join("\n"));
+  }
+  const lessonIds = new Set();
+  const requireRefs = (ids, index, kind, at) => {
+    if (!strict) return;
+    for (const id of asList(ids).map(named))
+      if (typeof id !== "string" || !index.has(id)) throw new Error(`${at} references unknown ${kind} "${id}"`);
+  };
+  const prerequisites = new Map(objectiveIndex);
+  for (const item of asList(plan.data.reader?.background)) {
+    const id = named(item);
+    if (id) prerequisites.set(id, item);
+  }
+  for (const lesson of lessons) {
+    if (!lesson || typeof lesson.id !== "string" || !lesson.id.trim()) {
+      if (strict) throw new Error("plan lesson needs a nonempty id");
+      continue;
+    }
+    if (strict && lessonIds.has(lesson.id)) throw new Error(`duplicate lesson id "${lesson.id}"`);
+    lessonIds.add(lesson.id);
+    requireRefs(lesson.objectives, objectiveIndex, "objective", `lesson "${lesson.id}"`);
+    requireRefs(lesson.families, familyIndex, "family", `lesson "${lesson.id}"`);
+    for (const id of asList(lesson.objectives).map(named)) uses.set(id, (uses.get(id) || 0) + 1);
+  }
+  for (const o of objectives) {
+    requireRefs(o.prerequisites, prerequisites, "objective prerequisite", `objective "${o.id}"`);
+    requireRefs(o.families, familyIndex, "family", `objective "${o.id}"`);
     const id = o.lesson || o.subsection;
     if (id) { if (!byLesson.has(id)) byLesson.set(id, []); byLesson.get(id).push(o); }
   }
   return {
-    lessons: new Map(asList(plan.data.lessons ?? plan.data.subsections).map(s => [s.id, s])),
-    objectives: new Map(objectives.map(o => [o.id, o])),
-    families: new Map(asList(plan.data.families).map(f => [f.id, f])), byLesson, uses
+    lessons: new Map(lessons.map(s => [s.id, s])),
+    objectives: objectiveIndex,
+    families: familyIndex, byLesson, uses
   };
 }
 
@@ -88,7 +164,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
   const packet = {
     phase, mode, role: effectiveRole,
     rules: rules.modules.map(m => m.path),
-    ...(plan.hash && !(phase === "review" && selected) ? { plan: { path: plan.path, hash: plan.hash } } : {}),
+    ...(plan.hash && !(phase === "review" && selected) ? { plan: { path: plan.path } } : {}),
     ...(subsection ? { target: subsection.file } : {}),
     ...(readerContext && Object.keys(readerContext).length ? { reader: readerContext } : {}),
     ...(phase === "write" && plan.data.scope ? { scope: plan.data.scope } : {}),
@@ -99,7 +175,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
     ...(phase !== "review" && lesson?.directives ? { directives: lesson.directives } : {}),
     ...(refs.length ? { sourceRefs: [...new Map(refs.map(r => [JSON.stringify(r), r])).values()] } : {}),
     ...(sources.length ? { sources } : {}),
-    ...(selected ? { item: { selector: item, hash: fingerprint(JSON.stringify(selected)), content: selected } } : {}),
+    ...(selected ? { item: { ...(selected.authorId ? { id: selected.authorId } : { selector: item }), content: Object.fromEntries(Object.entries(selected).filter(([key]) => key !== "authorId")) } } : {}),
     ...(issue ? { issue } : {}),
     warnings: [...warnings, ...rules.warnings]
   };

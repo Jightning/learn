@@ -10,19 +10,13 @@ scope:
   goal: <requested capability, not assumed full-source mastery>
 reader:
   background: [<prerequisite stated precisely>]
-objectives:
-  - id: obj-1
-    outcome: <reader-visible capability>
-    sources:
-      - {source: src-1, unit: <page/slide/heading>, lines: <optional text lines>}
-    families: [family-1]
-    prerequisites: []
-    risk: <optional unresolved issue>
-    needs: ['block:p', 'question:single']
+objectives: [obj-1, obj-2] # definitions live in categorize/objectives.yaml
+families: [family-1] # definitions live in categorize/families.yaml
+concepts: [concept-1] # definitions live in categorize/concepts.yaml
 lessons:
   - id: s1-1
     objectives: [obj-1]
-    families: [family-1] # lesson-local, not all families of a broad objective
+    families: [family-1] # lesson-local references, not repeated definitions
     sources: [{source: src-1, unit: page-1, lines: [3, 8]}]
     needs: ['block:def', 'question:single']
     directives: <optional deliberate choice or open freedom>
@@ -35,14 +29,16 @@ sources:
     units:
       - id: <unit id>
         locator: <pages/slides/headings/figure or image region>
-families:
-  - id: family-1
-    disposition: teach # teach | prerequisite | moved | excluded
-    reason: <needed for the requested goal, or why not>
-    source_loci: [src-1/<unit id>]
-    teaching: [obj-1]
-    questions: [obj-1]
 ```
+
+The three `categorize/*.yaml` files own the definitions and judgments. Each is
+a list of entries with a stable `id`; the plan stores references and schedule
+only. Objectives record outcome, source evidence, prerequisites, risks, and
+required evidence. Families record disposition (`teach`, `prerequisite`,
+`moved`, or `excluded`), rationale, source loci, and teaching/question routes.
+Concepts record their identity and planned reuse. Legacy planning artifacts
+remain valid migration inputs; do not duplicate their definitions in the new
+plan.
 
 Inventory source families, not just topics: definitions, mechanisms,
 procedures, exceptions, diagrams, values, and the distinct problem surfaces
@@ -60,11 +56,12 @@ propose the smallest complete outline before production; never silently drop
 required capabilities.
 
 The planner decides scope, order, reader calibration, objective outcomes,
-family coverage, and difficult judgment. It may leave an explicit open choice
-for the writer, with the condition that resolves it. It does not draft course
-prose or normalize source wording. The writer may choose examples, sentence
-shape, HTML, and block arrangement inside the approved scope. A single role
-keeps the same artifacts and writes directly; paired mode hands the packet to a
-writer and then a reviewer.
+family coverage, and difficult judgment. It writes only keys and requirements,
+scope, and source-family judgments; it does not draft teaching prose or
+normalize source wording. It may leave an explicit open choice for the writer,
+with the condition that resolves it. The writer owns concept bodies, examples,
+sentence shape, HTML, and block arrangement inside approved scope. A single
+role keeps the same artifacts and writes directly; paired mode hands the
+packet to a writer and then a reviewer.
 
 Assign lesson-local families and sources even when lessons share an objective.

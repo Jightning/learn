@@ -1,5 +1,34 @@
 # Concepts, categories, and variants
 
+Planning references are declared in `categorize/` as three YAML
+lists: `objectives.yaml`, `families.yaml`, and `concepts.yaml`. Each entry has a
+stable `id`; lessons and questions reference those IDs. Keep these planning
+definitions out of `plan.yaml`. The writer supplies reader-facing concept
+bodies in `concepts/<key>.yaml` after scope is approved.
+
+```yaml
+# categorize/objectives.yaml
+- id: obj-1
+  outcome: Classify an initial-value problem
+  sources: [{source: src-1, unit: section-4}]
+  prerequisites: [obj-0]
+  needs: [teaching, question]
+  risk: null
+
+# categorize/families.yaml
+- id: family-1
+  disposition: teach
+  reason: Required to meet the requested goal
+  source_loci: [src-1/section-4]
+  teaching: [obj-1]
+  questions: [obj-1]
+
+# categorize/concepts.yaml
+- id: initial-value-problem
+  reuse: 3
+  objectives: [obj-1]
+```
+
 ```yaml
 # concepts/<key>.yaml
 term: Initial-value problem

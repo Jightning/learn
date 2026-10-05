@@ -35,7 +35,18 @@ const fixture = {
       { title: 'Input', text: '<p>Start with a value.</p>', figure: { kind: 'drawing', spec: { alt: 'Input box', shapes: [{ type: 'rect', x: 10, y: 10, w: 100, h: 50 }] } } },
       { title: 'Transform', text: '<p>Apply the rule.</p>', figure: { kind: 'flow', spec: { steps: [{ label: 'Read' }, { label: 'Change' }] } } },
       { title: 'Output', text: '<p>Return the result.</p>' }
-    ] }
+    ] },
+    { t: 'key', source: '<strong>Math reference</strong> <m>\\sum_i a_i</m>', h: '<p>First line.\n\nThird line with <code>kept\nspacing</code>.</p>\n<p>Second paragraph.</p>\n<p><strong>Bold first</strong>\n<em>Italic second</em></p>' },
+    { t: 'table', mono: true, map: { '1': 'one' }, head: ['<strong>Σ</strong> <m>\\sum_{i=1}^{n} a_i</m>'],
+      rows: [['<strong>Total</strong> <m>\\sum_{i=1}^{n} a_i</m>'], ['1']] }
+  ], quiz: [
+    { type: 'summation recall', q: '<strong>Compute the total</strong> <m>\\sum_{i=1}^{n} a_i</m>.',
+      response: { kind: 'self', model: '<strong>Add each term:</strong> <m>a_1 + \\cdots + a_n</m>.' } },
+    { type: 'summation choice', q: 'Choose the expression for <strong>the total</strong> <m>\\sum_{i=1}^{n} a_i</m>.',
+      response: { kind: 'single', correct: 1, choices: [
+        { text: '<strong>Sum</strong> <m>a_1 + \\cdots + a_n</m>', why: 'Each term appears once.' },
+        { text: '<strong>Product</strong> <m>a_1 a_n</m>', why: 'This omits the middle terms.' }
+      ] } }
   ] })
 };
 try {
@@ -55,8 +66,70 @@ try {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route('**/courses/demo.json', r => r.fulfill({ json: fixture }));
+  const row = i => page.locator(`[id="s1-1~${i}"]`);
   await page.goto(server.origin + '/#/demo/s1-1');
   await page.locator('.nref').first().waitFor();
+  check('authored text newlines render as line and blank-line breaks',
+    await page.locator('[id="s1-1~13"] .bhtml p').first().locator('br').count() === 2);
+  const paragraphCount = await page.locator('[id="s1-1~13"] .bhtml p').count();
+  const codeText = await page.locator('[id="s1-1~13"] code').textContent();
+  check('HTML paragraph boundaries and code whitespace stay structural',
+    paragraphCount === 3 && codeText === 'kept\nspacing' && await row(13).locator('.bhtml > br').count() === 0);
+  check('intentional breaks between wholly formatted inline phrases stay visible',
+    await row(13).locator('.bhtml p').nth(2).locator('br').count() === 1 &&
+    await row(13).locator('.bhtml p').nth(2).evaluate(p => p.querySelector('em').getBoundingClientRect().top > p.querySelector('strong').getBoundingClientRect().top));
+  check('source attributions render authored math and emphasis safely',
+    await row(13).locator('.bsrc strong').textContent() === 'Math reference' && await row(13).locator('.bsrc .katex').count() === 1);
+  check('summation and authored emphasis render in table headers and rows',
+    await page.locator('[id="s1-1~14"] th strong').innerText() === 'Σ' &&
+    await page.locator('[id="s1-1~14"] th .katex').count() === 1 &&
+    await page.locator('[id="s1-1~14"] td strong').innerText() === 'Total' &&
+    await page.locator('[id="s1-1~14"] td .katex').count() === 1 &&
+    await page.locator('[id="s1-1~14"] td .one').innerText() === '1');
+  const quizLine = page.locator('.quiz-line');
+  if (await quizLine.count()) await quizLine.click();
+  const activeQuestion = () => page.locator('.quiz .q:visible');
+  await activeQuestion().waitFor();
+  check('quiz prompt preserves bold text and rendered summation',
+    await activeQuestion().locator('.qtext strong').innerText() === 'Compute the total' &&
+    await activeQuestion().locator('.qtext .katex').count() === 1 &&
+    await activeQuestion().locator('.qtext .katex-mathml math').count() === 1);
+  await page.locator('.quiz textarea').fill('a value for each term');
+  await page.getByRole('button', { name: 'Check answer' }).click();
+  check('quiz answer model preserves bold text and rendered math',
+    await activeQuestion().locator('.ans strong').innerText() === 'Add each term:' &&
+    await activeQuestion().locator('.ans .katex').count() === 1 &&
+    await activeQuestion().locator('.ans .katex-mathml math').count() === 1);
+  await page.getByRole('button', { name: 'Next question' }).click();
+  check('quiz choice prompt preserves bold text and rendered summation',
+    await activeQuestion().locator('.qtext strong').innerText() === 'the total' &&
+    await activeQuestion().locator('.qtext .katex').count() === 1);
+  check('quiz choices preserve bold text and rendered math',
+    await activeQuestion().locator('.qchoice-text strong').first().innerText() === 'Sum' &&
+    await activeQuestion().locator('.qchoice-text .katex').count() === 2 &&
+    await activeQuestion().locator('.qchoice-text .katex-mathml math').count() === 2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
+  const newlineLines = await row(13).locator('.bhtml p').first().evaluate(p => {
+    const texts = [];
+    const walk = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walk.nextNode())) if (node.textContent.trim()) texts.push(node);
+    const rect = text => {
+      const range = document.createRange(); range.setStart(text, 0); range.setEnd(text, 1);
+      return range.getBoundingClientRect();
+    };
+    const first = rect(texts[0]), third = rect(texts[1]);
+    return { delta: third.top - first.top, line: parseFloat(getComputedStyle(p).lineHeight), breaks: p.querySelectorAll(':scope > br').length };
+  });
+  check('mobile authored blank lines remain visibly separated',
+    newlineLines.breaks === 2 && newlineLines.delta >= newlineLines.line * 1.8);
+  check('mobile prose wraps without widening the viewport', await page.evaluate(() =>
+    document.documentElement.scrollWidth <= innerWidth + 1 &&
+    [...document.querySelectorAll('[id="s1-1~8"] .bhtml p')].every(p => p.scrollWidth <= p.clientWidth + 1)));
+  await row(14).locator('.tscroll').screenshot({ path: resolve(shots, 'reading-mobile-math-table.png') });
+  await activeQuestion().screenshot({ path: resolve(shots, 'reading-mobile-math-choices.png') });
+  await page.setViewportSize({ width: 1600, height: 1000 });
   const citation = page.locator('[id="s1-1~0"] a.xr');
   check('figure citation names the addressed block', await citation.getAttribute('href') === '#/demo/s1-1~5');
   await citation.click();
@@ -72,7 +145,6 @@ try {
   await page.locator('.pill.on').click();
   await page.waitForTimeout(400);
   const mode = async label => { await page.locator('.modesw-b:visible', { hasText: label }).first().click(); await page.waitForTimeout(350); };
-  const row = i => page.locator(`[id="s1-1~${i}"]`);
   function rowFigure() { return page.locator('[id="s1-1~5"] .figure'); }
   for (const label of ['Study','Review','Names']) {
     await mode(label);

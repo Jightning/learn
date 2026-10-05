@@ -47,6 +47,17 @@ test("shape detection includes stimuli and does not depend on writing a draft fi
   assert.deepEqual(found, ["block:figure", "figure:plot", "block:math", "question:multi", "stimulus:passage"]);
 });
 
+test("inline math selects the shared math format from table and quiz content", () => {
+  for (const unit of [
+    { blocks: [{ t: "table", head: ["<m>x^2</m>"], rows: [["value"]] }] },
+    { quiz: [{ q: "Evaluate <m>x^2</m>.", response: { kind: "self", model: "<m>x=2</m>" } }] }
+  ]) {
+    const needs = shapeNeeds(unit);
+    assert.ok(needs.includes("block:math"));
+    assert.ok(selectContext(context, { role: "writer", needs }).modules.some(m => m.id === "formats-math"));
+  }
+});
+
 test("broken manifests, cycles, and symlink escapes cannot silently empty context", () => {
   const dir = mkdtempSync(join(tmpdir(), "context-"));
   try {
@@ -68,5 +79,6 @@ test("modular math rules preserve main-checkout raw math and display guidance", 
   assert.match(output, /bare TeX prints literally/);
   assert.match(output, /<m>e\^\{2x\}<\/m>/);
   assert.match(output, /math block for a central equation/);
-  assert.match(output, /YAML newline alone/);
+  assert.match(output, /source newlines, and each becomes a visible break/);
+  assert.match(output, /wraps naturally on mobile/);
 });

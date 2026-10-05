@@ -7,7 +7,7 @@ primer:
     answer: |-
       Press Continue after the feedback
     why: |-
-      <p>Answer or skip, read the immediate feedback, then press Continue. Self-check cards reveal a model answer and offer Got it or Needs work.</p>
+      <p>Answer or skip, read the immediate feedback, then press Continue. Self-check cards reveal a model answer and offer Correct or Wrong.</p>
   - ask: |-
       You have read a section and answered its quiz. Nothing is due in review yet. Has something gone wrong?
     answer: |-

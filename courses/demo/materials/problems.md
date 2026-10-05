@@ -26,7 +26,7 @@ Work them with a pencil. Solutions follow each set.
 
 1. What happens after a learner answers or skips a question?
 2. Which outcome puts a concept into Review?
-3. What does Needs work do on a self-check card?
+3. What does Wrong do on a self-check card?
 
 **Solutions**
 

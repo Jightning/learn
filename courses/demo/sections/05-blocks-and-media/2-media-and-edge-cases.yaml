@@ -56,6 +56,14 @@ blocks:
     h: |-
       <p>A flagged gap is a task; a confidently mislabelled one ships.</p>
 
+  - t: key
+    source: authoring/formats/stimulus.md
+    label: A question can carry its own media
+    core: 'Attach an ordered <code>stimulus</code> list to keep the whole problem with its question.'
+    h: |-
+      <p>The examples at the end of this subsection carry a circuit and an image. In <a href="#s5-1">Tables and code</a>, another question carries a code listing and a supporting card. Text can appear before, between, and after attachments; the final <code>q</code> tells the reader what to answer.</p>
+      <p>Diagrams occupy the question's full width. A wide circuit scrolls sideways instead of squeezing its labels into a smaller nested card. These attachments also follow the question into Review and Mixed Practice.</p>
+
 quiz:
   - type: Choose the source value
     concept: non-redundancy
@@ -102,3 +110,55 @@ quiz:
       catches that, which is why the judgement has to sit with whoever writes
       the field.</p>
     verified: 2026-09-08
+
+  - type: Read an attached circuit
+    concept: completeness
+    stimulus:
+      - t: p
+        h: 'This is a diagram-reading example; no electronics knowledge is needed. Find the component marked with a zigzag.'
+      - t: figure
+        kind: circuit
+        cap: A battery and a resistor in one loop
+        spec:
+          layout: rectangle
+          w: 12
+          h: 4
+          sides:
+            top: [{type: resistor, label: R, value: '1 kΩ'}]
+            left: [{type: battery, label: B, value: '9 V'}]
+      - t: note
+        label: Symbol key
+        h: '<p>The zigzag is a <b>resistor</b>. The pair of unequal straight lines is a <b>battery</b>. Letters beside the symbols identify the components.</p>'
+      - t: p
+        h: 'On a narrow screen, scroll the circuit sideways to inspect both labels. Use the symbol key above to identify the resistor.'
+    q: 'Which label belongs to the resistor?'
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - {text: R, why: 'R is printed above the zigzag resistor symbol.'}
+        - {text: B, why: 'B identifies the battery, drawn with unequal straight lines.'}
+    why: '<p>The diagram, its symbol key, and the instructions are attached together. The question remains answerable when it appears outside this subsection.</p>'
+    verified: 2026-10-04
+
+  - type: Compare an attached image
+    concept: tier
+    stimulus:
+      - t: p
+        h: 'This question bundles an image asset rather than generating a figure. Compare the lengths of the three labelled bars.'
+      - t: image
+        src: assets/gallery.svg
+        alt: Three horizontal bars labelled spine, depth, and apply; spine is longest, depth is intermediate, and apply is shortest
+        cap: Relative emphasis of the three reading paths
+      - t: p
+        h: 'The bar length represents emphasis in this illustration, not a required percentage of course content. Choose the order from greatest to least emphasis.'
+    q: 'Which order matches the image?'
+    response:
+      kind: single
+      correct: 3
+      choices:
+        - {text: 'Apply → depth → spine', why: 'That reverses the lengths: apply is shortest, rather than longest.'}
+        - {text: 'Spine → apply → depth', why: 'Depth is longer than apply in this image.'}
+        - {text: 'Spine → depth → apply', why: 'Spine is longest, depth is intermediate, and apply is shortest.'}
+    why: '<p>The image is bundled with the course and attached directly to the question. The text before and after it supplies the interpretation needed to answer.</p>'
+    verified: 2026-10-04

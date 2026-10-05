@@ -1,3 +1,4 @@
+import { isEditingEvent } from "./lib/keyboard.js";
 import { useState, useEffect, useMemo, useCallback, useRef } from "preact/hooks";
 import { INDEX, ORDER, get as getCourse, peek, refresh as refreshLibrary } from "./lib/library.js";
 
@@ -352,6 +353,7 @@ export default function App() {
   /* keyboard: / search, esc close, [ ] page between sections */
   useEffect(() => {
     const onKey = e => {
+      if (isEditingEvent(e)) return;
       /* content zoom before anything else, since it is modified and would
          otherwise be read as a bare "-" or "0" */
       const z = zoomFromKey(e, zoom);

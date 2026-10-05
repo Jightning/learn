@@ -22,3 +22,10 @@ All blocks accept `t`, optional `tier`, `label`, `cat`, `tags`, `notes`,
 Place an `attempt` first unless another position is deliberate. Steps belong in string `items`, never run-in
 prose. A block absent `tier` is spine. Use `follows: true` only for a depth
 follow-up immediately below its parent.
+
+Every reader-facing text field should pass through the shared safe inline
+renderer, including headings, block prose, labels, question prompts and answers,
+captions, and table headers and cells. Supported markup includes inline math,
+bold/italic, highlight, color classes, links, and code formatting. Use `<m>…</m>`
+for inline TeX; reserve bare TeX for a math block's `tex:`. Table content keeps
+the same markup in every reading mode.

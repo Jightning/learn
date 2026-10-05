@@ -10,6 +10,7 @@ const TAGS = new Set((
   "math semantics annotation mrow mi mn mo mtext mspace mfrac msqrt mroot msup msub msubsup mover munder munderover mtable mtr mtd mpadded mphantom menclose"
 ).split(" "));
 const VOID = new Set(["br", "hr", "img"]);
+const STRUCTURAL = new Set("blockquote caption dd div dl dt figcaption figure h1 h2 h3 h4 h5 h6 hr li ol p pre table tbody td th thead tr ul".split(" "));
 const ATTRS = new Set((
   "class role aria-label aria-hidden aria-live aria-atomic data-xr data-node data-wire " +
   "alt loading colspan rowspan viewbox preserveaspectratio d x y x1 x2 y1 y2 cx cy r rx ry width height points " +
@@ -56,8 +57,25 @@ export function safeMarkup(value) {
   const source = String(value == null ? "" : value);
   if (typeof DOMParser === "undefined") return source;
   const doc = new DOMParser().parseFromString(source, "text/html");
-  const clean = node => {
-    if (node.nodeType === 3) return doc.createTextNode(node.nodeValue);
+  const clean = (node, preserveNewlines = false) => {
+    if (node.nodeType === 3) {
+      const text = node.nodeValue;
+      /* Whitespace between structural elements is indentation. Between two
+         inline phrases it is an authored break even when both phrases are
+         wholly bold/math/etc. Code and MathML retain their own spacing. */
+      const betweenInline = [node.previousSibling, node.nextSibling].every(sibling =>
+        sibling?.nodeType === 1 && !STRUCTURAL.has(sibling.localName.toLowerCase()));
+      if (!preserveNewlines && (/\S/.test(text) || betweenInline) && /\r?\n/.test(text)) {
+        const fragment = doc.createDocumentFragment();
+        const lines = text.split(/\r?\n/);
+        lines.forEach((line, i) => {
+          if (i) fragment.appendChild(doc.createElement("br"));
+          if (line) fragment.appendChild(doc.createTextNode(line));
+        });
+        return fragment;
+      }
+      return doc.createTextNode(text);
+    }
     if (node.nodeType !== 1) return null;
     const tag = node.localName.toLowerCase();
     if (!TAGS.has(tag)) return null;
@@ -83,8 +101,11 @@ export function safeMarkup(value) {
         out.setAttribute("id", attr.value);
       } else if (ATTRS.has(name)) out.setAttribute(attr.name, attr.value);
     }
+    const keepSpacing = preserveNewlines || tag === "pre" || tag === "code" ||
+      node.namespaceURI === "http://www.w3.org/1998/Math/MathML" ||
+      node.namespaceURI === "http://www.w3.org/2000/svg";
     if (!VOID.has(tag)) for (const child of node.childNodes) {
-      const safe = clean(child);
+      const safe = clean(child, keepSpacing);
       if (safe) out.appendChild(safe);
     }
     return out;

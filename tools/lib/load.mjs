@@ -20,6 +20,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, basename, extname } from "node:path";
 import * as YAML from "js-yaml";
+import { curriculumMap, mergeCurriculumDefinitions, readCurriculumCollections, validateCourseCurriculumReferences } from "../../src/lib/curriculum.js";
 
 const DATA_EXT = new Set([".yaml", ".yml", ".json"]);
 
@@ -82,7 +83,26 @@ export function loadCourse(dir) {
     { code: "", title: "", tagline: "", meta: "", concepts: {}, drills: {}, practice: {}, sections: [] },
     meta
   );
+  if (meta.concepts != null && (!meta.concepts || typeof meta.concepts !== "object" || Array.isArray(meta.concepts)))
+    errors.push(`${metaPath}: concepts must be a mapping`);
+  const canonicalFiles = Object.fromEntries(
+    ["objectives", "families", "concepts"].flatMap(name => {
+      return ["yaml", "yml", "json"].map(ext => join(dir, "categorize", `${name}.${ext}`))
+        .filter(path => existsSync(path))
+        .map(path => [`categorize/${name}.${extname(path).slice(1)}`, readFileSync(path, "utf8")]);
+    }));
+  const canonicalPresent = Object.keys(canonicalFiles).length > 0;
+  const canonical = readCurriculumCollections(canonicalFiles, errors);
+  const legacyConcepts = Object.entries(meta.concepts && typeof meta.concepts === "object" && !Array.isArray(meta.concepts) ? meta.concepts : {})
+    .flatMap(([id, value]) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        errors.push(`${metaPath}: concepts.${id} must be a mapping`);
+        return [];
+      }
+      return [{ id, ...value }];
+    });
   C.concepts = Object.assign({}, meta.concepts || {});
+  const concepts = [...legacyConcepts];
   C.drills = {};
   C.practice = {};
   C.cats = Object.assign({}, meta.cats || {});
@@ -102,7 +122,15 @@ export function loadCourse(dir) {
     const key = basename(f, extname(f));
     const body = parseFile(join(cdir, f));
     if (!body || typeof body !== "object") { errors.push(`concepts/${f}: not a mapping`); continue; }
-    C.concepts[body.key || key] = body;
+    if (canonicalPresent) concepts.push({ id: body.id || body.key || key, ...body });
+    else C.concepts[body.key || key] = body;
+  }
+  if (canonicalPresent) {
+    const merged = mergeCurriculumDefinitions(canonical, { objectives: [], families: [], concepts },
+      errors, "course legacy curriculum", true);
+    C.concepts = curriculumMap(merged.concepts);
+    C.objectives = curriculumMap(merged.objectives);
+    C.families = curriculumMap(merged.families);
   }
 
   /* ---- drills: one file per concept, key from the filename ---- */
@@ -167,5 +195,6 @@ export function loadCourse(dir) {
 
   C.sections.sort((a, b) => a.num - b.num);
   if (!C.sections.length) errors.push("no sections found");
+  if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
   return { course: C, errors };
 }

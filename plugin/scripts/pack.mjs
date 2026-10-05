@@ -4,7 +4,7 @@ import { basename, dirname, extname, join, relative, resolve, sep } from "node:p
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 //#region node_modules/js-yaml/dist/js-yaml.mjs
-/*! js-yaml 5.4.1 https://github.com/nodeca/js-yaml @license MIT */
+/*! js-yaml 5.4.2 https://github.com/nodeca/js-yaml @license MIT */
 /**
 * Returned by a scalar resolver when the source does not match its tag.
 *
@@ -2532,6 +2532,7 @@ function doubleQuoteWhitespaceOnly(layout) {
 function applyForceQuotesOption(layout) {
 	if (!layout.presenterOptions.forceQuotes) return;
 	if (layout.isKey || layout.style !== SCALAR_STYLE.PLAIN) return;
+	if (layout.node.tag !== layout.presenterOptions.schema.defaultScalarTag.tagName) return;
 	layout.style = layout.node.value.includes("\n") ? SCALAR_STYLE.DOUBLE_QUOTED : _preferredQuotedStyle(layout);
 }
 function tryLongOrMultilineAsBlock(layout) {
@@ -2618,6 +2619,139 @@ CHOMPING_MODE.CLIP;
 CHOMPING_MODE.STRIP;
 CHOMPING_MODE.KEEP;
 //#endregion
+//#region src/lib/curriculum.js
+const CURRICULUM_COLLECTIONS = Object.freeze([
+	"objectives",
+	"families",
+	"concepts"
+]);
+const mapping = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const singular = (collection) => collection === "families" ? "family" : collection.slice(0, -1);
+const stable = (value) => {
+	if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+	if (!mapping(value)) return JSON.stringify(value);
+	return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(",")}}`;
+};
+function sameDefinition(a, b, id, collection) {
+	const normalize = (value) => {
+		const out = { ...value };
+		delete out.id;
+		if (collection === "concepts") delete out.key;
+		return stable(out);
+	};
+	return normalize(a) === normalize(b) && (collection !== "concepts" || (a.key || a.id || id) === (b.key || b.id || id));
+}
+/** Read and validate fixed canonical YAML collection files from a text map. */
+function readCurriculumCollections(files, errors = []) {
+	const collections = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const candidates = [
+			`categorize/${name}.yaml`,
+			`categorize/${name}.yml`,
+			`categorize/${name}.json`
+		].filter((path) => Object.hasOwn(files, path));
+		if (candidates.length > 1) errors.push(`categorize/${name}: use only one collection file (${candidates.join(", ")})`);
+		const path = candidates[0];
+		if (!path) {
+			collections[name] = [];
+			continue;
+		}
+		let value;
+		try {
+			value = path.endsWith(".json") ? JSON.parse(files[path]) : awaitYaml(files[path]);
+		} catch (error) {
+			errors.push(`${path}: ${String(error.message).split("\n")[0]}`);
+			collections[name] = [];
+			continue;
+		}
+		if (!Array.isArray(value)) {
+			errors.push(`${path}: expected a list of definitions`);
+			collections[name] = [];
+			continue;
+		}
+		const ids = /* @__PURE__ */ new Set();
+		collections[name] = value.filter((item, i) => {
+			if (!mapping(item)) {
+				errors.push(`${path}[${i + 1}]: definition must be a mapping`);
+				return false;
+			}
+			if (typeof item.id !== "string" || !item.id.trim()) {
+				errors.push(`${path}[${i + 1}]: definition needs a nonempty id`);
+				return false;
+			}
+			if (ids.has(item.id)) {
+				errors.push(`${path}: duplicate ${name.slice(0, -1)} id "${item.id}"`);
+				return false;
+			}
+			ids.add(item.id);
+			return true;
+		});
+	}
+	return collections;
+}
+const awaitYaml = (text) => load(text);
+/** Merge canonical definitions with legacy definitions, reporting conflicts. */
+function mergeCurriculumDefinitions(canonical, legacy, errors = [], where = "legacy curriculum", strictLegacyDuplicates = false) {
+	const merged = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const byId = /* @__PURE__ */ new Map();
+		const old = legacy?.[name] || [];
+		for (const [index, value] of old.entries()) {
+			if (!mapping(value)) {
+				errors.push(`${where} ${name}[${index + 1}]: definition must be a mapping`);
+				continue;
+			}
+			const id = value.id || (name === "concepts" ? value.key : null);
+			if (typeof id !== "string" || !id.trim()) {
+				errors.push(`${where} ${name}[${index + 1}]: definition needs an id`);
+				continue;
+			}
+			if (byId.has(id) && strictLegacyDuplicates) errors.push(`${where}: duplicate ${name.slice(0, -1)} id "${id}"`);
+			else byId.set(id, value);
+		}
+		for (const value of canonical?.[name] || []) {
+			const id = value.id;
+			if (byId.has(id) && !sameDefinition(byId.get(id), value, id, name)) errors.push(`categorize/${name}.yaml conflicts with legacy ${name} definition "${id}"`);
+			else byId.set(id, value);
+		}
+		merged[name] = [...byId.values()];
+	}
+	return merged;
+}
+/** Validate curriculum tags and concept links in reader content. */
+function validateCourseCurriculumReferences(course, errors = []) {
+	const ids = {
+		objectives: new Set(Object.keys(course.objectives || {})),
+		families: new Set(Object.keys(course.families || {})),
+		concepts: new Set(Object.keys(course.concepts || {}))
+	};
+	const check = (value, collection, where) => {
+		if (value == null) return;
+		for (const item of Array.isArray(value) ? value : [value]) {
+			const id = typeof item === "string" ? item : item?.id;
+			if (typeof id !== "string" || !ids[collection].has(id)) errors.push(`${where}: unknown ${singular(collection)} reference "${id ?? item}"`);
+		}
+	};
+	const visitInlineConcepts = (value, where) => {
+		if (typeof value === "string") for (const match of value.matchAll(/<c\s+k=["']([^"']+)["']/g)) check(match[1], "concepts", where);
+		else if (Array.isArray(value)) value.forEach((item) => visitInlineConcepts(item, where));
+		else if (mapping(value)) for (const item of Object.values(value)) visitInlineConcepts(item, where);
+	};
+	for (const section of course.sections || []) for (const unit of section.subs || []) for (const [kind, items] of [["block", unit.blocks], ["quiz", unit.quiz]]) for (const [i, item] of (Array.isArray(items) ? items : []).entries()) {
+		const where = `${unit.id} ${kind} ${i + 1}`;
+		check(item?.objectives ?? item?.objective, "objectives", where);
+		check(item?.families ?? item?.family, "families", where);
+		if (item?.concept != null) check(item.concept, "concepts", where);
+		visitInlineConcepts(item, where);
+	}
+	for (const kind of ["practice", "drills"]) for (const key of Object.keys(course[kind] || {})) if (!ids.concepts.has(key)) errors.push(`${kind}/${key}: unknown concept reference "${key}"`);
+	return errors;
+}
+/** Return a map keyed by canonical id, preserving each definition's fields. */
+function curriculumMap(definitions) {
+	return Object.fromEntries((definitions || []).map((value) => [value.id || value.key, value]));
+}
+//#endregion
 //#region tools/lib/load.mjs
 const DATA_EXT = /* @__PURE__ */ new Set([
 	".yaml",
@@ -2676,7 +2810,32 @@ function loadCourse(dir) {
 		practice: {},
 		sections: []
 	}, meta);
+	if (meta.concepts != null && (!meta.concepts || typeof meta.concepts !== "object" || Array.isArray(meta.concepts))) errors.push(`${metaPath}: concepts must be a mapping`);
+	const canonicalFiles = Object.fromEntries([
+		"objectives",
+		"families",
+		"concepts"
+	].flatMap((name) => {
+		return [
+			"yaml",
+			"yml",
+			"json"
+		].map((ext) => join(dir, "categorize", `${name}.${ext}`)).filter((path) => existsSync(path)).map((path) => [`categorize/${name}.${extname(path).slice(1)}`, readFileSync(path, "utf8")]);
+	}));
+	const canonicalPresent = Object.keys(canonicalFiles).length > 0;
+	const canonical = readCurriculumCollections(canonicalFiles, errors);
+	const legacyConcepts = Object.entries(meta.concepts && typeof meta.concepts === "object" && !Array.isArray(meta.concepts) ? meta.concepts : {}).flatMap(([id, value]) => {
+		if (!value || typeof value !== "object" || Array.isArray(value)) {
+			errors.push(`${metaPath}: concepts.${id} must be a mapping`);
+			return [];
+		}
+		return [{
+			id,
+			...value
+		}];
+	});
 	C.concepts = Object.assign({}, meta.concepts || {});
+	const concepts = [...legacyConcepts];
 	C.drills = {};
 	C.practice = {};
 	C.cats = Object.assign({}, meta.cats || {});
@@ -2698,7 +2857,21 @@ function loadCourse(dir) {
 			errors.push(`concepts/${f}: not a mapping`);
 			continue;
 		}
-		C.concepts[body.key || key] = body;
+		if (canonicalPresent) concepts.push({
+			id: body.id || body.key || key,
+			...body
+		});
+		else C.concepts[body.key || key] = body;
+	}
+	if (canonicalPresent) {
+		const merged = mergeCurriculumDefinitions(canonical, {
+			objectives: [],
+			families: [],
+			concepts
+		}, errors, "course legacy curriculum", true);
+		C.concepts = curriculumMap(merged.concepts);
+		C.objectives = curriculumMap(merged.objectives);
+		C.families = curriculumMap(merged.families);
 	}
 	const ddir = join(dir, "drills");
 	for (const f of dataFiles(ddir)) {
@@ -2764,6 +2937,7 @@ function loadCourse(dir) {
 	});
 	C.sections.sort((a, b) => a.num - b.num);
 	if (!C.sections.length) errors.push("no sections found");
+	if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
 	return {
 		course: C,
 		errors

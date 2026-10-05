@@ -58,7 +58,7 @@ export const U = {
   },
   cell: (v, map) => {
     const s = String(v).trim();
-    return map && map[s] ? `<span class="${map[s]}">${esc(s)}</span>` : s;
+    return map && map[s] ? `<span class="${map[s]}">${s}</span>` : s;
   },
   /* Where a claim came from. A claim the author could not ground says so in
      the page, in words rather than by colour, because the reader cannot tell a
@@ -94,7 +94,7 @@ export const U = {
     if (UNSOURCED[b.source])
       return `<span class="bsrc is-un">${UNSOURCED[b.source]}</span>`;
     if (env && env.prevSource === b.source) return "";
-    return `<span class="bsrc">${esc(b.source)}</span>`;
+    return `<span class="bsrc">${b.source}</span>`;
   },
   /* "Figure 3.2 | what it shows", the bar being the drawn .sep rather than a
      typed dash. The number is the citable half, so it is rendered even when
@@ -377,6 +377,6 @@ R("image", { holds: "structure", apart: true, notes: "caption", defaultLabel: "I
     `<img src="${b.src}" alt="${esc(b.alt || "")}" loading="lazy">` +
     (cap || b.credit
       ? `<figcaption>${cap}` +
-        (b.credit ? `<span class="credit">${esc(b.credit)}</span>` : "") + "</figcaption>"
+        (b.credit ? `<span class="credit">${b.credit}</span>` : "") + "</figcaption>"
       : "") + "</figure>";
 } });
