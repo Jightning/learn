@@ -4,6 +4,9 @@ Write reader-facing data under `courses/<id>/`. Treat the stated reader
 background as the starting point: introduce what the course needs before
 relying on it, and keep unknown or unsupported claims explicit as
 `unverified`, `generated`, or an open issue.
+Keep unrelated personal information out of course content. Cite sources by
+filename; include source-relative folders only when needed to distinguish files,
+never absolute local paths or usernames.
 
 ## Teaching
 

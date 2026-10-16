@@ -99,7 +99,10 @@ tbody tr:last-child td{border-bottom:0}
 /* A citation is read: "Edwards, Penney & Calvis 6e" in a fixed advance is the
    same string with its word shapes removed. */
 .bsrc{display:block;margin-top:.55rem;font-family:var(--ui);font-size:var(--fs-meta);
-  color:var(--ink-3)}
+  color:var(--ink-3);min-width:0;max-width:100%;overflow-wrap:anywhere}
+.bsrc.is-long{display:flex;white-space:nowrap;overflow:hidden}
+.bsrc-head{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bsrc-tail{display:flex;justify-content:flex-end;flex:none;max-width:50%;overflow:hidden}
 /* One word in red, and nothing else.
  *
  * It used to take a dashed left rule and a block of padding as well, which

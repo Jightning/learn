@@ -12,7 +12,7 @@ const TAGS = new Set((
 const VOID = new Set(["br", "hr", "img"]);
 const STRUCTURAL = new Set("blockquote caption dd div dl dt figcaption figure h1 h2 h3 h4 h5 h6 hr li ol p pre table tbody td th thead tr ul".split(" "));
 const ATTRS = new Set((
-  "class role aria-label aria-hidden aria-live aria-atomic data-xr data-node data-wire " +
+  "class title role aria-label aria-hidden aria-live aria-atomic data-xr data-node data-wire " +
   "alt loading colspan rowspan viewbox preserveaspectratio d x y x1 x2 y1 y2 cx cy r rx ry width height points " +
   "transform text-anchor stroke-width stroke-dasharray fill-rule opacity font-size " +
   "refx refy markerwidth markerheight orient xmlns displaystyle scriptlevel encoding"

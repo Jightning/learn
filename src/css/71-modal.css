@@ -62,3 +62,8 @@
   /* Centred, so the home indicator is not underneath it. */
   .modal.danger .modal-in{padding-bottom:22px}
 }
+
+/* Expanding the catalog grows downward without shifting the import controls. */
+@media(min-width:40.01em){
+  .modal.course-add{margin:24px auto auto;max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px)}
+}

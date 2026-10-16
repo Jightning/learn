@@ -276,12 +276,13 @@ export default function Library({ courses, order, loading, error, onChange }) {
       <CloudPanel onChange={onChange} />
 
       {adding && (
-        <Modal title="Add Course" onClose={() => setAdding(false)}>
+        <Modal className="course-add" title="Add Course" onClose={() => setAdding(false)}>
           <CourseIO onChange={onChange} />
           <details class="cio-catalog" aria-label="Course library">
             <summary>Library<span class="cio-arrows" aria-hidden="true">
               <span>→</span><span>→</span><span>→</span>
             </span></summary>
+            <div class="cio-list">
             {catalogGroups().map((group, i) => (
               <section class="cio-category" key={group.name}
                        aria-labelledby={`cio-category-${i}`}>
@@ -306,6 +307,7 @@ export default function Library({ courses, order, loading, error, onChange }) {
                 })}
               </section>
             ))}
+            </div>
           </details>
         </Modal>
       )}

@@ -157,3 +157,6 @@
    a phone, where the sheet rules in 71-modal.css restate the margin and win on
    source order. */
 .lib>*:last-child:not(dialog){margin-bottom:0}
+
+.cio-list{max-height:min(32vh,20rem);max-height:min(32dvh,20rem);overflow-y:auto;overscroll-behavior:contain}
+.cio-course>div{min-width:0;overflow-wrap:anywhere}

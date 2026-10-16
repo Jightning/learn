@@ -21,7 +21,7 @@ import { useEffect, useRef } from "preact/hooks";
  * every one of those paths, which is where the state is cleared, so there is no
  * way to dismiss it that leaves the component thinking it is still open.
  */
-export default function Modal({ title, onClose, children, danger }) {
+export default function Modal({ title, onClose, children, danger, className = "" }) {
   const box = useRef(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function Modal({ title, onClose, children, danger }) {
   const onBackdrop = e => { if (e.target === box.current) onClose(); };
 
   return (
-    <dialog class={"modal" + (danger ? " danger" : "")} ref={box}
+    <dialog class={"modal" + (danger ? " danger" : "") + (className ? " " + className : "")} ref={box}
             role="dialog" aria-label={title}
             onClose={onClose} onCancel={onClose} onClick={onBackdrop}>
       <div class="modal-in">

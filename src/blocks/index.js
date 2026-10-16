@@ -10,6 +10,7 @@
  *   register("name", { render: (b, U) => "<div>…</div>" })
  * ==========================================================================*/
 import { esc, strip, clip } from "../lib/util.js";
+import { sourceReference } from "../lib/source-label.js";
 import { Figures } from "../figures/index.js";
 import { displayTex } from "../lib/math.js";
 
@@ -94,7 +95,7 @@ export const U = {
     if (UNSOURCED[b.source])
       return `<span class="bsrc is-un">${UNSOURCED[b.source]}</span>`;
     if (env && env.prevSource === b.source) return "";
-    return `<span class="bsrc">${b.source}</span>`;
+    return sourceReference(b.source);
   },
   /* "Figure 3.2 | what it shows", the bar being the drawn .sep rather than a
      typed dash. The number is the citable half, so it is rendered even when

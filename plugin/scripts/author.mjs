@@ -18235,6 +18235,24 @@ function shapeNeeds(unit = {}) {
 	return [...needs];
 }
 //#endregion
+//#region src/lib/source-label.js
+function sourceLabel(value) {
+	const text = String(value).trim();
+	if (text.includes("<")) return text;
+	const path = text.replaceAll("\\", "/");
+	if (/^(?:file:\/\/|[a-z]:\/|\/(?!\/))/i.test(path)) {
+		const root = path.lastIndexOf("/sources/");
+		return root >= 0 ? path.slice(root + 9) : path.slice(path.lastIndexOf("/") + 1);
+	}
+	return path.replace(/^sources\//, "");
+}
+function sourceReference(value) {
+	const label = sourceLabel(value);
+	if (label.includes("<") || label.length <= 48) return `<span class="bsrc">${label}</span>`;
+	const at = label.length - 20;
+	return `<span class="bsrc is-long" title="${esc$1(label).replaceAll("\"", "&quot;")}"><span class="bsrc-head">${esc$1(label.slice(0, at))}</span><span class="bsrc-tail">${esc$1(label.slice(at))}</span></span>`;
+}
+//#endregion
 //#region src/figures/base.js
 function esc(s) {
 	return String(s).replace(/[&<>]/g, function(c) {
@@ -45860,7 +45878,7 @@ const U = {
 		if (!b.source) return "";
 		if (UNSOURCED[b.source]) return `<span class="bsrc is-un">${UNSOURCED[b.source]}</span>`;
 		if (env && env.prevSource === b.source) return "";
-		return `<span class="bsrc">${b.source}</span>`;
+		return sourceReference(b.source);
 	},
 	caption: (num, text, kind = "Figure") => (num ? `<b class="fnum">${esc$1(kind)} ${esc$1(num)}</b>` : "") + (num && text ? "<i class=\"sep\" aria-hidden=\"true\"></i>" : "") + (text || ""),
 	body: (b) => {

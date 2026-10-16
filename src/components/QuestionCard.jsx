@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from "preact/hooks";
 import AnswerInput, { FormulaPreview } from "./AnswerInput.jsx";
 import { checkFormula } from "../lib/formula-check.js";
 import { authored as M, safeMarkup } from "../lib/safe-markup.js";
+import { sourceReference } from "../lib/source-label.js";
 import { renderBlock } from "../blocks/index.js";
 import { gradeQuestion, questionStimuli, questionSignature, questionTries, questionHelpHref } from "../lib/questions.js";
 import { newAttempt, activeClock } from "../lib/attempt.js";
@@ -18,7 +19,7 @@ function Stimulus({ value }) {
   if (value.t === "passage") return (
     <figure class="qstim qstim-passage">
       <blockquote dangerouslySetInnerHTML={{ __html: M(value.text || "") }} />
-      {value.source && <figcaption dangerouslySetInnerHTML={{ __html: M(value.source) }} />}
+      {value.source && <figcaption dangerouslySetInnerHTML={{ __html: M(sourceReference(value.source)) }} />}
     </figure>
   );
   return <div class={`qstim qstim-${value.t}`} dangerouslySetInnerHTML={{ __html: safeMarkup(renderBlock(value, {})) }} />;

@@ -17342,7 +17342,7 @@ function loadCourse(dir) {
 		errors
 	};
 }
-const PUBLIC = new Set((/* @__PURE__ */ new Map([["demo", "Getting Started"]])).keys());
+const PUBLIC = new Set((/* @__PURE__ */ new Map([["demo", "Getting Started"], ["mvcalc", "Mathematics"]])).keys());
 const MIME = {
 	".png": "image/png",
 	".jpg": "image/jpeg",
