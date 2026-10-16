@@ -97,10 +97,10 @@ try {
      `${brief.stdout.length} vs ${full.stdout.length}`);
   ck("legacy lean flag preserves the compact instruction packet", /context [a-f0-9]{12}/.test(lean.stdout));
   for (const [name, output] of [["full", full.stdout], ["lean full", author("write", cid, "--lean", "--full-spec").stdout]]) {
-    ck(`${name} writing rules include phrase notes and the complexity judgement`,
-       /Judging a passage/.test(output) && /asides:/.test(output) && /follows: true/.test(output));
-    ck(`${name} writing rules allow combined help without caps`,
-       /Use none, one, or several/.test(output) && /no numerical caps|no numerical cap|not.*cap|floor|ceilings|quota/i.test(output) &&
+    ck(`${name} writing rules include local clarification and teaching judgement`,
+       /Optional explanations/.test(output) && /asides:/.test(output) && /follows: true/.test(output));
+    ck(`${name} writing rules allow optional expansions without quotas`,
+       /no, one, or\s+several optional blocks/.test(output) && /no content quota/.test(output) &&
        !/Nothing earns all three|no apply tier/.test(output));
   }
   ck("write warns about unfinished shape but records it anyway",
@@ -125,7 +125,7 @@ try {
 
   const thinDone = author("done", cid, "s1-1");
   ck("teaching minima warn without refusing a deliberate structural draft",
-     thinDone.status === 0 && /no spine blocks/.test(thinDone.stdout) &&
+     thinDone.status === 0 && /no main-path blocks/.test(thinDone.stdout) &&
      existsSync(join(state, "map.txt")), thinDone.stdout);
   const noValidate = author("done", cid, "s1-1", "--no-validate");
   ck("skipping validation requires an explicit staging override",

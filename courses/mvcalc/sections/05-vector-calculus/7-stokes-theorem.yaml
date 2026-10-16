@@ -1,0 +1,118 @@
+title: Stokes' Theorem
+blocks:
+  - t: p
+    h: |
+      <p>Green's Theorem established that the circulation of a planar vector field around a boundary curve equals the double integral of its microscopic circulation across the enclosed flat region. <strong>Stokes' Theorem</strong> lifts this principle into three dimensions, asserting that the circulation of a spatial vector field along a closed curve in space equals the flux of the curl through <em>any</em> oriented surface capped by that boundary curve. This profound result forms a core pillar of vector field theory and classical electrodynamics.</p>
+    authorId: block-4d83097f-deb
+  - t: def
+    term: Stokes' Theorem and Boundary Orientation
+    source: OpenStax Calculus Volume 3, Section 6.7
+    sourceReview: sourced
+    core: Stokes' theorem equates the line integral of a vector field along a positively oriented boundary curve to the flux of its curl across the enclosed oriented surface.
+    introduces:
+      - obj-s5-7
+      - stokes-theorem
+    objectives:
+      - obj-s5-7
+    family: family-stokes-line-to-surface
+    h: |
+      <p>Let <m>S</m> be an oriented, piecewise smooth surface in <m>\mathbb{R}^3</m> bounded by a simple, closed, piecewise smooth boundary curve <m>C = \partial S</m>. The boundary curve <m>C</m> is <strong>positively oriented</strong> relative to <m>S</m> according to the right-hand rule: if you walk along <m>C</m> with your head pointing in the direction of the unit normal <m>\mathbf{n}</m>, the surface <m>S</m> lies to your left. If <m>\mathbf{F}</m> is a vector field whose components have continuous partial derivatives on an open region containing <m>S</m>, then <strong>Stokes' Theorem</strong> states that <m>\oint_C \mathbf{F} \cdot d\mathbf{r} = \iint_S (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S} = \iint_S (\operatorname{curl}\mathbf{F} \cdot \mathbf{n})\,dS</m>.</p>
+    authorId: block-7a1d0a63-136
+  - t: math
+    label: Equation of Stokes' Theorem
+    tex: \oint_C \mathbf{F} \cdot d\mathbf{r} = \iint_S (\nabla \times \mathbf{F}) \cdot d\mathbf{S} = \iint_S (\operatorname{curl}\mathbf{F} \cdot \mathbf{n})\,dS
+    note: The boundary curve C inherits its positive traversal direction from the surface unit normal n via the right-hand rule.
+    objectives:
+      - obj-s5-7
+    family: family-stokes-line-to-surface
+    authorId: block-058c71bf-d1a
+  - t: ex
+    title: Calculating Boundary Circulation via Stokes' Theorem
+    objectives:
+      - obj-s5-7
+    family: family-stokes-line-to-surface
+    h: |
+      <p><strong>Problem:</strong> Evaluate the line integral <m>\oint_C \mathbf{F} \cdot d\mathbf{r}</m> for <m>\mathbf{F} = \langle -y^2, x, z^2 \rangle</m>, where <m>C</m> is the curve of intersection of the cylinder <m>x^2 + y^2 = 1</m> and the plane <m>y + z = 2</m>, oriented counterclockwise when viewed from above.</p><p><strong>Solution:</strong></p><p>1. Compute <m>\operatorname{curl}\mathbf{F}</m>:</p><p><m>\operatorname{curl}\mathbf{F} = \begin{vmatrix} \mathbf{i} & \mathbf{j} & \mathbf{k} \\ \frac{\partial}{\partial x} & \frac{\partial}{\partial y} & \frac{\partial}{\partial z} \\ -y^2 & x & z^2 \end{vmatrix} = \langle 0 - 0, \, 0 - 0, \, 1 - (-2y) \rangle = \langle 0, 0, 1 + 2y \rangle</m></p><p>2. Let <m>S</m> be the planar cap <m>z = g(x, y) = 2 - y</m> over the disk <m>D: x^2 + y^2 \le 1</m>. The upward-pointing normal is <m>\mathbf{N} = \langle -g_x, -g_y, 1 \rangle = \langle 0, 1, 1 \rangle</m>.</p><p>3. Compute the dot product with the curl:</p><p><m>\operatorname{curl}\mathbf{F} \cdot \mathbf{N} = \langle 0, 0, 1 + 2y \rangle \cdot \langle 0, 1, 1 \rangle = 1 + 2y</m></p><p>4. Integrate over the unit disk <m>D</m>:</p><p><m>\oint_C \mathbf{F} \cdot d\mathbf{r} = \iint_D (1 + 2y)\,dA = \iint_D 1\,dA + 2\iint_D y\,dA</m></p><p>By symmetry, <m>\iint_D y\,dA = 0</m>. The area of the unit disk is <m>\pi(1^2) = \pi</m>, so the circulation is <m>\pi</m>.</p>
+    authorId: block-64f8a2f4-59b
+  - t: ex
+    title: Evaluating Curl Flux by Surface Independence
+    objectives:
+      - obj-s5-7
+    family: family-stokes-surface-to-line
+    h: |
+      <p><strong>Problem:</strong> Evaluate <m>\iint_S (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S}</m> for <m>\mathbf{F} = \langle y - z, z - x, x - y \rangle</m> across the paraboloid <m>S: z = 9 - x^2 - y^2</m> for <m>z \ge 0</m>, oriented with upward normal.</p><p><strong>Solution:</strong></p><p>By Stokes' theorem, the flux of curl depends only on the boundary curve <m>\partial S = C</m>, which is the circle <m>x^2 + y^2 = 9</m> in the plane <m>z = 0</m>. Instead of integrating over the curved paraboloid, we replace <m>S</m> with the simpler flat disk <m>S_2: x^2 + y^2 \le 9</m> in <m>z = 0</m> with upward normal <m>\mathbf{k} = \langle 0, 0, 1 \rangle</m>:</p><p>1. Compute <m>\operatorname{curl}\mathbf{F}</m>:</p><p><m>\operatorname{curl}\mathbf{F} = \langle -1 - 1, \, -1 - 1, \, -1 - 1 \rangle = \langle -2, -2, -2 \rangle</m></p><p>2. Take the dot product with the normal <m>\mathbf{k}</m>:</p><p><m>\operatorname{curl}\mathbf{F} \cdot \mathbf{k} = -2</m></p><p>3. Integrate over <m>S_2</m>:</p><p><m>\iint_{S_2} (-2)\,dS = -2\,\text{Area}(S_2) = -2(\pi \cdot 3^2) = -18\pi</m>.</p>
+    authorId: block-4ec5bbee-fa1
+  - t: key
+    label: Physical Meaning of Curl and Relationship to Green's Theorem
+    source: OpenStax Calculus Volume 3, Section 6.7
+    sourceReview: sourced
+    core: Stokes' theorem generalizes Green's circulation theorem to curved 3D surfaces and characterizes curl as circulation per unit area.
+    objectives:
+      - obj-s5-7
+    family: family-stokes-interpret
+    h: |
+      <p>Stokes' theorem provides essential theoretical and physical insights into spatial vector fields:</p>
+    items:
+      - 'Circulation density: The normal component of curl represents microscopic circulation per unit area: <m>(\operatorname{curl}\mathbf{F} \cdot \mathbf{n})(P_0) = \lim_{\text{Area}(S) \to 0} \frac{1}{\text{Area}(S)} \oint_C \mathbf{F} \cdot d\mathbf{r}</m>.'
+      - 'Reduction to Green''s Theorem: When <m>S</m> is a flat region in the <m>xy</m>-plane with unit normal <m>\mathbf{n} = \mathbf{k}</m>, <m>\operatorname{curl}\mathbf{F} \cdot \mathbf{k} = Q_x - P_y</m>, recovering Green''s circulation theorem exactly.'
+      - 'Surface independence for curl fields: If <m>S_1</m> and <m>S_2</m> share the same boundary curve <m>C</m> with compatible orientations, then <m>\iint_{S_1} (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S} = \iint_{S_2} (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S} = \oint_C \mathbf{F} \cdot d\mathbf{r}</m>.'
+      - 'Closed surfaces: If <m>S</m> is a closed surface without boundary (<m>\partial S = \emptyset</m>), then the flux of curl through <m>S</m> is always zero: <m>\iint_S (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S} = 0</m>.'
+    ordered: true
+    authorId: block-9026a6dd-831
+  - t: trap
+    label: Matching Boundary Direction and Surface Independence Limitations
+    source: OpenStax Calculus Volume 3, Section 6.7
+    sourceReview: sourced
+    core: Boundary orientation must strictly match the right-hand rule with the surface normal; surface independence holds only for curl fields, not general fields.
+    objectives:
+      - obj-s5-7
+    family: family-stokes-surface-to-line
+    h: |
+      <p>Two frequent mistakes arise when applying Stokes' theorem. First, failing to coordinate boundary traversal with the surface normal: curling the fingers of your right hand in the direction of curve traversal must align your thumb with the chosen surface normal <m>\mathbf{n}</m>. Reversing the curve flips the sign. Second, surface independence applies only when the integrand is the <em>curl</em> of a vector field, <m>\iint_S (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S}</m>. You cannot replace a surface <m>S</m> with an easier surface <m>S_2</m> when computing the flux of an arbitrary vector field <m>\mathbf{G}</m> unless <m>\mathbf{G}</m> is known to be solenoidal.</p>
+    authorId: block-f116ada0-c1d
+quiz:
+  - type: Applying Stokes theorem line to surface
+    concept: stokes-theorem
+    objectives:
+      - obj-s5-7
+    family: family-stokes-line-to-surface
+    q: Use Stokes' theorem to compute <m>\oint_C \mathbf{F} \cdot d\mathbf{r}</m> for <m>\mathbf{F} = \langle z, x, y \rangle</m>, where <m>C</m> is the boundary of the triangle with vertices <m>(1, 0, 0)</m>, <m>(0, 1, 0)</m>, and <m>(0, 0, 1)</m>, oriented counterclockwise when viewed from above.
+    verified: true
+    response:
+      kind: number
+      value: 1.5
+    why: First compute <m>\operatorname{curl}\mathbf{F} = \langle 1, 1, 1 \rangle</m>. The triangle lies in the plane <m>x + y + z = 1</m>, so <m>z = 1 - x - y</m> with upward normal <m>\mathbf{N} = \langle 1, 1, 1 \rangle</m>. The dot product is <m>\operatorname{curl}\mathbf{F} \cdot \mathbf{N} = \langle 1, 1, 1 \rangle \cdot \langle 1, 1, 1 \rangle = 3</m>. The projected region in the <m>xy</m>-plane is the right triangle with legs of length 1, whose area is <m>\frac{1}{2}</m>. Thus <m>\oint_C \mathbf{F} \cdot d\mathbf{r} = \iint_D 3\,dA = 3 \times \frac{1}{2} = 1.5</m>.
+    authorId: quiz-966dacd8-649
+  - type: Curl flux across closed surface
+    concept: stokes-theorem
+    objectives:
+      - obj-s5-7
+    family: family-stokes-surface-to-line
+    q: Let <m>S</m> be the closed surface of the unit sphere <m>x^2 + y^2 + z^2 = 1</m> with outward orientation, and let <m>\mathbf{F}</m> be any smooth vector field. What is the value of <m>\iint_S (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S}</m>?
+    verified: true
+    response:
+      kind: number
+      value: 0
+    why: A closed surface such as a sphere has no boundary curve (<m>\partial S = \emptyset</m>). By Stokes' theorem, the flux of curl through any closed surface is identically zero (alternatively, by the Divergence Theorem, <m>\iint_S (\operatorname{curl}\mathbf{F}) \cdot d\mathbf{S} = \iiint_E \operatorname{div}(\operatorname{curl}\mathbf{F})\,dV = \iiint_E 0\,dV = 0</m>).
+    authorId: quiz-44d11de3-6e2
+  - type: Conceptual interpretation of Stokes theorem
+    concept: stokes-theorem
+    objectives:
+      - obj-s5-7
+    family: family-stokes-interpret
+    q: How does Green's theorem in circulation form relate to Stokes' theorem?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Green's circulation theorem is the special case of Stokes' theorem where the surface <m>S</m> is a flat region in the <m>xy</m>-plane and the unit normal is <m>\mathbf{k}</m>.
+          why: When <m>S</m> lies in the <m>xy</m>-plane, its unit normal is <m>\mathbf{n} = \mathbf{k} = \langle 0, 0, 1 \rangle</m>. The integrand <m>\operatorname{curl}\mathbf{F} \cdot \mathbf{k}</m> reduces exactly to <m>Q_x - P_y</m>, recovering Green's circulation theorem.
+        - text: Green's theorem only applies to fields with zero curl, while Stokes' theorem applies to fields with nonzero curl.
+          why: Green's theorem applies to fields with any curl; its integrand is the <m>z</m>-component of curl.
+        - text: Stokes' theorem calculates flux, whereas Green's theorem only calculates volume.
+          why: Both theorems relate circulation around a boundary to an interior double integral.
+        - text: Green's theorem applies only to spheres, while Stokes' theorem applies to planar regions.
+          why: Green's theorem is strictly two-dimensional (planar), whereas Stokes' theorem applies to arbitrary two-dimensional surfaces in 3D.
+    why: Green's circulation theorem is the 2D planar special case of Stokes' theorem.
+    authorId: quiz-3611999e-54a

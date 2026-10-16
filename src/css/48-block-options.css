@@ -1,0 +1,40 @@
+/* Temporary DEMO comparison: the marker names the lesson and keeps these
+   presentation alternatives out of every other course. */
+#s6:has(.block-options-marker) .block-options-marker{
+  display:block;padding-bottom:1rem;border-bottom:1px solid var(--rule);color:var(--ink-2);
+}
+
+/* Open editorial: continuous paper, with typography doing most of the work. */
+#s6:has(.block-options-marker) #s6-1 :is(.def,.key,.ex,.note,.blk,.attempt,.metric){
+  border:0;background:none;padding:0;margin:0;
+}
+#s6:has(.block-options-marker) #s6-1 .def dt{font:600 1.4rem var(--display);margin-bottom:.8rem}
+#s6:has(.block-options-marker) #s6-1 .key{border-top:2px solid var(--panel-accent);padding-top:1rem}
+#s6:has(.block-options-marker) #s6-1 .trap{
+  border:0;border-top:2px solid var(--wn);padding:1rem 0 0;background:none;
+}
+#s6:has(.block-options-marker) #s6-1 .note{color:var(--ink-2);font-size:1rem}
+#s6:has(.block-options-marker) #s6-1 :is(.mathblk,.figure,.imgblock,.slides,.tscroll,.codewrap){
+  border:0;border-top:1px solid var(--rule);padding-top:1rem;background:none;
+}
+#s6:has(.block-options-marker) #s6-1 .slides{padding:1rem 0}
+#s6:has(.block-options-marker) #s6-1 .metric{display:block;font-size:1.2rem}
+
+/* Margin rail: the role has a place beside, rather than above, the passage. */
+#s6:has(.block-options-marker) #s6-3 :is(.def,.key,.ex,.trap,.note,.blk,.mathblk,.figure,.imgblock,.slides,.attempt,.metric,.codewrap,.tscroll){
+  border:0;border-left:1px solid var(--rule);padding:0 0 0 1rem;margin:0;background:none;
+}
+#s6:has(.block-options-marker) #s6-3 :is(.def,.key){border-left:3px solid var(--panel-accent)}
+#s6:has(.block-options-marker) #s6-3 .trap{border-left:3px solid var(--wn)}
+#s6:has(.block-options-marker) #s6-3 .note{font-size:1rem}
+#s6:has(.block-options-marker) #s6-3 .slides{padding-bottom:1rem}
+@media(min-width:1000px){
+  #s6:has(.block-options-marker) #s6-3 :is(.def,.key,.ex,.trap,.note,.blk,.mathblk,.figure,.imgblock,.slides,.attempt,.metric,.codewrap,.tscroll){
+    position:relative;margin-left:104px;
+  }
+  #s6:has(.block-options-marker) #s6-3 :is(.blabel,.codewrap>.lang){
+    position:absolute;left:-106px;top:0;width:90px;text-align:left;padding:0;
+    font-size:var(--fs-meta);font-weight:600;
+  }
+  #s6:has(.block-options-marker) #s6-3 :is(.figure,.slides){padding-top:0}
+}

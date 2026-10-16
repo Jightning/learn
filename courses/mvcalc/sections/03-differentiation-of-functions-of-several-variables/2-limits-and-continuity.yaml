@@ -1,0 +1,135 @@
+title: Limits and Continuity
+blocks:
+  - t: p
+    h: '<p>In single-variable calculus, calculating a limit <m>\lim_{x \to a} f(x)</m> requires checking only two directions of approach—from the left and from the right. In the two-dimensional input plane <m>\mathbb{R}^2</m>, however, approaching a point <m>(a, b)</m> can occur along infinitely many distinct directions: along straight lines of every possible slope, along parabolas, cubics, exponential curves, spirals, or irregular paths. For a multivariable limit to exist, the function values must converge to the exact same real number <m>L</m> along every conceivable approach path.</p>'
+    authorId: block-2e969561-332
+  - t: def
+    term: Limit of a Function of Two Variables
+    source: OpenStax Calculus Volume 3, Section 4.2
+    sourceReview: sourced
+    core: A function <m>f(x, y)</m> has limit <m>L</m> as <m>(x, y) \to (a, b)</m> if <m>f(x, y)</m> can be made arbitrarily close to <m>L</m> whenever <m>(x, y)</m> is sufficiently close to <m>(a, b)</m> along every path.
+    introduces:
+      - obj-s3-2
+      - multivariable-limit
+    objectives:
+      - obj-s3-2
+    family: family-limit-evaluate
+    h: <p>We say that <m>\lim_{(x, y) \to (a, b)} f(x, y) = L</m> if for every real number <m>\varepsilon > 0</m>, there exists a corresponding <m>\delta > 0</m> such that <m>|f(x, y) - L| < \varepsilon</m> whenever the distance between <m>(x, y)</m> and <m>(a, b)</m> satisfies <m>0 < \sqrt{(x - a)^2 + (y - b)^2} < \delta</m>. Geometrically, within a punctured open disk of radius <m>\delta</m> centered at <m>(a, b)</m>, all function outputs must be trapped inside the target tolerance window <m>(L - \varepsilon, L + \varepsilon)</m> on the real line.</p>
+    authorId: block-6424f1c3-c66
+  - t: math
+    label: Formal Limit Definition in the Plane
+    tex: \lim_{(x, y) \to (a, b)} f(x, y) = L \iff \forall \varepsilon > 0, \; \exists \delta > 0 \; \text{such that} \; 0 < \sqrt{(x - a)^2 + (y - b)^2} < \delta \implies |f(x, y) - L| < \varepsilon
+    note: The distance condition defines an open disk around the target point from which the center point itself is omitted.
+    objectives:
+      - obj-s3-2
+    family: family-limit-evaluate
+    authorId: block-06fb379b-cc1
+  - t: key
+    label: The Two-Path Test for Nonexistence
+    source: OpenStax Calculus Volume 3, Section 4.2
+    sourceReview: sourced
+    core: If <m>f(x, y)</m> approaches two different numbers along two different paths as <m>(x, y) \to (a, b)</m>, then the limit does not exist.
+    objectives:
+      - obj-s3-2
+    family: family-limit-two-paths
+    h: <p>The two-path test provides a definitive technique to demonstrate that a multivariable limit fails to exist:</p>
+    items:
+      - 'Linear approach: Test straight lines <m>y = mx</m> through the origin. If the simplified expression depends on slope <m>m</m>, different directional approaches yield different values, proving the limit does not exist.'
+      - 'Higher-degree approach: If all lines <m>y = mx</m> yield the identical limit (frequently 0), test degree-balancing polynomial paths such as <m>y = kx^2</m> or <m>x = ky^2</m> where powers in the numerator and denominator match.'
+      - 'Nonexistence conclusion: Finding just two paths that produce distinct limits is sufficient to establish that <m>\lim_{(x, y) \to (a, b)} f(x, y)</m> does not exist.'
+    ordered: true
+    authorId: block-e7fbc281-72a
+  - t: ex
+    title: Proving Nonexistence Along a Parabolic Path
+    objectives:
+      - obj-s3-2
+    family: family-limit-two-paths
+    h: '<p>Show that <m>\lim_{(x, y) \to (0, 0)} \frac{x y^2}{x^2 + y^4}</m> does not exist.</p><p>First, test straight lines <m>y = mx</m> passing through the origin. Substituting <m>y = mx</m> gives <m>\frac{x(mx)^2}{x^2 + (mx)^4} = \frac{m^2 x^3}{x^2 + m^4 x^4} = \frac{m^2 x}{1 + m^4 x^2}</m>. As <m>x \to 0</m>, this expression evaluates to <m>0</m> for every real slope <m>m</m>. Along the vertical line <m>x = 0</m>, <m>f(0, y) = 0/y^4 = 0</m>. Thus, approaching along every straight line yields the candidate limit 0.</p><p>However, examine the powers in the denominator: <m>x^2</m> and <m>y^4</m> have equal degree if <m>x = y^2</m>. Approaching along the parabola <m>x = y^2</m> gives <m>\frac{(y^2)y^2}{(y^2)^2 + y^4} = \frac{y^4}{2y^4} = \frac{1}{2}</m>. Because the path along <m>x = y^2</m> yields <m>1/2</m> while the path along <m>y = 0</m> yields <m>0</m>, the two-path test proves the limit does not exist.</p>'
+    authorId: block-8f496ad5-de0
+  - t: def
+    term: Continuity of Multivariable Functions
+    source: OpenStax Calculus Volume 3, Section 4.2
+    sourceReview: sourced
+    core: A function <m>f(x, y)</m> is continuous at <m>(a, b)</m> if <m>\lim_{(x, y) \to (a, b)} f(x, y) = f(a, b)</m>; sums, products, and compositions of continuous functions are continuous on their domains.
+    objectives:
+      - obj-s3-2
+    family: family-continuity
+    h: '<p>A function <m>f</m> is continuous at <m>(a, b)</m> when three conditions are met:</p>'
+    items:
+      - '<m>f(a, b)</m> is defined in the domain.'
+      - 'The multivariable limit <m>\lim_{(x, y) \to (a, b)} f(x, y)</m> exists.'
+      - 'The limit value equals the function value <m>f(a, b)</m>.'
+    ordered: true
+    authorId: block-72779221-6af
+  - t: ex
+    title: Evaluating Limits by Direct Factorization and Polar Coordinates
+    objectives:
+      - obj-s3-2
+    family: family-limit-evaluate
+    h: '<p>Evaluate <m>\lim_{(x, y) \to (0, 0)} \frac{3x^3 + 3x y^2}{x^2 + y^2}</m>.</p><p>Direct substitution yields the indeterminate form <m>0/0</m>. Factoring the numerator gives <m>3x(x^2 + y^2)</m>. For any point <m>(x, y) \ne (0, 0)</m>, the common factor cancels: <m>\frac{3x(x^2 + y^2)}{x^2 + y^2} = 3x</m>. Since <m>3x</m> is continuous everywhere, <m>\lim_{(x, y) \to (0, 0)} 3x = 3(0) = 0</m>.</p><p>Alternatively, using polar coordinates <m>x = r\cos\theta</m>, <m>y = r\sin\theta</m> gives <m>\frac{3r^3\cos\theta}{r^2} = 3r\cos\theta</m>. Since <m>|3r\cos\theta| \le 3r</m> and <m>3r \to 0</m> as <m>r \to 0^+</m> uniformly with respect to <m>\theta</m>, the squeeze theorem confirms the limit is 0.</p>'
+    authorId: block-3a6c5422-dac
+  - t: trap
+    label: Concluding Limit Existence from Linear Path Agreement
+    source: OpenStax Calculus Volume 3, Section 4.2
+    sourceReview: sourced
+    core: Testing approach along lines <m>y = mx</m> can never prove that a limit exists, because failure may occur along higher-degree curves or spiral paths.
+    objectives:
+      - obj-s3-2
+    family: family-limit-two-paths
+    h: <p>A common misconception is concluding that a limit equals <m>L</m> simply because testing straight lines <m>y = mx</m> yields <m>L</m> for every slope <m>m</m>. Lines test only radial approaches, missing polynomial curves such as <m>x = y^2</m> or oscillatory paths that may yield completely different values. To establish that a limit exists, one must rely on algebraic simplification, the squeeze theorem, or polar coordinates where <m>r \to 0</m> bounds the error independently of <m>\theta</m>.</p>
+    authorId: block-dfbaa832-2d6
+quiz:
+  - type: Two-path test
+    concept: multivariable-limit
+    objectives:
+      - obj-s3-2
+    family: family-limit-two-paths
+    q: Evaluate the behavior of <m>f(x, y) = \frac{2x^2 y}{x^4 + y^2}</m> as <m>(x, y) \to (0, 0)</m> along the paths <m>y = 0</m> and <m>y = x^2</m>. Does the limit exist?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Along <m>y = 0</m> the value is <m>0</m>, while along <m>y = x^2</m> the value is <m>1</m>; the limit does not exist.
+          why: Along <m>y = 0</m>, <m>f(x, 0) = 0/(x^4) = 0</m> for all <m>x \ne 0</m>. Along <m>y = x^2</m>, <m>f(x, x^2) = \frac{2x^2(x^2)}{x^4 + (x^2)^2} = \frac{2x^4}{2x^4} = 1</m>. Because the limits along these two paths differ (<m>0 \ne 1</m>), the limit does not exist.
+        - text: Both paths yield <m>0</m>, so the limit exists and equals <m>0</m>.
+          why: Along <m>y = x^2</m>, the fraction evaluates to 1, not 0.
+        - text: Both paths yield <m>1</m>, so the limit exists and equals <m>1</m>.
+          why: Along <m>y = 0</m>, the numerator is identically 0, giving a limit of 0, not 1.
+        - text: The limit exists because along all linear paths <m>y = mx</m> the limit is <m>0</m>.
+          why: Agreement along straight lines does not prove existence; testing the parabola <m>y = x^2</m> proves nonexistence.
+    why: 'The two paths yield different limits (<m>0</m> along <m>y = 0</m> and <m>1</m> along <m>y = x^2</m>), proving by the two-path test that the limit does not exist.'
+    authorId: quiz-6a406418-9b0
+  - type: Limit evaluation with cancellation
+    concept: multivariable-limit
+    objectives:
+      - obj-s3-2
+    family: family-limit-evaluate
+    q: What is the value of <m>\lim_{(x, y) \to (0, 0)} \frac{5(x^2 + y^2)\sin(x^2 + y^2)}{x^2 + y^2}</m>?
+    verified: true
+    response:
+      kind: number
+      value: 0
+    why: Cancelling the non-zero common factor <m>x^2 + y^2</m> leaves <m>\lim_{(x, y) \to (0, 0)} 5\sin(x^2 + y^2) = 5\sin(0) = 0</m>.
+    authorId: quiz-d3e83a19-717
+  - type: Set of continuity
+    concept: multivariable-limit
+    objectives:
+      - obj-s3-2
+    family: family-continuity
+    q: On which subset of the plane <m>\mathbb{R}^2</m> is the function <m>g(x, y) = \frac{\ln(1 + x^2 + y^2)}{x - y}</m> continuous?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: The entire plane except along the line <m>y = x</m>
+          why: The numerator <m>\ln(1 + x^2 + y^2)</m> is continuous everywhere because <m>1 + x^2 + y^2 \ge 1 > 0</m>. The denominator <m>x - y</m> is a continuous polynomial that equals zero if and only if <m>y = x</m>. The quotient is therefore continuous everywhere except where the denominator vanishes.
+        - text: The entire plane <m>\mathbb{R}^2</m> without exceptions
+          why: At any point where <m>y = x</m>, the denominator is 0 and the function is undefined.
+        - text: Only inside the open disk <m>x^2 + y^2 < 1</m>
+          why: The logarithmic argument <m>1 + x^2 + y^2</m> is defined and positive for all real <m>x, y</m>, so it is not confined to the unit disk.
+        - text: Only in the first quadrant where <m>x > 0</m> and <m>y > 0</m>
+          why: The squared terms ensure positive arguments regardless of the signs of <m>x</m> and <m>y</m>.
+    why: 'The numerator is continuous everywhere on <m>\mathbb{R}^2</m> and the denominator is continuous everywhere, so the quotient is continuous except where <m>x - y = 0</m>.'
+    authorId: quiz-9d8db669-b30

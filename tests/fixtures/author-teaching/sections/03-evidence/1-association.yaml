@@ -1,0 +1,53 @@
+title: What an observed difference supports
+blocks:
+  - t: p
+    source: generated
+    sourceReview: disclosed
+    objectives: [evidence-causality]
+    h: >-
+      In the invented school comparison, students who chose a weekly reminder
+      completed more assignments than students who did not. That difference is
+      an <c k="association-causality">association</c>. Because students chose their group and motivation was not
+      measured, the groups could differ for reasons beyond the reminder.
+
+  - t: def
+    source: generated
+    sourceReview: disclosed
+    objectives: [evidence-causality]
+    introduces: [association-causality]
+    term: Association and causality
+    core: A group difference shows an association; it does not by itself show that the reminder caused the difference.
+    h: >-
+      A causal claim asks what would have happened to the same kinds of students
+      without the reminder. We cannot observe both outcomes for each student.
+      Self-selection weakens the comparison because motivation could affect
+      both joining the reminder group and completing work. Randomly assigning
+      reminders would make the groups more comparable on average. Even then,
+      the result would support a claim about this study's setting, not every
+      school or reminder.
+
+  - t: ex
+    source: generated
+    sourceReview: disclosed
+    objectives: [evidence-causality]
+    title: Separate result from interpretation
+    h: >-
+      Result: the reminder group completed more assignments. Supported
+      interpretation: reminder choice is associated with completion in this
+      sample. Unsupported leap: the reminder caused the difference. The last
+      claim needs a comparison that addresses how students entered each group.
+
+quiz:
+  - type: Judge the claim
+    concept: association-causality
+    objectives: [evidence-causality]
+    q: Students who chose reminders completed more work. Which conclusion is supported by this comparison alone?
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - {text: 'Reminder choice is associated with completion in this sample.', why: 'This reports the observed group difference without claiming cause.'}
+        - {text: 'Reminders caused students to complete more work.', why: 'Self-selection and unmeasured motivation leave other explanations open.'}
+        - {text: 'Reminders improve completion at every school.', why: 'One invented comparison cannot establish a universal effect.'}
+    why: The comparison establishes a difference between self-selected groups. It does not isolate the reminder's effect or establish generality.
+    verified: true

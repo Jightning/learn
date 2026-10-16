@@ -6,6 +6,14 @@ locking advanced work. Sparse assessment requirements derive the full blueprint;
 review scoring ownership, representativeness and source coverage explicitly.
 Never infer exam weight from item counts or duplicate inherited item metadata.
 
+When a canonical family has `assessmentRequired: true`, its `questions` field
+must name the type IDs that assess that skill. Each mapped type repeats the
+canonical family and linked objective/concept, and at least one real
+non-diagnostic bank item must carry its prompt and typed response. A type
+definition or a label alone is not task evidence. Include the related
+test/problem source in the family's exact source route when that is where the
+requirement was discovered.
+
 Batch related types and practice/reserved siblings together. Writer verification
 covers every answer. Review every distinct method/group, exceptional branch
 and flagged risk independently; use reviewed deterministic checks only for

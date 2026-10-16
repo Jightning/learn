@@ -1,0 +1,147 @@
+title: Cylindrical and Spherical Coordinates
+blocks:
+  - t: p
+    h: <p>While Cartesian coordinates <m>(x, y, z)</m> are the natural choice for problems with planar boundaries aligned with coordinate axes, geometries with axial or spherical symmetry become vastly simpler in alternative coordinate systems. Cylindrical coordinates extend planar polar coordinates by retaining vertical height <m>z</m>, whereas spherical coordinates describe space via distance from the origin and two angles of direction.</p>
+    authorId: block-77398e2f-6d5
+  - t: def
+    term: Cylindrical Coordinates
+    source: OpenStax Calculus Volume 3, Section 2.7
+    sourceReview: sourced
+    core: Cylindrical coordinates <m>(r, \theta, z)</m> combine polar coordinates in the <m>xy</m>-plane with vertical coordinate <m>z</m>.
+    introduces:
+      - obj-s1-6
+      - cylindrical-coordinates
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-point-convert
+    h: <p>The cylindrical coordinates of a point <m>P</m> in space are <m>(r, \theta, z)</m>, where <m>(r, \theta)</m> are polar coordinates of the projection of <m>P</m> onto the <m>xy</m>-plane and <m>z</m> is the standard directed vertical distance from the <m>xy</m>-plane:</p>
+    items:
+      - 'To rectangular: <m>x = r\cos\theta</m>, <m>y = r\sin\theta</m>, <m>z = z</m>.'
+      - 'From rectangular: <m>r = \sqrt{x^2 + y^2}</m> (with <m>r \ge 0</m>), <m>\tan\theta = \frac{y}{x}</m> (choosing <m>\theta</m> in the correct quadrant), <m>z = z</m>.'
+      - 'Coordinate surfaces: <m>r = c</m> is a right circular cylinder of radius <m>c</m>; <m>\theta = c</m> is a vertical half-plane emanating from the <m>z</m>-axis; <m>z = c</m> is a horizontal plane.'
+    ordered: true
+    authorId: block-4b434b13-fdf
+  - t: def
+    term: Spherical Coordinates
+    source: OpenStax Calculus Volume 3, Section 2.7
+    sourceReview: sourced
+    core: Spherical coordinates <m>(\rho, \theta, \phi)</m> describe points by radial distance <m>\rho \ge 0</m>, azimuth <m>\theta</m>, and polar angle <m>0 \le \phi \le \pi</m> from the positive <m>z</m>-axis.
+    introduces:
+      - spherical-coordinates
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-point-convert
+    h: <p>The spherical coordinates <m>(\rho, \theta, \phi)</m> locate a point <m>P</m> by its distance from the origin and two angles:</p>
+    items:
+      - 'Radial distance <m>\rho \ge 0</m>: The straight-line distance from the origin to <m>P</m>, so <m>\rho = \sqrt{x^2 + y^2 + z^2}</m>.'
+      - 'Azimuthal angle <m>\theta \in [0, 2\pi)</m>: The angle from the positive <m>x</m>-axis to the projection of <m>P</m> onto the <m>xy</m>-plane (identical to <m>\theta</m> in cylindrical coordinates).'
+      - 'Polar (zenith) angle <m>\phi \in [0, \pi]</m>: The angle from the positive <m>z</m>-axis to the vector <m>\vec{OP}</m>, where <m>\phi = 0</m> is the positive <m>z</m>-axis and <m>\phi = \pi</m> is the negative <m>z</m>-axis.'
+      - 'Relationship to cylindrical radius: <m>r = \rho\sin\phi</m> and <m>z = \rho\cos\phi</m>.'
+    ordered: true
+    authorId: block-ba9608a0-105
+  - t: math
+    label: Spherical to Rectangular Coordinate Transformation
+    tex: x = \rho\sin\phi\cos\theta, \quad y = \rho\sin\phi\sin\theta, \quad z = \rho\cos\phi
+    note: The polar angle φ satisfies 0 ≤ φ ≤ π measured from the positive z-axis, while θ is the azimuthal angle in the xy-plane.
+    authorId: block-e7fb4e01-c18
+  - t: key
+    label: Simple Surfaces in Cylindrical and Spherical Coordinates
+    source: OpenStax Calculus Volume 3, Section 2.7
+    sourceReview: sourced
+    core: Holding single coordinates constant yields cylinders (<m>r = c</m>), spheres (<m>\rho = c</m>), cones (<m>\phi = c</m>), and planes (<m>\theta = c</m>, <m>z = c</m>).
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-surface-convert
+    h: <p>Certain curved surfaces take especially simple equations when matched to their geometric symmetry:</p>
+    items:
+      - 'Sphere centered at origin of radius <m>a</m>: <m>\rho = a</m> (spherical) or <m>r^2 + z^2 = a^2</m> (cylindrical).'
+      - 'Circular cone: <m>\phi = \alpha</m> for constant <m>\alpha \in (0, \pi/2)</m> represents a half-cone opening along the positive <m>z</m>-axis with vertex at the origin; in rectangular form, <m>z = \sqrt{x^2 + y^2}\cot\alpha</m>.'
+      - 'Circular cylinder of radius <m>a</m>: <m>r = a</m> (cylindrical) or <m>\rho\sin\phi = a</m> (spherical).'
+      - 'Vertical half-plane: <m>\theta = \theta_0</m> in both systems.'
+    ordered: true
+    authorId: block-55456de6-64b
+  - t: ex
+    title: Converting Rectangular to Spherical Coordinates
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-point-convert
+    h: '<p>Convert rectangular point <m>(-\sqrt{2}, \sqrt{2}, 2)</m> to spherical coordinates <m>(\rho, \theta, \phi)</m>. First, <m>\rho = \sqrt{(-\sqrt{2})^2 + (\sqrt{2})^2 + 2^2} = \sqrt{2 + 2 + 4} = \sqrt{8} = 2\sqrt{2}</m>. Next, calculate polar angle <m>\phi</m>: <m>\cos\phi = \frac{z}{\rho} = \frac{2}{2\sqrt{2}} = \frac{1}{\sqrt{2}} = \frac{\sqrt{2}}{2}</m>. Since <m>0 \le \phi \le \pi</m>, <m>\phi = \frac{\pi}{4}</m>. Finally, find azimuth <m>\theta</m>: <m>x = -\sqrt{2} < 0</m> and <m>y = \sqrt{2} > 0</m> place the projected point in Quadrant II. With <m>\tan\theta = \frac{\sqrt{2}}{-\sqrt{2}} = -1</m>, <m>\theta = \pi - \frac{\pi}{4} = \frac{3\pi}{4}</m>. The spherical coordinates are <m>(2\sqrt{2}, \frac{3\pi}{4}, \frac{\pi}{4})</m>.</p>'
+    authorId: block-5c014113-d45
+  - t: ex
+    title: Converting a Surface Equation to Spherical Form
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-surface-convert
+    h: <p>Convert the equation <m>x^2 + y^2 + z^2 - 4z = 0</m> to spherical coordinates and identify the surface. Using <m>\rho^2 = x^2 + y^2 + z^2</m> and <m>z = \rho\cos\phi</m>, substitution yields <m>\rho^2 - 4\rho\cos\phi = 0</m>. Factoring out <m>\rho</m> (discarding <m>\rho = 0</m> which is included at <m>\phi = \pi/2</m>) gives <m>\rho = 4\cos\phi</m>. In rectangular coordinates, completing the square gives <m>x^2 + y^2 + (z - 2)^2 = 4</m>, confirming that this surface is a sphere of radius 2 centered at <m>(0, 0, 2)</m>.</p>
+    authorId: block-22c6f957-ff4
+  - t: trap
+    label: Measuring the Polar Angle φ Strictly from the +z Axis
+    source: OpenStax Calculus Volume 3, Section 2.7
+    sourceReview: sourced
+    core: The polar angle <m>\phi</m> is measured downward from the positive <m>z</m>-axis and is restricted to the closed interval <m>[0, \pi]</m>.
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-point-convert
+    h: <p>Do not confuse the mathematics convention for spherical coordinates with latitude in navigation or physics notation. In multivariable calculus, <m>\phi = 0</m> corresponds to the positive <m>z</m>-axis (north pole), <m>\phi = \frac{\pi}{2}</m> corresponds to the <m>xy</m>-plane (equator), and <m>\phi = \pi</m> corresponds to the negative <m>z</m>-axis (south pole). The angle <m>\phi</m> is never negative and never exceeds <m>\pi</m>.</p>
+    authorId: block-3361ff50-b12
+quiz:
+  - type: Point conversion to spherical
+    concept: spherical-coordinates
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-point-convert
+    q: What are the spherical coordinates <m>(\rho, \theta, \phi)</m> of the point with rectangular coordinates <m>(0, -3, 3)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>(3\sqrt{2}, \frac{3\pi}{2}, \frac{\pi}{4})</m>
+          why: <m>\rho = \sqrt{0 + 9 + 9} = 3\sqrt{2}</m>; <m>\cos\phi = \frac{3}{3\sqrt{2}} = \frac{\sqrt{2}}{2} \implies \phi = \frac{\pi}{4}</m>; on the negative <m>y</m>-axis, <m>\theta = \frac{3\pi}{2}</m>.
+        - text: <m>(3\sqrt{2}, \frac{\pi}{2}, \frac{\pi}{4})</m>
+          why: The point has <m>y = -3 < 0</m>, so <m>\theta = \frac{3\pi}{2}</m>, not <m>\frac{\pi}{2}</m>.
+        - text: <m>(18, \frac{3\pi}{2}, \frac{\pi}{4})</m>
+          why: <m>\rho</m> is the square root of 18, which is <m>3\sqrt{2}</m>, not 18.
+        - text: <m>(3\sqrt{2}, \frac{3\pi}{2}, \frac{3\pi}{4})</m>
+          why: Because <m>z = 3 > 0</m>, <m>\cos\phi > 0</m>, giving <m>\phi = \frac{\pi}{4}</m>, not <m>\frac{3\pi}{4}</m>.
+    authorId: quiz-dd9aa18b-6ec
+  - type: Cylindrical to rectangular conversion
+    concept: cylindrical-coordinates
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-point-convert
+    q: What are the rectangular coordinates <m>(x, y, z)</m> of the point given in cylindrical coordinates as <m>(r, \theta, z) = (4, \frac{5\pi}{6}, -2)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 2
+      choices:
+        - text: <m>(2\sqrt{3}, 2, -2)</m>
+          why: <m>\cos(\frac{5\pi}{6}) = -\frac{\sqrt{3}}{2}</m>, which is negative in Quadrant II.
+        - text: <m>(-2\sqrt{3}, 2, -2)</m>
+          why: <m>x = 4\cos(\frac{5\pi}{6}) = -2\sqrt{3}</m>, <m>y = 4\sin(\frac{5\pi}{6}) = 2</m>, and <m>z = -2</m>.
+        - text: <m>(-2, 2\sqrt{3}, -2)</m>
+          why: 'Do not interchange sine and cosine: <m>x = r\cos\theta</m> and <m>y = r\sin\theta</m>.'
+        - text: <m>(-2\sqrt{3}, -2, -2)</m>
+          why: <m>\sin(\frac{5\pi}{6}) = +\frac{1}{2}</m> is positive in Quadrant II.
+    authorId: quiz-7c3685ea-85a
+  - type: Surface identification in spherical coordinates
+    concept: spherical-coordinates
+    objectives:
+      - obj-s1-6
+    family: family-coordinate-surface-convert
+    q: What surface in <m>\mathbb{R}^3</m> is represented by the spherical coordinate equation <m>\phi = \frac{\pi}{3}</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 3
+      choices:
+        - text: A sphere of radius <m>\frac{\pi}{3}</m> centered at the origin
+          why: A sphere centered at the origin has constant radial distance <m>\rho = c</m>.
+        - text: A circular cylinder of radius <m>\frac{\pi}{3}</m>
+          why: A circular cylinder has constant cylindrical radius <m>r = c</m>.
+        - text: A circular cone opening along the positive <m>z</m>-axis with vertex at the origin
+          why: Holding <m>\phi = \frac{\pi}{3}</m> constant while letting <m>\rho \ge 0</m> and <m>\theta \in [0, 2\pi)</m> vary forms a cone with vertex at the origin opening upward along the <m>z</m>-axis.
+        - text: A horizontal plane at height <m>z = \frac{\pi}{3}</m>
+          why: A horizontal plane has constant <m>z</m>, not constant polar angle <m>\phi</m>.
+    authorId: quiz-8ac62e7f-0df

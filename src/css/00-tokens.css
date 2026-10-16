@@ -116,6 +116,9 @@
   --ink-3:#666E68;   /* carries small text; verified by audit-color.mjs */
   --rule:#D6DCD6;
   --rule-2:#E6EAE5;
+  --panel-accent:#5D6760; /* fixed semantic edge; independent of course hue */
+  --panel-radius:6px;
+  --panel-padding:clamp(14px,3vw,22px);
 }
 
 /* ----------------------------------------------------------------- palette
@@ -251,12 +254,14 @@
     --ground:#151411; --surface:#1E1C1A; --surface-2:#262422; --sunk:#0F0E0C;
     --ink:#EAE8E6; --ink-2:#B6B3B0; --ink-3:#918F8C;
     --rule:#353330; --rule-2:#2C2A27;
+    --panel-accent:#A8AAA5;
   }
 }
 :root[data-theme="dark"]{
   --ground:#151411; --surface:#1E1C1A; --surface-2:#262422; --sunk:#0F0E0C;
   --ink:#EAE8E6; --ink-2:#B6B3B0; --ink-3:#918F8C;
   --rule:#353330; --rule-2:#2C2A27;
+  --panel-accent:#A8AAA5;
 }
 
 /* ------------------------------------------------------------------- reset */

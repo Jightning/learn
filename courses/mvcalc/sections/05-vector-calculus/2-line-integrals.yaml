@@ -1,0 +1,140 @@
+title: Line Integrals
+blocks:
+  - t: p
+    h: |
+      <p>In single-variable calculus, integration is performed over flat intervals <m>[a, b]</m> along the coordinate axis. In multivariable calculus, physical processes often take place along curved trajectories—such as a charged particle accelerating through a force field or an electrical wire shaped along a space curve. A <strong>line integral</strong> (or path integral) generalizes the definite integral by integrating a scalar or vector quantity along an arbitrary oriented curve <m>C</m> in the plane or space.</p>
+    authorId: block-f8db7bba-c14
+  - t: def
+    term: Scalar Line Integral with Respect to Arc Length
+    source: OpenStax Calculus Volume 3, Section 6.2
+    sourceReview: sourced
+    core: The scalar line integral evaluates the integral of a scalar function along a curve with respect to the arc length differential.
+    introduces:
+      - obj-s5-2
+      - scalar-line-integral
+    objectives:
+      - obj-s5-2
+    family: family-scalar-line-integral
+    h: |
+      <p>Let <m>C</m> be a smooth curve parametrized by <m>\mathbf{r}(t) = \langle x(t), y(t), z(t) \rangle</m> for <m>a \le t \le b</m>. The <strong>scalar line integral</strong> of a continuous function <m>f(x, y, z)</m> along <m>C</m> is defined as the limit of Riemann sums partitioned along the curve with respect to arc length: <m>\int_C f(x, y, z)\,ds = \int_a^b f(\mathbf{r}(t)) \|\mathbf{r}'(t)\|\,dt</m>. When <m>f(x, y, z) = \rho(x, y, z)</m> represents the linear mass density of a wire shaped along <m>C</m>, the integral yields the total mass <m>m = \int_C \rho\,ds</m>. Because the arc length element <m>ds = \|\mathbf{r}'(t)\|\,dt</m> is inherently positive, scalar line integrals are independent of the orientation chosen for <m>C</m>: <m>\int_{-C} f\,ds = \int_C f\,ds</m>.</p>
+    authorId: block-6b467e50-9af
+  - t: math
+    label: Parametric Formulas for Scalar and Vector Line Integrals
+    tex: \int_C f\,ds = \int_a^b f(\mathbf{r}(t))\,\|\mathbf{r}'(t)\|\,dt, \qquad \int_C \mathbf{F} \cdot d\mathbf{r} = \int_a^b \mathbf{F}(\mathbf{r}(t)) \cdot \mathbf{r}'(t)\,dt
+    note: Scalar integrals accumulate along unsigned arc length ds, while vector line integrals accumulate tangential projections along the directed tangent vector dr.
+    objectives:
+      - obj-s5-2
+    family: family-scalar-line-integral
+    authorId: block-2f89c499-67e
+  - t: ex
+    title: Calculating the Mass of a Helical Wire
+    objectives:
+      - obj-s5-2
+    family: family-scalar-line-integral
+    h: |
+      <p><strong>Problem:</strong> A wire has the shape of the circular helix <m>\mathbf{r}(t) = \langle \cos(t), \sin(t), 2t \rangle</m> for <m>0 \le t \le 2\pi</m>. If the linear mass density is <m>\rho(x, y, z) = z</m>, compute the total mass of the wire.</p><p><strong>Solution:</strong></p><p>1. Find the velocity vector and its speed:</p><p><m>\mathbf{r}'(t) = \langle -\sin(t), \cos(t), 2 \rangle</m></p><p><m>\|\mathbf{r}'(t)\| = \sqrt{(-\sin t)^2 + (\cos t)^2 + 2^2} = \sqrt{1 + 4} = \sqrt{5}</m></p><p>2. Express the density along the helix: <m>\rho(\mathbf{r}(t)) = z(t) = 2t</m>.</p><p>3. Set up and evaluate the scalar line integral:</p><p><m>m = \int_C \rho\,ds = \int_0^{2\pi} (2t)\sqrt{5}\,dt = 2\sqrt{5} \left[ \frac{t^2}{2} \right]_0^{2\pi} = \sqrt{5}(4\pi^2) = 4\sqrt{5}\pi^2</m>.</p>
+    authorId: block-a66f2294-b12
+  - t: def
+    term: Vector Line Integral and Work
+    source: OpenStax Calculus Volume 3, Section 6.2
+    sourceReview: sourced
+    core: The vector line integral of a vector field along an oriented curve integrates the tangential component of the field to compute work or circulation.
+    introduces:
+      - vector-line-integral
+    objectives:
+      - obj-s5-2
+    family: family-vector-line-integral
+    h: |
+      <p>Let <m>\mathbf{F}</m> be a continuous vector field and <m>C</m> a smooth curve oriented in the direction of increasing parameter <m>t \in [a, b]</m>. The <strong>vector line integral</strong> of <m>\mathbf{F}</m> along <m>C</m> is defined as <m>\int_C \mathbf{F} \cdot d\mathbf{r} = \int_C (\mathbf{F} \cdot \mathbf{T})\,ds = \int_a^b \mathbf{F}(\mathbf{r}(t)) \cdot \mathbf{r}'(t)\,dt</m>, where <m>\mathbf{T}</m> is the unit tangent vector. In physical terms, if <m>\mathbf{F}</m> represents a force field acting on a particle moving along <m>C</m>, <m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> is the total <strong>work</strong> done by the force. In differential form, with <m>\mathbf{F} = \langle P, Q, R \rangle</m> and <m>d\mathbf{r} = \langle dx, dy, dz \rangle</m>, the integral is denoted <m>\int_C P\,dx + Q\,dy + R\,dz</m>. Reversing traversal orientation negates the integral: <m>\int_{-C} \mathbf{F} \cdot d\mathbf{r} = -\int_C \mathbf{F} \cdot d\mathbf{r}</m>.</p>
+    authorId: block-6b9012e9-ce5
+  - t: ex
+    title: Work Done Along Different Trajectories
+    objectives:
+      - obj-s5-2
+    family: family-vector-line-integral
+    h: |
+      <p><strong>Problem:</strong> Evaluate the work <m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> performed by <m>\mathbf{F}(x, y) = \langle y^2, 2xy \rangle</m> from <m>(0, 0)</m> to <m>(1, 1)</m> along two distinct paths: (a) the straight line segment <m>C_1</m>, and (b) the parabola <m>C_2: y = x^2</m>.</p><p><strong>Solution:</strong></p><p><strong>Path (a):</strong> Parametrize the segment as <m>\mathbf{r}_1(t) = \langle t, t \rangle</m> for <m>0 \le t \le 1</m>. Then <m>\mathbf{r}_1'(t) = \langle 1, 1 \rangle</m> and <m>\mathbf{F}(\mathbf{r}_1(t)) = \langle t^2, 2t^2 \rangle</m>. The dot product gives <m>\mathbf{F} \cdot \mathbf{r}_1'(t) = t^2(1) + 2t^2(1) = 3t^2</m>. Integrating gives <m>\int_0^1 3t^2\,dt = [t^3]_0^1 = 1</m>.</p><p><strong>Path (b):</strong> Parametrize the parabola as <m>\mathbf{r}_2(t) = \langle t, t^2 \rangle</m> for <m>0 \le t \le 1</m>. Then <m>\mathbf{r}_2'(t) = \langle 1, 2t \rangle</m> and <m>\mathbf{F}(\mathbf{r}_2(t)) = \langle t^4, 2t^3 \rangle</m>. The dot product gives <m>\mathbf{F} \cdot \mathbf{r}_2'(t) = t^4(1) + 2t^3(2t) = t^4 + 4t^4 = 5t^4</m>. Integrating gives <m>\int_0^1 5t^4\,dt = [t^5]_0^1 = 1</m>.</p><p>Both paths yield an identical value of 1. As we explore in the next lesson, this path independence occurs because <m>\mathbf{F} = \nabla(x y^2)</m> is a conservative field.</p>
+    authorId: block-40ec3710-aa1
+  - t: key
+    label: Circulation and Flux Across Planar Curves
+    source: OpenStax Calculus Volume 3, Section 6.2
+    sourceReview: sourced
+    core: Circulation accumulates the tangential component of a field around a closed curve, whereas flux accumulates the normal component escaping across the boundary.
+    objectives:
+      - obj-s5-2
+    family: family-flux-circulation-curve
+    h: |
+      <p>For a planar vector field <m>\mathbf{F} = \langle P, Q \rangle</m> along an oriented closed curve <m>C</m>:</p>
+    items:
+      - 'Circulation: <m>\oint_C \mathbf{F} \cdot \mathbf{T}\,ds = \oint_C \mathbf{F} \cdot d\mathbf{r} = \oint_C P\,dx + Q\,dy</m> quantifies net rotational tendency around the closed loop.'
+      - 'Outward normal vector: For a simple closed curve oriented counterclockwise with unit tangent <m>\mathbf{T} = \langle \frac{dx}{ds}, \frac{dy}{ds} \rangle</m>, the outward unit normal is <m>\mathbf{n} = \langle \frac{dy}{ds}, -\frac{dx}{ds} \rangle</m>.'
+      - 'Outward flux: <m>\oint_C \mathbf{F} \cdot \mathbf{n}\,ds = \oint_C P\,dy - Q\,dx</m> measures the net rate of fluid escaping across the boundary curve per unit time.'
+      - 'Piecewise smooth curves: If a curve consists of joined smooth segments <m>C = C_1 + C_2 + \cdots + C_k</m>, the total line integral is the sum of integrals over each individual segment.'
+    ordered: true
+    authorId: block-753554f8-2e7
+  - t: trap
+    label: Orientation Sensitivity and Differential Substitution
+    source: OpenStax Calculus Volume 3, Section 6.2
+    sourceReview: sourced
+    core: Reversing curve orientation negates vector line integrals but leaves scalar line integrals unchanged; differentials dx and dy must be substituted with derivatives.
+    objectives:
+      - obj-s5-2
+    family: family-vector-line-integral
+    h: |
+      <p>A frequent mistake is applying a sign flip when reversing the path of a scalar line integral. Because <m>ds = \|\mathbf{r}'(t)\|\,dt \ge 0</m> is an unsigned geometric element, <m>\int_{-C} f\,ds = \int_C f\,ds</m>. By contrast, vector line integrals accumulate directed displacements <m>d\mathbf{r}</m>, so <m>\int_{-C} \mathbf{F} \cdot d\mathbf{r} = -\int_C \mathbf{F} \cdot d\mathbf{r}</m>. When working with differential forms <m>P\,dx + Q\,dy</m>, remember to substitute <m>dx = x'(t)\,dt</m> and <m>dy = y'(t)\,dt</m> before integrating.</p>
+    authorId: block-d9f51d47-3c6
+quiz:
+  - type: Evaluating scalar line integral
+    concept: scalar-line-integral
+    objectives:
+      - obj-s5-2
+    family: family-scalar-line-integral
+    q: Evaluate the scalar line integral <m>\int_C (x + 2y)\,ds</m>, where <m>C</m> is the line segment from <m>(0, 0)</m> to <m>(3, 4)</m>.
+    verified: true
+    response:
+      kind: number
+      value: 27.5
+    why: Parametrize the line segment as <m>\mathbf{r}(t) = \langle 3t, 4t \rangle</m> for <m>0 \le t \le 1</m>. The velocity is <m>\mathbf{r}'(t) = \langle 3, 4 \rangle</m>, with speed <m>\|\mathbf{r}'(t)\| = \sqrt{3^2 + 4^2} = 5</m>, so <m>ds = 5\,dt</m>. The integrand evaluates to <m>x(t) + 2y(t) = 3t + 2(4t) = 11t</m>. Computing the integral gives <m>\int_0^1 (11t)(5)\,dt = 55 \left[\frac{t^2}{2}\right]_0^1 = \frac{55}{2} = 27.5</m>.
+    authorId: quiz-6ef3df58-790
+  - type: Work done along a curve
+    concept: vector-line-integral
+    objectives:
+      - obj-s5-2
+    family: family-vector-line-integral
+    q: Find the work done by the force field <m>\mathbf{F}(x, y) = \langle y, 2x \rangle</m> on a particle moving along the parabolic path <m>y = x^2</m> from <m>(0, 0)</m> to <m>(2, 4)</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{40}{3}</m>
+          why: Parametrize the curve by <m>\mathbf{r}(t) = \langle t, t^2 \rangle</m> for <m>0 \le t \le 2</m>. Then <m>\mathbf{r}'(t) = \langle 1, 2t \rangle</m> and <m>\mathbf{F}(\mathbf{r}(t)) = \langle t^2, 2t \rangle</m>. The dot product is <m>\mathbf{F} \cdot \mathbf{r}'(t) = (t^2)(1) + (2t)(2t) = 5t^2</m>. Integrating from 0 to 2 gives <m>\int_0^2 5t^2\,dt = 5\left[\frac{t^3}{3}\right]_0^2 = \frac{40}{3}</m>.
+        - text: <m>8</m>
+          why: Calculated work using only the initial and final endpoints without integrating along the curved trajectory.
+        - text: <m>12</m>
+          why: Omitted the factor of <m>2t</m> from the derivative <m>y'(t)</m>.
+        - text: <m>\frac{32}{3}</m>
+          why: Integrated <m>4t^2</m> alone, omitting the contribution from the first component <m>P\,dx</m>.
+    why: The line integral of <m>\mathbf{F} \cdot d\mathbf{r}</m> evaluates to <m>\int_0^2 5t^2\,dt = \frac{40}{3}</m>.
+    authorId: quiz-04b16a01-c78
+  - type: Outward flux across a circle
+    concept: vector-line-integral
+    objectives:
+      - obj-s5-2
+    family: family-flux-circulation-curve
+    q: Compute the outward flux <m>\oint_C \mathbf{F} \cdot \mathbf{n}\,ds = \oint_C P\,dy - Q\,dx</m> of the vector field <m>\mathbf{F}(x, y) = \langle x, y \rangle</m> across the unit circle <m>C</m> traversed counterclockwise.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>2\pi</m>
+          why: Parametrize the unit circle by <m>\mathbf{r}(t) = \langle \cos(t), \sin(t) \rangle</m> for <m>0 \le t \le 2\pi</m>. Then <m>dx = -\sin(t)\,dt</m> and <m>dy = \cos(t)\,dt</m>. With <m>P = \cos(t)</m> and <m>Q = \sin(t)</m>, the integrand is <m>P\,dy - Q\,dx = (\cos t)(\cos t\,dt) - (\sin t)(-\sin t\,dt) = (\cos^2 t + \sin^2 t)\,dt = dt</m>. Integrating <m>\int_0^{2\pi} dt = 2\pi</m>.
+        - text: <m>0</m>
+          why: Confused outward flux with circulation; the circulation of a radial field is 0, but its outward flux is <m>2\pi</m>.
+        - text: <m>\pi</m>
+          why: Forgot that the parameter interval for a complete circle extends from 0 to <m>2\pi</m>.
+        - text: <m>4\pi</m>
+          why: Introduced an extra factor of 2 during integration.
+    why: The outward flux integrand simplifies to <m>dt</m> along the unit circle, integrating to <m>2\pi</m>.
+    authorId: quiz-5fc0e838-a5c

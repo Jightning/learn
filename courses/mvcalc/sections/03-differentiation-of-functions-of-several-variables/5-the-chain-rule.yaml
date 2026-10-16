@@ -1,0 +1,123 @@
+title: The Chain Rule
+blocks:
+  - t: p
+    h: <p>In single-variable calculus, if <m>y = f(u)</m> and <m>u = g(x)</m>, the chain rule states that <m>\frac{dy}{dx} = \frac{dy}{du}\frac{du}{dx}</m>. When a multivariable function <m>z = f(x, y)</m> depends on intermediate variables <m>x</m> and <m>y</m>, any change in an underlying parameter propagates through both coordinates simultaneously. To measure the total rate of change, we sum the rates of change transmitted through each independent intermediate pathway.</p>
+    authorId: block-353762ed-ea9
+  - t: def
+    term: Multivariable Chain Rule for One Parameter
+    source: OpenStax Calculus Volume 3, Section 4.5
+    sourceReview: sourced
+    core: If <m>z = f(x, y)</m> is differentiable and <m>x = g(t)</m>, <m>y = h(t)</m> are differentiable functions of <m>t</m>, then <m>\frac{dz}{dt} = \frac{\partial z}{\partial x}\frac{dx}{dt} + \frac{\partial z}{\partial y}\frac{dy}{dt}</m>.
+    introduces:
+      - obj-s3-5
+      - multivariable-chain-rule
+    objectives:
+      - obj-s3-5
+    family: family-chain-one-parameter
+    h: <p>Suppose <m>z = f(x, y)</m> is a differentiable function of <m>x</m> and <m>y</m>, and <m>x = x(t)</m>, <m>y = y(t)</m> are differentiable functions of the single parameter <m>t</m>. Then <m>z</m> is a differentiable function of <m>t</m>, and its derivative is given by <m>\frac{dz}{dt} = \frac{\partial z}{\partial x}\frac{dx}{dt} + \frac{\partial z}{\partial y}\frac{dy}{dt}</m>. Geometrically, if <m>\mathbf{r}(t) = \langle x(t), y(t) \rangle</m> describes a particle moving in the domain, <m>\frac{dz}{dt}</m> is the rate at which the surface elevation changes along that trajectory.</p>
+    authorId: block-46510025-c93
+  - t: math
+    label: One-Parameter Chain Rule Formula
+    tex: \frac{dz}{dt} = \frac{\partial z}{\partial x}\frac{dx}{dt} + \frac{\partial z}{\partial y}\frac{dy}{dt}
+    note: Each term represents the rate of change transmitted through one intermediate coordinate branch.
+    objectives:
+      - obj-s3-5
+    family: family-chain-one-parameter
+    authorId: block-62f12e70-9c9
+  - t: ex
+    title: Evaluating dz/dt Along a Parametric Curve
+    objectives:
+      - obj-s3-5
+    family: family-chain-one-parameter
+    h: '<p>Let <m>z = x^2 y + 3x y^4</m>, where <m>x = \sin(2t)</m> and <m>y = \cos t</m>. Find <m>\frac{dz}{dt}</m> at <m>t = 0</m>.</p><p>First compute intermediate coordinate values at <m>t = 0</m>: <m>x(0) = \sin 0 = 0</m> and <m>y(0) = \cos 0 = 1</m>.</p><p>Next compute single-variable derivatives at <m>t = 0</m>: <m>\frac{dx}{dt} = 2\cos(2t) \implies \frac{dx}{dt}(0) = 2</m>, and <m>\frac{dy}{dt} = -\sin t \implies \frac{dy}{dt}(0) = 0</m>.</p><p>Evaluate the partial derivatives of <m>z</m> at <m>(0, 1)</m>: <m>\frac{\partial z}{\partial x} = 2x y + 3y^4 \implies \frac{\partial z}{\partial x}(0, 1) = 0 + 3(1) = 3</m>, and <m>\frac{\partial z}{\partial y} = x^2 + 12x y^3 \implies \frac{\partial z}{\partial y}(0, 1) = 0</m>.</p><p>Applying the chain rule gives: <m>\frac{dz}{dt}\Big|_{t=0} = \frac{\partial z}{\partial x}\frac{dx}{dt} + \frac{\partial z}{\partial y}\frac{dy}{dt} = (3)(2) + (0)(0) = 6</m>.</p>'
+    authorId: block-da1ced54-a9d
+  - t: key
+    label: Tree Diagrams and the Generalized Chain Rule
+    source: OpenStax Calculus Volume 3, Section 4.5
+    sourceReview: sourced
+    core: To differentiate a composite multivariable function, construct a tree diagram from the dependent variable through intermediate variables to the independent variable; multiply derivatives along each branch and sum all paths.
+    objectives:
+      - obj-s3-5
+    family: family-chain-tree
+    h: <p>When <m>z = f(x, y)</m> depends on two independent parameters <m>x = g(s, t)</m> and <m>y = h(s, t)</m>, a tree diagram provides an infallible accounting method:</p>
+    items:
+      - 'Tree structure: Place the dependent variable <m>z</m> at the root, branch outward to intermediate variables <m>x</m> and <m>y</m>, and branch each intermediate variable to independent variables <m>s</m> and <m>t</m>.'
+      - 'Partial with respect to s: Follow all paths leading to <m>s</m>: <m>\frac{\partial z}{\partial s} = \frac{\partial z}{\partial x}\frac{\partial x}{\partial s} + \frac{\partial z}{\partial y}\frac{\partial y}{\partial s}</m>.'
+      - 'Partial with respect to t: Follow all paths leading to <m>t</m>: <m>\frac{\partial z}{\partial t} = \frac{\partial z}{\partial x}\frac{\partial x}{\partial t} + \frac{\partial z}{\partial y}\frac{\partial y}{\partial t}</m>.'
+    ordered: true
+    authorId: block-172939f8-c26
+  - t: def
+    term: Implicit Differentiation via Partial Derivatives
+    source: OpenStax Calculus Volume 3, Section 4.5
+    sourceReview: sourced
+    core: If an equation <m>F(x, y) = 0</m> defines <m>y</m> implicitly as a differentiable function of <m>x</m>, then <m>\frac{dy}{dx} = -\frac{F_x}{F_y}</m> provided <m>F_y \ne 0</m>.
+    introduces:
+      - implicit-differentiation
+    objectives:
+      - obj-s3-5
+    family: family-implicit-partials
+    h: <p>Suppose <m>F(x, y) = 0</m> defines <m>y = f(x)</m> implicitly. Applying the multivariable chain rule to both sides with respect to <m>x</m> yields <m>F_x\frac{dx}{dx} + F_y\frac{dy}{dx} = 0 \implies F_x + F_y\frac{dy}{dx} = 0</m>. Solving for <m>\frac{dy}{dx}</m> gives <m>\frac{dy}{dx} = -\frac{F_x}{F_y}</m>. Similarly, for a surface <m>F(x, y, z) = 0</m> defining <m>z = f(x, y)</m> implicitly, the partial derivatives are <m>\frac{\partial z}{\partial x} = -\frac{F_x}{F_z}</m> and <m>\frac{\partial z}{\partial y} = -\frac{F_y}{F_z}</m>, provided <m>F_z \ne 0</m>.</p>
+    authorId: block-349f598f-bcd
+  - t: ex
+    title: Computing Partial Derivatives of an Implicit Surface
+    objectives:
+      - obj-s3-5
+    family: family-implicit-partials
+    h: '<p>Find <m>\frac{\partial z}{\partial x}</m> and <m>\frac{\partial z}{\partial y}</m> at <m>(1, 0, -1)</m> for the surface <m>x^3 + y^3 + z^3 + 6x y z = 0</m>.</p><p>Define <m>F(x, y, z) = x^3 + y^3 + z^3 + 6x y z</m>. Notice that <m>F(1, 0, -1) = 1 + 0 - 1 + 0 = 0</m>. Compute the partial derivatives: <m>F_x = 3x^2 + 6y z</m>, <m>F_y = 3y^2 + 6x z</m>, and <m>F_z = 3z^2 + 6x y</m>.</p><p>Evaluating at <m>(1, 0, -1)</m> gives <m>F_x(1, 0, -1) = 3(1)^2 + 6(0)(-1) = 3</m>, <m>F_y(1, 0, -1) = 3(0)^2 + 6(1)(-1) = -6</m>, and <m>F_z(1, 0, -1) = 3(-1)^2 + 6(1)(0) = 3</m>.</p><p>By the implicit formulas: <m>\frac{\partial z}{\partial x} = -\frac{F_x}{F_z} = -\frac{3}{3} = -1</m>, and <m>\frac{\partial z}{\partial y} = -\frac{F_y}{F_z} = -\frac{-6}{3} = 2</m>.</p>'
+    authorId: block-2c9fc57c-454
+  - t: trap
+    label: Forgetting the Minus Sign in Implicit Formulas
+    source: OpenStax Calculus Volume 3, Section 4.5
+    sourceReview: sourced
+    core: 'The implicit derivative formula contains an essential negative sign: <m>\frac{dy}{dx} = -\frac{F_x}{F_y}</m>, arising from isolating <m>\frac{dy}{dx}</m> on one side of <m>F_x + F_y \frac{dy}{dx} = 0</m>.'
+    objectives:
+      - obj-s3-5
+    family: family-implicit-partials
+    h: '<p>Learners frequently forget the leading minus sign and write <m>\frac{F_x}{F_y}</m>, or erroneously invert the variables as <m>-\frac{F_y}{F_x}</m>. Remembering how the equation originates prevents both errors: applying the chain rule gives <m>F_x(1) + F_y\left(\frac{dy}{dx}\right) = 0</m>. Subtracting <m>F_x</m> produces the negative sign on the right, and dividing by <m>F_y</m> places <m>F_y</m> in the denominator.</p>'
+    authorId: block-fdfffab3-5b8
+quiz:
+  - type: Chain rule with one parameter
+    concept: multivariable-chain-rule
+    objectives:
+      - obj-s3-5
+    family: family-chain-one-parameter
+    q: Let <m>w = 2x^2 + y^2</m>, where <m>x = t^3</m> and <m>y = 3t</m>. What is the value of <m>\frac{dw}{dt}</m> at <m>t = 1</m>?
+    verified: true
+    response:
+      kind: number
+      value: 30
+    why: At <m>t = 1</m>, <m>x = 1</m> and <m>y = 3</m>. The derivatives are <m>\frac{dx}{dt} = 3t^2 = 3</m>, <m>\frac{dy}{dt} = 3</m>, <m>\frac{\partial w}{\partial x} = 4x = 4</m>, and <m>\frac{\partial w}{\partial y} = 2y = 6</m>. The chain rule gives <m>\frac{dw}{dt} = 4(3) + 6(3) = 12 + 18 = 30</m>.
+    authorId: quiz-df10f8a6-39a
+  - type: Two-parameter chain rule tree formula
+    concept: multivariable-chain-rule
+    objectives:
+      - obj-s3-5
+    family: family-chain-tree
+    q: If <m>z = f(u, v)</m> where <m>u = g(s, t)</m> and <m>v = h(s, t)</m>, which expression correctly represents <m>\frac{\partial z}{\partial s}</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{\partial z}{\partial u}\frac{\partial u}{\partial s} + \frac{\partial z}{\partial v}\frac{\partial v}{\partial s}</m>
+          why: The tree diagram branches from <m>z</m> into intermediate variables <m>u</m> and <m>v</m>, each branching into independent variables <m>s</m> and <m>t</m>. Summing the products along both branches leading to <m>s</m> gives <m>\frac{\partial z}{\partial u}\frac{\partial u}{\partial s} + \frac{\partial z}{\partial v}\frac{\partial v}{\partial s}</m>.
+        - text: <m>\frac{\partial z}{\partial u}\frac{\partial u}{\partial t} + \frac{\partial z}{\partial v}\frac{\partial v}{\partial t}</m>
+          why: This expression computes <m>\frac{\partial z}{\partial t}</m>, not <m>\frac{\partial z}{\partial s}</m>.
+        - text: <m>\frac{\partial z}{\partial u}\frac{\partial v}{\partial s} + \frac{\partial z}{\partial v}\frac{\partial u}{\partial s}</m>
+          why: This improperly crosses the intermediate and independent variable pairs.
+        - text: <m>\frac{\partial z}{\partial u}\frac{\partial u}{\partial s}\cdot\frac{\partial z}{\partial v}\frac{\partial v}{\partial s}</m>
+          why: Rates along separate intermediate branches must be added together, not multiplied.
+    why: The chain rule sums the product of derivatives along each pathway connecting the dependent variable z to the target variable s.
+    authorId: quiz-ef6e8892-144
+  - type: Implicit partial derivative evaluation
+    concept: implicit-differentiation
+    objectives:
+      - obj-s3-5
+    family: family-implicit-partials
+    q: The surface <m>x^2 + 2y^2 + z^2 = 10</m> defines <m>z</m> implicitly as a function of <m>x</m> and <m>y</m>. What is the value of <m>\frac{\partial z}{\partial x}</m> at the point <m>(2, 1, 2)</m>?
+    verified: true
+    response:
+      kind: number
+      value: -1
+    why: Let <m>F(x, y, z) = x^2 + 2y^2 + z^2 - 10</m>. The partial derivatives are <m>F_x = 2x</m> and <m>F_z = 2z</m>. At <m>(2, 1, 2)</m>, <m>F_x = 4</m> and <m>F_z = 4</m>. The implicit formula yields <m>\frac{\partial z}{\partial x} = -\frac{F_x}{F_z} = -\frac{4}{4} = -1</m>.
+    authorId: quiz-69339178-1eb

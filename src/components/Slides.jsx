@@ -17,13 +17,23 @@ export default function Slides({ b, ctx, fignum }) {
   const start = useRef(null);
   const settleTimer = useRef(null);
   const stage = useRef(null);
+  const region = useRef(null);
+  const previous = useRef(null);
+  const next = useRef(null);
   useEffect(() => () => clearTimeout(settleTimer.current), []);
   const frame = frames[Math.min(at, frames.length - 1)];
   if (!frame || typeof frame !== "object") return <p class="fx-miss">This slide has no content.</p>;
   const move = delta => {
     clearTimeout(settleTimer.current);
     setDrag(null);
-    setAt(i => Math.max(0, Math.min(frames.length - 1, i + delta)));
+    const target = Math.max(0, Math.min(frames.length - 1, at + delta));
+    // A native button loses focus when it becomes disabled. Keep keyboard
+    // navigation in the deck when its focused control reaches a boundary.
+    const focused = document.activeElement;
+    if ((target === 0 && focused === previous.current) ||
+        (target === frames.length - 1 && focused === next.current))
+      region.current?.focus({ preventScroll: true });
+    setAt(target);
   };
   const gestureStart = e => {
     if (drag?.settling || !e.isPrimary) return;
@@ -89,7 +99,8 @@ export default function Slides({ b, ctx, fignum }) {
   const cap = U.caption(fignum, b.cap);
   const visible = drag ? (drag.direction === "next" ? [at, at + 1] : [at - 1, at]) : [at];
   const offset = drag ? (drag.direction === "previous" ? -drag.width : 0) + drag.x : 0;
-  return <div class="slides" role="region" aria-label={strip(b.cap || "Step by step visual")}
+  return <div class="slides" role="region" tabIndex="0" ref={region}
+              aria-label={strip(b.cap || "Step by step visual")}
               onKeyDown={e => {
                 if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
                   e.preventDefault(); move(e.key === "ArrowRight" ? 1 : -1);
@@ -108,9 +119,9 @@ export default function Slides({ b, ctx, fignum }) {
       </div>
     </div>
     <div class="slides-nav">
-      <button type="button" onClick={() => move(-1)} disabled={at === 0} aria-label="Previous slide">← <span>Previous</span></button>
+      <button type="button" ref={previous} onClick={() => move(-1)} disabled={at === 0} aria-label="Previous slide">← <span>Previous</span></button>
       <span class="slides-hint">Swipe or use arrow keys</span>
-      <button type="button" onClick={() => move(1)} disabled={at === frames.length - 1} aria-label="Next slide"><span>Next</span> →</button>
+      <button type="button" ref={next} onClick={() => move(1)} disabled={at === frames.length - 1} aria-label="Next slide"><span>Next</span> →</button>
     </div>
   </div>;
 }

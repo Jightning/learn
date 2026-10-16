@@ -1,0 +1,4 @@
+title: "Absolute extrema on closed bounded regions"
+term: "Absolute Extrema"
+body: >-
+  <p>The Extreme Value Theorem guarantees that a continuous function <m>f(x, y)</m> on a closed, bounded region <m>D \subset \mathbb{R}^2</m> attains an absolute maximum and an absolute minimum. To find them, evaluate <m>f</m> at all interior critical points, find the extreme values of <m>f</m> along the boundary curves of <m>D</m>, and compare these values directly. The largest value is the absolute maximum, and the smallest is the absolute minimum. This procedure solves bounded real-world optimization problems.</p>

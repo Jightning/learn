@@ -8,6 +8,7 @@ import { rmSync, existsSync, readdirSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as YAML from "js-yaml";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const TITLE = "Cloneability Probe";
@@ -59,6 +60,14 @@ sweep();
 let ok = false, detail = "";
 try {
   run("new-course.mjs", [name, TITLE]);
+  if (existsSync(join(dir, "drills"))) throw new Error("new scaffold created a legacy drills directory");
+  if (existsSync(join(dir, "practice"))) throw new Error("new scaffold added a duplicate practice example");
+  const lesson = YAML.load(readFileSync(join(dir, "sections/01-first-topic/1-getting-started.yaml"), "utf8"));
+  for (const item of lesson.quiz || []) {
+    if (!item.response) throw new Error("new scaffold contains a question without a typed response");
+    for (const field of ["a", "answer", "stem", "steps"])
+      if (Object.hasOwn(item, field)) throw new Error(`new scaffold contains legacy question field ${field}`);
+  }
   for (const file of ["types.yaml", "bank.yaml", "assessment.yaml"])
     if (!existsSync(join(dir, "questions", file))) throw new Error(`missing bank scaffold ${file}`);
   const built = run("build.mjs");

@@ -1,0 +1,4 @@
+title: "Triple integrals over boxes and general regions"
+term: "Triple Integral"
+body: >-
+  <p>The triple integral of a continuous function <m>f(x, y, z)</m> over a bounded three-dimensional solid <m>E</m> is defined as the limit of Riemann triple sums: <m>\iiint_E f(x, y, z)\, dV = \lim \sum_{i,j,k} f(x_i^*, y_j^*, z_k^*)\, \Delta V</m>. Over a general solid <m>E</m> lying between surfaces <m>u_1(x, y) \le z \le u_2(x, y)</m> above a planar projection <m>D</m>, it evaluates as <m>\iint_D \left( \int_{u_1(x, y)}^{u_2(x, y)} f(x, y, z)\, dz \right) dA</m>. The volume of the solid <m>E</m> is computed by <m>\iiint_E 1\, dV</m>. Triple integrals are used to compute total mass, charge, and gravitational potential across spatial solids.</p>

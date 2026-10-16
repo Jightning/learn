@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadContext } from '../../tools/lib/author-context.mjs';
-import { buildPacket, planSignature, planCoverage } from '../../tools/lib/author-packets.mjs';
+import { buildPacket, fingerprint, planSignature, planCoverage } from '../../tools/lib/author-packets.mjs';
 const context = loadContext(new URL('../../authoring', import.meta.url).pathname);
 function fixture(fn) {
   const dir = mkdtempSync(join(tmpdir(), 'packets-'));
@@ -38,6 +38,22 @@ test('single mode skips role handoff; writer receives objective source reference
   assert.equal(p.families[0].description,'Apply on a new surface');
   assert.equal(buildPacket({...args,context,phase:'write',mode:'paired'}).role,'writer');
 }));
+test('write packets include lesson teaching decisions and reader calibration without broad prose',()=>fixture(args=>{
+  const lesson=args.plan.data.lessons[0];
+  lesson.needs=['block:figure'];
+  lesson.teaching={outcome:'Apply the relation under a changed input.',requires:['arithmetic'],introduces:['a'],
+    reasoning:'Track how the input determines the output.',
+    representation:{job:'Make the input-output relation inspectable',needs:['figure:flow']},
+    practice:'Predict an output after changing the input.',boundary:'No inverse operation.'};
+  Object.assign(args.plan.data.reader,{failures:['reverses the relation'],not_failures:['arithmetic errors'],onboarding:'concrete first',audience:'this reader'});
+  const p=buildPacket({...args,context,phase:'write',mode:'single',subsections:[args.subsection]});
+  assert.deepEqual(p.teaching,lesson.teaching);
+  assert.deepEqual(p.needs,['block:figure','figure:flow']);
+  assert.deepEqual(p.reader,{goal:'Master transfer',background:['arithmetic'],failures:['reverses the relation'],
+    not_failures:['arithmetic errors'],onboarding:'concrete first',priorities:['compact'],audience:'this reader'});
+  assert.deepEqual(p.prerequisiteEvidence,[{id:'arithmetic',status:'background',source:'arithmetic'}]);
+  assert.equal(p.outline.length,2);
+}));
 test('explicit lesson-local families and source assignments bound writer packets',()=>fixture(args=>{
   args.plan.data.lessons[0].families=['other'];
   args.plan.data.lessons[0].sources=[{source:'local',unit:'unit',lines:[4,5]}];
@@ -54,6 +70,12 @@ test('unrelated plan edits preserve local validation but local changes invalidat
   plan.data.families[0].description='New boundary';assert.notEqual(planSignature(plan,'s1-1'),before);
   plan.data.families[0].description='Apply on a new surface';
   plan.data.objectives[0].outcome='Changed';assert.notEqual(planSignature(plan,'s1-1'),before);
+}));
+test('legacy lesson signatures preserve the exact pre-teaching fingerprint',()=>fixture(({plan})=>{
+  const lesson=plan.data.lessons[0];
+  const expected=fingerprint(JSON.stringify({lesson,local:[plan.data.objectives[0]],dependencies:[],
+    families:[plan.data.families[0]],reader:plan.data.reader}));
+  assert.equal(planSignature(plan,'s1-1'),expected);
 }));
 test('coverage counts explicit teaching, questions and every required family',()=>fixture(({plan,subsection})=>{
   plan.data.objectives[1].disposition='excluded';

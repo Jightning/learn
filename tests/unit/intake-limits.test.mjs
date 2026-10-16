@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { zipSync } from "fflate";
-import { fromFolder, fromZip } from "../../src/lib/intake.js";
+import { fromFolder, fromZip, fromJSON } from "../../src/lib/intake.js";
 
 const MB = 1024 * 1024;
 const zipFile = entries => new File([zipSync(entries)], "course.zip");
@@ -18,6 +18,49 @@ test("a valid ZIP still imports text and images under its folder name", async ()
   assert.equal(course.id, "course");
   assert.equal(course.files["course.yaml"], "title: Test\n");
   assert.equal(course.files["assets/dot.png"], "data:image/png;base64,AQID");
+});
+
+test("folder sources are excluded before reads and size or file-count limits", async () => {
+  const files = [folderFile("course.yaml", 12, async () => "title: Test\n"),
+    ...Array.from({ length: 501 }, (_, i) => folderFile(`sources/${i}.txt`, 76 * MB,
+      () => { throw new Error("source was read"); }))];
+  const course = await fromFolder(files);
+  assert.equal(course.id, "course");
+  assert.deepEqual(course.files, { "course.yaml": "title: Test\n" });
+});
+
+test("ZIP sources are skipped without inflation, even in archives over 8MB", async () => {
+  const bytes = zipSync({
+    "course/course.yaml": new TextEncoder().encode("title: Test\n"),
+    "course/sources/book.pdf": new Uint8Array(9 * MB),
+    "course/sources/extracted.txt": new Uint8Array(3 * MB)
+  }, { level: 0 });
+  assert.ok(bytes.length > 8 * MB);
+  const course = await fromZip(new File([bytes], "course.zip"));
+  assert.deepEqual(course.files, { "course.yaml": "title: Test\n" });
+
+  const many = Object.fromEntries(Array.from({ length: 501 }, (_, i) =>
+    [`course/sources/${i}.txt`, new Uint8Array(1)]));
+  many["course/course.yaml"] = new TextEncoder().encode("title: Test\n");
+  assert.deepEqual((await fromZip(zipFile(many))).files, course.files);
+});
+
+test("packed JSON excludes source text and images", async () => {
+  const course = await fromJSON(new File([JSON.stringify({
+    "course.yaml": "title: Test\n",
+    "sources/extracted.txt": "source text",
+    "sources/image.png": "data:image/png;base64,AQID",
+    "assets/image.png": "data:image/png;base64,AQID"
+  })], "course.course.json"));
+  assert.deepEqual(course.files, {
+    "course.yaml": "title: Test\n", "assets/image.png": "data:image/png;base64,AQID"
+  });
+});
+
+test("excluding sources does not allow unsafe paths", async () => {
+  await assert.rejects(fromFolder([folderFile("sources/../book.txt", 1, () => {})]), /unsafe path/);
+  await assert.rejects(fromZip(zipFile({ "course/sources/../book.txt": new Uint8Array(1) })), /unsafe path/);
+  await assert.rejects(fromJSON(new File(['{"sources/../book.txt":"x"}'], "course.json")), /unsafe path/);
 });
 
 test("a highly compressible ZIP entry is refused before inflation", async () => {

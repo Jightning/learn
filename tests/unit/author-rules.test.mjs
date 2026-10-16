@@ -58,6 +58,15 @@ test("inline math selects the shared math format from table and quiz content", (
   }
 });
 
+test("practice and variants needs select the central bank format and guidance", () => {
+  for (const need of ["practice", "variants"]) {
+    const selected = selectContext(context, { role: "writer", needs: [need] });
+    assert.ok(selected.modules.some(m => m.id === "question-bank-format"));
+    assert.ok(selected.modules.some(m => m.id === "question-bank"));
+    assert.match(selected.text, /questions\/bank\.yaml/);
+  }
+});
+
 test("broken manifests, cycles, and symlink escapes cannot silently empty context", () => {
   const dir = mkdtempSync(join(tmpdir(), "context-"));
   try {

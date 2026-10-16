@@ -1,17 +1,6 @@
 import { MODES, modeOf, nearestMode } from "../lib/mode.js";
 
-/* What the reader is here to do, in the toolbar where a setting belongs.
- *
- * This replaces two segmented controls that sat in the content flow, above the
- * first paragraph of every section. It is one control because the reader has
- * one intent; the two axes underneath it are still there, still bound to their
- * keys, and reachable from the sidebar for anyone who wants them.
- *
- * When the axes have been moved to a pair that is not a preset, the switch says
- * so, with a dot against the mode it is nearest to, rather than showing that
- * intent as though it were exact. The alternative is a control that lies about
- * the state of the page the reader is looking at.
- */
+/* Reading resolution stays in the toolbar, close to the current passage. */
 export default function ModeSwitch({ lane, depth, onMode }) {
   const exact = modeOf(lane, depth);
   const shown = exact || nearestMode(lane, depth);
@@ -38,7 +27,7 @@ export default function ModeSwitch({ lane, depth, onMode }) {
                   onClick={() => onMode(m)}>
             {m.label}
             {on && !exact && <i class="modesw-e" aria-hidden="true"
-                                title="the axes have been changed by hand" />}
+                                title="the saved reading resolution is unavailable" />}
           </button>
         );
       })}

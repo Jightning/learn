@@ -37,15 +37,15 @@ blocks:
     core: |-
       Non-redundancy governs explanation, not practice.
     h: |-
-      <p>Deleting the practice bank's repeated worked instances "to avoid redundancy" removes exactly the repetition long-term retention needs. The rule forbids restating the <em>definition</em>, nothing else.</p>
+      <p>Deleting repeated questions from the central bank "to avoid redundancy" removes exactly the retrieval practice long-term retention needs. The rule forbids restating the <em>explanation</em>, not asking learners to retrieve an idea again.</p>
 
   - t: p
     source: docs/architecture.md
     h: |-
-      How the two rules survive contact with a real course, through links, concepts and tiers, is <a href="#s2-2">§2.2</a>.
+      How the two rules survive contact with a real course, through links, concepts and optional expansions, is <a href="#s2-2">§2.2</a>.
 
   - t: note
-    tier: depth
+    optional: true
     source: docs/code_truth.md
     label: What the rules replaced
     core: |-
@@ -69,8 +69,10 @@ quiz:
     concept: completeness
     q: |-
       An author omits the definition of "integrating factor" because "any engineering student knows it". The calibration lists only Calc I–III. Which rule is at stake?
-    a: |-
-      Completeness. The step is only omittable if the calibration says the reader already has it, and this one does not.
+    response:
+      kind: self
+      model: |-
+        Completeness. The step is only omittable if the calibration says the reader already has it, and this one does not.
     why: |-
       <p>Completeness is measured against the written record, not the author's sense of the median student. If the reader on record needs the step, it is not obvious. It is missing.</p>
     verified: 2026-09-02
@@ -78,9 +80,11 @@ quiz:
   - type: Spot the error
     concept: non-redundancy
     q: |-
-      A reviewer flags a practice bank for "repeating the same procedure five times" and asks the author to cut it to one. Is the reviewer right?
-    a: |-
-      No. The practice bank is required to repeat applications, and that repetition is the retention loop. Non-redundancy forbids repeating the <em>explanation</em>, which the practice items do not do.
+      A reviewer flags a question bank for "repeating the same procedure five times" and asks the author to cut it to one. Is the reviewer right?
+    response:
+      kind: self
+      model: |-
+        No. Repeated questions in the central bank support retrieval practice. Non-redundancy forbids repeating the <em>explanation</em>, which the questions do not do.
     why: |-
       <p>The tempting reading is that any repetition is waste. The rule is narrower: one copy of the words that teach the idea. Repeated practice on the idea is a different reader activity, and cutting it removes the only thing that makes the concept stick past the week.</p>
     verified: 2026-09-02

@@ -1,0 +1,4 @@
+title: "Gradient vector and its properties"
+term: "Gradient"
+body: >-
+  <p>The gradient of a scalar function <m>f(x, y, z)</m> is the vector field <m>\nabla f = \left\langle \frac{\partial f}{\partial x}, \frac{\partial f}{\partial y}, \frac{\partial f}{\partial z} \right\rangle</m>. The gradient points in the direction of greatest rate of increase of <m>f</m>, and its magnitude <m>\|\nabla f\|</m> is that maximum rate. Geometrically, <m>\nabla f(x_0, y_0, z_0)</m> is orthogonal to the level surface <m>f(x, y, z) = c</m> passing through that point. The gradient is the central tool for finding normal vectors, computing directional derivatives, and optimization.</p>

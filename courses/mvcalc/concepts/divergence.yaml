@@ -1,0 +1,4 @@
+title: "Divergence"
+term: "Divergence"
+body: >-
+  <p>The divergence of a vector field <m>\mathbf{F} = \langle P, Q, R \rangle</m> is the scalar field defined by <m>\text{div}\, \mathbf{F} = \nabla \cdot \mathbf{F} = \frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y} + \frac{\partial R}{\partial z}</m>. Physically, divergence measures the net rate of outward flux per unit volume at a given point, indicating sources where <m>\text{div}\, \mathbf{F} > 0</m> and sinks where <m>\text{div}\, \mathbf{F} < 0</m>. A vector field with <m>\text{div}\, \mathbf{F} = 0</m> everywhere is called incompressible or solenoidal. Divergence appears prominently in the continuity equation and Gauss's law.</p>

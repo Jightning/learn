@@ -1,0 +1,4 @@
+title: "Directional derivative"
+term: "Directional Derivative"
+body: >-
+  <p>The directional derivative of <m>f(x, y)</m> in the direction of a unit vector <m>\mathbf{u} = \langle a, b \rangle</m> is defined by <m>D_{\mathbf{u}} f(x, y) = \lim_{h \to 0} \frac{f(x + ha, y + hb) - f(x, y)}{h}</m>. For a differentiable function, it is computed via the dot product <m>D_{\mathbf{u}} f(x, y) = \nabla f(x, y) \cdot \mathbf{u}</m>. It measures the instantaneous rate of change of <m>f</m> along any specified straight direction in the domain. The direction of steepest ascent is <m>\mathbf{u} = \nabla f / \|\nabla f\|</m>, with maximum rate <m>\|\nabla f\|</m>.</p>

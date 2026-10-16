@@ -49,7 +49,39 @@ try {
   const advisory = run("publish");
   check("declared pedagogical thresholds warn without rejecting a disclosed choice",
     advisory.status === 0 && /! .*claims name no source/.test(advisory.stdout), advisory.stdout + advisory.stderr);
-  console.log("ok   audit profiles  5/5 checks");
+
+  const source = readFileSync(file, "utf8");
+  writeFileSync(file, source.replace("    core: A sample claim for the audit fixture.\n", ""));
+  const noSummary = run("draft");
+  check("a claim without a summary is not counted as a quality failure",
+    noSummary.status === 0 && !/unclaimed|repeat/.test(noSummary.stdout),
+    noSummary.stdout + noSummary.stderr);
+  const noSummaryValidation = spawnSync(process.execPath,
+    [join(ROOT, "tools/validate.mjs"), "--isolated", id],
+    { encoding: "utf8", env: { ...process.env, AUTHOR_WORKSPACE: workspace } });
+  check("validation accepts a claim without either summary field",
+    !/requires? (?:a )?(?:core|gist)|must declare (?:a )?(?:core|gist)/i
+      .test(noSummaryValidation.stdout + noSummaryValidation.stderr),
+    noSummaryValidation.stdout + noSummaryValidation.stderr);
+
+  writeFileSync(file, readFileSync(file, "utf8").replace(
+    "    h: <p>This claim still needs source review.</p>",
+    "    gist: A separate note for review.\n    h: <p>This claim still needs source review.</p>"));
+  const withGist = run("draft");
+  check("an intentional gist is not counted as a repetition defect",
+    withGist.status === 0 && !/unclaimed|repeat/.test(withGist.stdout),
+    withGist.stdout + withGist.stderr);
+
+  writeFileSync(file, readFileSync(file, "utf8").replace(
+    "    gist: A separate note for review.",
+    "    core: A separate opening claim.\n    gist: A separate note for review."));
+  const invalid = spawnSync(process.execPath,
+    [join(ROOT, "tools/validate.mjs"), "--isolated", id],
+    { encoding: "utf8", env: { ...process.env, AUTHOR_WORKSPACE: workspace } });
+  check("validation still rejects a block that declares both summary fields",
+    /declares both core: and gist:/.test(invalid.stdout + invalid.stderr),
+    invalid.stdout + invalid.stderr);
+  console.log("ok   audit profiles  9/9 checks");
 } finally {
   rmSync(workspace, { recursive: true, force: true });
 }

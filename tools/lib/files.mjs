@@ -9,16 +9,12 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname, relative, sep } from "node:path";
 
-/* The courses that may reach the public deployment, named here and nowhere
-   else. This was once a `publish: true` flag in course.yaml, which made
-   exposure something an author could turn on by typing one line — in a file a
-   model routinely rewrites. Coursework is not publishable material, so the set
-   is closed: `demo` is the site's own showcase, and every other course reaches
-   its reader's devices by import or sync. Adding to this list is a deliberate
-   edit to the engine, which is the point. (`_`-prefixed folders, `_template`
-   among them, are skipped before this is ever consulted.) */
+/* Only explicitly approved courses may reach the public deployment.
+   Keep this allowlist separate from course.yaml so authoring cannot publish a
+   course by changing its metadata. All other courses use import or sync.
+   `_`-prefixed folders remain excluded. */
 /* The category is storefront metadata, not part of an author's course. */
-export const PUBLIC_CATEGORIES = new Map([["demo", "Getting Started"]]);
+export const PUBLIC_CATEGORIES = new Map([["demo", "Getting Started"], ["mvcalc", "Mathematics"]]);
 export const PUBLIC = new Set(PUBLIC_CATEGORIES.keys());
 
 const MIME = { ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",

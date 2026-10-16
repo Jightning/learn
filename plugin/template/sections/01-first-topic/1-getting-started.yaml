@@ -1,239 +1,36 @@
 title: Getting started
 blocks:
-  # One block may precede the def, and only one: a concrete anchor in terms the
-  # reader already holds, or an `attempt` they cannot yet solve. The def must
-  # then retire it: generalise the anchor and name it a special case, or refer
-  # back to what the attempt tried. An anchor the def never retires leaves the
-  # reader holding an instance where they need a schema, which is the sequence
-  # that performed worst in the research this shape comes from.
-  #
-  # `attempt` is the other option in this same slot, never both, and only as
-  # the very first block — uncomment it and delete the `p` below to use it
-  # instead:
-  # - t: attempt
-  #   label: Try it first
-  #   h: |-
-  #     <p>Pose a problem the reader cannot yet solve. State it and stop: no
-  #     hint, no "you'll see why below" — that sentence is the interface's own
-  #     words repeated, which is redundancy the engine already draws (§6.1).</p>
   - t: p
     h: |-
-      Plain prose. Write HTML directly. No escaping is needed inside a literal
-      block, so quotes and apostrophes appear exactly as typed.
+      <p>Open with the idea the reader needs next. Connect it to something they
+      already know, then explain the reason for the new step rather than asking
+      them to accept a rule without its conditions.</p>
 
-  # `spine` is the default and the whole course: depth and apply may lean on it,
-  # never the other way round. Write `tier:` only where it is not spine: an
-  # absent tier *is* the declaration, and repeating the default on every block
-  # is noise in a file you will re-read many times.
-  # Each callout labels itself: "Definition", "Key rule", "Common mistake",
-  # "Worked example", "Note". Write `label:` only to override one, never to
-  # repeat it.
-  # `core:` is the block's own opening claim, kept in its own field so that
-  # `notes` depth can show it and close everything under it. It is NOT a
-  # summary: `h:` below holds only what develops the claim, so the sentence
-  # appears exactly once and nothing can drift. Write the claim so it stands
-  # alone, because a reader meeting it cold in week six gets only this line.
-  - t: def
-    term: A definition
-    source: Textbook ch.1.2
-    # sourceReview: sourced  # add only after checking this origin
-    cat: block-kinds
-    tags: [authoring]
-    core: |-
-      A definition, a key rule, a trap, a worked example and a note are the same
-      shape wearing different accents.
-    h: |-
-      <p>Which one you reach for is a claim about the content, not a choice of
-      colour. Reference a <c k="example-concept">core concept</c> inline and a
-      card appears in the margin beside this very block.</p>
-
-  # `source:` is where the claim came from: a real, checkable origin, or
-  # `unverified` (a human should look it up), or `generated` (a model wrote it
-  # and a human should check whether it is even true). The last two both count
-  # against the unsourced fraction draft audit reports. Before publishing, a
-  # human sets sourceReview: sourced for a checked origin, or disclosed for an
-  # explicitly unverified/generated source. The value must match source:.
   - t: key
     source: unverified
-    # sourceReview: disclosed  # add only after reviewing this disposition
-    cat: block-kinds
-    core: The one thing to remember, stated in a sentence that stands alone.
-    h: <p>And then whatever makes it usable, which is where it comes from,
-      when it applies, and what it rules out.</p>
-
-  # One or two per subsection. Five traps is zero traps, because signaling is a
-  # contrast effect and it degrades with density. For a procedural subsection
-  # at least one names the specific slip: which sign, which index, which order.
-  # "Be careful" is not a trap, it is a mood.
-  # `gist:` is the other form, and a block declares one or the other, never
-  # both. It is a summary ABOUT the block and renders only at `notes` depth,
-  # leaving `h:` whole, which is what a trap needs: a trap works by
-  # letting the reader believe the wrong thing first. Leading with the
-  # correction would defuse it. Every `gist:` is a second copy on purpose, so
-  # the fraction is measured and ceilinged in `course.yaml`.
-  - t: trap
-    source: generated
-    # sourceReview: disclosed  # add only after reviewing this disposition
-    cat: block-kinds
-    gist: The tempting wrong answer is X; it is really Y.
-    h: <p>The error people actually make, stated the way they would state it,
-      and only then why it is wrong.</p>
-
-  - t: ex
-    title: Worked example
-    h: <ol><li>First step</li><li>Second step</li><li>Result</li></ol>
-
-  # A table is numbered and citable exactly as a figure is, so `<f k="…"/>`
-  # renders "Table 1.1" and prose never has to re-describe it in words.
-  - t: table
-    id: a-table
-    cap: A table
-    cat: reference-tables
-    head: [Column, Meaning]
-    rows:
-      - [value, what it means]
-
-  - t: figure
-    kind: graph
-    cap: A diagram, described as data rather than drawn
-    spec:
-      layout: circle
-      nodes:
-        - {id: A, label: A, note: start}
-        - {id: B, label: B}
-        - {id: C, label: C, accent: 0}
-      edges:
-        - {from: A, to: B, label: step}
-        - {from: B, to: C, label: step}
-        - {from: C, to: A, label: back}
-
-  # Compact visual data is usually cheaper to author and revise than an image.
-  # `circuit` and `drawing` examples, plus `slides` for state changes, are in
-  # docs/create_course.md §10.1. Every visual still needs a descriptive cap.
-
-  # `depth` answers "why" and "what if". Nothing examinable belongs here: a
-  # depth block is a promise that collapsing it costs the reader nothing on the
-  # exam. Length is not the test; examinability is.
-  - t: note
-    tier: depth
-    h: <p>An aside that is genuinely optional.</p>
-
-  # `apply` instantiates a concept the spine already states. It never
-  # re-explains. If it restates the definition, the fix is a link. One or two
-  # per concept across the whole course.
-  - t: figure
-    tier: apply
-    kind: bar
-    cap: A chart, also described as data
-    spec:
-      ylabel: operations
-      bars:
-        - {label: linear, value: 40}
-        - {label: binary, value: 6, accent: 0}
-
-  # The remaining block kinds create_course.md §6.1 lists, none of which the
-  # skeleton above needs: a bare list, a code listing, a standalone equation.
-  - t: list
-    core: |-
-      A bare list: items that are not a procedure and do not need a
-      callout's own frame.
-    items:
-      - 'Set <code>ordered: true</code> to number the items instead of bulleting them.'
-      - Write each item as HTML directly, exactly as in <code>h</code>.
-
-  - t: code
-    lang: yaml
-    core: |-
-      Source listings, highlighted per the <code>syntax</code> table in
-      <code>course.yaml</code> (commented out above) — no renderer needed for
-      a new language.
-    src: |-
-      # course.yaml → syntax:
-      #   comment: "#"
-      #   keywords: [def, return, if, else]
-      def f(x):
-          return x + 1
-
-  - t: math
-    label: A standalone equation
-    tex: ar^2 + br + c = 0
-    note: Write TeX, not HTML. A formula that does not compile fails validation with the file and formula named. Give an important equation its own math block; a newline around inline maths in YAML does not make it a display equation.
-
-  # Follow-ups attach a block to the one above it without nesting: several in
-  # a row all attach to the nearest block that is not itself a follow-up — the
-  # `math` block above, for both of these. Use it when one idea needs more
-  # than one block; a spine block may trail a depth one only this way, since
-  # the lane hides depth on its own.
-  - t: note
-    tier: depth
-    follows: true
-    label: Standalone vs. inline
     h: |-
-      <p>Use <code>math</code> when the equation is the point of the
-      paragraph; inline <code>&lt;m&gt;</code> when it is only mentioned in
-      passing.</p>
-      <p>A second paragraph can live in the same block. Use
-      <code>&lt;br&gt;</code> for a shorter break within one paragraph; a
-      newline in this YAML source does not create a visible break.</p>
+      <p>State the essential claim here and develop its meaning in the same
+      reading path. Use inline math such as <m>x^2</m> where the expression is
+      part of the sentence.</p>
+      <p class="equation"><m>\displaystyle x^2 + y^2 = r^2</m></p>
+      <p>Explain what the equation says, when it applies, and how it connects
+      to the preceding idea.</p>
 
-  # An aside names one phrase inside a block rather than the whole block: mark
-  # it `<n k="…">` in the text and write the note under the same key in
-  # `asides:`. Both are required together. Notes are available in Study and
-  # Review; hover or focus a note to highlight its exact text. The prose stays
-  # unmarked at rest and must still read correctly with the aside ignored.
-  - t: key
+  - t: note
+    optional: true
     follows: true
-    cat: block-kinds
-    source: docs/create_course.md §6.3
-    core: |-
-      An aside is one phrase, not the whole block.
     h: |-
-      <p>Hover <n k="tmpl-aside">this phrase</n> to see it.</p>
-    asides:
-      tmpl-aside: |-
-        <p>This note is anchored to the phrase above by the key
-        <code>tmpl-aside</code>, declared once in the same block.</p>
-
-  # A photograph or scan you already have. Put the file in courses/<id>/assets/
-  # and it is embedded at build time. alt text is not optional in practice.
-  # - t: image
-  #   src: assets/example.png
-  #   alt: What the picture shows, described for someone who cannot see it
-  #   cap: Where it came from
+      <p>Use an optional follow-up for context or a useful extension that the
+      learner can skip without losing a required step.</p>
 
 quiz:
-  # One question per distinct skill; the validator rejects duplicates.
-  # The target is coverage of the question surface, not volume. Add a
-  # practice/<concept>.yaml bank only when another surface is useful.
-  - type: Recall
+  # For a small, self-contained course, a typed question may live inline.
+  # For repeated practice or reuse, store the item in questions/bank.yaml and
+  # reference its stable ID here instead.
+  - type: Explain the relationship
     concept: example-concept
-    q: What does this course examine first?
-    response:
-      kind: single
-      choices:
-        - {text: The first topic, why: It is the opening topic.}
-        - {text: The final topic, why: It appears later in the sequence.}
-      correct: 1
-    why: <p>The first topic is introduced before later dependencies.</p>
-    verified: true
-
-  - type: Apply
-    concept: example-concept
-    q: Given a situation, what do you do?
+    q: What relationship does the example equation express?
     response:
       kind: self
-      model: State the procedure and explain why its first step applies.
-    why: <p>Show the steps so the answer is reusable.</p>
+      model: It relates x and y values whose squared sum is the fixed value r squared.
     verified: true
-
-  # A procedural subsection also carries an error-spotting item: correct
-  # procedure first in an `ex` block, then a worked solution with one error the
-  # reader has to find, explain and correct.
-  # - type: Spot the error
-  #   concept: example-concept
-  #   q: <p>A student does this. Which step is wrong, and what is correct?</p>
-  #   response:
-  #     kind: self
-  #     model: Identify the incorrect step, explain the error, and correct it.
-  #   why: <p>Why that read is tempting.</p>
-  #   verified: true

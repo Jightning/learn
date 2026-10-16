@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { observations, recentPerformance, fluencyTrend } from '../../src/lib/evidence.js';
-import { selectAdaptive, adaptiveEnabled, duePracticeTypes } from '../../src/lib/practice-policy.js';
+import { selectAdaptive, duePracticeTypes } from '../../src/lib/practice-policy.js';
 import { activeClock } from '../../src/lib/attempt.js';
 import { readiness, checkCandidates } from '../../src/lib/assessment.js';
 import { fold } from '../../src/lib/replay.js';
@@ -32,7 +32,6 @@ test('coverage rotates unresolved outcomes across saved state and has no prerequ
   const a=selectAdaptive(pool,[],{actions:0},new Set(),[],blueprint);
   const b=selectAdaptive(pool,[],{...a.policy,actions:3},new Set(),[],blueprint);
   assert.notEqual(a.item.typeId,b.item.typeId); assert.equal(a.policy.actions,0);
-  assert.equal(adaptiveEnabled({practicePolicy:{mode:'adaptive-experimental'}}),false);
   assert.equal(selectAdaptive(pool,[],{},new Set(['a','b'])).item,null);
 });
 test('foreground clock excludes hidden time, flags uncertainty, and stops at first answer',()=>{

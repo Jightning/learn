@@ -1,0 +1,4 @@
+title: "Derivative and tangent vector of a vector-valued function"
+term: "Derivative of Vector-Valued Function"
+body: >-
+  <p>The derivative of a vector-valued function <m>\mathbf{r}(t)</m> is defined by <m>\mathbf{r}'(t) = \lim_{\Delta t \to 0} \frac{\mathbf{r}(t + \Delta t) - \mathbf{r}(t)}{\Delta t} = \langle f'(t), g'(t), h'(t) \rangle</m>. Geometrically, <m>\mathbf{r}'(t)</m> is a tangent vector to the curve in the direction of increasing <m>t</m>, provided <m>\mathbf{r}'(t) \ne \mathbf{0}</m>. The unit tangent vector is <m>\mathbf{T}(t) = \frac{\mathbf{r}'(t)}{\|\mathbf{r}'(t)\|}</m>. It is used to determine tangent lines to curves and to analyze velocity in kinematic models.</p>

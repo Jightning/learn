@@ -67,3 +67,8 @@ test("manual paired completes all course writing before review, then all correct
   assert.equal(flow().stage, "correct");
   set("s1-1", "reviewed"); assert.equal(flow().stage, "finish");
 }));
+
+test("explicit writer batches preserve actual prerequisite reading order", () => fixture(({ subs, plan }) => {
+  plan.data.batches = [{ id: "sequence", subsections: ["s1-3", "s1-1", "s1-2"] }];
+  assert.deepEqual(courseBatches(subs, plan, workflow).batches[0].members.map(s => s.id), ["s1-1", "s1-2", "s1-3"]);
+}));

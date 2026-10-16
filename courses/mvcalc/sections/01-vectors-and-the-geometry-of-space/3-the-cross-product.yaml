@@ -1,0 +1,120 @@
+title: The Cross Product
+blocks:
+  - t: p
+    h: <p>Unlike the dot product, which combines two vectors to yield a scalar, the cross product is an operation defined specifically for three-dimensional vectors that produces another three-dimensional vector. The resulting vector is perpendicular to both original vectors, making it an essential geometric tool for computing normal directions, surface areas, spatial volumes, and physical quantities like torque.</p>
+    authorId: block-ca2a76db-955
+  - t: def
+    term: The Cross Product and Determinant Form
+    source: OpenStax Calculus Volume 3, Section 2.4
+    sourceReview: sourced
+    core: The cross product <m>\mathbf{u} \times \mathbf{v}</m> is a 3D vector orthogonal to both <m>\mathbf{u}</m> and <m>\mathbf{v}</m>, computed by expanding a formal <m>3 \times 3</m> determinant.
+    introduces:
+      - obj-s1-3
+      - cross-product
+    objectives:
+      - obj-s1-3
+    family: family-cross-compute
+    h: <p>For vectors <m>\mathbf{u} = \langle u_1, u_2, u_3 \rangle</m> and <m>\mathbf{v} = \langle v_1, v_2, v_3 \rangle</m>, the cross product <m>\mathbf{u} \times \mathbf{v}</m> is defined by the symbolic determinant:</p>
+    items:
+      - <m>\mathbf{u} \times \mathbf{v} = \begin{vmatrix} \mathbf{i} & \mathbf{j} & \mathbf{k} \\ u_1 & u_2 & u_3 \\ v_1 & v_2 & v_3 \end{vmatrix} = (u_2 v_3 - u_3 v_2)\mathbf{i} - (u_1 v_3 - u_3 v_1)\mathbf{j} + (u_1 v_2 - u_2 v_1)\mathbf{k}</m>
+      - 'Orthogonality: <m>(\mathbf{u} \times \mathbf{v}) \cdot \mathbf{u} = 0</m> and <m>(\mathbf{u} \times \mathbf{v}) \cdot \mathbf{v} = 0</m>.'
+      - 'Right-hand rule: Point the fingers of your right hand along <m>\mathbf{u}</m> and curl them toward <m>\mathbf{v}</m>; your thumb points in the direction of <m>\mathbf{u} \times \mathbf{v}</m>.'
+      - 'Anticommutativity: <m>\mathbf{v} \times \mathbf{u} = -(\mathbf{u} \times \mathbf{v})</m>, and <m>\mathbf{u} \times \mathbf{u} = \mathbf{0}</m>.'
+    ordered: true
+    authorId: block-5a3831b5-3b4
+  - t: math
+    label: Geometric Definition of Cross Product Magnitude
+    tex: '|\mathbf{u} \times \mathbf{v}| = |\mathbf{u}||\mathbf{v}|\sin\theta'
+    note: Here θ is the angle between u and v with 0 ≤ θ ≤ π; the magnitude equals the area of the parallelogram formed by the two vectors.
+    authorId: block-f2d626fd-e8b
+  - t: key
+    label: Geometric Areas and the Triple Scalar Product
+    source: OpenStax Calculus Volume 3, Section 2.4
+    sourceReview: sourced
+    core: Parallelogram area is <m>|\mathbf{u} \times \mathbf{v}|</m>, triangle area is <m>\frac{1}{2}|\mathbf{u} \times \mathbf{v}|</m>, and parallelepiped volume is the absolute triple scalar product <m>|\mathbf{u} \cdot (\mathbf{v} \times \mathbf{w})|</m>.
+    introduces:
+      - triple-scalar-product
+    objectives:
+      - obj-s1-3
+    family: family-cross-area-volume
+    h: <p>The cross product connects vector algebra directly to geometric measurements in space:</p>
+    items:
+      - 'Parallelogram area: The area of the parallelogram with adjacent sides <m>\mathbf{u}</m> and <m>\mathbf{v}</m> is <m>A = |\mathbf{u} \times \mathbf{v}|</m>.'
+      - 'Triangle area: The area of the triangle with vertices determined by adjacent sides <m>\mathbf{u}</m> and <m>\mathbf{v}</m> is <m>A = \frac{1}{2}|\mathbf{u} \times \mathbf{v}|</m>.'
+      - 'Triple scalar product: The volume of the parallelepiped determined by vectors <m>\mathbf{u}, \mathbf{v}, \mathbf{w}</m> is <m>V = |\mathbf{u} \cdot (\mathbf{v} \times \mathbf{w})|</m>, computed by the absolute value of the determinant whose rows are the components of <m>\mathbf{u}, \mathbf{v}, \mathbf{w}</m>.'
+      - 'Coplanarity test: Nonzero vectors <m>\mathbf{u}, \mathbf{v}, \mathbf{w}</m> lie in the same plane if and only if <m>\mathbf{u} \cdot (\mathbf{v} \times \mathbf{w}) = 0</m>.'
+    ordered: true
+    authorId: block-f687b080-a3a
+  - t: ex
+    title: Orthogonal Vector and Triangle Area
+    objectives:
+      - obj-s1-3
+    family: family-cross-area-volume
+    h: '<p>Find a vector orthogonal to both <m>\mathbf{u} = \langle 1, -1, 0 \rangle</m> and <m>\mathbf{v} = \langle 0, 2, 1 \rangle</m>, and determine the area of the triangle they span. Expanding the determinant gives <m>\mathbf{u} \times \mathbf{v} = (-1(1) - 0(2))\mathbf{i} - (1(1) - 0(0))\mathbf{j} + (1(2) - (-1)(0))\mathbf{k} = \langle -1, -1, 2 \rangle</m>. We verify orthogonality: <m>\langle -1, -1, 2 \rangle \cdot \langle 1, -1, 0 \rangle = -1 + 1 + 0 = 0</m> and <m>\langle -1, -1, 2 \rangle \cdot \langle 0, 2, 1 \rangle = 0 - 2 + 2 = 0</m>. The magnitude is <m>|\mathbf{u} \times \mathbf{v}| = \sqrt{(-1)^2 + (-1)^2 + 2^2} = \sqrt{6}</m>. The triangle area is therefore <m>\frac{1}{2}\sqrt{6}</m>.</p>'
+    authorId: block-f431c318-4f5
+  - t: key
+    label: Torque and Rotational Force
+    source: OpenStax Calculus Volume 3, Section 2.4
+    sourceReview: sourced
+    core: The torque vector produced by a force <m>\mathbf{F}</m> applied at position <m>\mathbf{r}</m> from a pivot is <m>\boldsymbol{\tau} = \mathbf{r} \times \mathbf{F}</m>, with magnitude <m>|\mathbf{r}||\mathbf{F}|\sin\theta</m>.
+    objectives:
+      - obj-s1-3
+    family: family-torque
+    h: <p>When a force <m>\mathbf{F}</m> acts on a rigid body at a point given by position vector <m>\mathbf{r}</m> relative to a pivot point, the torque vector measuring the tendency of the body to rotate about the pivot is <m>\boldsymbol{\tau} = \mathbf{r} \times \mathbf{F}</m>. The magnitude of torque is <m>|\boldsymbol{\tau}| = |\mathbf{r}||\mathbf{F}|\sin\theta</m>, where <m>\theta</m> is the angle between the position vector (lever arm) and the force vector.</p>
+    authorId: block-e0540d89-7ac
+  - t: trap
+    label: Non-Commutativity and Vector Dimension
+    source: OpenStax Calculus Volume 3, Section 2.4
+    sourceReview: sourced
+    core: The cross product is defined only in three dimensions, is non-associative, and is anticommutative so reversing order reverses the vector sign.
+    objectives:
+      - obj-s1-3
+    family: family-cross-compute
+    h: '<p>Unlike real numbers or dot products, the cross product is not commutative: <m>\mathbf{v} \times \mathbf{u} = -(\mathbf{u} \times \mathbf{v})</m>. Furthermore, it is not associative: <m>(\mathbf{u} \times \mathbf{v}) \times \mathbf{w} \neq \mathbf{u} \times (\mathbf{v} \times \mathbf{w})</m> in general. Finally, remember that the cross product is strictly a 3D operation; it is not defined for 2D vectors unless they are embedded into 3D space with a zero <m>z</m>-component.</p>'
+    authorId: block-e021ccdc-703
+quiz:
+  - type: Cross product computation
+    concept: cross-product
+    objectives:
+      - obj-s1-3
+    family: family-cross-compute
+    q: What is the cross product <m>\mathbf{u} \times \mathbf{v}</m> for <m>\mathbf{u} = \langle 2, 1, 0 \rangle</m> and <m>\mathbf{v} = \langle 0, 3, -1 \rangle</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\langle -1, 2, 6 \rangle</m>
+          why: Cofactor expansion yields <m>(1(-1) - 0)\mathbf{i} - (2(-1) - 0)\mathbf{j} + (2(3) - 0)\mathbf{k} = -\mathbf{i} + 2\mathbf{j} + 6\mathbf{k}</m>.
+        - text: <m>\langle -1, -2, 6 \rangle</m>
+          why: 'Remember the negative sign in front of the <m>\mathbf{j}</m>-component minor determinant: <m>-(2(-1) - 0) = 2</m>.'
+        - text: <m>\langle 1, -2, -6 \rangle</m>
+          why: This is <m>\mathbf{v} \times \mathbf{u}</m>, which points in the opposite direction.
+        - text: <m>\langle -1, 2, 0 \rangle</m>
+          why: The <m>\mathbf{k}</m>-component is <m>2(3) - 1(0) = 6</m>, not 0.
+    authorId: quiz-3aeec05c-2fa
+  - type: Parallelepiped volume
+    concept: triple-scalar-product
+    objectives:
+      - obj-s1-3
+    family: family-cross-area-volume
+    q: What is the volume of the parallelepiped determined by vectors <m>\mathbf{u} = \langle 1, 0, 2 \rangle</m>, <m>\mathbf{v} = \langle 0, 3, 1 \rangle</m>, and <m>\mathbf{w} = \langle 2, 1, 0 \rangle</m>?
+    verified: true
+    response:
+      kind: number
+      value: 13
+    why: 'The volume is the absolute value of the triple scalar product: <m>|\det[\mathbf{u}, \mathbf{v}, \mathbf{w}]| = |1(0 - 1) - 0(0 - 2) + 2(0 - 6)| = |-1 - 12| = 13</m>.'
+    authorId: quiz-a449f7ea-cc9
+  - type: Torque magnitude
+    concept: cross-product
+    objectives:
+      - obj-s1-3
+    family: family-torque
+    q: A wrench of length 0.25 m is turned by applying a force of 40 N at an angle of <m>30^\circ</m> to the lever arm. What is the magnitude of the torque in Newton-meters?
+    verified: true
+    response:
+      kind: number
+      value: 5
+      unit: N·m
+    why: The torque magnitude is <m>|\boldsymbol{\tau}| = |\mathbf{r}||\mathbf{F}|\sin(30^\circ) = (0.25)(40)(0.5) = 5\text{ N}\cdot\text{m}</m>.
+    authorId: quiz-6e8affe1-8ac

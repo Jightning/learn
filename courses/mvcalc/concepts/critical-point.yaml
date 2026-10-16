@@ -1,0 +1,4 @@
+title: "Critical points, local extrema and saddle points"
+term: "Critical Point"
+body: >-
+  <p>A point <m>(a, b)</m> in the domain of <m>f(x, y)</m> is a critical point if <m>\nabla f(a, b) = \mathbf{0}</m> (that is, <m>f_x(a, b) = 0</m> and <m>f_y(a, b) = 0</m>) or if at least one partial derivative fails to exist. A function can have a local maximum, local minimum, or saddle point at a critical point. At a saddle point, the surface curves upward in one direction and downward in another, so the tangent plane is horizontal without an extremum. Identifying critical points is the first step in multivariable optimization.</p>

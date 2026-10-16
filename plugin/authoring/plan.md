@@ -19,6 +19,14 @@ lessons:
     families: [family-1] # lesson-local references, not repeated definitions
     sources: [{source: src-1, unit: page-1, lines: [3, 8]}]
     needs: ['block:def', 'question:single']
+    teaching: # optional; reuse IDs from categorize and reader.background
+      outcome: <observable capability under stated conditions>
+      requires: [concept-0]
+      introduces: [concept-1, obj-1]
+      reasoning: <relationship or decisions the reader must be able to reconstruct>
+      representation: {job: <relationship to make inspectable>, needs: ['figure:graph']}
+      practice: <attempt and useful variation>
+      boundary: <assumptions, deferred material, or unresolved source issue>
     directives: <optional deliberate choice or open freedom>
 batches: # optional scheduling overrides; no size ceiling
   - {id: section-1, subsections: [s1-1]}
@@ -39,6 +47,32 @@ required evidence. Families record disposition (`teach`, `prerequisite`,
 Concepts record their identity and planned reuse. Legacy planning artifacts
 remain valid migration inputs; do not duplicate their definitions in the new
 plan.
+
+When an assessment, review sheet, or related test establishes that one family
+is required, set `assessmentRequired: true` on that existing canonical family.
+This opts that family into the finish gate without migrating old families.
+Keep its disposition `teach`, give it an exact `sources: [{source, unit}]`
+route (including the assessment/problem source when the skill is absent from
+the main exposition), lesson-level `teach` routing, and `questions` type IDs.
+Use a substantive problem/source unit, not a title-only chapter heading; the
+finish path resolves source and unit IDs through the current source catalog.
+An explicitly generated route uses `source: generated`, a meaningful `unit`,
+and a `provenance` explanation. Excluded, moved, and prerequisite dispositions
+cannot satisfy or hide an explicit requirement. Do not set this field because
+a topic merely appears in a book; it records an approved assessment obligation.
+`write` retains the required IDs in generated state. Clearing a flag or deleting
+a family later cannot quietly shrink the agreed scope. Packing and full publish
+audit enforce the same obligations, including reopenable source evidence.
+
+The finish report checks for an original substantive main-path block tagged
+with the family and a linked canonical objective or concept, plus an actual
+task item of an assessable type mapped to that family and the exact source
+route. The family's lesson route and the mapped types' `teach` routes must
+overlap. Stable block author IDs and task IDs keep the evidence reviewable.
+These mechanical
+links are not a judgment that the teaching or question is good, and they cannot
+discover an unseen or undeclared exam topic; review the routed source and the
+original teaching and task before accepting the plan.
 
 Inventory source families, not just topics: definitions, mechanisms,
 procedures, exceptions, diagrams, values, and the distinct problem surfaces
@@ -65,6 +99,24 @@ role keeps the same artifacts and writes directly; paired mode hands the
 packet to a writer and then a reviewer.
 
 Assign lesson-local families and sources even when lessons share an objective.
+
+For every new lesson, a compact `lesson.teaching` brief records the lesson's learning route without
+drafting the manuscript. `requires` may name an existing concept/objective ID
+or an item in `reader.background`; every other requirement must be introduced
+by an earlier lesson. Each concept/objective in `introduces` has one owning
+lesson. Tools reject unknown IDs, duplicate ownership, and forward
+requirements. Omit fields that do not apply. Legacy plans without briefs remain
+usable and keep their existing mapping warnings.
+
+An introduction in a brief is planned evidence. A block becomes a written
+teaching anchor only when it has `introduces: [the-id]`, substantive teaching
+content, and a stable `authorId`;
+objective/concept tags locate potentially relevant blocks but do not establish
+that an idea was taught. Prerequisite packets include only direct requirements
+and their original anchored block content, with author IDs and locations.
+Earlier lessons assigned in the same writing batch remain planned until written.
+`written` means the content exists, not that a learner has mastered it. Missing
+anchors remain visible as planned evidence with a warning, never as mastery.
 
 For bank courses, define `questions/types.yaml` alongside lesson planning: one
 task/method per type, exact existing concept/objective/family IDs, teaching

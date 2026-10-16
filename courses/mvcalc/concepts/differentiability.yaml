@@ -1,0 +1,4 @@
+title: "Differentiability and the total differential"
+term: "Differentiability"
+body: >-
+  <p>A function <m>z = f(x, y)</m> is differentiable at <m>(x_0, y_0)</m> if its increment satisfies <m>\Delta z = f_x \Delta x + f_y \Delta y + \epsilon_1 \Delta x + \epsilon_2 \Delta y</m>, where <m>\epsilon_1, \epsilon_2 \to 0</m> as <m>(\Delta x, \Delta y) \to (0, 0)</m>. A sufficient condition for differentiability is that both partial derivatives <m>f_x</m> and <m>f_y</m> exist and are continuous near the point. The total differential is <m>dz = f_x\, dx + f_y\, dy</m>, which estimates the small change in output <m>\Delta z</m>. It is widely used in sensitivity analysis and error propagation.</p>

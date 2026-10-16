@@ -1,0 +1,4 @@
+title: "Partial derivatives and their geometric meaning"
+term: "Partial Derivative"
+body: >-
+  <p>The partial derivative <m>f_x(x, y) = \frac{\partial f}{\partial x}</m> is obtained by differentiating <m>f(x, y)</m> with respect to <m>x</m> while treating <m>y</m> as a constant, and <m>f_y(x, y) = \frac{\partial f}{\partial y}</m> treats <m>x</m> as constant. Geometrically, <m>f_x(a, b)</m> is the slope of the tangent line to the surface <m>z = f(x, y)</m> in the plane <m>y = b</m>, parallel to the <m>x</m>-axis. Partial derivatives measure instantaneous rates of change along coordinate directions and serve as the building blocks for gradients and differentials.</p>

@@ -22,8 +22,7 @@ import { MAX_BYTES, MAX_FILES, MAX_ENTRY, kb, tooManyFiles, oversizedEntry, over
  * reader match a row to a card before they could act on it.
  *
  * What arrives is data from outside, so it is bounded before it is trusted. The
- * limits sit far above any real course — the largest here is 1.5MB
- * across 262 files — and far below anything that could wedge the tab.
+ * limits apply to reader content; authoring sources are excluded by intake.
  */
 /* webkitdirectory is unsupported on every mobile browser, iOS Safari included,
    so the folder button is offered only where it works. Zip is the path that
@@ -108,7 +107,8 @@ export default function CourseIO({ onChange }) {
     const failed = [];
     for (const f of picked) {
       try {
-        if (f.size > MAX_BYTES) throw new Error(`${kb(f.size)} exceeds the ${kb(MAX_BYTES)} limit`);
+        if (!/\.zip$/i.test(f.name) && f.size > MAX_BYTES)
+          throw new Error(`${kb(f.size)} exceeds the ${kb(MAX_BYTES)} limit`);
         await install(/\.zip$/i.test(f.name) ? await fromZip(f) : await fromJSON(f));
       } catch (err) {
         failed.push(failure(f.name, err));
@@ -121,6 +121,7 @@ export default function CourseIO({ onChange }) {
     <div class="cio">
       <h3>Import a course</h3>
       <p>Choose a course folder, .zip, or .course.json file.</p>
+      <p>Source files in sources/ stay on your device and are skipped.</p>
 
       <p class="cio-guide"><a href="#/make-course">How to make a course</a></p>
 

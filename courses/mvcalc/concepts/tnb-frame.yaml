@@ -1,0 +1,4 @@
+title: "Unit normal and binormal vectors; osculating circle"
+term: "TNB Frame"
+body: >-
+  <p>The Frenet-Serret or TNB frame consists of three mutually orthogonal unit vectors that form a local coordinate system along a smooth space curve: the unit tangent <m>\mathbf{T} = \mathbf{r}'/\|\mathbf{r}'\|</m>, the principal unit normal <m>\mathbf{N} = \mathbf{T}'/\|\mathbf{T}'\|</m>, and the binormal <m>\mathbf{B} = \mathbf{T} \times \mathbf{N}</m>. The plane spanned by <m>\mathbf{T}</m> and <m>\mathbf{N}</m> is the osculating plane, which contains the osculating circle of radius <m>R = 1/\kappa</m>. This frame decomposes motion into tangential, normal, and binormal components for dynamic analysis.</p>

@@ -1,0 +1,4 @@
+title: "Cylindrical coordinates (r, θ, z)"
+term: "Cylindrical Coordinates"
+body: >-
+  <p>Cylindrical coordinates represent a point in space by <m>(r, \theta, z)</m>, where <m>(r, \theta)</m> are polar coordinates of its projection in the <m>xy</m>-plane and <m>z</m> is the directed height. The conversion equations to rectangular coordinates are <m>x = r \cos \theta</m>, <m>y = r \sin \theta</m>, <m>z = z</m>, with <m>r^2 = x^2 + y^2</m> and <m>\tan \theta = y/x</m>. The volume element in cylindrical coordinates is <m>dV = r\, dr\, d\theta\, dz</m>. This system simplifies problems possessing rotational symmetry about the <m>z</m>-axis.</p>

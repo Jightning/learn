@@ -33,7 +33,7 @@ const STAMPS = "pref:stamps";
    is the compatibility shape used by the first saved-block implementation. */
 const NOTE = /^note:[\w-]{1,64}:s\d+(?:-\d+)?(?:#\d+)?$/;
 const SAVED = /^saved:[\w-]{1,64}$/;
-const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/, NOTE, SAVED];
+const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/, /^added:v1$/, /^learnby:[\w-]+$/, NOTE, SAVED];
 
 export const isPref = k => typeof k === "string" && SYNCED.some(re => re.test(k));
 export const isNotePref = k => typeof k === "string" && (NOTE.test(k) || SAVED.test(k));

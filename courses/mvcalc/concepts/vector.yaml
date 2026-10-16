@@ -1,0 +1,4 @@
+title: "Vectors: component form, magnitude, unit vectors"
+term: "Vector"
+body: >-
+  <p>A vector represents a quantity possessing both magnitude and direction, independent of its initial position. In three dimensions, a vector is written in component form as <m>\mathbf{v} = \langle v_1, v_2, v_3 \rangle = v_1\mathbf{i} + v_2\mathbf{j} + v_3\mathbf{k}</m>, with magnitude <m>\|\mathbf{v}\| = \sqrt{v_1^2 + v_2^2 + v_3^2}</m>. The unit vector pointing in the direction of a nonzero vector is given by <m>\mathbf{u} = \mathbf{v}/\|\mathbf{v}\|</m>. Vectors are used throughout multivariable calculus and physics to model displacements, velocities, and forces.</p>

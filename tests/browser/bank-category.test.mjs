@@ -15,8 +15,8 @@ test("bank category practice follows its teaching link and returns to the curren
     const page = await browser.newPage();
     await page.route("**/courses/demo.json", route => route.fulfill({ json: files }));
     await page.goto(`${server.origin}/#/demo/review/mixed/methods`);
-    await page.getByText("Choose subsections and set length", { exact: true }).click();
-    assert.equal(await page.locator(".pinfo").innerText(), "2 available");
+    await page.getByRole("group", { name: "Practice settings" }).waitFor();
+    assert.equal(await page.locator(".practice-settings .practice-stats strong").innerText(), "2");
     await page.locator("#p-start").click();
     const card = page.locator("#p-run .q");
     const id = await card.getAttribute("data-qid");

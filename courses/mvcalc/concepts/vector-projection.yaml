@@ -1,0 +1,4 @@
+title: "Scalar and vector projection"
+term: "Vector Projection"
+body: >-
+  <p>The scalar projection of a vector <m>\mathbf{u}</m> onto a nonzero vector <m>\mathbf{v}</m> is the signed length <m>\text{comp}_{\mathbf{v}} \mathbf{u} = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{v}\|}</m>. The vector projection of <m>\mathbf{u}</m> onto <m>\mathbf{v}</m> is the vector pointing along <m>\mathbf{v}</m> given by <m>\text{proj}_{\mathbf{v}} \mathbf{u} = \left(\frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{v}\|^2}\right) \mathbf{v}</m>. This decomposes <m>\mathbf{u}</m> into orthogonal components parallel and perpendicular to <m>\mathbf{v}</m>. It is applied in physics to resolve force components and compute directional work.</p>

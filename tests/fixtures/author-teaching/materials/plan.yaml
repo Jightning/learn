@@ -1,0 +1,57 @@
+course: author-teaching
+scope:
+  format: course
+  goal: Demonstrate a compact first draft across procedural, conceptual, and interpretive learning.
+reader:
+  background: [Can multiply and divide; no prior knowledge of these topics is assumed.]
+objectives: [mix-concentration, feedback-response, evidence-causality]
+families: []
+concepts: [concentration-dilution, feedback-correction, association-causality]
+lessons:
+  - id: s1-1
+    objectives: [mix-concentration]
+    families: []
+    sources: []
+    sourceRefs: []
+    teaching:
+      outcome: Calculate final concentration after adding solvent, given initial concentration and volumes.
+      requires: []
+      introduces: [concentration-dilution]
+      reasoning: First find the conserved solute amount; then divide it by final volume. State the no-loss assumption and carry units through both steps.
+      representation: {job: Make the conserved amount and final-volume denominator inspectable, needs: [block:p, block:ex]}
+      practice: Calculate a new final concentration from changed volumes.
+      boundary: Assume uniform mixing and no solute loss.
+  - id: s2-1
+    objectives: [feedback-response]
+    families: []
+    sources: []
+    sourceRefs: []
+    teaching:
+      outcome: Explain how a measured difference from target determines an action and how a later measurement checks its effect.
+      requires: []
+      introduces: [feedback-correction]
+      reasoning: Compare 27 °C with 24 °C, infer a positive 3 °C gap, choose the vent action, and measure again; the sensor reports while the vent acts.
+      representation: {job: Show the target-reading-action-check sequence and its rationale, needs: [block:p, block:ex]}
+      practice: Identify the gap, action, and next observation in a changed target scenario.
+      boundary: The scenario gives an action rule; it does not model thermal dynamics.
+  - id: s3-1
+    objectives: [evidence-causality]
+    families: []
+    sources: []
+    sourceRefs: []
+    teaching:
+      outcome: State what an observed group difference supports and what it cannot establish about cause.
+      requires: []
+      introduces: [association-causality]
+      reasoning: Higher completion is an association; self-selection and unmeasured motivation offer an alternative explanation. Random assignment improves comparability but does not guarantee broad generalization.
+      representation: {job: Separate the observed difference from the causal interpretation, needs: [block:p, block:ex]}
+      practice: Interpret a new observational comparison and name a design feature that would strengthen a causal claim.
+      boundary: Do not infer a real reminder effect from this invented example.
+sources:
+  - id: generated-benchmark
+    path: sources/benchmark.md
+    kind: repository
+    units:
+      - {id: dilution, locator: lines 7-12 of generated synthetic material}
+      - {id: feedback, locator: lines 14-20 of generated synthetic material}
+      - {id: association-cause, locator: lines 22-28 of generated synthetic material}

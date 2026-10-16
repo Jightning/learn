@@ -3,7 +3,7 @@ blocks:
   - t: p
     source: docs/create_course.md §10.3
     h: |-
-      An <code>image</code> can be a photograph, scan, or labelled SVG diagram, embedded at build time so the page stays self-contained. When a learner must see a structure and no built-in figure can show it faithfully, a suitable image is part of the explanation. The embedded image below shows the spine, depth, and apply bars at different lengths; those lengths make their relative emphasis visible. Everything below it is an edge case: a numbered figure with no caption, and the badges a block wears when its claim is not grounded.
+      An <code>image</code> can be a photograph, scan, or labelled SVG diagram, embedded at build time so the page stays self-contained. When a learner must see a structure and no built-in figure can show it faithfully, a suitable image is part of the explanation. The embedded image below shows a labelled right triangle; its measurements let a reader identify each side. Everything below it is an edge case: a numbered figure with no caption, and the badges a block wears when its claim is not grounded.
 
   - t: def
     source: docs/material_truth.md M28
@@ -14,22 +14,22 @@ blocks:
       <p>The audit counts anything that is not a real origin and fails a course over threshold.</p>
 
   - t: image
-    src: assets/gallery.svg
-    alt: Three horizontal bars of decreasing length labelled spine, depth, and apply
-    cap: "image: embedded SVG, with a caption, credit, and fixed width"
+    src: assets/visual-vector.svg
+    alt: Right triangle with legs labelled 3 units and 4 units and hypotenuse labelled 5 units
+    cap: "image: embedded SVG with a caption, credit, and fixed width"
     credit: this repository, courses/demo/assets/
     width: 300
 
   - t: image
-    id: tiers-img
-    src: assets/gallery.svg
-    alt: The same three bars, shown again without a caption to demonstrate the numbered-only display
+    id: triangle-img
+    src: assets/visual-vector.svg
+    alt: The same labelled right triangle shown again without a caption
     credit: no caption on this one
 
   - t: p
     source: src/blocks/index.js
     h: |-
-      The second copy above is figure <f k="tiers-img"/>: with an <code>id</code> but no caption, the renderer still emits "Figure N" so the cross-reference has something to point at.
+      The second copy above is figure <f k="triangle-img"/>: with an <code>id</code> but no caption, the renderer still emits "Figure N" so the cross-reference has something to point at.
 
   - t: key
     source: unverified
@@ -40,7 +40,7 @@ blocks:
       <p>The reader is told, in words, not to trust this line the way they trust the rest of the page.</p>
 
   - t: def
-    tier: depth
+    optional: true
     source: generated
     term: Generated content
     core: |-
@@ -69,8 +69,10 @@ quiz:
     concept: non-redundancy
     q: |-
       A model writes a <code>key</code> block stating a threshold it cannot cite. What should the <code>source</code> field say, and why not leave it blank?
-    a: |-
-      <code>generated</code>. A blank field reads as "not yet audited" rather than "known-unverified", so the audit would not count it and the badge would not appear.
+    response:
+      kind: self
+      model: |-
+        <code>generated</code>. A blank field reads as "not yet audited" rather than "known-unverified", so the audit would not count it and the badge would not appear.
     why: |-
       <p>The three legal values each mean something. Blank is a fourth state, unreviewed, which is why the audit distinguishes it and why a drafted-but-ungrounded claim must be marked rather than left empty.</p>
     verified: 2026-09-02
@@ -79,8 +81,10 @@ quiz:
     concept: tier
     q: |-
       A figure has an <code>id</code> but the author wrote no <code>cap</code>. What does a <code>&lt;f k="…"/&gt;</code> reference to it render as?
-    a: |-
-      "Figure N", the number alone. The number is the citable half and is emitted even with no caption text.
+    response:
+      kind: self
+      model: |-
+        "Figure N", the number alone. The number is the citable half and is emitted even with no caption text.
     why: |-
       <p>The reference needs a stable label to point at. Requiring a caption just to enable a cross-link would be a redundancy tax, so the number stands on its own.</p>
     verified: 2026-09-02
@@ -93,16 +97,18 @@ quiz:
       <p>Every sourced block in this course cites a path inside a repository
       you cannot see. Does that count? Give the rule you would use to decide,
       and apply it to one citation you would reject.</p>
-    a: |-
-      <p>A good answer separates checkable-in-principle from checkable-by-this
-      reader, and picks one. Under the strict reading, a private path is worth
-      no more than <code>generated</code>, and this course is overstating its
-      own grounding. Under the loose reading, the field records who is
-      accountable rather than what the reader can verify, and a private path is
-      fine as long as somebody can open it.</p>
-      <p>A rejected citation is the point of the question. "docs/architecture.md"
-      with no section number does not locate anything even for someone holding
-      the repository.</p>
+    response:
+      kind: self
+      model: |-
+        <p>A good answer separates checkable-in-principle from checkable-by-this
+        reader, and picks one. Under the strict reading, a private path is worth
+        no more than <code>generated</code>, and this course is overstating its
+        own grounding. Under the loose reading, the field records who is
+        accountable rather than what the reader can verify, and a private path is
+        fine as long as somebody can open it.</p>
+        <p>A rejected citation is the point of the question. "docs/architecture.md"
+        with no section number does not locate anything even for someone holding
+        the repository.</p>
     why: |-
       <p>The audit counts sourced blocks and reports a fraction, and a fraction
       is only as good as the definition behind it. A course can reach zero
@@ -141,24 +147,24 @@ quiz:
     why: '<p>The diagram, its symbol key, and the instructions are attached together. The question remains answerable when it appears outside this subsection.</p>'
     verified: 2026-10-04
 
-  - type: Compare an attached image
-    concept: tier
+  - type: Read an attached image
+    concept: completeness
     stimulus:
       - t: p
-        h: 'This question bundles an image asset rather than generating a figure. Compare the lengths of the three labelled bars.'
+        h: 'This question bundles an image asset rather than generating a figure. Read the side labels on the right triangle.'
       - t: image
-        src: assets/gallery.svg
-        alt: Three horizontal bars labelled spine, depth, and apply; spine is longest, depth is intermediate, and apply is shortest
-        cap: Relative emphasis of the three reading paths
+        src: assets/visual-vector.svg
+        alt: Right triangle with legs labelled 3 units and 4 units and hypotenuse labelled 5 units
+        cap: A right triangle with side measurements
       - t: p
-        h: 'The bar length represents emphasis in this illustration, not a required percentage of course content. Choose the order from greatest to least emphasis.'
-    q: 'Which order matches the image?'
+        h: 'Use the labels to identify the longest side, opposite the right angle.'
+    q: 'Which measurement labels the hypotenuse?'
     response:
       kind: single
-      correct: 3
+      correct: 1
       choices:
-        - {text: 'Apply → depth → spine', why: 'That reverses the lengths: apply is shortest, rather than longest.'}
-        - {text: 'Spine → apply → depth', why: 'Depth is longer than apply in this image.'}
-        - {text: 'Spine → depth → apply', why: 'Spine is longest, depth is intermediate, and apply is shortest.'}
+        - {text: '5 units', why: 'The hypotenuse is labelled 5 units in the image.'}
+        - {text: '4 units', why: 'This measurement labels the vertical leg.'}
+        - {text: '3 units', why: 'This measurement labels the horizontal leg.'}
     why: '<p>The image is bundled with the course and attached directly to the question. The text before and after it supplies the interpretation needed to answer.</p>'
-    verified: 2026-10-04
+    verified: '2026-10-15'

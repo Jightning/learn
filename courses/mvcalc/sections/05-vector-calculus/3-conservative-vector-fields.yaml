@@ -1,0 +1,141 @@
+title: Conservative Vector Fields
+blocks:
+  - t: p
+    h: |
+      <p>In classical physics, gravitational and electrostatic forces have a remarkable property: the work required to move a particle between two points depends only on its initial and final locations, regardless of whether the path taken is a direct straight line or an intricate winding curve. In vector calculus, fields with this property are called <strong>conservative vector fields</strong>. Because the line integral depends only on the endpoints, computing work reduces to evaluating a scalar potential function, mirroring the Fundamental Theorem of Calculus from single-variable calculus.</p>
+    authorId: block-9cecd38a-7d4
+  - t: def
+    term: Conservative Vector Field and Path Independence
+    source: OpenStax Calculus Volume 3, Section 6.3
+    sourceReview: sourced
+    core: A vector field is conservative if it is the gradient of a scalar potential, which is equivalent to path independence and vanishing work around closed curves on open connected domains.
+    introduces:
+      - obj-s5-3
+      - conservative-field
+    objectives:
+      - obj-s5-3
+    family: family-test-conservative
+    notes: open
+    h: |
+      <p>A vector field <m>\mathbf{F}</m> defined on an open domain <m>D</m> is <strong>conservative</strong> if there exists a differentiable scalar function <m>f</m> such that <m>\mathbf{F} = \nabla f</m>. The function <m>f</m> is called a <strong>potential function</strong> for <m>\mathbf{F}</m>. On an open connected region, the following statements are equivalent:</p><ul><li><m>\mathbf{F}</m> is conservative (<m>\mathbf{F} = \nabla f</m> for some potential <m>f</m>).</li><li><m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> is <strong>path independent</strong>: for any two points <m>A</m> and <m>B</m>, the line integral has the same value for every piecewise smooth curve in <m>D</m> from <m>A</m> to <m>B</m>.</li><li><m>\oint_C \mathbf{F} \cdot d\mathbf{r} = 0</m> for every piecewise smooth closed curve <m>C</m> in <m>D</m>.</li></ul>
+    authorId: block-6a5530dd-2d1
+  - t: def
+    term: Fundamental Theorem for Line Integrals
+    source: OpenStax Calculus Volume 3, Section 6.3
+    sourceReview: sourced
+    core: The line integral of a conservative vector field equals the difference of the potential function evaluated at the terminal and initial points.
+    introduces:
+      - fundamental-theorem-line-integrals
+    objectives:
+      - obj-s5-3
+    family: family-ftli-evaluate
+    h: |
+      <p>Let <m>C</m> be a piecewise smooth curve parametrized by <m>\mathbf{r}(t)</m> for <m>a \le t \le b</m>, starting at point <m>A = \mathbf{r}(a)</m> and ending at <m>B = \mathbf{r}(b)</m>. If <m>f</m> is a continuously differentiable function whose gradient <m>\nabla f</m> is continuous on an open region containing <m>C</m>, then the <strong>Fundamental Theorem for Line Integrals</strong> states that <m>\int_C \nabla f \cdot d\mathbf{r} = f(\mathbf{r}(b)) - f(\mathbf{r}(a)) = f(B) - f(A)</m>. By the chain rule, <m>\nabla f(\mathbf{r}(t)) \cdot \mathbf{r}'(t) = \frac{d}{dt}f(\mathbf{r}(t))</m>, so the result follows immediately from the single-variable Fundamental Theorem of Calculus.</p>
+    authorId: block-72b19397-256
+  - t: math
+    label: Fundamental Theorem for Line Integrals
+    tex: \int_C \nabla f \cdot d\mathbf{r} = f(\mathbf{r}(b)) - f(\mathbf{r}(a)) = f(B) - f(A)
+    note: The line integral depends solely on the potential values at the boundaries of the curve C.
+    objectives:
+      - obj-s5-3
+    family: family-ftli-evaluate
+    authorId: block-883c2a68-968
+  - t: key
+    label: Component Test for Conservative Fields
+    source: OpenStax Calculus Volume 3, Section 6.3
+    sourceReview: sourced
+    core: 'On an open simply connected domain, a continuously differentiable 2D field is conservative if and only if its mixed cross-partials match; in 3D, all pairwise cross-partial equalities must hold.'
+    objectives:
+      - obj-s5-3
+    family: family-test-conservative
+    h: |
+      <p>To determine whether a vector field is conservative without having to find a potential function first:</p>
+    items:
+      - 'Planar test: Let <m>\mathbf{F}(x, y) = \langle P, Q \rangle</m> have continuous first partial derivatives on an open simply connected region <m>D</m>. Then <m>\mathbf{F}</m> is conservative on <m>D</m> if and only if <m>\frac{\partial P}{\partial y} = \frac{\partial Q}{\partial x}</m>.'
+      - 'Spatial test: Let <m>\mathbf{F}(x, y, z) = \langle P, Q, R \rangle</m> have continuous first partials on an open simply connected domain in <m>\mathbb{R}^3</m>. Then <m>\mathbf{F}</m> is conservative if and only if <m>\frac{\partial P}{\partial y} = \frac{\partial Q}{\partial x}</m>, <m>\frac{\partial P}{\partial z} = \frac{\partial R}{\partial x}</m>, and <m>\frac{\partial Q}{\partial z} = \frac{\partial R}{\partial y}</m>.'
+      - 'Necessity from Clairaut: If <m>\mathbf{F} = \nabla f</m>, then <m>P = f_x</m> and <m>Q = f_y</m>, so <m>P_y = f_{xy} = f_{yx} = Q_x</m> by Clairaut’s theorem on mixed second partial derivatives.'
+      - 'Simply connected requirement: A region is simply connected if it is connected and every closed curve in the region can be shrunk to a point without leaving the region (intuitively, having no holes).'
+    ordered: true
+    authorId: block-537cbcca-c60
+  - t: ex
+    title: Finding a Potential Function by Successive Integration
+    objectives:
+      - obj-s5-3
+    family: family-find-potential
+    h: |
+      <p><strong>Problem:</strong> Determine whether <m>\mathbf{F}(x, y) = \langle 2x y^3 + \cos(x), 3x^2 y^2 - 4y \rangle</m> is conservative on <m>\mathbb{R}^2</m>, and if so, find its potential function <m>f(x, y)</m>.</p><p><strong>Solution:</strong></p><p>1. Check the cross-partials condition:</p><p><m>\frac{\partial P}{\partial y} = \frac{\partial}{\partial y}(2x y^3 + \cos x) = 6x y^2</m></p><p><m>\frac{\partial Q}{\partial x} = \frac{\partial}{\partial x}(3x^2 y^2 - 4y) = 6x y^2</m></p><p>Since <m>P_y = Q_x</m> on the simply connected domain <m>\mathbb{R}^2</m>, <m>\mathbf{F}</m> is conservative.</p><p>2. Integrate <m>P</m> with respect to <m>x</m>:</p><p><m>f(x, y) = \int (2x y^3 + \cos x)\,dx = x^2 y^3 + \sin(x) + g(y)</m></p><p>where <m>g(y)</m> is an arbitrary function of <m>y</m>.</p><p>3. Differentiate with respect to <m>y</m> and equate to <m>Q</m>:</p><p><m>\frac{\partial f}{\partial y} = 3x^2 y^2 + g'(y) = 3x^2 y^2 - 4y</m></p><p>This implies <m>g'(y) = -4y</m>, so <m>g(y) = -2y^2 + C</m>.</p><p>4. The potential function is <m>f(x, y) = x^2 y^3 + \sin(x) - 2y^2 + C</m>.</p>
+    authorId: block-90861a41-b39
+  - t: ex
+    title: Evaluating a Line Integral with the Fundamental Theorem
+    objectives:
+      - obj-s5-3
+    family: family-ftli-evaluate
+    h: |
+      <p><strong>Problem:</strong> Evaluate <m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> for <m>\mathbf{F} = \langle 2x y^3 + \cos(x), 3x^2 y^2 - 4y \rangle</m> along any smooth path <m>C</m> from <m>A(0, 0)</m> to <m>B(\pi/2, 1)</m>.</p><p><strong>Solution:</strong></p><p>Using the potential function <m>f(x, y) = x^2 y^3 + \sin(x) - 2y^2</m> found in the previous example, we apply the Fundamental Theorem for Line Integrals:</p><p><m>\int_C \mathbf{F} \cdot d\mathbf{r} = f\left(\frac{\pi}{2}, 1\right) - f(0, 0)</m></p><p>Evaluate at the terminal point <m>B(\pi/2, 1)</m>:</p><p><m>f\left(\frac{\pi}{2}, 1\right) = \left(\frac{\pi}{2}\right)^2 (1)^3 + \sin\left(\frac{\pi}{2}\right) - 2(1)^2 = \frac{\pi^2}{4} + 1 - 2 = \frac{\pi^2}{4} - 1</m></p><p>Evaluate at the initial point <m>A(0, 0)</m>:</p><p><m>f(0, 0) = 0 + 0 - 0 = 0</m></p><p>Therefore, the work done along any curve connecting <m>A</m> and <m>B</m> is <m>\frac{\pi^2}{4} - 1</m>.</p>
+    authorId: block-a24819f4-f18
+  - t: trap
+    label: Failure of Conservativeness on Non-Simply Connected Domains
+    source: OpenStax Calculus Volume 3, Section 6.3
+    sourceReview: sourced
+    core: Equal cross-partials do not guarantee a global potential if the domain has holes, as demonstrated by the vortex field around the origin.
+    objectives:
+      - obj-s5-3
+    family: family-test-conservative
+    h: |
+      <p>The cross-partials condition <m>P_y = Q_x</m> guarantees conservativeness only when the underlying domain is <strong>simply connected</strong>. Consider the vortex field <m>\mathbf{F}(x, y) = \left\langle \frac{-y}{x^2+y^2}, \frac{x}{x^2+y^2} \right\rangle</m> on <m>D = \mathbb{R}^2 \setminus \{(0, 0)\}</m>. A direct computation confirms <m>P_y = Q_x = \frac{y^2-x^2}{(x^2+y^2)^2}</m> everywhere in <m>D</m>. However, integrating <m>\mathbf{F}</m> around the unit circle <m>C</m> gives <m>\oint_C \mathbf{F} \cdot d\mathbf{r} = 2\pi \ne 0</m>. Because <m>D</m> has a hole at the origin, <m>\mathbf{F}</m> fails to be conservative on <m>D</m>.</p>
+    authorId: block-232639d8-561
+quiz:
+  - type: Testing conservativeness of a planar field
+    concept: conservative-field
+    objectives:
+      - obj-s5-3
+    family: family-test-conservative
+    q: Is the vector field <m>\mathbf{F}(x, y) = \langle 3x^2 y + 2y^2, x^3 + 4xy + 5 \rangle</m> conservative on <m>\mathbb{R}^2</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Yes, because <m>\frac{\partial P}{\partial y} = 3x^2 + 4y = \frac{\partial Q}{\partial x}</m> and the domain <m>\mathbb{R}^2</m> is simply connected.
+          why: Compute <m>P_y = \frac{\partial}{\partial y}(3x^2 y + 2y^2) = 3x^2 + 4y</m> and <m>Q_x = \frac{\partial}{\partial x}(x^3 + 4xy + 5) = 3x^2 + 4y</m>. Since <m>P_y = Q_x</m> on the simply connected domain <m>\mathbb{R}^2</m>, the field is conservative.
+        - text: No, because <m>P_y = 3x^2 + 2y</m> while <m>Q_x = 3x^2 + 4y</m>.
+          why: Incorrectly took the derivative of <m>2y^2</m> as <m>2y</m> instead of <m>4y</m>.
+        - text: No, because the constant term 5 in <m>Q</m> prevents conservativeness.
+          why: A constant term differentiates to 0 and has no adverse effect on conservativeness.
+        - text: Yes, but only along straight line paths.
+          why: A conservative field is path-independent along every piecewise smooth curve, not just lines.
+    why: The cross-partials <m>P_y</m> and <m>Q_x</m> both equal <m>3x^2 + 4y</m> on <m>\mathbb{R}^2</m>, so <m>\mathbf{F}</m> is conservative.
+    authorId: quiz-aec02599-90f
+  - type: Finding potential function
+    concept: conservative-field
+    objectives:
+      - obj-s5-3
+    family: family-find-potential
+    q: Find a potential function <m>f(x, y)</m> for <m>\mathbf{F}(x, y) = \langle 2x y + 4x^3, x^2 - 3y^2 \rangle</m> satisfying <m>f(0, 0) = 0</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>f(x, y) = x^2 y + x^4 - y^3</m>
+          why: Integrating <m>P = 2xy + 4x^3</m> with respect to <m>x</m> gives <m>f(x, y) = x^2 y + x^4 + g(y)</m>. Differentiating with respect to <m>y</m> gives <m>f_y = x^2 + g'(y) = x^2 - 3y^2</m>, so <m>g'(y) = -3y^2 \implies g(y) = -y^3 + C</m>. With <m>f(0, 0) = 0</m>, <m>C = 0</m>, yielding <m>f(x, y) = x^2 y + x^4 - y^3</m>.
+        - text: <m>f(x, y) = x^2 y + 4x^4 - 3y^3</m>
+          why: Forgot to divide by the new powers when integrating <m>4x^3</m> and <m>3y^2</m>.
+        - text: <m>f(x, y) = 2x^2 y + x^4 - y^3</m>
+          why: Failed to divide by 2 when integrating <m>2x</m> with respect to <m>x</m>.
+        - text: <m>f(x, y) = x^2 y^2 + x^4 - y^3</m>
+          why: Integrated <m>y</m> with respect to <m>x</m> as if it were an <m>x</m> variable.
+    why: Integrating <m>P</m> with respect to <m>x</m> and matching the <m>y</m>-derivative with <m>Q</m> yields <m>f(x, y) = x^2 y + x^4 - y^3</m>.
+    authorId: quiz-0c286e46-2b6
+  - type: Evaluating line integral via FTLI
+    concept: fundamental-theorem-line-integrals
+    objectives:
+      - obj-s5-3
+    family: family-ftli-evaluate
+    q: Evaluate <m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> where <m>\mathbf{F} = \nabla(x^3 y - 2y^2 z)</m> and <m>C</m> is any smooth curve starting at <m>A(1, 1, 1)</m> and ending at <m>B(2, 3, -1)</m>.
+    verified: true
+    response:
+      kind: number
+      value: 43
+    why: 'By the Fundamental Theorem for Line Integrals, <m>\int_C \nabla f \cdot d\mathbf{r} = f(B) - f(A)</m>. Evaluating the potential <m>f(x, y, z) = x^3 y - 2y^2 z</m> at the endpoints: <m>f(2, 3, -1) = (2^3)(3) - 2(3^2)(-1) = 24 + 18 = 42</m>. At <m>A(1, 1, 1)</m>: <m>f(1, 1, 1) = (1^3)(1) - 2(1^2)(1) = 1 - 2 = -1</m>. Therefore, <m>\int_C \mathbf{F} \cdot d\mathbf{r} = 42 - (-1) = 43</m>.'
+    authorId: quiz-f5d26579-290

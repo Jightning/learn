@@ -1,0 +1,4 @@
+title: "Triple integrals in cylindrical coordinates"
+term: "Cylindrical Triple Integral"
+body: >-
+  <p>A triple integral over a solid <m>E</m> in cylindrical coordinates evaluates as <m>\iiint_E f(x, y, z)\, dV = \int_\alpha^\beta \int_{h_1(\theta)}^{h_2(\theta)} \int_{u_1(r, \theta)}^{u_2(r, \theta)} f(r \cos \theta, r \sin \theta, z)\, r\, dz\, dr\, d\theta</m>. The volume differential is <m>dV = r\, dz\, dr\, d\theta</m>. This coordinate system is most effective when the solid <m>E</m> is bounded by cylinders, paraboloids, or cones symmetric about the <m>z</m>-axis, or when the integrand simplifies via <m>x^2 + y^2 = r^2</m>. It simplifies three-dimensional problems with circular cross-sections.</p>

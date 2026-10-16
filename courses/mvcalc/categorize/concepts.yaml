@@ -1,0 +1,183 @@
+- id: vector
+  title: 'Vectors: component form, magnitude, unit vectors'
+  lesson: s1-1
+- id: space-coordinates
+  title: Three-dimensional coordinates, distance and spheres
+  lesson: s1-1
+- id: dot-product
+  title: Dot product and the angle between vectors
+  lesson: s1-2
+- id: vector-projection
+  title: Scalar and vector projection
+  lesson: s1-2
+- id: cross-product
+  title: 'Cross product: determinant formula, orthogonality and right-hand rule'
+  lesson: s1-3
+- id: triple-scalar-product
+  title: Triple scalar product and volume
+  lesson: s1-3
+- id: line-in-space
+  title: Vector, parametric and symmetric equations of a line
+  lesson: s1-4
+- id: plane-equation
+  title: Normal vector and scalar equation of a plane
+  lesson: s1-4
+- id: cylinder-surface
+  title: Cylinders and traces
+  lesson: s1-5
+- id: quadric-surface
+  title: The six quadric surfaces
+  lesson: s1-5
+- id: cylindrical-coordinates
+  title: Cylindrical coordinates (r, θ, z)
+  lesson: s1-6
+- id: spherical-coordinates
+  title: Spherical coordinates (ρ, θ, φ)
+  lesson: s1-6
+- id: vector-valued-function
+  title: Vector-valued functions, their limits and continuity
+  lesson: s2-1
+- id: vvf-derivative
+  title: Derivative and tangent vector of a vector-valued function
+  lesson: s2-2
+- id: vvf-integral
+  title: Integrals of vector-valued functions
+  lesson: s2-2
+- id: arc-length
+  title: Arc length and arc-length parameterization
+  lesson: s2-3
+- id: curvature
+  title: Curvature
+  lesson: s2-3
+- id: tnb-frame
+  title: Unit normal and binormal vectors; osculating circle
+  lesson: s2-3
+- id: velocity-acceleration
+  title: Velocity, acceleration and speed
+  lesson: s2-4
+- id: acceleration-components
+  title: Tangential and normal components of acceleration
+  lesson: s2-4
+- id: multivariable-function
+  title: 'Functions of two and three variables: domain and range'
+  lesson: s3-1
+- id: level-curve
+  title: Level curves, contour maps and level surfaces
+  lesson: s3-1
+- id: multivariable-limit
+  title: Limits and continuity of functions of several variables
+  lesson: s3-2
+- id: partial-derivative
+  title: Partial derivatives and their geometric meaning
+  lesson: s3-3
+- id: higher-order-partials
+  title: Higher-order partial derivatives and Clairaut's theorem
+  lesson: s3-3
+- id: tangent-plane
+  title: Tangent plane and linear approximation
+  lesson: s3-4
+- id: differentiability
+  title: Differentiability and the total differential
+  lesson: s3-4
+- id: multivariable-chain-rule
+  title: Chain rules for functions of several variables
+  lesson: s3-5
+- id: implicit-differentiation
+  title: Implicit differentiation with partial derivatives
+  lesson: s3-5
+- id: directional-derivative
+  title: Directional derivative
+  lesson: s3-6
+- id: gradient
+  title: Gradient vector and its properties
+  lesson: s3-6
+- id: critical-point
+  title: Critical points, local extrema and saddle points
+  lesson: s3-7
+- id: second-derivative-test
+  title: Second derivative test (discriminant D)
+  lesson: s3-7
+- id: absolute-extrema
+  title: Absolute extrema on closed bounded regions
+  lesson: s3-7
+- id: lagrange-multiplier
+  title: Method of Lagrange multipliers
+  lesson: s3-8
+- id: double-integral
+  title: Double integrals as limits of Riemann sums; volume and average value
+  lesson: s4-1
+- id: fubini-theorem
+  title: Iterated integrals and Fubini's theorem
+  lesson: s4-1
+- id: general-region
+  title: Type I and Type II regions
+  lesson: s4-2
+- id: order-reversal
+  title: Changing the order of integration
+  lesson: s4-2
+- id: polar-double-integral
+  title: Double integrals in polar coordinates (dA = r dr dθ)
+  lesson: s4-3
+- id: triple-integral
+  title: Triple integrals over boxes and general regions
+  lesson: s4-4
+- id: cylindrical-triple-integral
+  title: Triple integrals in cylindrical coordinates
+  lesson: s4-5
+- id: spherical-triple-integral
+  title: Triple integrals in spherical coordinates
+  lesson: s4-5
+- id: center-of-mass
+  title: Mass, moments and center of mass (lamina and solid)
+  lesson: s4-6
+- id: moment-of-inertia
+  title: Moments of inertia and radius of gyration
+  lesson: s4-6
+- id: jacobian
+  title: Transformations and the Jacobian
+  lesson: s4-7
+- id: change-of-variables
+  title: Change of variables formula for double and triple integrals
+  lesson: s4-7
+- id: vector-field
+  title: Vector fields in the plane and in space
+  lesson: s5-1
+- id: gradient-field
+  title: Gradient fields and potential functions
+  lesson: s5-1
+- id: scalar-line-integral
+  title: Scalar line integrals
+  lesson: s5-2
+- id: vector-line-integral
+  title: 'Vector line integrals: work, flux and circulation'
+  lesson: s5-2
+- id: conservative-field
+  title: Conservative fields, path independence and curve/region types
+  lesson: s5-3
+- id: fundamental-theorem-line-integrals
+  title: Fundamental theorem for line integrals
+  lesson: s5-3
+- id: greens-theorem
+  title: Green's theorem (circulation and flux forms)
+  lesson: s5-4
+- id: divergence
+  title: Divergence
+  lesson: s5-5
+- id: curl
+  title: Curl
+  lesson: s5-5
+- id: parametric-surface
+  title: Parametric surfaces and surface area
+  lesson: s5-6
+- id: scalar-surface-integral
+  title: Surface integrals of scalar functions
+  lesson: s5-6
+- id: flux-integral
+  title: Orientation and flux (surface integrals of vector fields)
+  lesson: s5-6
+- id: stokes-theorem
+  title: Stokes' theorem
+  lesson: s5-7
+- id: divergence-theorem
+  title: Divergence theorem
+  lesson: s5-8

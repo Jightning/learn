@@ -19,9 +19,9 @@ through Review, where a tick means durable rather than answered once.
 - [ ] Spot the error, [1.2](../index.html#s1-2)
 - [ ] Diagnose an empty queue, [1.3](../index.html#s1-3)
 - [ ] Choose the right surface, [1.3](../index.html#s1-3)
-- [ ] Predict the lane behaviour, [1.4](../index.html#s1-4)
-- [ ] Apply the spine promise, [1.4](../index.html#s1-4)
-- [ ] Separate the two axes, [1.4](../index.html#s1-4)
+- [ ] Compare reading modes, [1.4](../index.html#s1-4)
+- [ ] Apply the optional-content rule, [1.4](../index.html#s1-4)
+- [ ] Choose a reading mode, [1.4](../index.html#s1-4)
 - [ ] Choose the navigation, [1.5](../index.html#s1-5)
 - [ ] Tell two indexes apart, [1.5](../index.html#s1-5)
 - [ ] Protect your data, [1.5](../index.html#s1-5)
@@ -42,9 +42,9 @@ through Review, where a tick means durable rather than answered once.
 - [ ] Route a quiz result, [3.1](../index.html#s3-1)
 - [ ] Choose the loop for more volume, [3.1](../index.html#s3-1)
 - [ ] Spot the error, [3.1](../index.html#s3-1)
-- [ ] Assign a tier, [3.2](../index.html#s3-2)
-- [ ] Predict the lane behaviour, [3.2](../index.html#s3-2)
-- [ ] Apply the depth constraint, [3.2](../index.html#s3-2)
+- [ ] Separate result and explanation, [3.2](../index.html#s3-2)
+- [ ] Predict what optional means, [3.2](../index.html#s3-2)
+- [ ] Apply the completeness rule, [3.2](../index.html#s3-2)
 - [ ] Synthesis, [3.2](../index.html#s3-2)
 
 ## 4 The figure catalogue
@@ -66,11 +66,14 @@ through Review, where a tick means durable rather than answered once.
 - [ ] Read the numbered-figure rule, [5.2](../index.html#s5-2)
 - [ ] Synthesis, [5.2](../index.html#s5-2)
 - [ ] Read an attached circuit, [5.2](../index.html#s5-2)
-- [ ] Compare an attached image, [5.2](../index.html#s5-2)
+- [ ] Read an attached image, [5.2](../index.html#s5-2)
+
+## 6 Block visual options
+
 
 ## Concepts held over time
 
 - [ ] Completeness: durable, not merely answered ([practice](../index.html#/demo/c/completeness))
 - [ ] Answer outcome: durable, not merely answered ([practice](../index.html#/demo/c/confidence))
 - [ ] Non-redundancy: durable, not merely answered ([practice](../index.html#/demo/c/non-redundancy))
-- [ ] Tier: durable, not merely answered ([practice](../index.html#/demo/c/tier))
+- [ ] Optional expansion: durable, not merely answered ([practice](../index.html#/demo/c/tier))

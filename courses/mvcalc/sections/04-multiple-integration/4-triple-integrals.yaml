@@ -1,0 +1,136 @@
+title: Triple Integrals
+blocks:
+  - t: p
+    h: <p>Extending integration from two to three dimensions allows us to calculate properties of solid bodies in three-dimensional space <m>\mathbb{R}^3</m>. Just as single integrals compute area and double integrals compute volume, triple integrals integrate functions of three variables <m>f(x, y, z)</m> over three-dimensional regions. When <m>f(x, y, z) = 1</m>, the triple integral yields the geometric volume of the solid; when <m>f</m> represents a variable mass density or charge density, the integral gives the total mass or total charge enclosed.</p>
+    authorId: block-aab06439-d4c
+  - t: def
+    term: Triple Integrals over Three-Dimensional Solids
+    source: OpenStax Calculus Volume 3, Section 5.4
+    sourceReview: sourced
+    core: The triple integral of a continuous function <m>f(x, y, z)</m> over a solid <m>E \subset \mathbb{R}^3</m> is defined as the limit of Riemann sums over small rectangular sub-boxes.
+    introduces:
+      - obj-s4-4
+      - triple-integral
+    objectives:
+      - obj-s4-4
+    family: family-triple-setup
+    h: '<p>Let <m>E</m> be a bounded solid enclosed in a rectangular box <m>B = [a, b] \times [c, d] \times [p, q]</m>. Subdividing <m>B</m> into <m>l \times m \times n</m> sub-boxes of dimensions <m>\Delta x, \Delta y, \Delta z</m> produces volume elements <m>\Delta V = \Delta x\,\Delta y\,\Delta z</m>. Choosing a sample point in each sub-box, the triple Riemann sum is <m>\sum_{i=1}^l \sum_{j=1}^m \sum_{k=1}^n f(x_{ijk}^*, y_{ijk}^*, z_{ijk}^*)\,\Delta V</m>. The limit as all sub-box dimensions approach zero defines the triple integral <m>\iiint_E f(x, y, z)\,dV</m>. For a solid bounded between upper surface <m>z = u_2(x, y)</m> and lower surface <m>z = u_1(x, y)</m> over planar shadow <m>D</m> in the <m>xy</m>-plane, the integral reduces to an iterated integral: <m>\iiint_E f(x, y, z)\,dV = \iint_D \left[\int_{u_1(x, y)}^{u_2(x, y)} f(x, y, z)\,dz\right] dA</m>.</p>'
+    authorId: block-3b94d232-513
+  - t: math
+    label: Fubini's Theorem for a General Solid
+    tex: \iiint_E f(x, y, z)\,dV = \iint_D \left[ \int_{u_1(x, y)}^{u_2(x, y)} f(x, y, z)\,dz \right] dA = \int_a^b \int_{g_1(x)}^{g_2(x)} \int_{u_1(x, y)}^{u_2(x, y)} f(x, y, z)\,dz\,dy\,dx
+    note: The inner limits specify bounding surfaces; the outer double integral integrates across the two-dimensional planar projection of the solid.
+    objectives:
+      - obj-s4-4
+    family: family-triple-setup
+    authorId: block-a0bcc968-919
+  - t: ex
+    title: Evaluating a Triple Integral over a First-Octant Tetrahedron
+    objectives:
+      - obj-s4-4
+    family: family-triple-setup
+    h: <p>Evaluate <m>\iiint_E 2z\,dV</m>, where <m>E</m> is the tetrahedron bounded by the coordinate planes <m>x = 0</m>, <m>y = 0</m>, <m>z = 0</m>, and the plane <m>x + 2y + z = 2</m>.</p><p>Solving for <m>z</m> yields upper surface <m>z = 2 - x - 2y</m> and lower surface <m>z = 0</m>. The planar projection <m>D</m> on the <m>xy</m>-plane is obtained by setting <m>z = 0</m>, giving <m>x + 2y = 2 \implies y = 1 - x/2</m>. In the first octant, <m>0 \le x \le 2</m> and <m>0 \le y \le 1 - x/2</m>.</p><p>Set up the iterated integral:</p><p><m>\iiint_E 2z\,dV = \int_0^2 \int_0^{1 - x/2} \int_0^{2 - x - 2y} 2z\,dz\,dy\,dx = \int_0^2 \int_0^{1 - x/2} (2 - x - 2y)^2\,dy\,dx</m></p><p>Integrating with respect to <m>y</m> via substitution <m>w = 2 - x - 2y</m> with <m>dy = -dw/2</m> gives <m>\left[-\frac{1}{6}(2 - x - 2y)^3\right]_0^{1 - x/2} = \frac{1}{6}(2 - x)^3</m>. Integrating with respect to <m>x</m>:</p><p><m>\int_0^2 \frac{1}{6}(2 - x)^3\,dx = \left[-\frac{1}{24}(2 - x)^4\right]_0^2 = 0 - \left(-\frac{16}{24}\right) = \frac{2}{3}</m>.</p>
+    authorId: block-8a17a790-11e
+  - t: key
+    label: Six Orders of Triple Integration and Coordinate Projections
+    source: OpenStax Calculus Volume 3, Section 5.4
+    sourceReview: sourced
+    core: There are six possible orders of integration for a triple integral; choosing the most convenient order depends on which coordinate plane yields the simplest projection.
+    objectives:
+      - obj-s4-4
+    family: family-triple-order-change
+    h: <p>A triple integral can be evaluated in six distinct permutations of differentials depending on the projection plane chosen:</p>
+    items:
+      - 'Projection onto the <m>xy</m>-plane: <m>dz\,dy\,dx</m> or <m>dz\,dx\,dy</m>, where <m>z</m> is bounded by surfaces <m>u_1(x, y) \le z \le u_2(x, y)</m>.'
+      - 'Projection onto the <m>xz</m>-plane: <m>dy\,dz\,dx</m> or <m>dy\,dx\,dz</m>, where <m>y</m> is bounded by surfaces <m>v_1(x, z) \le y \le v_2(x, z)</m>.'
+      - 'Projection onto the <m>yz</m>-plane: <m>dx\,dy\,dz</m> or <m>dx\,dz\,dy</m>, where <m>x</m> is bounded by surfaces <m>w_1(y, z) \le x \le w_2(y, z)</m>.'
+      - 'Geometric strategy: Sketch the three-dimensional solid, identify the entry and exit boundary surfaces along the primary axis, and project the boundary onto the plane of the remaining two coordinates.'
+    ordered: true
+    authorId: block-34d6d8cf-e7f
+  - t: ex
+    title: Converting dz dy dx to dy dz dx
+    objectives:
+      - obj-s4-4
+    family: family-triple-order-change
+    h: '<p>Rewrite <m>\int_0^1 \int_0^{1 - x^2} \int_0^{1 - x} f(x, y, z)\,dz\,dy\,dx</m> in the order <m>dy\,dz\,dx</m>.</p><p>Analyze the original limits: <m>0 \le x \le 1</m>, <m>0 \le y \le 1 - x^2</m>, and <m>0 \le z \le 1 - x</m>. Notice that the limits for both <m>y</m> and <m>z</m> depend exclusively on the outermost variable <m>x</m>, but neither depends on the other. For any slice at fixed <m>x</m>, the cross-section in the <m>yz</m>-plane is the rectangle <m>[0, 1 - x^2] \times [0, 1 - x]</m>.</p><p>Consequently, the inner two integrations commute directly without modifying the boundary curves: <m>\int_0^1 \int_0^{1 - x} \int_0^{1 - x^2} f(x, y, z)\,dy\,dz\,dx</m>.</p>'
+    authorId: block-44160535-117
+  - t: key
+    label: Geometric Volume and Average Value via Triple Integration
+    source: OpenStax Calculus Volume 3, Section 5.4
+    sourceReview: sourced
+    core: The volume of a solid is <m>V = \iiint_E 1\,dV</m>, and the average value of a function over <m>E</m> is <m>f_{\text{avg}} = \frac{1}{V(E)}\iiint_E f(x, y, z)\,dV</m>.
+    objectives:
+      - obj-s4-4
+    family: family-triple-volume-average
+    h: <p>Triple integration computes volumetric measurements and spatial distribution statistics:</p>
+    items:
+      - 'Volume computation: Setting <m>f(x, y, z) = 1</m> yields the solid volume: <m>V(E) = \iiint_E 1\,dV</m>.'
+      - 'Average value: The mean value of <m>f</m> throughout solid <m>E</m> is <m>f_{\text{avg}} = \frac{1}{V(E)} \iiint_E f(x, y, z)\,dV</m>.'
+      - 'Linearity and symmetry: When an integrand is linear across symmetric domains, terms with odd symmetry about coordinate planes integrate to zero.'
+    ordered: true
+    authorId: block-43fa7ce3-68c
+  - t: trap
+    label: Transposing 3D Limits Directly Without Projecting Boundaries
+    source: OpenStax Calculus Volume 3, Section 5.4
+    sourceReview: sourced
+    core: Swapping differentials in triple integrals requires re-projecting the solid onto the target plane rather than directly interchanging limits.
+    objectives:
+      - obj-s4-4
+    family: family-triple-order-change
+    h: <p>A dangerous error when reordering triple integrals is directly swapping variable names in limits without re-evaluating the geometric projection. Except for rectangular boxes where all limits are constants, switching the primary direction of integration requires expressing the new boundary surfaces as functions of the remaining two coordinates and recalculating the 2D planar shadow.</p>
+    authorId: block-cd87e88a-3a6
+quiz:
+  - type: Triple integral evaluation over cylindrical solid
+    concept: triple-integral
+    objectives:
+      - obj-s4-4
+    family: family-triple-setup
+    q: Evaluate the triple integral <m>\iiint_E x\,dV</m>, where <m>E</m> is the solid bounded by the parabolic cylinder <m>y = x^2</m> and the planes <m>y = 1</m>, <m>z = 0</m>, and <m>z = 2</m> with <m>x \ge 0</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{1}{2}</m>
+          why: The solid has bounds <m>0 \le x \le 1</m>, <m>x^2 \le y \le 1</m>, and <m>0 \le z \le 2</m>. Integrating gives <m>\int_0^1 \int_{x^2}^1 \int_0^2 x\,dz\,dy\,dx = 2\int_0^1 x(1 - x^2)\,dx = 2\left[\frac{x^2}{2} - \frac{x^4}{4}\right]_0^1 = 2\left(\frac{1}{4}\right) = \frac{1}{2}</m>.
+        - text: <m>1</m>
+          why: Forgetting the factor of 1/4 from the polynomial antiderivatives yields 1.
+        - text: <m>\frac{1}{4}</m>
+          why: Omitting the factor of 2 from integrating z from 0 to 2 gives 1/4.
+        - text: <m>\frac{2}{3}</m>
+          why: Integrating y with incorrect bounds produces an erroneous fraction.
+    why: The iterated integral integrates to <m>2(1/4) = 1/2</m>.
+    authorId: quiz-63c8bc89-9fa
+  - type: Reordering triple integral differentials
+    concept: triple-integral
+    objectives:
+      - obj-s4-4
+    family: family-triple-order-change
+    q: Consider the iterated integral <m>\int_0^1 \int_0^x \int_0^y f(x, y, z)\,dz\,dy\,dx</m>. Which of the following expresses this integral in the order <m>dx\,dy\,dz</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\int_0^1 \int_z^1 \int_y^1 f(x, y, z)\,dx\,dy\,dz</m>
+          why: The original region is defined by <m>0 \le z \le y \le x \le 1</m>. Slicing with <m>z</m> outermost gives <m>0 \le z \le 1</m>, then <m>z \le y \le 1</m>, and inner <m>y \le x \le 1</m>.
+        - text: <m>\int_0^1 \int_0^z \int_0^y f(x, y, z)\,dx\,dy\,dz</m>
+          why: This reverses inequality directions and integrates over an empty set.
+        - text: <m>\int_0^1 \int_0^1 \int_0^1 f(x, y, z)\,dx\,dy\,dz</m>
+          why: This integrates over a full unit cube rather than the simplex.
+        - text: <m>\int_0^1 \int_y^1 \int_z^1 f(x, y, z)\,dx\,dy\,dz</m>
+          why: The middle limit cannot depend on the inner variable y.
+    why: The ordering <m>0 \le z \le y \le x \le 1</m> yields <m>\int_0^1 \int_z^1 \int_y^1 f(x, y, z)\,dx\,dy\,dz</m>.
+    authorId: quiz-8bc7c2c9-f87
+  - type: Average value over 3D box
+    concept: triple-integral
+    objectives:
+      - obj-s4-4
+    family: family-triple-volume-average
+    q: Find the average value of <m>f(x, y, z) = x + y + z</m> over the rectangular box <m>B = [0, 2] \times [0, 4] \times [0, 6]</m>.
+    verified: true
+    response:
+      kind: number
+      value: 6
+    why: 'The box volume is <m>V = 2 \times 4 \times 6 = 48</m>. By linearity and symmetry, the average value of each linear term is its interval midpoint: <m>x_{\text{avg}} = 1</m>, <m>y_{\text{avg}} = 2</m>, and <m>z_{\text{avg}} = 3</m>. Summing these gives <m>f_{\text{avg}} = 1 + 2 + 3 = 6</m>.'
+    authorId: quiz-43763f7f-166

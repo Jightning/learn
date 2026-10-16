@@ -1,0 +1,124 @@
+title: The Dot Product
+blocks:
+  - t: p
+    h: <p>While vector addition combines vectors to produce another vector, the dot product (or scalar product) multiplies two vectors to yield a real scalar. This operation forms the foundation for measuring angles between vectors in space, computing orthogonal projections, and calculating physical quantities such as mechanical work.</p>
+    authorId: block-9181373a-eee
+  - t: def
+    term: The Dot Product and Orthogonality
+    source: OpenStax Calculus Volume 3, Section 2.3
+    sourceReview: sourced
+    core: The dot product of two vectors is the sum of the products of their corresponding components; nonzero vectors are orthogonal if and only if their dot product is zero.
+    introduces:
+      - obj-s1-2
+      - dot-product
+    objectives:
+      - obj-s1-2
+    family: family-dot-angle-orthogonal
+    h: <p>For vectors <m>\mathbf{u} = \langle u_1, u_2, u_3 \rangle</m> and <m>\mathbf{v} = \langle v_1, v_2, v_3 \rangle</m>, their dot product is defined algebraically as <m>\mathbf{u} \cdot \mathbf{v} = u_1 v_1 + u_2 v_2 + u_3 v_3</m>. Geometrically, if <m>\theta</m> is the angle between <m>\mathbf{u}</m> and <m>\mathbf{v}</m> with <m>0 \le \theta \le \pi</m>, then <m>\mathbf{u} \cdot \mathbf{v} = |\mathbf{u}||\mathbf{v}|\cos\theta</m>. Two nonzero vectors <m>\mathbf{u}</m> and <m>\mathbf{v}</m> are orthogonal (perpendicular) if and only if <m>\mathbf{u} \cdot \mathbf{v} = 0</m>.</p>
+    authorId: block-ae32f3d2-d7b
+  - t: math
+    label: Angle Between Two Vectors
+    tex: \cos\theta = \frac{\mathbf{u} \cdot \mathbf{v}}{|\mathbf{u}||\mathbf{v}|}
+    note: The sign of u · v determines whether the angle is acute (positive dot product), right (zero), or obtuse (negative dot product).
+    authorId: block-8ef9dd1c-155
+  - t: key
+    label: Direction Angles and Direction Cosines
+    source: OpenStax Calculus Volume 3, Section 2.3
+    sourceReview: sourced
+    core: Direction angles satisfy <m>\cos\alpha = v_1/|\mathbf{v}|</m>, <m>\cos\beta = v_2/|\mathbf{v}|</m>, and <m>\cos\gamma = v_3/|\mathbf{v}|</m>, with the sum of squared direction cosines equal to 1.
+    objectives:
+      - obj-s1-2
+    family: family-direction-cosines
+    h: <p>The direction angles <m>\alpha, \beta, \gamma \in [0, \pi]</m> of a nonzero vector <m>\mathbf{v} = \langle v_1, v_2, v_3 \rangle</m> are the angles that <m>\mathbf{v}</m> forms with the positive <m>x</m>-, <m>y</m>-, and <m>z</m>-axes respectively. Their cosines are given by:</p>
+    items:
+      - <m>\cos\alpha = \frac{\mathbf{v} \cdot \mathbf{i}}{|\mathbf{v}|} = \frac{v_1}{|\mathbf{v}|}</m>
+      - <m>\cos\beta = \frac{\mathbf{v} \cdot \mathbf{j}}{|\mathbf{v}|} = \frac{v_2}{|\mathbf{v}|}</m>
+      - <m>\cos\gamma = \frac{\mathbf{v} \cdot \mathbf{k}}{|\mathbf{v}|} = \frac{v_3}{|\mathbf{v}|}</m>
+      - 'Fundamental identity: <m>\cos^2\alpha + \cos^2\beta + \cos^2\gamma = \frac{v_1^2 + v_2^2 + v_3^2}{|\mathbf{v}|^2} = 1</m>.'
+    ordered: true
+    authorId: block-dfb91f06-708
+  - t: def
+    term: Scalar and Vector Projections
+    source: OpenStax Calculus Volume 3, Section 2.3
+    sourceReview: sourced
+    core: The scalar projection is <m>\text{comp}_{\mathbf{u}}(\mathbf{v}) = (\mathbf{u} \cdot \mathbf{v})/|\mathbf{u}|</m>, and the vector projection is <m>\text{proj}_{\mathbf{u}}(\mathbf{v}) = ((\mathbf{u} \cdot \mathbf{v})/|\mathbf{u}|^2)\mathbf{u}</m>.
+    introduces:
+      - vector-projection
+    objectives:
+      - obj-s1-2
+    family: family-projection-work
+    h: '<p>The scalar projection of <m>\mathbf{v}</m> onto <m>\mathbf{u}</m> represents the signed length of the shadow cast by <m>\mathbf{v}</m> along <m>\mathbf{u}</m>: <m>\text{comp}_{\mathbf{u}}(\mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{|\mathbf{u}|} = |\mathbf{v}|\cos\theta</m>. Multiplying this scalar by the unit vector in the direction of <m>\mathbf{u}</m> gives the vector projection: <m>\text{proj}_{\mathbf{u}}(\mathbf{v}) = \left(\frac{\mathbf{u} \cdot \mathbf{v}}{|\mathbf{u}|^2}\right)\mathbf{u}</m>. Every vector <m>\mathbf{v}</m> can be decomposed into a component parallel to <m>\mathbf{u}</m> and a component orthogonal to <m>\mathbf{u}</m>: <m>\mathbf{v} = \text{proj}_{\mathbf{u}}(\mathbf{v}) + (\mathbf{v} - \text{proj}_{\mathbf{u}}(\mathbf{v}))</m>.</p>'
+    authorId: block-6d69da40-ca7
+  - t: key
+    label: Work Done by a Constant Force
+    source: OpenStax Calculus Volume 3, Section 2.3
+    sourceReview: sourced
+    core: The work done by a constant force <m>\mathbf{F}</m> along displacement <m>\mathbf{d} = \vec{PQ}</m> is <m>W = \mathbf{F} \cdot \mathbf{d} = |\mathbf{F}||\mathbf{d}|\cos\theta</m>.
+    objectives:
+      - obj-s1-2
+    family: family-projection-work
+    h: '<p>When a constant force <m>\mathbf{F}</m> displaces an object along vector <m>\mathbf{d} = \vec{PQ}</m>, the mechanical work done is the magnitude of the force acting in the direction of motion multiplied by the distance traveled: <m>W = (\text{comp}_{\mathbf{d}}\mathbf{F})|\mathbf{d}| = \left(\frac{\mathbf{F}\cdot\mathbf{d}}{|\mathbf{d}|}\right)|\mathbf{d}| = \mathbf{F}\cdot\mathbf{d}</m>. If the force acts perpendicular to displacement, <m>W = 0</m>.</p>'
+    authorId: block-049c22b9-715
+  - t: ex
+    title: Vector Projection and Orthogonal Decomposition
+    objectives:
+      - obj-s1-2
+    family: family-projection-work
+    h: <p>Let <m>\mathbf{u} = \langle 1, 2, -2 \rangle</m> and <m>\mathbf{v} = \langle 3, 0, 4 \rangle</m>. First, <m>\mathbf{u}\cdot\mathbf{v} = 1(3) + 2(0) + (-2)(4) = -5</m>, and <m>|\mathbf{u}|^2 = 1^2 + 2^2 + (-2)^2 = 9</m>. The scalar projection is <m>\text{comp}_{\mathbf{u}}(\mathbf{v}) = \frac{-5}{3}</m>. The vector projection is <m>\text{proj}_{\mathbf{u}}(\mathbf{v}) = \frac{-5}{9}\langle 1, 2, -2 \rangle = \langle -\frac{5}{9}, -\frac{10}{9}, \frac{10}{9} \rangle</m>. The orthogonal component is <m>\mathbf{v}_{\perp} = \mathbf{v} - \text{proj}_{\mathbf{u}}(\mathbf{v}) = \langle 3 - (-\frac{5}{9}), 0 - (-\frac{10}{9}), 4 - \frac{10}{9} \rangle = \langle \frac{32}{9}, \frac{10}{9}, \frac{26}{9} \rangle</m>. We verify <m>\mathbf{v}_{\perp} \cdot \mathbf{u} = \frac{32(1) + 10(2) + 26(-2)}{9} = \frac{32 + 20 - 52}{9} = 0</m>.</p>
+    authorId: block-c1f88c2b-ae6
+  - t: trap
+    label: Dot Product Produces a Scalar, Not a Vector
+    source: OpenStax Calculus Volume 3, Section 2.3
+    sourceReview: sourced
+    core: The dot product produces a real scalar number, so triple products like <m>(\mathbf{u} \cdot \mathbf{v}) \cdot \mathbf{w}</m> are undefined.
+    objectives:
+      - obj-s1-2
+    family: family-dot-angle-orthogonal
+    h: <p>Never write <m>(\mathbf{u} \cdot \mathbf{v}) \cdot \mathbf{w}</m> because <m>\mathbf{u} \cdot \mathbf{v}</m> is a real number, and the dot product is defined only between two vectors. The quantity <m>(\mathbf{u} \cdot \mathbf{v})\mathbf{w}</m> is valid scalar multiplication scaling vector <m>\mathbf{w}</m> by scalar <m>\mathbf{u} \cdot \mathbf{v}</m>.</p>
+    authorId: block-2b90e4f3-ada
+quiz:
+  - type: Dot product calculation
+    concept: dot-product
+    objectives:
+      - obj-s1-2
+    family: family-dot-angle-orthogonal
+    q: What is the dot product of <m>\mathbf{u} = \langle 2, -1, 2 \rangle</m> and <m>\mathbf{v} = \langle 1, 2, 2 \rangle</m>?
+    verified: true
+    response:
+      kind: number
+      value: 4
+    why: The dot product is <m>\mathbf{u} \cdot \mathbf{v} = (2)(1) + (-1)(2) + (2)(2) = 2 - 2 + 4 = 4</m>.
+    authorId: quiz-fbaa970c-012
+  - type: Direction cosine
+    concept: dot-product
+    objectives:
+      - obj-s1-2
+    family: family-direction-cosines
+    q: What is the direction cosine <m>\cos\beta</m> with respect to the positive <m>y</m>-axis for the vector <m>\mathbf{v} = \langle 2, -3, 6 \rangle</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 2
+      choices:
+        - text: <m>\frac{3}{7}</m>
+          why: The <m>y</m>-component is negative, so <m>\cos\beta</m> must be negative.
+        - text: <m>-\frac{3}{7}</m>
+          why: The magnitude is <m>|\mathbf{v}| = \sqrt{2^2 + (-3)^2 + 6^2} = \sqrt{49} = 7</m>. Thus <m>\cos\beta = \frac{v_2}{|\mathbf{v}|} = -\frac{3}{7}</m>.
+        - text: <m>-\frac{3}{49}</m>
+          why: Divide by the magnitude <m>|\mathbf{v}| = 7</m>, not the square of the magnitude.
+        - text: <m>-\frac{3}{5}</m>
+          why: The magnitude of <m>\langle 2, -3, 6 \rangle</m> is 7, not 5.
+    authorId: quiz-9b0a236c-c44
+  - type: Work by constant force
+    concept: vector-projection
+    objectives:
+      - obj-s1-2
+    family: family-projection-work
+    q: A constant force <m>\mathbf{F} = \langle 5, 2, -3 \rangle</m> (Newtons) moves a particle along displacement <m>\mathbf{d} = \langle 3, 3, -1 \rangle</m> (meters). What is the total work done in Joules?
+    verified: true
+    response:
+      kind: number
+      value: 24
+      unit: J
+    why: Work is the dot product of force and displacement, <m>W = \mathbf{F} \cdot \mathbf{d} = 5(3) + 2(3) + (-3)(-1) = 15 + 6 + 3 = 24\text{ J}</m>.
+    authorId: quiz-dd1e108f-456

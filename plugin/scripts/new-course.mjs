@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 //#region tools/lib/paths.mjs
@@ -70,7 +69,6 @@ const readerFile = scaffoldReader(COURSES);
 cpSync(TEMPLATE, dest, { recursive: true });
 const cfg = join(dest, "course.yaml");
 writeFileSync(cfg, readFileSync(cfg, "utf8").replace("code: XX 00000", "code: " + id.toUpperCase()).replace("title: Course Title", "title: " + title).replace(/^(\s*)hue: 0$/m, `$1hue: ${hue}`));
-execFileSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), "gen-materials.mjs"), id], { stdio: "ignore" });
 console.log(`created courses/${id}  (accent hue ${hue})`);
 if (readerFile) console.log("created courses/_reader.yaml — fill it in before authoring");
 console.log(`  1. edit courses/${id}/course.yaml`);

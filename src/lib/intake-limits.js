@@ -1,5 +1,5 @@
-/* The same limits and wording apply before reading an archive or folder and
-   after parsing a packed JSON map. ZIP sizes are uncompressed byte counts. */
+/* The same limits and wording apply to reader files in folders, streamed ZIP
+   output, and parsed JSON maps. Authoring sources are excluded from intake. */
 export const MAX_BYTES = 8 * 1024 * 1024;
 export const MAX_FILES = 500;
 export const MAX_ENTRY = 2 * 1024 * 1024;

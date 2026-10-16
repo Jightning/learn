@@ -1,0 +1,135 @@
+title: Calculus of Vector-Valued Functions
+blocks:
+  - t: p
+    h: <p>The calculus of vector-valued functions extends single-variable limits and derivatives to trajectories in space. By differentiating componentwise, we measure the instantaneous direction and rate of change of a curve. The resulting derivative vector is tangent to the path, pointing directly in the direction of motion, while integration reconstructs the path from rate-of-change data.</p>
+    authorId: block-8f388147-e28
+  - t: def
+    term: Derivative of a Vector-Valued Function
+    source: OpenStax Calculus Volume 3, Section 3.2
+    sourceReview: sourced
+    core: The derivative of a vector-valued function is computed by differentiating each component function; geometrically the derivative vector points tangent to the curve.
+    introduces:
+      - obj-s2-2
+      - vvf-derivative
+    objectives:
+      - obj-s2-2
+    family: family-vvf-differentiate
+    h: '<p>If <m>\mathbf{r}(t) = \langle f(t), g(t), h(t) \rangle</m> where <m>f</m>, <m>g</m>, and <m>h</m> are differentiable functions of <m>t</m>, the derivative of <m>\mathbf{r}</m> is defined by the limit of the vector difference quotient: <m>\mathbf{r}''(t) = \lim_{\Delta t \to 0}\frac{\mathbf{r}(t + \Delta t) - \mathbf{r}(t)}{\Delta t} = \langle f''(t), g''(t), h''(t) \rangle</m>. At any point where <m>\mathbf{r}''(t) \ne \mathbf{0}</m>, this vector is tangent to the space curve pointing in the direction of increasing <m>t</m>, and its magnitude <m>|\mathbf{r}''(t)|</m> represents instantaneous scalar speed.</p>'
+    authorId: block-f886866c-533
+  - t: key
+    label: Differentiation Rules for Vector Functions
+    source: OpenStax Calculus Volume 3, Section 3.2
+    sourceReview: sourced
+    core: Vector derivatives obey sum, scalar multiple, dot product, cross product, and chain rules; the cross product rule requires preserving the order of factors.
+    objectives:
+      - obj-s2-2
+    family: family-vvf-differentiate
+    h: <p>Let <m>\mathbf{u}(t)</m> and <m>\mathbf{v}(t)</m> be differentiable vector functions, <m>c(t)</m> a differentiable scalar function, and <m>f(t)</m> a real function:</p>
+    items:
+      - 'Scalar product rule: <m>\frac{d}{dt}[c(t)\mathbf{u}(t)] = c''(t)\mathbf{u}(t) + c(t)\mathbf{u}''(t)</m>.'
+      - 'Dot product rule: <m>\frac{d}{dt}[\mathbf{u}(t) \cdot \mathbf{v}(t)] = \mathbf{u}''(t) \cdot \mathbf{v}(t) + \mathbf{u}(t) \cdot \mathbf{v}''(t)</m>.'
+      - 'Cross product rule: <m>\frac{d}{dt}[\mathbf{u}(t) \times \mathbf{v}(t)] = \mathbf{u}''(t) \times \mathbf{v}(t) + \mathbf{u}(t) \times \mathbf{v}''(t)</m> (strictly preserve vector order because cross products are anticommutative).'
+      - 'Chain rule: <m>\frac{d}{dt}[\mathbf{u}(f(t))] = f''(t)\mathbf{u}''(f(t))</m>.'
+      - 'Constant length theorem: If <m>|\mathbf{r}(t)| = c</m> is constant, then <m>\mathbf{r}(t) \cdot \mathbf{r}''(t) = 0</m>, meaning the position and velocity vectors are always orthogonal.'
+    ordered: true
+    authorId: block-d7c0dc47-26b
+  - t: math
+    label: Unit Tangent Vector
+    tex: \mathbf{T}(t) = \frac{\mathbf{r}'(t)}{|\mathbf{r}'(t)|}
+    note: Valid for any smooth curve where r'(t) is continuous and non-zero.
+    objectives:
+      - obj-s2-2
+    family: family-unit-tangent
+    authorId: block-2d6e9db1-c51
+  - t: key
+    label: The Unit Tangent Vector and Tangent Lines
+    source: OpenStax Calculus Volume 3, Section 3.2
+    sourceReview: sourced
+    core: The unit tangent vector normalizes the velocity vector; the tangent line passes through the position point along the derivative direction vector.
+    objectives:
+      - obj-s2-2
+    family: family-unit-tangent
+    h: <p>A space curve <m>\mathbf{r}(t)</m> is smooth on an open interval if <m>\mathbf{r}'(t)</m> is continuous and <m>\mathbf{r}'(t) \ne \mathbf{0}</m> everywhere on the interval. At each point on a smooth curve, the principal unit tangent vector is <m>\mathbf{T}(t) = \frac{\mathbf{r}'(t)}{|\mathbf{r}'(t)|}</m>. The tangent line to the curve at parameter value <m>t = t_0</m> passes through <m>P_0 = \mathbf{r}(t_0) = \langle x_0, y_0, z_0 \rangle</m> with direction vector <m>\mathbf{v} = \mathbf{r}'(t_0)</m>, giving vector line equation <m>\mathbf{L}(s) = \mathbf{r}(t_0) + s\,\mathbf{r}'(t_0)</m>.</p>
+    authorId: block-e2426112-3e6
+  - t: ex
+    title: Unit Tangent Vector and Tangent Line of a Helix
+    objectives:
+      - obj-s2-2
+    family: family-unit-tangent
+    h: '<p>Find <m>\mathbf{T}(t)</m> and a vector equation for the tangent line to the helix <m>\mathbf{r}(t) = \langle 2\cos t, 2\sin t, 3t \rangle</m> at <m>t = \pi/2</m>.</p><p>First differentiate: <m>\mathbf{r}''(t) = \langle -2\sin t, 2\cos t, 3 \rangle</m>. Its magnitude is <m>|\mathbf{r}''(t)| = \sqrt{(-2\sin t)^2 + (2\cos t)^2 + 3^2} = \sqrt{4(\sin^2 t + \cos^2 t) + 9} = \sqrt{13}</m>. The unit tangent vector is <m>\mathbf{T}(t) = \frac{1}{\sqrt{13}}\langle -2\sin t, 2\cos t, 3 \rangle</m>.</p><p>At <m>t = \pi/2</m>, the point on the helix is <m>\mathbf{r}(\pi/2) = \langle 0, 2, \frac{3\pi}{2} \rangle</m>, and the tangent direction vector is <m>\mathbf{r}''(\pi/2) = \langle -2, 0, 3 \rangle</m>. The tangent line is <m>\mathbf{L}(s) = \langle 0, 2, \frac{3\pi}{2} \rangle + s\langle -2, 0, 3 \rangle</m>.</p>'
+    authorId: block-dac26e9d-a0a
+  - t: def
+    term: Indefinite and Definite Integrals of Vector Functions
+    source: OpenStax Calculus Volume 3, Section 3.2
+    sourceReview: sourced
+    core: Integration of vector-valued functions proceeds componentwise; indefinite integrals include an arbitrary constant vector, while definite integrals evaluate over scalar limits.
+    introduces:
+      - vvf-integral
+    objectives:
+      - obj-s2-2
+    family: family-vvf-integrate
+    h: '<p>The indefinite integral of <m>\mathbf{r}(t) = \langle f(t), g(t), h(t) \rangle</m> is defined componentwise: <m>\int \mathbf{r}(t)\,dt = \left\langle \int f(t)\,dt, \int g(t)\,dt, \int h(t)\,dt \right\rangle + \mathbf{C}</m>, where <m>\mathbf{C} = \langle C_1, C_2, C_3 \rangle</m> is a constant vector of integration determined by an initial condition. The definite integral over <m>[a, b]</m> is <m>\int_a^b \mathbf{r}(t)\,dt = \left\langle \int_a^b f(t)\,dt, \int_a^b g(t)\,dt, \int_a^b h(t)\,dt \right\rangle = \mathbf{R}(b) - \mathbf{R}(a)</m>, where <m>\mathbf{R}''(t) = \mathbf{r}(t)</m>.</p>'
+    authorId: block-fe286fd6-d39
+  - t: ex
+    title: Initial Value Problem for a Vector Function
+    objectives:
+      - obj-s2-2
+    family: family-vvf-integrate
+    h: '<p>Solve the initial value problem <m>\mathbf{r}''(t) = \langle 6t, 4e^{2t}, \cos t \rangle</m> subject to <m>\mathbf{r}(0) = \langle 2, 1, 5 \rangle</m>.</p><p>Integrate each component: <m>\mathbf{r}(t) = \int \langle 6t, 4e^{2t}, \cos t \rangle\,dt = \langle 3t^2, 2e^{2t}, \sin t \rangle + \mathbf{C}</m>. Apply the initial condition at <m>t = 0</m>: <m>\mathbf{r}(0) = \langle 0, 2, 0 \rangle + \langle C_1, C_2, C_3 \rangle = \langle 2, 1, 5 \rangle</m>. Thus <m>C_1 = 2</m>, <m>C_2 = 1 - 2 = -1</m>, and <m>C_3 = 5</m>. The unique solution is <m>\mathbf{r}(t) = \langle 3t^2 + 2, 2e^{2t} - 1, \sin t + 5 \rangle</m>.</p>'
+    authorId: block-e87f3e58-822
+  - t: trap
+    label: Treating the Constant of Integration as a Scalar
+    source: OpenStax Calculus Volume 3, Section 3.2
+    sourceReview: sourced
+    core: The constant of integration for a vector-valued function is a three-dimensional vector, never a single scalar number.
+    objectives:
+      - obj-s2-2
+    family: family-vvf-integrate
+    h: '<p>Adding a scalar constant <m>+ C</m> to a vector function produces a dimension mismatch error: scalars and vectors cannot be added together. Each coordinate requires its own independent integration constant, forming the vector constant <m>\mathbf{C} = \langle C_1, C_2, C_3 \rangle</m>. When solving initial value problems, ensure you evaluate and determine all three components of <m>\mathbf{C}</m>.'
+    authorId: block-71072909-c19
+quiz:
+  - type: Derivative of dot product
+    concept: vvf-derivative
+    objectives:
+      - obj-s2-2
+    family: family-vvf-differentiate
+    q: Let <m>\mathbf{u}(t) = \langle t^2, 3t, -1 \rangle</m> and <m>\mathbf{v}(t) = \langle 2t, 1, t^3 \rangle</m>. Evaluate <m>\frac{d}{dt}[\mathbf{u}(t) \cdot \mathbf{v}(t)]</m> at <m>t = 1</m>.
+    verified: true
+    response:
+      kind: number
+      value: 6
+    why: Expanding directly gives <m>\mathbf{u}(t) \cdot \mathbf{v}(t) = 2t^3 + 3t - t^3 = t^3 + 3t</m>. Its derivative is <m>3t^2 + 3</m>, which equals <m>3(1)^2 + 3 = 6</m> at <m>t = 1</m>. The product rule <m>\mathbf{u}'(1) \cdot \mathbf{v}(1) + \mathbf{u}(1) \cdot \mathbf{v}'(1) = 7 + (-1) = 6</m> confirms the same value.
+    authorId: quiz-f17ac265-e33
+  - type: Unit tangent vector
+    concept: vvf-derivative
+    objectives:
+      - obj-s2-2
+    family: family-unit-tangent
+    q: What is the unit tangent vector <m>\mathbf{T}(0)</m> for the space curve <m>\mathbf{r}(t) = \langle e^{2t}, \sin(3t), 2t + 5 \rangle</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\langle \frac{2}{\sqrt{17}}, \frac{3}{\sqrt{17}}, \frac{2}{\sqrt{17}} \rangle</m>
+          why: The derivative is <m>\mathbf{r}'(t) = \langle 2e^{2t}, 3\cos(3t), 2 \rangle</m>, so <m>\mathbf{r}'(0) = \langle 2, 3, 2 \rangle</m>. The magnitude is <m>\sqrt{2^2 + 3^2 + 2^2} = \sqrt{17}</m>, yielding <m>\mathbf{T}(0) = \frac{1}{\sqrt{17}}\langle 2, 3, 2 \rangle</m>.
+        - text: <m>\langle 2, 3, 2 \rangle</m>
+          why: This is the tangent velocity vector <m>\mathbf{r}'(0)</m>, but it has not been normalized to unit length.
+        - text: <m>\langle \frac{1}{\sqrt{14}}, \frac{3}{\sqrt{14}}, \frac{2}{\sqrt{14}} \rangle</m>
+          why: This forgets the chain rule factor of 2 when differentiating <m>e^{2t}</m>.
+        - text: <m>\langle 1, 0, 5 \rangle</m>
+          why: This evaluates position <m>\mathbf{r}(0)</m> rather than the normalized tangent derivative.
+    why: The unit tangent vector is <m>\mathbf{T}(t) = \frac{\mathbf{r}'(t)}{|\mathbf{r}'(t)|}</m> evaluated at <m>t = 0</m>.
+    authorId: quiz-40d1deb0-3f7
+  - type: Initial value problem integration
+    concept: vvf-integral
+    objectives:
+      - obj-s2-2
+    family: family-vvf-integrate
+    q: Given <m>\mathbf{r}'(t) = \langle 3t^2, 2t, 8t^3 \rangle</m> and initial position <m>\mathbf{r}(0) = \langle 4, -1, 3 \rangle</m>, what is the <m>z</m>-component of <m>\mathbf{r}(1)</m>?
+    verified: true
+    response:
+      kind: number
+      value: 5
+    why: Integrating the <m>z</m>-component gives <m>z(t) = \int 8t^3\,dt = 2t^4 + C_3</m>. With <m>z(0) = 3</m>, we have <m>C_3 = 3</m>, so <m>z(t) = 2t^4 + 3</m>. At <m>t = 1</m>, <m>z(1) = 2(1)^4 + 3 = 5</m>.
+    authorId: quiz-840c88fb-2aa

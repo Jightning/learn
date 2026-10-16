@@ -1,0 +1,698 @@
+- id: obj-s1-1
+  title: Represent vectors in 2D and 3D in component and standard-unit-vector form; compute sums, scalar multiples, magnitudes,
+    unit vectors; locate points, distances and spheres in R^3.
+  lesson: s1-1
+  families:
+  - family-vector-operations
+  - family-vector-resultant
+  - family-space-distance-sphere
+  concepts:
+  - vector
+  - space-coordinates
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ea56a0e90886f58d
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3ca85eadfb9d8203
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-9cf5bbba59c31aa7
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-1fc71293b1f77c7b
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s1-2
+  title: Compute dot products, angles, orthogonality tests, direction cosines, projections and work done by a constant force.
+  lesson: s1-2
+  families:
+  - family-dot-angle-orthogonal
+  - family-direction-cosines
+  - family-projection-work
+  concepts:
+  - dot-product
+  - vector-projection
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-9ffa588ec599ac42
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-b11b0fd396feb879
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s1-3
+  title: Compute cross products and use them for orthogonal vectors, areas, volumes, coplanarity tests and torque.
+  lesson: s1-3
+  families:
+  - family-cross-compute
+  - family-cross-area-volume
+  - family-torque
+  concepts:
+  - cross-product
+  - triple-scalar-product
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-2b1a5d6a996e5808
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ca8804a58580cda1
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s1-4
+  title: Write and manipulate equations of lines and planes, classify relative positions and compute distances in space.
+  lesson: s1-4
+  families:
+  - family-line-equations
+  - family-plane-equations
+  - family-space-distances
+  concepts:
+  - line-in-space
+  - plane-equation
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-db1d82f902b82d9c
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-aa9c4d6de862b210
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s1-5
+  title: Identify cylinders and quadric surfaces from equations using traces, and describe their axis and shape.
+  lesson: s1-5
+  families:
+  - family-cylinder-traces
+  - family-quadric-identify
+  concepts:
+  - cylinder-surface
+  - quadric-surface
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-27c9ffaecac1e167
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-40671db1bb8892ad
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s1-6
+  title: Convert points and equations among rectangular, cylindrical and spherical coordinates and recognize the simple surfaces
+    each system describes.
+  lesson: s1-6
+  families:
+  - family-coordinate-point-convert
+  - family-coordinate-surface-convert
+  concepts:
+  - cylindrical-coordinates
+  - spherical-coordinates
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-17a6e7e833e4306f
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-42c4cac0fd9f17a2
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s2-1
+  title: Interpret vector-valued functions as space curves, and compute their domains, limits and continuity componentwise.
+  lesson: s2-1
+  families:
+  - family-vvf-domain-limit
+  - family-space-curve
+  concepts:
+  - vector-valued-function
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-66fe53ba2e59dd9a
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-27f126e167615d3a
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s2-2
+  title: Differentiate and integrate vector-valued functions and find unit tangent vectors and tangent lines.
+  lesson: s2-2
+  families:
+  - family-vvf-differentiate
+  - family-unit-tangent
+  - family-vvf-integrate
+  concepts:
+  - vvf-derivative
+  - vvf-integral
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ae783db2c662a63d
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-1def3ef023ab2a63
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s2-3
+  title: Compute arc length, arc-length parameterizations, curvature, the TNB frame and osculating circles.
+  lesson: s2-3
+  families:
+  - family-arc-length
+  - family-curvature
+  - family-tnb-osculating
+  concepts:
+  - arc-length
+  - curvature
+  - tnb-frame
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-6b059cb2d53808c2
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-da91f3c447cdd450
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s2-4
+  title: Describe motion with velocity, acceleration and speed; solve projectile problems; decompose acceleration into tangential
+    and normal components.
+  lesson: s2-4
+  families:
+  - family-motion-vectors
+  - family-projectile
+  - family-acceleration-components
+  concepts:
+  - velocity-acceleration
+  - acceleration-components
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-058e944719677b31
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-79f36409ccd20040
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-1
+  title: Describe domains and ranges of functions of several variables and interpret them through graphs, level curves and
+    level surfaces.
+  lesson: s3-1
+  families:
+  - family-domain-range
+  - family-level-curves
+  concepts:
+  - multivariable-function
+  - level-curve
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-61abd1b4413e1767
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a8d119dbe2969f28
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-2
+  title: Evaluate limits of functions of two (or three) variables, prove nonexistence by two paths, and determine continuity.
+  lesson: s3-2
+  families:
+  - family-limit-evaluate
+  - family-limit-two-paths
+  - family-continuity
+  concepts:
+  - multivariable-limit
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-04bd78fcf7da9cff
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-d36ba04288128e7c
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-3
+  title: Compute and interpret first- and higher-order partial derivatives and apply Clairaut's theorem.
+  lesson: s3-3
+  families:
+  - family-partial-compute
+  - family-higher-partials-clairaut
+  - family-pde-verify
+  concepts:
+  - partial-derivative
+  - higher-order-partials
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-dce28b31e8509bf5
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-57b731e9e4b43d97
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-4
+  title: Write tangent planes, linearize functions, estimate change with differentials, and reason about differentiability.
+  lesson: s3-4
+  families:
+  - family-tangent-plane-graph
+  - family-linear-approximation
+  - family-differentiability
+  concepts:
+  - tangent-plane
+  - differentiability
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a9fb64b90113da53
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3181134ce245f5a5
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-5
+  title: Apply the multivariable chain rule with tree diagrams and use it for implicit differentiation.
+  lesson: s3-5
+  families:
+  - family-chain-one-parameter
+  - family-chain-tree
+  - family-implicit-partials
+  concepts:
+  - multivariable-chain-rule
+  - implicit-differentiation
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-50799be783086286
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-635a7a41df540666
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-6
+  title: Compute directional derivatives and gradients, use the gradient for maximal rates of change, and find tangent planes
+    and normal lines to level surfaces.
+  lesson: s3-6
+  families:
+  - family-directional-derivative
+  - family-gradient-max-rate
+  - family-gradient-normal
+  concepts:
+  - directional-derivative
+  - gradient
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-eec4bb32a3ae12b0
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-b8b51b9a9a6a9a52
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-7
+  title: Locate and classify critical points, find absolute extrema on closed bounded regions, and solve applied optimization
+    problems.
+  lesson: s3-7
+  families:
+  - family-critical-classify
+  - family-absolute-extrema-region
+  - family-optimization-applied
+  concepts:
+  - critical-point
+  - second-derivative-test
+  - absolute-extrema
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-787af4d189f742d4
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-17ba657df068b937
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s3-8
+  title: Solve constrained optimization problems with one or two constraints using Lagrange multipliers.
+  lesson: s3-8
+  families:
+  - family-lagrange-one-constraint
+  - family-lagrange-two-constraints
+  concepts:
+  - lagrange-multiplier
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-81e66f5af4427db6
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-816e1ed8a742397e
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-1
+  title: Interpret double integrals over rectangles as volumes and evaluate them as iterated integrals; compute average values.
+  lesson: s4-1
+  families:
+  - family-riemann-double
+  - family-iterated-rectangle
+  - family-volume-average-rect
+  concepts:
+  - double-integral
+  - fubini-theorem
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-29c03d433ae24d0e
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-78431e876158353d
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-2
+  title: Set up and evaluate double integrals over general regions, reverse the order of integration, and compute areas, volumes
+    and simple probabilities.
+  lesson: s4-2
+  families:
+  - family-general-region-setup
+  - family-reverse-order
+  - family-area-volume-general
+  - family-improper-probability
+  concepts:
+  - general-region
+  - order-reversal
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-82b1e08c4ad9e73c
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-b095f50b19a7d324
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-3
+  title: Evaluate double integrals in polar coordinates and use them for areas and volumes of round regions.
+  lesson: s4-3
+  families:
+  - family-polar-convert-integral
+  - family-polar-region-area-volume
+  concepts:
+  - polar-double-integral
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a93d4a4336885ca6
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3d809b57897adc6d
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-4
+  title: Set up and evaluate triple integrals over boxes and general solids in any order, and use them for volume and average
+    value.
+  lesson: s4-4
+  families:
+  - family-triple-setup
+  - family-triple-order-change
+  - family-triple-volume-average
+  concepts:
+  - triple-integral
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-e2712aeb4ce20476
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-9bac1dc2f7ffca1d
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-5
+  title: Evaluate triple integrals in cylindrical and spherical coordinates and choose the coordinate system that fits a solid.
+  lesson: s4-5
+  families:
+  - family-cylindrical-triple
+  - family-spherical-triple
+  - family-choose-coordinates
+  concepts:
+  - cylindrical-triple-integral
+  - spherical-triple-integral
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-79d5be54f503a87f
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-5f9f0392394ce938
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-6
+  title: Compute mass, centers of mass, centroids and moments of inertia for laminas and solids.
+  lesson: s4-6
+  families:
+  - family-mass-center-2d
+  - family-mass-center-3d
+  - family-moment-inertia
+  concepts:
+  - center-of-mass
+  - moment-of-inertia
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-1fb9d160d8ccaff8
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-4e9ccad69cdb94df
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s4-7
+  title: Use transformations and Jacobians to change variables in double and triple integrals.
+  lesson: s4-7
+  families:
+  - family-transform-region
+  - family-jacobian-compute
+  - family-change-variables-integral
+  concepts:
+  - jacobian
+  - change-of-variables
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-aec19fa0f350243e
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-2dd29a1517dd73a5
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-1
+  title: Describe vector fields, recognize radial and rotational fields, and relate gradient fields to potential functions.
+  lesson: s5-1
+  families:
+  - family-vector-field-describe
+  - family-gradient-field-check
+  concepts:
+  - vector-field
+  - gradient-field
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-cc1c945e4769d938
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-8f54c18c40968c7a
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-2
+  title: Evaluate scalar and vector line integrals and interpret them as mass, work, flux and circulation.
+  lesson: s5-2
+  families:
+  - family-scalar-line-integral
+  - family-vector-line-integral
+  - family-flux-circulation-curve
+  concepts:
+  - scalar-line-integral
+  - vector-line-integral
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-64add33585c0c47d
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-6c8319dd60460ea0
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-3
+  title: Test fields for conservativeness, find potential functions and evaluate line integrals with the fundamental theorem.
+  lesson: s5-3
+  families:
+  - family-test-conservative
+  - family-find-potential
+  - family-ftli-evaluate
+  concepts:
+  - conservative-field
+  - fundamental-theorem-line-integrals
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3fab8e811c704537
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-0458dd97f74bccaa
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-4
+  title: Apply both forms of Green's theorem to convert between line integrals around closed curves and double integrals,
+    including area computations and regions with holes.
+  lesson: s5-4
+  families:
+  - family-greens-circulation
+  - family-greens-flux
+  - family-greens-area
+  concepts:
+  - greens-theorem
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-678dfffd2b66e09a
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-426929f7f12e07cc
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-5
+  title: Compute and interpret divergence and curl, and use their identities to test fields.
+  lesson: s5-5
+  families:
+  - family-div-curl-compute
+  - family-div-curl-identities
+  - family-div-curl-interpret
+  concepts:
+  - divergence
+  - curl
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-999b6a39505f9c84
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-4831efd6fd3fcc39
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-6
+  title: Parametrize surfaces, compute surface area, and evaluate scalar surface integrals and flux integrals with the correct
+    orientation.
+  lesson: s5-6
+  families:
+  - family-parametrize-surface
+  - family-surface-area
+  - family-scalar-surface-integral
+  - family-flux-integral
+  concepts:
+  - parametric-surface
+  - scalar-surface-integral
+  - flux-integral
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-75b429351e82ae39
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a9a3c057a387e70f
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-7
+  title: Use Stokes' theorem in either direction with consistent orientations and interpret curl through it.
+  lesson: s5-7
+  families:
+  - family-stokes-line-to-surface
+  - family-stokes-surface-to-line
+  - family-stokes-interpret
+  concepts:
+  - stokes-theorem
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-6739bec4f466c14a
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-8f921b3a24cef966
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family
+- id: obj-s5-8
+  title: Use the divergence theorem to compute flux across closed surfaces and relate all the fundamental theorems of vector
+    calculus.
+  lesson: s5-8
+  families:
+  - family-divergence-closed
+  - family-divergence-between
+  - family-fundamental-theorems-summary
+  concepts:
+  - divergence-theorem
+  sources:
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ee2320b785fe12de
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a2a318ef593d21ed
+  risks:
+  - execution slips in multi-step computation
+  - losing a condition or convention (orientation, unit vector, bounds)
+  requiredEvidence:
+  - Source-backed teaching with at least one worked example
+  - At least one checked question exercising each listed family

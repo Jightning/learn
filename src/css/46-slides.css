@@ -1,8 +1,9 @@
 /* A slide deck has the same quiet figure frame, with the navigation outside
  * the visual so its controls never cover a diagram on a narrow screen. */
-.slides{container-type:inline-size;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);
-  border-radius:4px;background:var(--surface);padding:16px;outline:none;touch-action:pan-y}
-.slides:focus-within{border-color:var(--hi)}
+.slides{box-sizing:border-box;container-type:inline-size;max-width:100%;min-width:0;
+  margin:var(--sp-2) 0;border:1px solid var(--rule);border-radius:var(--panel-radius);
+  background:var(--surface);padding:var(--panel-padding);outline:none;touch-action:pan-y}
+.slides:focus-within{border-color:var(--panel-accent)}
 .slides .fcap{display:block;color:var(--ink-3);font-family:var(--sans);font-size:var(--fs-small);margin-bottom:14px}
 .slides-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .slides-count{flex:none;font:600 var(--fs-meta) var(--mono);color:var(--hi-ink)}
@@ -12,7 +13,7 @@
 .slides-track{display:flex;align-items:stretch;will-change:transform}
 .slides-track.settling{transition:transform .22s ease}
 .slides-frame{flex:0 0 100%;min-width:0;min-height:230px;display:flex;flex-direction:column;justify-content:center;gap:14px;
-  padding:22px;background:var(--surface-2);border:1px solid var(--rule-2);border-radius:3px}
+  padding:16px 4px;background:none;border:0;border-radius:0}
 .slides-frame h4{margin:0;font:600 1.1rem var(--display);color:var(--ink)}
 .slides-visual{overflow-x:auto}
 .slides-visual svg{margin:auto}
@@ -28,5 +29,5 @@
 .slides-nav button:focus-visible{outline:2px solid var(--hi);outline-offset:2px}
 .slides-nav button:disabled{opacity:.45;cursor:default}
 .slides-hint{font:var(--fs-meta) var(--ui);color:var(--ink-3);text-align:center}
-@container (max-width:27rem){.slides-frame{padding:15px;min-height:190px}.slides-hint{display:none}}
+@container (max-width:27rem){.slides-frame{padding:12px 2px;min-height:190px}.slides-hint{display:none}}
 @media (pointer:coarse){.slides-nav button{min-height:44px;min-width:44px}}

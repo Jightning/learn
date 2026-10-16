@@ -1,0 +1,996 @@
+- id: family-vector-operations
+  title: Add, scale, and normalize vectors; find magnitude and a vector between two points
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.1, 2.2
+  sources: &id001
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ea56a0e90886f58d
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3ca85eadfb9d8203
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-9cf5bbba59c31aa7
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-1fc71293b1f77c7b
+  teach:
+  - s1-1
+  questions:
+  - vector-operations
+- id: family-vector-resultant
+  title: Resolve a quantity given by magnitude and direction into components and combine (resultant force/velocity)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.1, 2.2
+  sources: *id001
+  teach:
+  - s1-1
+  questions:
+  - vector-resultant
+- id: family-space-distance-sphere
+  title: Distance between points in space; write or recognize a sphere equation (complete the square for center and radius)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.1, 2.2
+  sources: *id001
+  teach:
+  - s1-1
+  questions:
+  - space-distance-sphere
+- id: family-dot-angle-orthogonal
+  title: Compute a dot product; find the angle between vectors; test orthogonality
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.3
+  sources: &id002
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-9ffa588ec599ac42
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-b11b0fd396feb879
+  teach:
+  - s1-2
+  questions:
+  - dot-angle-orthogonal
+- id: family-direction-cosines
+  title: Find direction cosines/angles of a vector
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.3
+  sources: *id002
+  teach:
+  - s1-2
+  questions:
+  - direction-cosines
+- id: family-projection-work
+  title: Scalar and vector projection; decompose a vector into parallel and orthogonal parts; work W = F·PQ
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.3
+  sources: *id002
+  teach:
+  - s1-2
+  questions:
+  - projection-work
+- id: family-cross-compute
+  title: Compute u×v by 3×3 determinant; find a vector orthogonal to two vectors; apply properties (anticommutative, u×u=0)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.4
+  sources: &id003
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-2b1a5d6a996e5808
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ca8804a58580cda1
+  teach:
+  - s1-3
+  questions:
+  - cross-compute
+- id: family-cross-area-volume
+  title: Area of parallelogram/triangle from |u×v|; parallelepiped volume and coplanarity via triple scalar product
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.4
+  sources: *id003
+  teach:
+  - s1-3
+  questions:
+  - cross-area-volume
+- id: family-torque
+  title: Torque τ = r×F and its magnitude
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.4
+  sources: *id003
+  teach:
+  - s1-3
+  questions:
+  - torque
+- id: family-line-equations
+  title: Write line equations from a point and direction or two points; classify a pair of lines as intersecting, parallel
+    or skew
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.5
+  sources: &id004
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-db1d82f902b82d9c
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-aa9c4d6de862b210
+  teach:
+  - s1-4
+  questions:
+  - line-equations
+- id: family-plane-equations
+  title: Plane through a point with a normal or through three points; angle between planes; line of intersection of two planes
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.5
+  sources: *id004
+  teach:
+  - s1-4
+  questions:
+  - plane-equations
+- id: family-space-distances
+  title: Distance from a point to a line, from a point to a plane, between parallel planes and between skew lines
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.5
+  sources: *id004
+  teach:
+  - s1-4
+  questions:
+  - space-distances
+- id: family-cylinder-traces
+  title: Recognize a cylinder (missing variable) and sketch/describe traces in coordinate planes
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.6
+  sources: &id005
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-27c9ffaecac1e167
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-40671db1bb8892ad
+  teach:
+  - s1-5
+  questions:
+  - cylinder-traces
+- id: family-quadric-identify
+  title: Identify a quadric surface (ellipsoid, hyperboloids of one/two sheets, elliptic cone, elliptic/hyperbolic paraboloid)
+    from its equation, including after completing the square and with a non-z axis
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.6
+  sources: *id005
+  teach:
+  - s1-5
+  questions:
+  - quadric-identify
+- id: family-coordinate-point-convert
+  title: Convert points among rectangular, cylindrical and spherical coordinates (correct quadrant for θ; 0 ≤ φ ≤ π)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.7
+  sources: &id006
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-17a6e7e833e4306f
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-42c4cac0fd9f17a2
+  teach:
+  - s1-6
+  questions:
+  - coordinate-point-convert
+- id: family-coordinate-surface-convert
+  title: Convert and identify surface equations between coordinate systems (e.g. ρ = c sphere, φ = c cone, r = c cylinder)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 2.7
+  sources: *id006
+  teach:
+  - s1-6
+  questions:
+  - coordinate-surface-convert
+- id: family-vvf-domain-limit
+  title: Find the domain, limit and continuity of a vector-valued function componentwise
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.1
+  sources: &id007
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-66fe53ba2e59dd9a
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-27f126e167615d3a
+  teach:
+  - s2-1
+  questions:
+  - vvf-domain-limit
+- id: family-space-curve
+  title: Sketch/describe a space curve (e.g. helix) and parametrize a curve such as the intersection of two surfaces
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.1
+  sources: *id007
+  teach:
+  - s2-1
+  questions:
+  - space-curve
+- id: family-vvf-differentiate
+  title: Differentiate a vector function componentwise, including dot- and cross-product rules and chain rule
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.2
+  sources: &id008
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ae783db2c662a63d
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-1def3ef023ab2a63
+  teach:
+  - s2-2
+  questions:
+  - vvf-differentiate
+- id: family-unit-tangent
+  title: Find the unit tangent vector T(t) and a tangent line at a point
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.2
+  sources: *id008
+  teach:
+  - s2-2
+  questions:
+  - unit-tangent
+- id: family-vvf-integrate
+  title: Integrate a vector function; determine the constant vector from an initial condition
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.2
+  sources: *id008
+  teach:
+  - s2-2
+  questions:
+  - vvf-integrate
+- id: family-arc-length
+  title: Compute arc length of a space curve; reparametrize by arc length
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.3
+  sources: &id009
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-6b059cb2d53808c2
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-da91f3c447cdd450
+  teach:
+  - s2-3
+  questions:
+  - arc-length
+- id: family-curvature
+  title: Compute curvature using κ=|dT/ds|=|T′|/|r′|, κ=|r′×r″|/|r′|³, or the formula for y=f(x)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.3
+  sources: *id009
+  teach:
+  - s2-3
+  questions:
+  - curvature
+- id: family-tnb-osculating
+  title: Find N(t), B(t), the osculating plane, and the radius/equation of the osculating circle
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.3
+  sources: *id009
+  teach:
+  - s2-3
+  questions:
+  - tnb-osculating
+- id: family-motion-vectors
+  title: Find velocity, acceleration and speed from position, or position from acceleration with initial conditions
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.4
+  sources: &id010
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-058e944719677b31
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-79f36409ccd20040
+  teach:
+  - s2-4
+  questions:
+  - motion-vectors
+- id: family-projectile
+  title: Model projectile motion (range, max height, time of flight)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.4
+  sources: *id010
+  teach:
+  - s2-4
+  questions:
+  - projectile
+- id: family-acceleration-components
+  title: Compute tangential and normal components a_T and a_N
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 3.4
+  sources: *id010
+  teach:
+  - s2-4
+  questions:
+  - acceleration-components
+- id: family-domain-range
+  title: Find and describe the domain and range of a function of two or three variables
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.1
+  sources: &id011
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-61abd1b4413e1767
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a8d119dbe2969f28
+  teach:
+  - s3-1
+  questions:
+  - domain-range
+- id: family-level-curves
+  title: Find and sketch level curves (contour map) of f(x,y) and level surfaces of f(x,y,z); read a contour map; vertical
+    traces
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.1
+  sources: *id011
+  teach:
+  - s3-1
+  questions:
+  - level-curves
+- id: family-limit-evaluate
+  title: Evaluate a limit by continuity, algebraic simplification or polar coordinates
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.2
+  sources: &id012
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-04bd78fcf7da9cff
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-d36ba04288128e7c
+  teach:
+  - s3-2
+  questions:
+  - limit-evaluate
+- id: family-limit-two-paths
+  title: Show a limit does not exist by comparing two paths
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.2
+  sources: *id012
+  teach:
+  - s3-2
+  questions:
+  - limit-two-paths
+- id: family-continuity
+  title: Determine where a function is continuous (compositions, piecewise definitions)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.2
+  sources: *id012
+  teach:
+  - s3-2
+  questions:
+  - continuity
+- id: family-partial-compute
+  title: Compute first partial derivatives (treat other variables as constants), including via the limit definition and functions
+    of three variables
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.3
+  sources: &id013
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-dce28b31e8509bf5
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-57b731e9e4b43d97
+  teach:
+  - s3-3
+  questions:
+  - partial-compute
+- id: family-higher-partials-clairaut
+  title: Compute second and mixed partials; use Clairaut's theorem (equality of mixed partials)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.3
+  sources: *id013
+  teach:
+  - s3-3
+  questions:
+  - higher-partials-clairaut
+- id: family-pde-verify
+  title: Verify that a function satisfies a partial differential equation (e.g. Laplace or heat equation)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.3
+  sources: *id013
+  teach:
+  - s3-3
+  questions:
+  - pde-verify
+- id: family-tangent-plane-graph
+  title: Find the tangent plane to z=f(x,y) at a point
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.4
+  sources: &id014
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a9fb64b90113da53
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3181134ce245f5a5
+  teach:
+  - s3-4
+  questions:
+  - tangent-plane-graph
+- id: family-linear-approximation
+  title: Use the linearization to approximate a value; use the total differential dz to estimate change/error
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.4
+  sources: *id014
+  teach:
+  - s3-4
+  questions:
+  - linear-approximation
+- id: family-differentiability
+  title: Decide differentiability (continuous partials imply differentiable; differentiable implies continuous; partials existing
+    is not enough)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.4
+  sources: *id014
+  teach:
+  - s3-4
+  questions:
+  - differentiability
+- id: family-chain-one-parameter
+  title: Compute dz/dt when x and y depend on t
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.5
+  sources: &id015
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-50799be783086286
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-635a7a41df540666
+  teach:
+  - s3-5
+  questions:
+  - chain-one-parameter
+- id: family-chain-tree
+  title: Compute ∂z/∂s, ∂z/∂t for two or more intermediate variables using a tree diagram (generalized chain rule)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.5
+  sources: *id015
+  teach:
+  - s3-5
+  questions:
+  - chain-tree
+- id: family-implicit-partials
+  title: Find dy/dx = −F_x/F_y and ∂z/∂x = −F_x/F_z, ∂z/∂y = −F_y/F_z implicitly
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.5
+  sources: *id015
+  teach:
+  - s3-5
+  questions:
+  - implicit-partials
+- id: family-directional-derivative
+  title: Compute D_u f = ∇f·u for a unit vector u (normalize the given direction first), in two or three variables
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.6
+  sources: &id016
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-eec4bb32a3ae12b0
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-b8b51b9a9a6a9a52
+  teach:
+  - s3-6
+  questions:
+  - directional-derivative
+- id: family-gradient-max-rate
+  title: Find the direction and value of the maximum (and minimum) rate of increase; directions of zero change
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.6
+  sources: *id016
+  teach:
+  - s3-6
+  questions:
+  - gradient-max-rate
+- id: family-gradient-normal
+  title: 'Use ∇f ⟂ level curves/surfaces: normal lines and tangent planes to a level surface F(x,y,z)=k'
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.6
+  sources: *id016
+  teach:
+  - s3-6
+  questions:
+  - gradient-normal
+- id: family-critical-classify
+  title: Find critical points and classify them with D = f_xx f_yy − f_xy² (including inconclusive D=0)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.7
+  sources: &id017
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-787af4d189f742d4
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-17ba657df068b937
+  teach:
+  - s3-7
+  questions:
+  - critical-classify
+- id: family-absolute-extrema-region
+  title: Find absolute max/min of a continuous function on a closed bounded region (interior critical points plus boundary
+    analysis)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.7
+  sources: *id017
+  teach:
+  - s3-7
+  questions:
+  - absolute-extrema-region
+- id: family-optimization-applied
+  title: Set up and solve an applied optimization problem (e.g. box dimensions, distance to a plane)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.7
+  sources: *id017
+  teach:
+  - s3-7
+  questions:
+  - optimization-applied
+- id: family-lagrange-one-constraint
+  title: Optimize f subject to g=k by solving ∇f=λ∇g, g=k and comparing candidate values
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.8
+  sources: &id018
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-81e66f5af4427db6
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-816e1ed8a742397e
+  teach:
+  - s3-8
+  questions:
+  - lagrange-one-constraint
+- id: family-lagrange-two-constraints
+  title: Optimize with two constraints using ∇f=λ∇g+μ∇h
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 4.8
+  sources: *id018
+  teach:
+  - s3-8
+  questions:
+  - lagrange-two-constraints
+- id: family-riemann-double
+  title: Estimate a double integral with a Riemann sum (e.g. midpoint rule) on a grid
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.1
+  sources: &id019
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-29c03d433ae24d0e
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-78431e876158353d
+  teach:
+  - s4-1
+  questions:
+  - riemann-double
+- id: family-iterated-rectangle
+  title: Evaluate an iterated integral over a rectangle in either order (Fubini), including the product-of-functions shortcut
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.1
+  sources: *id019
+  teach:
+  - s4-1
+  questions:
+  - iterated-rectangle
+- id: family-volume-average-rect
+  title: Find the volume under a surface and the average value of f over a rectangle
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.1
+  sources: *id019
+  teach:
+  - s4-1
+  questions:
+  - volume-average-rect
+- id: family-general-region-setup
+  title: Describe a region as Type I or Type II and set up/evaluate the double integral
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.2
+  sources: &id020
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-82b1e08c4ad9e73c
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-b095f50b19a7d324
+  teach:
+  - s4-2
+  questions:
+  - general-region-setup
+- id: family-reverse-order
+  title: Reverse the order of integration (redraw the region) to make an integral computable
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.2
+  sources: *id020
+  teach:
+  - s4-2
+  questions:
+  - reverse-order
+- id: family-area-volume-general
+  title: Area of a plane region and volume between surfaces over a general region
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.2
+  sources: *id020
+  teach:
+  - s4-2
+  questions:
+  - area-volume-general
+- id: family-improper-probability
+  title: Evaluate a simple improper double integral; joint density probability/expected value
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.2
+  sources: *id020
+  teach:
+  - s4-2
+  questions:
+  - improper-probability
+- id: family-polar-convert-integral
+  title: Convert a double integral over a disk/annulus/sector to polar form and evaluate (including the Gaussian-type ∫e^{-(x²+y²)})
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.3
+  sources: &id021
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a93d4a4336885ca6
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3d809b57897adc6d
+  teach:
+  - s4-3
+  questions:
+  - polar-convert-integral
+- id: family-polar-region-area-volume
+  title: Area of a region bounded by polar curves and volume of a solid using polar double integrals
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.3
+  sources: *id021
+  teach:
+  - s4-3
+  questions:
+  - polar-region-area-volume
+- id: family-triple-setup
+  title: Set up and evaluate a triple integral over a general solid (choose projection; bounds for z then the 2D region)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.4
+  sources: &id022
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-e2712aeb4ce20476
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-9bac1dc2f7ffca1d
+  teach:
+  - s4-4
+  questions:
+  - triple-setup
+- id: family-triple-order-change
+  title: Rewrite a triple integral in a different order of integration
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.4
+  sources: *id022
+  teach:
+  - s4-4
+  questions:
+  - triple-order-change
+- id: family-triple-volume-average
+  title: Volume of a solid and average value of f over a solid using triple integrals
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.4
+  sources: *id022
+  teach:
+  - s4-4
+  questions:
+  - triple-volume-average
+- id: family-cylindrical-triple
+  title: Set up and evaluate a triple integral in cylindrical coordinates (dV = r dz dr dθ)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.5
+  sources: &id023
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-79d5be54f503a87f
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-5f9f0392394ce938
+  teach:
+  - s4-5
+  questions:
+  - cylindrical-triple
+- id: family-spherical-triple
+  title: Set up and evaluate a triple integral in spherical coordinates (dV = ρ² sin φ dρ dφ dθ)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.5
+  sources: *id023
+  teach:
+  - s4-5
+  questions:
+  - spherical-triple
+- id: family-choose-coordinates
+  title: Choose an appropriate coordinate system for a solid (cylinder, cone, sphere, ice-cream cone) and convert between
+    them
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.5
+  sources: *id023
+  teach:
+  - s4-5
+  questions:
+  - choose-coordinates
+- id: family-mass-center-2d
+  title: Mass, moments M_x, M_y and center of mass of a lamina with density ρ(x,y); centroid when density is constant
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.6
+  sources: &id024
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-1fb9d160d8ccaff8
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-4e9ccad69cdb94df
+  teach:
+  - s4-6
+  questions:
+  - mass-center-2d
+- id: family-mass-center-3d
+  title: Mass and center of mass of a solid with density ρ(x,y,z)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.6
+  sources: *id024
+  teach:
+  - s4-6
+  questions:
+  - mass-center-3d
+- id: family-moment-inertia
+  title: Moments of inertia I_x, I_y, I_0 (and in 3D) and radius of gyration
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.6
+  sources: *id024
+  teach:
+  - s4-6
+  questions:
+  - moment-inertia
+- id: family-transform-region
+  title: Find the image of a region under a planar transformation T(u,v) and the inverse transformation
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.7
+  sources: &id025
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-aec19fa0f350243e
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-2dd29a1517dd73a5
+  teach:
+  - s4-7
+  questions:
+  - transform-region
+- id: family-jacobian-compute
+  title: Compute the Jacobian ∂(x,y)/∂(u,v) (and 3D), recovering r and ρ² sin φ
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.7
+  sources: *id025
+  teach:
+  - s4-7
+  questions:
+  - jacobian-compute
+- id: family-change-variables-integral
+  title: Choose u,v from the region/integrand (e.g. u=x+y, v=x−y; elliptical regions) and evaluate the transformed integral
+    with |J|
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 5.7
+  sources: *id025
+  teach:
+  - s4-7
+  questions:
+  - change-variables-integral
+- id: family-vector-field-describe
+  title: Evaluate, sketch and describe vector fields (radial, rotational, unit fields); find flow lines in simple cases
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.1
+  sources: &id026
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-cc1c945e4769d938
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-8f54c18c40968c7a
+  teach:
+  - s5-1
+  questions:
+  - vector-field-describe
+- id: family-gradient-field-check
+  title: Find the gradient field of a function; verify that a given function is a potential for a field
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.1
+  sources: *id026
+  teach:
+  - s5-1
+  questions:
+  - gradient-field-check
+- id: family-scalar-line-integral
+  title: Parametrize a curve and evaluate ∫_C f ds (arc length, mass of a wire); independent of orientation
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.2
+  sources: &id027
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-64add33585c0c47d
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-6c8319dd60460ea0
+  teach:
+  - s5-2
+  questions:
+  - scalar-line-integral
+- id: family-vector-line-integral
+  title: Evaluate ∫_C F·dr = ∫ F(r(t))·r′(t) dt (work); orientation reverses sign; piecewise curves
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.2
+  sources: *id027
+  teach:
+  - s5-2
+  questions:
+  - vector-line-integral
+- id: family-flux-circulation-curve
+  title: Compute flux across a plane curve ∫ F·n ds and circulation around a closed curve
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.2
+  sources: *id027
+  teach:
+  - s5-2
+  questions:
+  - flux-circulation-curve
+- id: family-test-conservative
+  title: Test whether a field is conservative using the cross-partials condition P_y = Q_x (and 3D analogues) on a simply
+    connected domain
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.3
+  sources: &id028
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-3fab8e811c704537
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-0458dd97f74bccaa
+  teach:
+  - s5-3
+  questions:
+  - test-conservative
+- id: family-find-potential
+  title: Find a potential function by integrating and matching components
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.3
+  sources: *id028
+  teach:
+  - s5-3
+  questions:
+  - find-potential
+- id: family-ftli-evaluate
+  title: Evaluate ∫_C ∇f·dr = f(end) − f(start); closed-curve integrals of conservative fields vanish; recognize path independence
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.3
+  sources: *id028
+  teach:
+  - s5-3
+  questions:
+  - ftli-evaluate
+- id: family-greens-circulation
+  title: Use the circulation (tangential) form ∮ P dx + Q dy = ∬ (Q_x − P_y) dA to evaluate a line integral over a positively
+    oriented simple closed curve
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.4
+  sources: &id029
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-678dfffd2b66e09a
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-426929f7f12e07cc
+  teach:
+  - s5-4
+  questions:
+  - greens-circulation
+- id: family-greens-flux
+  title: Use the flux (normal) form ∮ F·n ds = ∬ (P_x + Q_y) dA
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.4
+  sources: *id029
+  teach:
+  - s5-4
+  questions:
+  - greens-flux
+- id: family-greens-area
+  title: Compute area via a line integral (e.g. ½∮ x dy − y dx); apply Green's theorem on regions with holes
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.4
+  sources: *id029
+  teach:
+  - s5-4
+  questions:
+  - greens-area
+- id: family-div-curl-compute
+  title: Compute div F = ∇·F and curl F = ∇×F for 2D/3D fields
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.5
+  sources: &id030
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-999b6a39505f9c84
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-4831efd6fd3fcc39
+  teach:
+  - s5-5
+  questions:
+  - div-curl-compute
+- id: family-div-curl-identities
+  title: 'Use identities: curl(∇f)=0, div(curl F)=0; test conservative (curl F = 0 on simply connected domain), source-free
+    and irrotational; decide if a field can be a curl'
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.5
+  sources: *id030
+  teach:
+  - s5-5
+  questions:
+  - div-curl-identities
+- id: family-div-curl-interpret
+  title: Interpret divergence as net outflow per volume and curl as rotation (paddle wheel)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.5
+  sources: *id030
+  teach:
+  - s5-5
+  questions:
+  - div-curl-interpret
+- id: family-parametrize-surface
+  title: Parametrize standard surfaces (plane piece, graph z=g(x,y), cylinder, cone, sphere) and find r_u × r_v
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.6
+  sources: &id031
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-75b429351e82ae39
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a9a3c057a387e70f
+  teach:
+  - s5-6
+  questions:
+  - parametrize-surface
+- id: family-surface-area
+  title: Compute surface area ∬ |r_u × r_v| dA
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.6
+  sources: *id031
+  teach:
+  - s5-6
+  questions:
+  - surface-area
+- id: family-scalar-surface-integral
+  title: Evaluate ∬_S f dS (e.g. mass of a shell)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.6
+  sources: *id031
+  teach:
+  - s5-6
+  questions:
+  - scalar-surface-integral
+- id: family-flux-integral
+  title: Evaluate the flux ∬_S F·dS = ∬ F(r(u,v))·(r_u × r_v) dA with the requested orientation (sign check)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.6
+  sources: *id031
+  teach:
+  - s5-6
+  questions:
+  - flux-integral
+- id: family-stokes-line-to-surface
+  title: Evaluate a circulation ∮_C F·dr by computing ∬_S curl F·dS over a surface with boundary C (consistent orientation
+    by right-hand rule)
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.7
+  sources: &id032
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-6739bec4f466c14a
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-8f921b3a24cef966
+  teach:
+  - s5-7
+  questions:
+  - stokes-line-to-surface
+- id: family-stokes-surface-to-line
+  title: Evaluate a curl flux ∬_S curl F·dS via the boundary line integral or by replacing S with a simpler surface sharing
+    the boundary
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.7
+  sources: *id032
+  teach:
+  - s5-7
+  questions:
+  - stokes-surface-to-line
+- id: family-stokes-interpret
+  title: Interpret curl through circulation per unit area; Stokes' theorem as a 3D Green's theorem
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.7
+  sources: *id032
+  teach:
+  - s5-7
+  questions:
+  - stokes-interpret
+- id: family-divergence-closed
+  title: Compute outward flux across a closed surface via ∭_E div F dV
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.8
+  sources: &id033
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-ee2320b785fe12de
+  - source: source-13a04ce1db9d0e5c
+    unit: unit-a2a318ef593d21ed
+  teach:
+  - s5-8
+  questions:
+  - divergence-closed
+- id: family-divergence-between
+  title: Flux through a region between two closed surfaces or through an open surface by closing it; Gauss's law / inverse-square
+    fields
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.8
+  sources: *id033
+  teach:
+  - s5-8
+  questions:
+  - divergence-between
+- id: family-fundamental-theorems-summary
+  title: Choose among FTC, the fundamental theorem for line integrals, Green, Stokes and divergence theorems for a given integral
+  disposition: teach
+  rationale: Core problem surface of OpenStax Calculus Vol. 3 section 6.8
+  sources: *id033
+  teach:
+  - s5-8
+  questions:
+  - fundamental-theorems-summary

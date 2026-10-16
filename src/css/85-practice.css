@@ -41,3 +41,23 @@
 .pdone h3{margin:0 0 4px;font-size:1.1rem}
 .pwarn{font-size:.86rem;color:var(--ink-2);max-width:60ch;margin:6px 0 16px}
 .pempty,.shint{color:var(--ink-3);font-size:.86rem;padding:18px 2px}
+
+/* Keep the complete set configuration visible in one card. */
+.practice-settings{border:1px solid var(--rule);border-radius:4px;padding:16px;background:var(--surface);margin:18px 0}
+.practice-settings .pcfg-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;border:0;padding:0;margin:0;background:none}
+.practice-settings label{display:grid;gap:6px;min-width:0}
+.practice-settings .deadline-practice-switch{display:flex;margin:0 0 16px}
+.practice-settings select{width:100%;max-width:none;min-width:0}
+.practice-stats{display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;margin:14px 0 0}
+.practice-stats>div{display:grid;gap:2px}
+.practice-stats strong{font-family:var(--mono);font-size:1.15rem;font-weight:500;color:var(--ink)}
+.practice-stats span{font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-3)}
+.practice-stats>a{font-size:var(--fs-small)}
+@media(max-width:32em){.practice-settings .pcfg-row{grid-template-columns:1fr}}
+
+/* A custom chevron gives native select controls consistent inset on both sides. */
+.pcfg select,.deadline-form select{
+  appearance:none;padding:8px 36px 8px 12px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23666' d='m7 10 5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:18px;
+}

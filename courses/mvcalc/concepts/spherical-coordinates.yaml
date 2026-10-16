@@ -1,0 +1,4 @@
+title: "Spherical coordinates (ρ, θ, φ)"
+term: "Spherical Coordinates"
+body: >-
+  <p>Spherical coordinates represent a point by <m>(\rho, \theta, \phi)</m>, where <m>\rho \ge 0</m> is the distance from the origin, <m>\theta \in [0, 2\pi)</m> is the azimuthal angle in the <m>xy</m>-plane, and <m>\phi \in [0, \pi]</m> is the polar angle measured from the positive <m>z</m>-axis. Conversions to rectangular coordinates are <m>x = \rho \sin \phi \cos \theta</m>, <m>y = \rho \sin \phi \sin \theta</m>, and <m>z = \rho \cos \phi</m>, with <m>\rho^2 = x^2 + y^2 + z^2</m>. The volume element is <m>dV = \rho^2 \sin \phi\, d\rho\, d\phi\, d\theta</m>. Spherical coordinates are optimal for domains with spherical symmetry such as balls and cones.</p>

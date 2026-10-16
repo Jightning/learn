@@ -50,7 +50,7 @@ Work them with a pencil. Solutions follow each set.
 
 ---
 
-## Tier
+## Optional expansion
 
 1. A block is examinable but runs to three paragraphs. Which tier should it use?
 2. The mechanical check for examinable material in depth is which condition?

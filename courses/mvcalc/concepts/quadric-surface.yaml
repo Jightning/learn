@@ -1,0 +1,4 @@
+title: "The six quadric surfaces"
+term: "Quadric Surface"
+body: >-
+  <p>A quadric surface is the graph of a second-degree polynomial equation in three variables, <m>Ax^2 + By^2 + Cz^2 + Dxy + Eyz + Fxz + Gx + Hy + Iz + J = 0</m>. The six standard non-degenerate quadric surfaces are ellipsoids, elliptic paraboloids, hyperbolic paraboloids, cones, hyperboloids of one sheet, and hyperboloids of two sheets. Each surface is classified by its characteristic traces in planes parallel to the coordinate planes. Quadric surfaces serve as standard models for curved three-dimensional boundaries in integration and physics.</p>

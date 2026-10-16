@@ -12,14 +12,17 @@ const stable = value => {
 /* `id` is canonical for all collections. In the older concept-file format,
    the file stem or `key` supplied that same identity. */
 function sameDefinition(a, b, id, collection) {
+  if (collection === "concepts") {
+    const sharedKeys = Object.keys(a).filter(k => k !== "id" && k !== "key" && Object.hasOwn(b, k));
+    return sharedKeys.every(k => stable(a[k]) === stable(b[k])) &&
+      (a.key || a.id || id) === (b.key || b.id || id);
+  }
   const normalize = value => {
     const out = { ...value };
     delete out.id;
-    if (collection === "concepts") delete out.key;
     return stable(out);
   };
-  return normalize(a) === normalize(b) &&
-    (collection !== "concepts" || (a.key || a.id || id) === (b.key || b.id || id));
+  return normalize(a) === normalize(b);
 }
 
 /** Read and validate fixed canonical YAML collection files from a text map. */
@@ -80,7 +83,7 @@ export function mergeCurriculumDefinitions(canonical, legacy, errors = [], where
       const id = value.id;
       if (byId.has(id) && !sameDefinition(byId.get(id), value, id, name))
         errors.push(`categorize/${name}.yaml conflicts with legacy ${name} definition "${id}"`);
-      else byId.set(id, value);
+      else byId.set(id, byId.has(id) ? Object.assign({}, byId.get(id), value) : value);
     }
     merged[name] = [...byId.values()];
   }
@@ -183,6 +186,13 @@ export function validateCourseCurriculumReferences(course, errors = []) {
         check(item?.objectives ?? item?.objective, "objectives", where);
         check(item?.families ?? item?.family, "families", where);
         if (item?.concept != null) check(item.concept, "concepts", where);
+        if (item?.introduces != null) {
+          if (kind !== "block" || !Array.isArray(item.introduces))
+            errors.push(`${where}: introduces must be a block list of concept/objective IDs`);
+          else for (const id of item.introduces)
+            if (typeof id !== "string" || (!ids.concepts.has(id) && !ids.objectives.has(id)))
+              errors.push(`${where}: unknown teaching introduction "${id}"`);
+        }
         visitInlineConcepts(item, where);
       }
   }

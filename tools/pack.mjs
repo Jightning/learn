@@ -18,7 +18,8 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { loadCourse } from "./lib/load.mjs";
 import { courseFiles, PUBLIC } from "./lib/files.mjs";
-import { COURSES as COURSES_DIR, WORKSPACE } from "./lib/paths.mjs";
+import { COURSES as COURSES_DIR, WORKSPACE, STATE } from "./lib/paths.mjs";
+import { assessmentRequirementIssues } from "./lib/assessment-requirements.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COURSES = COURSES_DIR;
@@ -46,6 +47,12 @@ if (unknown.length) { console.error(`no such course: ${unknown.join(", ")}`); pr
 
 mkdirSync(OUT, { recursive: true });
 for (const id of ids) {
+  const gaps = assessmentRequirementIssues(join(COURSES, id), join(STATE, id));
+  if (gaps.length) {
+    console.error(`FAIL ${id}: declared assessment requirements are incomplete`);
+    gaps.forEach(gap => console.error(`       ✗ ${gap}`));
+    process.exit(1);
+  }
   const { course, errors } = loadCourse(join(COURSES, id));
   if (errors.length) {
     console.error(`FAIL  ${id}`); errors.forEach(e => console.error("       ✗ " + e));

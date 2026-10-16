@@ -1,0 +1,4 @@
+title: "Change of variables formula for double and triple integrals"
+term: "Change of Variables"
+body: >-
+  <p>The change of variables theorem for a double integral under a <m>C^1</m> one-to-one transformation <m>T(u, v) = (x, y)</m> mapping <m>S</m> to <m>R</m> is <m>\iint_R f(x, y)\, dA = \iint_S f(x(u, v), y(u, v)) \left|\frac{\partial(x, y)}{\partial(u, v)}\right| du\, dv</m>. In three dimensions, <m>\iiint_E f(x, y, z)\, dV = \iiint_G f(x(u, v, w), y(u, v, w), z(u, v, w)) \left|\frac{\partial(x, y, z)}{\partial(u, v, w)}\right| du\, dv\, dw</m>. This generalizes substitution from single-variable calculus to transform complex integration regions into simpler rectangular or box regions.</p>

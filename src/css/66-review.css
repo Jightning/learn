@@ -22,6 +22,25 @@
 .review-head .review-scope{border:0;padding:0;line-height:1.2}
 .review-head .review-options{margin-left:auto}
 .review-options a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.deadlines-page{max-width:760px}
+.deadline-list{display:grid;gap:12px;margin:20px 0 28px}
+.deadline-card,.deadline-form{border:1px solid var(--rule);border-radius:4px;padding:18px;background:var(--surface)}
+.deadline-card h2,.deadline-form h2{font-family:var(--display);font-size:1.35rem;font-weight:600;margin:0 0 4px}
+.deadline-card p,.deadline-hint{color:var(--ink-2);margin:6px 0;font-size:var(--fs-small)}
+.deadline-card-head{display:flex;justify-content:space-between;align-items:start;gap:16px}
+.deadline-card-head strong{white-space:nowrap;font-family:var(--mono);font-size:var(--fs-small);color:var(--hi-ink)}
+.deadline-meter{height:7px;border-radius:8px;background:var(--rule);overflow:hidden;margin:12px 0}
+.deadline-meter i{display:block;height:100%;background:var(--hi);border-radius:8px}
+.deadline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.deadline-form{display:grid;gap:12px}
+.deadline-form label{display:grid;gap:5px;font-family:var(--ui);font-size:var(--fs-small)}
+.deadline-form input,.deadline-form select{max-width:100%;min-width:0;padding:8px;border:1px solid var(--rule);border-radius:3px;background:var(--surface);color:var(--ink)}
+.deadline-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.deadline-warning{color:var(--wn-ink)!important}
+.deadline-cross-practice{border-bottom:1px solid var(--rule);padding-bottom:20px;margin-bottom:20px}
+.deadline-cross-practice h2{font-family:var(--display);font-size:1.3rem;margin:0 0 12px}
+.deadline-practice-switch{display:flex;align-items:center;gap:8px;font-family:var(--ui);font-size:var(--fs-small);margin:10px 0}
+@media(max-width:42em){.deadline-fields{grid-template-columns:1fr}.deadline-card-head{display:block}.deadline-card-head strong{display:block;margin-top:8px}}
 .review-practice .practice-intro{color:var(--ink-2);margin:0 0 16px}
 .review-practice .pgo{margin-top:0}
 .review-done h2{font-family:var(--display);font-size:1.4rem;margin:0 0 .5rem}
@@ -63,3 +82,7 @@
   .review-head .review-options{width:auto}
   .review-options a{flex:none}
 }
+
+.shell.utility .review>section{max-width:none}
+.deadline-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-small);color:var(--ink-2);margin-top:6px}
+.deadline-meta time{flex-basis:100%}

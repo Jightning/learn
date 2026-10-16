@@ -1,4 +1,4 @@
-/* 55-tiers — The lane selector and the stubs it leaves behind. */
+/* 55-tiers — Reading depth controls and learner attempts. */
 
 /* The disclosure lives on the same rail in Study and Review. */
 .depth-run{margin:var(--sp-2) 0}
@@ -29,14 +29,6 @@
 .lane-b:hover{border-color:var(--hi);color:var(--hi-ink)}
 .lane-b.sel{border-color:var(--hi);color:var(--hi-ink);
   background:color-mix(in srgb,var(--hi) 12%,transparent)}
-.lane-k{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink-3);opacity:.7}
-/* the narrow-width form is rendered too, and the stylesheet picks */
-.lane-cycle{display:none}
-
-.attempt{
-  border:1px solid var(--wn);border-left-width:2px;border-radius:3px;
-  background:var(--surface);padding:13px 15px;
-}
 .attempt-in{
   display:block;width:100%;margin-top:10px;font:inherit;font-size:.86rem;
   border:1px solid var(--rule);border-radius:3px;padding:8px 10px;

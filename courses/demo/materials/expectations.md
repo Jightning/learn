@@ -6,13 +6,13 @@ review:
   basis: >-
     Four ideas are scheduled, and they are the four a reader has to hold to use
     the site at all: completeness and non-redundancy, because they explain why
-    material is where it is; the tier split, because it decides how much of a
-    page you read; and answer outcomes, because they feed automatic Review
+    material is where it is; optional expansions, because they add explanation
+    without removing required reading; and answer outcomes, because they feed automatic Review
     scheduling. The two-loop design and retrieval practice are explained but not
     separately reviewed as concepts.
 
     Six questions name one of those two unscheduled concepts, so they resolve
-    to a concept file and to no practice bank. `npm run audit`
+    to a concept file and to no question-bank entry. `npm run audit`
     counts them as unrouted, and the ceiling in `course.yaml` is set to admit
     exactly those six. Routing them to a reviewed concept would make the
     number better and the label wrong.
@@ -25,9 +25,9 @@ how the site works, and exercise every feature the engine offers so that nothing
 ships unrendered.
 
 §1 is the first job and stands alone: a reader who stops after it can use every
-part of the site. §2 and §3 are why it behaves that way, for someone deciding
-whether to trust it or to write a course of their own. §4 and §5 are the
-catalogue: every figure kind, every block type, every source badge, rendered
+part of the site. §2 and §3 explain why it behaves that way, for someone
+deciding whether to trust it or write a course of their own. §4 and §5 are the
+catalogue: every figure kind, every block type, and every source badge rendered
 once, using the system's own philosophy as material.
 
 ## The reader
@@ -51,7 +51,7 @@ without a deadline to aim at. This one leaves the array empty to show that path.
 
 ## Skip / bridge / teach
 
-Not meaningful in the usual sense, because there is no prior course to bridge from.
-The sections are ordered by who needs them: §1 using the site, §2 the two rules
-it is built on, §3 the research behind the two loops and the tiers, §4 the nine
-figure kinds, §5 the remaining blocks and the edge-case displays.
+Not meaningful in the usual sense, because there is no prior course to bridge
+from. The sections are ordered by who needs them: §1 using the site, §2 the two
+rules it is built on, §3 the research behind retrieval and optional explanation,
+§4 the nine figure kinds, §5 the remaining blocks and edge-case displays.

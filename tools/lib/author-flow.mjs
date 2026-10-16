@@ -18,6 +18,7 @@ export function loadWorkflow(context) {
    sections; its target is scheduling guidance, never a curriculum ceiling. */
 export function courseBatches(subs, plan, workflow) {
   const remaining = new Map(subs.map(s => [s.id, s]));
+  const positions = new Map(subs.map((s, i) => [s.id, i]));
   const batches = [], warnings = [];
   for (const [i, spec] of (plan.data.batches || []).entries()) {
     const members = [];
@@ -25,7 +26,8 @@ export function courseBatches(subs, plan, workflow) {
       if (remaining.has(id)) { members.push(remaining.get(id)); remaining.delete(id); }
       else warnings.push(`batch ${spec.id || i + 1}: unknown or duplicate subsection ${id}; ignored`);
     }
-    if (members.length) batches.push({ id: spec.id || `planned-${i + 1}`, members });
+    if (members.length) batches.push({ id: spec.id || `planned-${i + 1}`,
+      members: members.sort((a, b) => positions.get(a.id) - positions.get(b.id)) });
   }
   const target = workflow.batching?.target_size ?? 4;
   if (!Number.isInteger(target) || target < 1) throw new Error("batching.target_size needs a positive integer");
@@ -57,7 +59,7 @@ export function flowState({ mode, handoff = "auto", progress, plan, records = {}
   };
   const compute = sub => {
     const record = records[sub.id];
-    const samePlan = record?.plan === planSignature(plan, sub.id, planIndex);
+    const samePlan = record?.plan === planSignature(plan, sub.id, planIndex, progress.d.subs);
     const fresh = samePlan && record?.hash === fileHash(sub.file);
     if (samePlan && record.status === "correct") return "correct";
     if (!done.has(sub.id)) return "write";

@@ -3,7 +3,6 @@
  *   node tools/new-course.mjs ma26600 "Ordinary Differential Equations"
  */
 import { cpSync, existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { COURSES, TEMPLATE, ENGINE, PACKAGED } from "./lib/paths.mjs";
@@ -59,14 +58,6 @@ writeFileSync(cfg, readFileSync(cfg, "utf8")
   .replace("code: XX 00000", "code: " + id.toUpperCase())
   .replace("title: Course Title", "title: " + title)
   .replace(/^(\s*)hue: 0$/m, `$1hue: ${hue}`));
-
-/* The template ships a drill bank, so the course owes problems.md and
-   checklist.md from the moment it exists — they are generated (T20) and
-   `npm run check` compares them against the data. Writing them here is what
-   makes a freshly scaffolded course pass the suite rather than fail it on two
-   files the author never knew were owed. */
-execFileSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), "gen-materials.mjs"), id],
-  { stdio: "ignore" });
 
 console.log(`created courses/${id}  (accent hue ${hue})`);
 if (readerFile) console.log("created courses/_reader.yaml — fill it in before authoring");

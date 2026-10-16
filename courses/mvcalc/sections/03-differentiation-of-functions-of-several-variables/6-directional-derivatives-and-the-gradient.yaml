@@ -1,0 +1,123 @@
+title: Directional Derivatives and the Gradient
+blocks:
+  - t: p
+    h: <p>First-order partial derivatives <m>f_x</m> and <m>f_y</m> describe rates of change exclusively parallel to the coordinate axes <m>\mathbf{i}</m> and <m>\mathbf{j}</m>. On a topographical terrain, however, a traveler can walk along any arbitrary compass heading. The directional derivative generalizes the derivative to any chosen direction in the domain, and the gradient vector encapsulates all directional rates into a single vector that governs maximal increase, decrease, and orthogonality to level sets.</p>
+    authorId: block-535bda9c-e5f
+  - t: def
+    term: Directional Derivative and the Gradient Vector
+    source: OpenStax Calculus Volume 3, Section 4.6
+    sourceReview: sourced
+    core: The gradient of <m>f(x, y)</m> is <m>\nabla f = \langle f_x, f_y \rangle</m>; for any unit vector <m>\mathbf{u}</m>, the directional derivative is <m>D_{\mathbf{u}} f = \nabla f \cdot \mathbf{u}</m>.
+    introduces:
+      - obj-s3-6
+      - directional-derivative
+      - gradient
+    objectives:
+      - obj-s3-6
+    family: family-directional-derivative
+    h: <p>Let <m>z = f(x, y)</m> be a differentiable function and <m>\mathbf{u} = \langle a, b \rangle</m> be a unit vector. The directional derivative of <m>f</m> in the direction of <m>\mathbf{u}</m> is defined as the limit <m>D_{\mathbf{u}} f(x_0, y_0) = \lim_{h \to 0} \frac{f(x_0 + ha, y_0 + hb) - f(x_0, y_0)}{h}</m>. The gradient vector is <m>\nabla f(x, y) = \langle f_x(x, y), f_y(x, y) \rangle = f_x\mathbf{i} + f_y\mathbf{j}</m>. For functions of three variables <m>w = f(x, y, z)</m>, the gradient is <m>\nabla f = \langle f_x, f_y, f_z \rangle</m> and <m>D_{\mathbf{u}} f = \nabla f \cdot \mathbf{u}</m> for any unit vector <m>\mathbf{u} \in \mathbb{R}^3</m>.</p>
+    authorId: block-e711a4da-650
+  - t: math
+    label: Directional Derivative and Gradient Relation
+    tex: D_{\mathbf{u}} f(x_0, y_0) = \nabla f(x_0, y_0) \cdot \mathbf{u} = |\nabla f(x_0, y_0)|\cos\theta
+    note: The angle theta is measured between the gradient vector and the direction unit vector u.
+    objectives:
+      - obj-s3-6
+    family: family-directional-derivative
+    authorId: block-66a978aa-dea
+  - t: ex
+    title: Normalizing Direction and Computing the Directional Derivative
+    objectives:
+      - obj-s3-6
+    family: family-directional-derivative
+    h: '<p>Find the directional derivative of <m>f(x, y) = 2x^2 y - 3y^3</m> at <m>P(1, 2)</m> in the direction of <m>\mathbf{v} = \langle 3, 4 \rangle</m>.</p><p>First compute the gradient: <m>\nabla f = \langle 4x y, 2x^2 - 9y^2 \rangle</m>. At <m>P(1, 2)</m>, <m>\nabla f(1, 2) = \langle 4(1)(2), 2(1)^2 - 9(2^2) \rangle = \langle 8, 2 - 36 \rangle = \langle 8, -34 \rangle</m>.</p><p>Next normalize the direction vector <m>\mathbf{v}</m>: <m>|\mathbf{v}| = \sqrt{3^2 + 4^2} = \sqrt{25} = 5</m>, so the unit vector is <m>\mathbf{u} = \frac{\mathbf{v}}{|\mathbf{v}|} = \langle \frac{3}{5}, \frac{4}{5} \rangle</m>.</p><p>Compute the directional derivative: <m>D_{\mathbf{u}} f(1, 2) = \nabla f(1, 2) \cdot \mathbf{u} = 8\left(\frac{3}{5}\right) + (-34)\left(\frac{4}{5}\right) = \frac{24 - 136}{5} = -\frac{112}{5} = -22.4</m>.</p>'
+    authorId: block-570831c8-d99
+  - t: key
+    label: Geometric Properties of the Gradient Vector
+    source: OpenStax Calculus Volume 3, Section 4.6
+    sourceReview: sourced
+    core: The gradient <m>\nabla f</m> points in the direction of maximum rate of increase with magnitude <m>|\nabla f|</m>, while <m>-\nabla f</m> gives the maximum rate of decrease <m>-|\nabla f|</m>.
+    objectives:
+      - obj-s3-6
+    family: family-gradient-max-rate
+    h: <p>Because <m>D_{\mathbf{u}} f = |\nabla f|\cos\theta</m>, the directional rate of change depends directly on the alignment angle <m>\theta</m>:</p>
+    items:
+      - 'Maximum increase: When <m>\theta = 0</m>, <m>\mathbf{u}</m> points along <m>\nabla f</m>, giving the maximum directional derivative value <m>|\nabla f|</m>.'
+      - 'Maximum decrease: When <m>\theta = \pi</m>, <m>\mathbf{u}</m> points in the opposite direction <m>-\nabla f</m>, giving the minimum directional derivative value <m>-|\nabla f|</m>.'
+      - 'Zero change: When <m>\theta = \pi/2</m>, <m>\mathbf{u} \perp \nabla f</m>, giving <m>D_{\mathbf{u}} f = 0</m>; directions of zero change are tangent to the level curve through that point.'
+    ordered: true
+    authorId: block-e4f7e564-f99
+  - t: def
+    term: Tangent Planes to Level Surfaces
+    source: OpenStax Calculus Volume 3, Section 4.6
+    sourceReview: sourced
+    core: The gradient <m>\nabla F(x_0, y_0, z_0)</m> is orthogonal to the level surface <m>F(x, y, z) = k</m> at <m>P_0</m>, providing the normal vector for the tangent plane <m>\nabla F \cdot (\mathbf{r} - \mathbf{r}_0) = 0</m>.
+    objectives:
+      - obj-s3-6
+    family: family-gradient-normal
+    h: <p>Let <m>C</m> be any smooth curve on the level surface <m>F(x, y, z) = k</m> passing through <m>P_0(x_0, y_0, z_0)</m> with tangent vector <m>\mathbf{r}'(t_0)</m>. Differentiating <m>F(\mathbf{r}(t)) = k</m> via the chain rule gives <m>\nabla F(P_0) \cdot \mathbf{r}'(t_0) = 0</m>. Therefore, <m>\nabla F(P_0)</m> is perpendicular to every tangent vector on the level surface. The tangent plane to <m>F(x, y, z) = k</m> at <m>P_0</m> is given by <m>F_x(P_0)(x - x_0) + F_y(P_0)(y - y_0) + F_z(P_0)(z - z_0) = 0</m>, and the normal line is parametrized by <m>\mathbf{r}(t) = \langle x_0, y_0, z_0 \rangle + t\nabla F(P_0)</m>.</p>
+    authorId: block-fbec1699-fc8
+  - t: ex
+    title: Finding the Tangent Plane to an Implicit Level Surface
+    objectives:
+      - obj-s3-6
+    family: family-gradient-normal
+    h: '<p>Find the equation of the tangent plane to the ellipsoid <m>x^2 + 2y^2 + 3z^2 = 20</m> at <m>P_0(3, 2, 1)</m>.</p><p>Check the base point: <m>3^2 + 2(2^2) + 3(1^2) = 9 + 8 + 3 = 20</m>. Let <m>F(x, y, z) = x^2 + 2y^2 + 3z^2</m>. Compute the gradient: <m>\nabla F = \langle 2x, 4y, 6z \rangle</m>. At <m>P_0(3, 2, 1)</m>, <m>\nabla F(3, 2, 1) = \langle 6, 8, 6 \rangle</m>.</p><p>The tangent plane equation is <m>6(x - 3) + 8(y - 2) + 6(z - 1) = 0</m>. Dividing through by 2 gives <m>3(x - 3) + 4(y - 2) + 3(z - 1) = 0</m>, which simplifies to <m>3x + 4y + 3z = 20</m>.</p>'
+    authorId: block-c3fb6dc9-3eb
+  - t: trap
+    label: Failing to Normalize the Direction Vector
+    source: OpenStax Calculus Volume 3, Section 4.6
+    sourceReview: sourced
+    core: The directional derivative <m>D_{\mathbf{u}} f = \nabla f \cdot \mathbf{u}</m> requires a unit vector; using an unnormalized vector <m>\mathbf{v}</m> scales the rate by <m>|\mathbf{v}|</m>.
+    objectives:
+      - obj-s3-6
+    family: family-directional-derivative
+    h: <p>A frequent error is calculating <m>\nabla f \cdot \mathbf{v}</m> directly using an unnormalized vector <m>\mathbf{v}</m>. Because the dot product scales with magnitude, this produces <m>|\mathbf{v}| D_{\mathbf{u}} f</m>, artificially inflating the rate of change by the length of <m>\mathbf{v}</m>. To compute the true rate of change per unit distance traveled, always divide by <m>|\mathbf{v}|</m> first to obtain the unit direction vector <m>\mathbf{u} = \mathbf{v}/|\mathbf{v}|</m>.</p>
+    authorId: block-c776de10-a3b
+quiz:
+  - type: Directional derivative evaluation
+    concept: directional-derivative
+    objectives:
+      - obj-s3-6
+    family: family-directional-derivative
+    q: What is the directional derivative of <m>f(x, y) = 3x^2 - 4x y + y^2</m> at the point <m>(1, 2)</m> in the direction of the vector <m>\mathbf{v} = \langle 3, -4 \rangle</m>?
+    verified: true
+    response:
+      kind: number
+      value: -1.2
+      tolerance: 0.001
+    why: The gradient is <m>\nabla f = \langle 6x - 4y, -4x + 2y \rangle</m>. At <m>(1, 2)</m>, <m>\nabla f(1, 2) = \langle 6 - 8, -4 + 4 \rangle = \langle -2, 0 \rangle</m>. The length of <m>\mathbf{v}</m> is <m>\sqrt{3^2 + (-4)^2} = 5</m>, so the unit direction vector is <m>\mathbf{u} = \langle \frac{3}{5}, -\frac{4}{5} \rangle</m>. Then <m>D_{\mathbf{u}} f = \nabla f \cdot \mathbf{u} = (-2)(\frac{3}{5}) + (0)(-\frac{4}{5}) = -\frac{6}{5} = -1.2</m>.
+    authorId: quiz-fb73af6d-423
+  - type: Maximum rate of change computation
+    concept: gradient
+    objectives:
+      - obj-s3-6
+    family: family-gradient-max-rate
+    q: What is the maximum rate of change of the function <m>f(x, y) = 3x^2 + 4y^2</m> at the point <m>(1, 1)</m>?
+    verified: true
+    response:
+      kind: number
+      value: 10
+    why: The maximum rate of change is the magnitude of the gradient vector <m>|\nabla f|</m>. Here <m>\nabla f = \langle 6x, 8y \rangle</m>, so at <m>(1, 1)</m>, <m>\nabla f(1, 1) = \langle 6, 8 \rangle</m>. Its magnitude is <m>\sqrt{6^2 + 8^2} = \sqrt{36 + 64} = \sqrt{100} = 10</m>.
+    authorId: quiz-6c130575-a26
+  - type: Tangent plane to a level surface
+    concept: gradient
+    objectives:
+      - obj-s3-6
+    family: family-gradient-normal
+    q: What is the equation of the tangent plane to the level surface <m>x^2 + y^2 - z^2 = 1</m> at the point <m>(2, 1, 2)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>2x + y - 2z = 1</m>
+          why: Let <m>F(x, y, z) = x^2 + y^2 - z^2</m>. The gradient normal is <m>\nabla F = \langle 2x, 2y, -2z \rangle \implies \nabla F(2, 1, 2) = \langle 4, 2, -4 \rangle</m>. Dividing by 2 yields normal <m>\langle 2, 1, -2 \rangle</m>. The tangent plane equation is <m>2(x - 2) + 1(y - 1) - 2(z - 2) = 0 \implies 2x + y - 2z = 1</m>.
+        - text: <m>2x + y + 2z = 9</m>
+          why: This incorrectly uses a positive normal component for <m>z</m> instead of <m>-2z</m>.
+        - text: <m>4x + 2y - 4z = 4</m>
+          why: This computes the scalar product constant incorrectly.
+        - text: <m>x + y - z = 1</m>
+          why: This replaces the gradient coefficients with unit values rather than evaluating partial derivatives.
+    why: The gradient vector provides the normal vector to the level surface, producing the simplified tangent plane equation <m>2x + y - 2z = 1</m>.
+    authorId: quiz-5e7d02fe-4d1

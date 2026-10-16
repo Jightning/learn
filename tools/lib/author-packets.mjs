@@ -5,8 +5,10 @@ import { join } from "node:path";
 import { createHash } from "node:crypto";
 import * as YAML from "js-yaml";
 import { readAuthorBank, resolveAuthorQuiz, bankMatrix } from "./author-bank.mjs";
-import { parseFile } from "./load.mjs";
+import { loadCourse, parseFile } from "./load.mjs";
 import { selectContext, shapeNeeds } from "./author-context.mjs";
+import { indexTeaching, teachingPacket, prerequisiteEvidenceSignature } from "./author-teaching.mjs";
+import { isOptional } from "../../src/lib/tiers.js";
 import { curriculumSignature, mergePlanCurriculum, readCurriculumCollections, validateCurriculumReferences } from "../../src/lib/curriculum.js";
 
 export const fingerprint = value => createHash("sha256").update(value).digest("hex");
@@ -68,6 +70,8 @@ export function indexPlan(plan) {
       continue;
     }
     if (strict && familyIndex.has(f.id)) throw new Error(`duplicate family id "${f.id}"`);
+    if (Object.hasOwn(f, "assessmentRequired") && typeof f.assessmentRequired !== "boolean")
+      throw new Error(`family "${f.id}": assessmentRequired must be boolean`);
     familyIndex.set(f.id, f);
   }
   const lessons = asList(plan.data.lessons ?? plan.data.subsections);
@@ -105,14 +109,15 @@ export function indexPlan(plan) {
     const id = o.lesson || o.subsection;
     if (id) { if (!byLesson.has(id)) byLesson.set(id, []); byLesson.get(id).push(o); }
   }
+  const teaching = indexTeaching(plan);
   return {
     lessons: new Map(lessons.map(s => [s.id, s])),
     objectives: objectiveIndex,
-    families: familyIndex, byLesson, uses
+    families: familyIndex, byLesson, uses, teaching
   };
 }
 
-export function planSignature(plan, sub, index = indexPlan(plan)) {
+export function planSignature(plan, sub, index = indexPlan(plan), subsections = []) {
   const lesson = index.lessons.get(sub);
   const ids = new Set([...asList(lesson?.objectives).map(named), ...(index.byLesson.get(sub) || []).map(o => o.id)]);
   const local = [...ids].map(id => index.objectives.get(id)).filter(Boolean);
@@ -120,7 +125,13 @@ export function planSignature(plan, sub, index = indexPlan(plan)) {
   const dependencies = [...prerequisites].map(id => index.objectives.get(id)).filter(Boolean);
   const familyIds = new Set(asList(lesson?.families ?? local.flatMap(o => asList(o.families))).map(named));
   const families = [...familyIds].map(id => index.families.get(id)).filter(Boolean).filter(active);
-  return fingerprint(JSON.stringify({ lesson, local, dependencies, families, reader: plan.data.reader }));
+  const owners = [...new Set(asList(lesson?.teaching?.requires).map(named)
+    .map(id => index.teaching.owners.get(id)).filter(Boolean))]
+    .map(id => index.lessons.get(id)?.teaching ? { id, teaching: index.lessons.get(id).teaching } : { id });
+  const evidence = prerequisiteEvidenceSignature(plan, sub, subsections, index.teaching);
+  const signature = { lesson, local, dependencies, families, reader: plan.data.reader };
+  if (!lesson?.teaching) return fingerprint(JSON.stringify(signature));
+  return fingerprint(JSON.stringify({ ...signature, owners, evidence }));
 }
 
 export function selectItem(unit, selector) {
@@ -133,7 +144,7 @@ export function selectItem(unit, selector) {
 }
 
 export function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase, mode = "single", role,
-  needs = [], item, issue, sourceRefs = [], sources = [], warnings = [] }) {
+  needs = [], item, issue, sourceRefs = [], sources = [], warnings = [], subsections = [], assigned = [] }) {
   const bank = readAuthorBank(join(plan.path, "../.."));
   const unit = subsection ? parseFile(subsection.file) || {} : {};
   const lesson = index.lessons.get(subsection?.id);
@@ -153,8 +164,10 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
   const families = [...familyIds].map(id => index.families.get(id)).filter(Boolean).filter(active);
   const effectiveRole = mode === "single" ? "single" : role ||
     (phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer");
+  const teachingContext = phase === "write" && lesson?.teaching
+    ? teachingPacket({ plan, subsection, subsections, assigned, index: index.teaching }) : {};
   const rules = selectContext(context, { phase, role: effectiveRole,
-    needs: [...new Set([...needs, ...asList(selected ? null : lesson?.needs), ...shapeNeeds(selected
+    needs: [...new Set([...needs, ...asList(selected ? null : lesson?.needs), ...asList(teachingContext.needs), ...shapeNeeds(selected
       ? item.startsWith("block:") ? { blocks: [selected] } : { quiz: [selected] } : resolved)])] });
   const refs = sourceRefs.length ? sourceRefs : selected
     ? asList(selected.sourceRefs)
@@ -162,7 +175,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
       : lesson && Object.hasOwn(lesson, "sources") ? asList(lesson.sources) : shared ? [] : local.flatMap(o => asList(o.sources))) : [];
   const reader = plan.data.reader || {};
   const readerContext = phase === "write"
-    ? { ...(reader.goal ? { goal: reader.goal } : {}), ...(reader.background ? { background: reader.background } : {}) }
+    ? teachingContext.reader || { ...(reader.goal ? { goal: reader.goal } : {}), ...(reader.background ? { background: reader.background } : {}) }
     : selected && reader.background ? { background: reader.background } : null;
   const packet = {
     phase, mode, role: effectiveRole,
@@ -171,6 +184,10 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
     ...(subsection ? { target: subsection.file } : {}),
     ...(readerContext && Object.keys(readerContext).length ? { reader: readerContext } : {}),
     ...(phase === "write" && plan.data.scope ? { scope: plan.data.scope } : {}),
+    ...(phase === "write" && teachingContext.teaching ? { teaching: teachingContext.teaching } : {}),
+    ...(phase === "write" && teachingContext.needs?.length ? { needs: teachingContext.needs } : {}),
+    ...(phase === "write" && teachingContext.outline ? { outline: teachingContext.outline } : {}),
+    ...(phase === "write" && teachingContext.prerequisiteEvidence ? { prerequisiteEvidence: teachingContext.prerequisiteEvidence } : {}),
     ...(phase === "plan" ? { inventory: plan.path } : {}),
     ...(phase === "write" && bank.types.length ? { questionTypes: bank.types.filter(r => asList(r.content.teach).includes(subsection?.id) || resolved.quiz.some(q => q.typeId === r.content.id)).map(r => r.content), inventory: bankMatrix(bank).rows.filter(r => asList(r.teach).includes(subsection?.id) || resolved.quiz.some(q => q.typeId === r.type)) } : {}),
     ...(local.length ? { objectives: local.map(o => ({ id: o.id, outcome: o.outcome, ...(o.risk ? { risk: o.risk } : {}) })) } : {}),
@@ -181,7 +198,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
     ...(sources.length ? { sources } : {}),
     ...(selected ? { item: { ...(selected.authorId ? { id: selected.authorId } : { selector: item }), content: Object.fromEntries(Object.entries(selected).filter(([key]) => key !== "authorId")) } } : {}),
     ...(issue ? { issue } : {}),
-    warnings: [...warnings, ...rules.warnings]
+    warnings: [...warnings, ...rules.warnings, ...asList(teachingContext.warnings)]
   };
   if (phase === "write" && shared && !Object.hasOwn(lesson || {}, "families") && local.some(o => asList(o.families).length))
     packet.warnings.push("shared objective needs lesson-local families; broad family definitions were not included");
@@ -197,7 +214,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
 }
 
 /* A percentage of explicit evidence links, not a semantic mastery score. */
-export function planCoverage(plan, subsections) {
+export function planCoverage(plan, subsections, { verifySource } = {}) {
   const dir = join(plan.path, "../..");
   const bank = readAuthorBank(dir);
   const objectives = asList(plan.data.objectives).filter(active);
@@ -243,9 +260,121 @@ export function planCoverage(plan, subsections) {
     return { id: o.id, teaching, questions, families: families.length,
       assessed: assessed.length, complete: !!teaching.length && !!questions.length && assessed.length === families.length };
   });
+  const requiredFamilies = asList(plan.data.families).filter(f => f?.assessmentRequired === true);
+  const familyRows = requiredFamilies.map(family => {
+    const missing = [];
+    const disposition = family.disposition || "unspecified";
+    if (disposition !== "teach") missing.push(`disposition is ${disposition}; required assessment scope must remain teach`);
+    const candidates = asList(family.sources).filter(ref => ref && typeof ref === "object" &&
+      typeof ref.source === "string" && ref.source.trim() && typeof ref.unit === "string" && ref.unit.trim() &&
+      (ref.source !== "generated" || (typeof ref.provenance === "string" && ref.provenance.trim())));
+    const routes = [];
+    for (const ref of candidates) {
+      if (ref.source === "generated" || !verifySource) { routes.push(ref); continue; }
+      try {
+        const evidence = verifySource(ref);
+        if (!substantiveSourceUnit(evidence) || /Source changed or disappeared since indexing/.test(evidence.warning || "")) continue;
+        routes.push({ source: ref.source, unit: ref.unit, locator: evidence.locator,
+          ...(evidence.warning ? { warning: evidence.warning } : {}) });
+      } catch { /* An unknown/stale source is not evidence for a required family. */ }
+    }
+    if (!routes.length) missing.push("no exact source or explicit generated-provenance route");
+    const mappedTypeIds = new Set(asList(family.questions).map(named).filter(Boolean));
+    const knownObjectives = new Set(objectives.map(objective => objective.id));
+    const knownConcepts = new Set(asList(plan.data.concepts).map(named).filter(Boolean));
+    if (["course.yaml", "course.yml", "course.json"].some(name => existsSync(join(dir, name))))
+      for (const id of Object.keys(loadCourse(dir).course.concepts || {})) knownConcepts.add(id);
+    const mappedTypes = bank.types.map(record => record.content).filter(type => mappedTypeIds.has(type.id) &&
+      asList(type.families).map(named).includes(family.id) && type.assess !== false && knownConcepts.has(type.concept) &&
+      asList(type.objectives).map(named).some(id => knownObjectives.has(id)));
+    if (!mappedTypes.length) missing.push("no mapped question type links this family");
+    const objectivesForFamily = new Set([
+      ...objectives.filter(objective => asList(objective.families).map(named).includes(family.id)).map(objective => objective.id),
+      ...mappedTypes.flatMap(type => asList(type.objectives).map(named))
+    ]);
+    const conceptsForFamily = new Set(mappedTypes.map(type => type.concept).filter(Boolean));
+    const familyTeaching = [];
+    const familyTeach = new Set(asList(family.teach).map(named).filter(Boolean));
+    const typeTeach = new Set(mappedTypes.flatMap(type => asList(type.teach).map(named).filter(Boolean)));
+    const compatibleTeach = new Set([...familyTeach].filter(id => typeTeach.has(id)));
+    if (!familyTeach.size) missing.push("no lesson teaching route is declared on the family");
+    else if (!compatibleTeach.size) missing.push("family and mapped question types have no compatible teach route");
+    for (const [sub, unit] of found) for (const [i, block] of (unit.blocks || []).entries()) {
+      if (!compatibleTeach.has(sub) || isOptional(block) ||
+          ["depth", "apply", "attempt"].includes(block?.t)) continue;
+      const hasFamily = [...asList(block?.families ?? block?.family)].map(named).includes(family.id);
+      if (!hasFamily || !hasMainPathContent(block)) continue;
+      const linkedObjective = tags(block).some(id => objectivesForFamily.has(id));
+      const linkedConcept = conceptTags(block).some(id => conceptsForFamily.has(id));
+      if (linkedObjective || linkedConcept) familyTeaching.push({
+        location: `${sub}/block:${i + 1}`, ...(block.authorId ? { authorId: block.authorId } : {})
+      });
+    }
+    if (!familyTeaching.length) missing.push("no substantive main-path block on a compatible teach route links this family to its objective or concept");
+    const allowedTypes = new Set(mappedTypes.map(type => type.id));
+    const tasks = [];
+    const addTask = (where, item) => {
+      const typeId = item?.typeId || item?.type;
+      if (!allowedTypes.has(typeId) || item?.use === "diagnostic" || !meaningfulQuestion(item)) return;
+      tasks.push(where);
+    };
+    for (const [sub, unit] of found) for (const [i, item] of (unit.quiz || []).entries())
+      addTask(`${sub}/quiz:${i + 1}`, item);
+    for (const record of bank.items) addTask(record.content.id, record.content);
+    const uniqueTasks = [...new Set(tasks)];
+    if (!uniqueTasks.length) missing.push("no active mapped assessment or practice item exists");
+    return { id: family.id, disposition, required: true, sources: routes, questionTypes: mappedTypes.map(type => type.id),
+      teaching: familyTeaching, tasks: uniqueTasks, complete: missing.length === 0, missing };
+  });
+  const assessmentReady = familyRows.every(row => row.complete);
   return { available: !!plan.hash, total: rows.length,
     percent: rows.length ? Math.round(100 * rows.filter(r => r.complete).length / rows.length) : null,
-    rows, message: "Explicit teaching/question links; author judgments, not proof of mastery." };
+    rows, requiredFamilies: familyRows, assessmentReady,
+    assessmentMessage: familyRows.length
+      ? `${familyRows.filter(row => row.complete).length}/${familyRows.length} declared assessment-required families have source, teaching, and task evidence. This is a routing check, not a semantic quality judgment.`
+      : "No assessment-required families were declared; legacy family coverage remains report-only.",
+    message: "Explicit teaching/question links; author judgments, not proof of mastery." };
+}
+
+const hasValue = value => {
+  if (typeof value === "string") return substantiveText(value);
+  if (typeof value === "number" || typeof value === "boolean") return true;
+  if (Array.isArray(value)) return value.some(hasValue);
+  if (value && typeof value === "object") return Object.entries(value)
+    .filter(([key]) => !["id", "title", "label", "caption", "cap", "alt", "gist", "family", "families", "concept", "concepts", "objective", "objectives", "tier", "source", "authorId", "introduces", "layout"].includes(key))
+    .some(([, child]) => hasValue(child));
+  return false;
+};
+function substantiveText(value) {
+  return String(value).replace(/<c\s+k=["'][^"']+["'][^>]*>[\s\S]*?<\/c>/g, " ")
+    .replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|lt|gt|quot|#\d+);/g, " ").trim().length > 0;
+}
+function substantiveSourceUnit(evidence) {
+  if (!evidence?.locator) return false;
+  if (evidence.asset) return true;
+  if (typeof evidence.text !== "string") return false;
+  const body = evidence.text.replace(/^\s{0,3}#{1,6}\s.*$/gm, " ")
+    .replace(/<!-- [\s\S]*? -->/g, " ").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return body.length > 0;
+}
+function hasMainPathContent(block) {
+  if (!["core", "h", "c"].some(key => typeof block?.[key] === "string" && substantiveText(block[key])))
+    return ["items", "rows", "slides", "spec"].some(key => hasValue(block?.[key]));
+  return true;
+}
+function conceptTags(item) {
+  const values = asList(item?.concepts ?? item?.concept).map(named).filter(Boolean);
+  const scan = value => {
+    if (typeof value === "string") for (const match of value.matchAll(/<c\s+k=["']([^"']+)["']/g)) values.push(match[1]);
+    else if (Array.isArray(value)) value.forEach(scan);
+    else if (value && typeof value === "object") Object.values(value).forEach(scan);
+  };
+  scan(item);
+  return [...new Set(values)];
+}
+function meaningfulQuestion(item) {
+  return typeof item?.q === "string" && !!item.q.trim() && item.response && typeof item.response === "object" &&
+    Object.entries(item.response).some(([key, value]) => key !== "kind" && hasValue(value));
 }
 
 export function packetText(packet) {

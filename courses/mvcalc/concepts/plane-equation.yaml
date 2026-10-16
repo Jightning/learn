@@ -1,0 +1,4 @@
+title: "Normal vector and scalar equation of a plane"
+term: "Plane Equation"
+body: >-
+  <p>A plane in three dimensions is uniquely determined by a point <m>P_0(x_0, y_0, z_0)</m> on the plane and a nonzero normal vector <m>\mathbf{n} = \langle a, b, c \rangle</m> orthogonal to it. Its vector equation is <m>\mathbf{n} \cdot (\mathbf{r} - \mathbf{r}_0) = 0</m>, which expands to the scalar equation <m>a(x - x_0) + b(y - y_0) + c(z - z_0) = 0</m>, or standard form <m>ax + by + cz + d = 0</m>. The angle between two planes is the angle between their normal vectors. Planes serve as the primary linear surfaces in multivariable calculus.</p>

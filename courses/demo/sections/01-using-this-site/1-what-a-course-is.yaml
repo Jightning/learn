@@ -43,7 +43,7 @@ blocks:
       - 'the <b>dependency map</b>: which section needs which'
 
   - t: p
-    tier: depth
+    optional: true
     source: docs/architecture.md §2b
     h: |-
       Nothing about a course is compiled. The YAML an author writes is the YAML the browser parses, which is why a course can be edited by handing the folder to a model and dropping the changed folder back in. The cost is about a tenth of a second when a course first opens; the gain is that the material is readable by anything, including you.
@@ -53,8 +53,10 @@ quiz:
     concept: completeness
     q: |-
       You install a course on your laptop and answer half of it, then open the site on your phone. Is your progress there?
-    a: |-
-      No, not unless you set up sync. A course and its answers live in the browser you used them in.
+    response:
+      kind: self
+      model: |-
+        No, not unless you set up sync. A course and its answers live in the browser you used them in.
     why: |-
       <p>Nothing is uploaded, so there is no account holding your state and no server to fetch it from. Sync exists and runs between your own devices, but it is something you turn on rather than the default.</p>
     verified: 2026-09-06
@@ -63,8 +65,10 @@ quiz:
     concept: completeness
     q: |-
       A subsection covers a procedure and the author judges it too short to be worth a question. What does the build do?
-    a: |-
-      It fails. Every subsection carries at least one question.
+    response:
+      kind: self
+      model: |-
+        It fails. Every subsection carries at least one question.
     why: |-
       <p>The rule is mechanical because the judgement is unreliable: a subsection that feels too small to test is exactly the one whose material quietly leaves. If it is worth writing down, it is worth one question.</p>
     verified: 2026-09-06

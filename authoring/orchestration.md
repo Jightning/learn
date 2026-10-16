@@ -20,15 +20,15 @@ the user need not name a phase. Internal batches do not require user handoffs.
 
 1. Strong planner inventories sources once and writes the compact plan plus
    `categorize/{objectives,families,concepts}.yaml`, with exact lesson
-   family/source assignments and reader prerequisites. It writes keys,
+   family/source assignments, teaching briefs, and reader prerequisites. It writes keys,
    requirements, scope, and source-family judgments only; it never drafts
    teaching prose. End with one line: “Switch to your writer model and say: Continue
    this course.”
-2. Cheap writer completes setup, writes one representative lesson and runs
-   `pilot <id> --sub sN-M` before scaling production. Resolve format/tag gaps
-   there, then complete every unfinished lesson. Choose a naturally representative
-   lesson, not an artificially enlarged sample. New shapes use their selected
-   format rules before writing. Verify answers
+2. Cheap writer completes setup, then writes coherent lesson sequences from
+   their teaching briefs. Use `pilot <id> --sub sN-M` as a format smoke check
+   for new or unfamiliar shapes; it does not require a reviewer handoff.
+   Resolve local format/tag gaps while writing. Inspect assembled passages
+   with `preview <id> --sub sN-M` and their final layout in the real reader. Verify answers
    with explicit calculations or executable checks where useful, and runs
    `done <id> --all` once. Preserve existing drafts; repair only actual gaps.
    Reuse extracted spans by their packet excerpt paths; read shared evidence
@@ -60,7 +60,9 @@ never rewrites, reformats or converts content.
 
 ## Automatic paired
 
-Persist `--handoff auto`. Use the configured cheap writer with explicit model
+Persist `--handoff auto`. Use one writer for a coherent prerequisite sequence. Parallel workers own
+independent branches only; planned teaching from another worker is unavailable
+until written. Use the configured cheap writer with explicit model
 and effort, `fork_turns: none`, assigned file ownership, relevant packets and
 no inherited conversation. Never silently inherit the expensive model. Wait
 for a completed batch; do not poll at short intervals or pre-review files while
@@ -72,7 +74,7 @@ Reviewers read the shared review context once and reuse it across section
 packets. Group item IDs to deduplicate source spans. After correction, the
 reviewer screens changed items and affected context before acceptance; fresh
 screening is required for every current changed or affected item.
-Run the same initial writer format pilot.
+Use the same local format smoke check for unfamiliar shapes.
 If explicit dispatch is unavailable, switch to manual course-wide flow.
 
 ## Single

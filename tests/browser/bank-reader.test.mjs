@@ -23,10 +23,10 @@ for (const width of [1440, 390]) test(`bank questions share lesson identity and 
     await page.reload();
     await page.locator('.quiz .q[data-qid="linear-1"] .qresult').filter({ hasText: /^Correct$/ }).waitFor();
     await page.goto(`${server.origin}/#/demo/review/mixed`);
-    await page.getByText("Choose subsections and set length", { exact: true }).click();
+    await page.getByRole("group", { name: "Practice settings" }).waitFor();
     await page.selectOption("#p-from", "s1-1");
     await page.selectOption("#p-to", "s1-1");
-    assert.equal(await page.locator(".pinfo").innerText(), "2 available");
+    assert.equal(await page.locator(".practice-settings .practice-stats strong").innerText(), "2");
     await page.locator("#p-start").click();
     const narrow = page.locator("#p-run .q");
     await narrow.waitFor();
@@ -40,8 +40,8 @@ for (const width of [1440, 390]) test(`bank questions share lesson identity and 
     const broadPage = await browser.newPage({ viewport: { width, height: 950 } });
     await broadPage.route("**/courses/demo.json", route => route.fulfill({ json: files }));
     await broadPage.goto(`${server.origin}/#/demo/review/mixed`);
-    await broadPage.getByText("Choose subsections and set length", { exact: true }).click();
-    assert.equal(await broadPage.locator(".pinfo").innerText(), "4 available");
+    await broadPage.getByRole("group", { name: "Practice settings" }).waitFor();
+    assert.equal(await broadPage.locator(".practice-settings .practice-stats strong").innerText(), "4");
     await broadPage.locator("#p-start").click();
     await broadPage.locator("#p-run .q").waitFor();
     assert.equal(await broadPage.locator('[data-qid="linear-check"], [data-qid="branch-check"]').count(), 0);

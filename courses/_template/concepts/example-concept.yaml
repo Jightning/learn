@@ -6,6 +6,5 @@ body: |-
   elsewhere links back automatically and the hub lists where it appears.</p>
 src: Defined in §1.1
 
-# Review is populated from concepts the learner has attempted. Add a
-# practice/example-concept.yaml bank only when this concept benefits from
-# another question surface.
+# Review is populated from concepts the learner has attempted. Add another
+# question surface only when it helps the learner transfer or retain the skill.

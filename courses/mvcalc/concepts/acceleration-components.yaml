@@ -1,0 +1,4 @@
+title: "Tangential and normal components of acceleration"
+term: "Acceleration Components"
+body: >-
+  <p>The acceleration vector resolves into tangential and normal directions as <m>\mathbf{a} = a_T \mathbf{T} + a_N \mathbf{N}</m>. The tangential component changes the particle's speed and is given by <m>a_T = v' = \frac{\mathbf{r}'(t) \cdot \mathbf{r}''(t)}{\|\mathbf{r}'(t)\|}</m>. The normal component changes the direction of motion and is given by <m>a_N = \kappa v^2 = \frac{\|\mathbf{r}'(t) \times \mathbf{r}''(t)\|}{\|\mathbf{r}'(t)\|}</m>, with <m>\|\mathbf{a}\|^2 = a_T^2 + a_N^2</m>. This decomposition explains centrifugal effects in curved motion and mechanics.</p>

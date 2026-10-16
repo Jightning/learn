@@ -1,10 +1,6 @@
-import { tierOf } from "../lib/tiers.js";
-
 /* One quiet control stays in the rail while its content opens and closes. */
 export function DepthTab({ items, open, controls, onToggle }) {
-  const depth = items.some(it => tierOf(it.b) === "depth");
-  const apply = items.some(it => tierOf(it.b) === "apply");
-  const label = depth ? (apply ? "In depth · Examples" : "In depth") : "Examples";
+  const label = "More";
   return (
     <button class={"dtab" + (open ? " is-open" : "")}
             aria-expanded={open} aria-controls={controls}

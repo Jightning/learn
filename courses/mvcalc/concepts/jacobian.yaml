@@ -1,0 +1,4 @@
+title: "Transformations and the Jacobian"
+term: "Jacobian"
+body: >-
+  <p>For a transformation from the <m>uv</m>-plane to the <m>xy</m>-plane given by <m>x = g(u, v)</m> and <m>y = h(u, v)</m>, the Jacobian determinant is <m>\frac{\partial(x, y)}{\partial(u, v)} = \begin{vmatrix} \frac{\partial x}{\partial u} & \frac{\partial x}{\partial v} \\ \frac{\partial y}{\partial u} & \frac{\partial y}{\partial v} \end{vmatrix} = \frac{\partial x}{\partial u}\frac{\partial y}{\partial v} - \frac{\partial x}{\partial v}\frac{\partial y}{\partial u}</m>. It measures the local area distortion factor of the mapping, with area element <m>dA = \left|\frac{\partial(x, y)}{\partial(u, v)}\right| du\, dv</m>. In three variables, the <m>3 \times 3</m> Jacobian determinant measures local volume distortion. The Jacobian must be non-zero for the transformation to be locally invertible.</p>

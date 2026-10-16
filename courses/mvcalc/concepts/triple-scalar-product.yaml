@@ -1,0 +1,4 @@
+title: "Triple scalar product and volume"
+term: "Triple Scalar Product"
+body: >-
+  <p>The triple scalar product of vectors <m>\mathbf{u}</m>, <m>\mathbf{v}</m>, and <m>\mathbf{w}</m> is the scalar <m>\mathbf{u} \cdot (\mathbf{v} \times \mathbf{w}) = \begin{vmatrix} u_1 & u_2 & u_3 \\ v_1 & v_2 & v_3 \\ w_1 & w_2 & w_3 \end{vmatrix}</m>. Its absolute value <m>|\mathbf{u} \cdot (\mathbf{v} \times \mathbf{w})|</m> measures the volume of the parallelepiped determined by the three vectors. If the triple scalar product is zero, the three vectors are coplanar. It provides a direct test for linear dependence of three spatial vectors and volume calculation in coordinate geometry.</p>

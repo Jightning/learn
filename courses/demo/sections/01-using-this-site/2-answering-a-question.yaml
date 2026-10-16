@@ -48,7 +48,6 @@ blocks:
       </ol>
 
   - t: p
-    tier: apply
     source: docs/architecture.md §2
     h: |-
       The same shape appears in <b>Mixed Practice</b> and in <b>Review</b>: answer or skip, see feedback, press Continue. Learning one interaction is enough for every surface in the site.
@@ -64,7 +63,7 @@ blocks:
       inline math editor, the symbol buttons, or both.</p>
 
   - t: note
-    tier: depth
+    optional: true
     source: docs/code_truth.md T18
     label: Why the prediction is worth a tap
     core: |-
@@ -133,8 +132,10 @@ quiz:
     concept: confidence
     q: |-
       What does a self-check question show after the learner responds?
-    a: |-
-      Because producing the idea from memory is what builds it; reading a correct answer produces recognition, which feels like knowing and is not.
+    response:
+      kind: self
+      model: |-
+        Because producing the idea from memory is what builds it; reading a correct answer produces recognition, which feels like knowing and is not.
     why: |-
       <p>A self-check reveals its model answer and offers Correct or Wrong, so the learner can record an honest outcome without a fake confidence step.</p>
     verified: 2026-09-06
@@ -143,8 +144,10 @@ quiz:
     concept: confidence
     q: |-
       A reader selects Wrong after seeing a self-check model answer. What does that do?
-    a: |-
-      It records a challenging outcome, so the concept receives more weight in later Review.
+    response:
+      kind: self
+      model: |-
+        It records a challenging outcome, so the concept receives more weight in later Review.
     why: |-
         <p>Wrong is an honest self-check result. It helps the queue focus on material that still needs retrieval.</p>
     verified: 2026-09-06

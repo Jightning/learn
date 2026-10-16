@@ -10,7 +10,7 @@ Where each capability is shown, once.
 | `def` | §1.1, §1.2, §1.4, §5.2 | `term` feeds the "Before you start" panel |
 | `key` | §1.1, §1.4, §3.1 | a rule to remember |
 | `trap` | §1.2, §1.3, §4.3, §5.2 | the mistake people actually make |
-| `note` | §1.1, §1.5, §2.1 | usually `depth` |
+| `note` | §1.1, §1.5, §2.1 | optional only when it is genuinely supplementary |
 | `ex` | §1.2, §2.2, §3.2 | fully stepped |
 | `attempt` | §1.2, §2.2 | first block only; feeds calibration |
 | `list` | §1.1, §1.5, §2.2 | ordered and unordered |
@@ -33,12 +33,13 @@ Where each capability is shown, once.
 `<a href="#s2-2">` subsection, `<c k="tier">` concept, `<f k="loop-machine"/>`
 figure, `<a href="#/<course-id>/">` cross-course.
 
-## Tiers
+## Reading modes and optional content
 
-`spine` is the whole course, once. `depth` is why and what-if, never
-examinable. `apply` is another instance. The Read selector under **Reading
-options** in the sidebar offers Spine, Spine+Apply, All. Collapsed runs show a
-stub with a text count. Read for the reader in §1.4, for the author in §3.2.
+**Study**, **Review**, and **Names** present the complete required reading at
+full text, notes, or index detail. A block marked `optional: true` is a
+supplementary expansion that can be opened in place; it never carries a needed
+premise, required reasoning, or examinable point. Read the learner guidance in
+§1.4 and the evidence discussion in §3.2.
 
 ## Source badges
 
@@ -49,6 +50,5 @@ not-yet-audited, counted separately.
 ## Course-level
 
 `valueStyles`, `styles`, `syntax` (comment / keywords / patterns / strings),
-`theme.hue`, `state.enabled`, `blocks.js`. A colour encoding is explained where
-it is used, not on the start page: §1.4 teaches the tier vocabulary in the
-material itself, where it can say what the words are for [T12].
+`theme.hue`, `state.enabled`, `blocks.js`. The optional concept file keeps its
+historical ID for existing links; §1.4 explains the current reading behavior.

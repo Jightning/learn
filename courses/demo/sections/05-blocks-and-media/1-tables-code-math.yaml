@@ -13,10 +13,10 @@ blocks:
       Subject-specific rendering is data, not a renderer.
     h: |-
       <p>Cell colouring is <code>valueStyles</code>, code highlighting is <code>syntax</code> (a comment marker, keywords, and regex <code>patterns</code>), extra styling is <code>styles</code>. The build prints "no code" when a subject needs none of the <code>blocks.js</code> escape hatch.</p>
-      <p>This is <c k="non-redundancy">non-redundancy</c> applied to the engine: one generic renderer per block type, configured per course, rather than one renderer written per subject. The tier split in <a href="#s3-2">§2.1</a> is the same idea for reading paths.</p>
+      <p>This is <c k="non-redundancy">non-redundancy</c> applied to the engine: one generic renderer per block type, configured per course, rather than one renderer written per subject. Optional explanations keep supplementary context near the complete required reading.</p>
 
   - t: note
-    tier: depth
+    optional: true
     follows: true
     label: Why one renderer, not several
     core: |-
@@ -51,16 +51,16 @@ blocks:
     mono: true
     split: 2
     cap: "mono table: centred cells, course valueStyles applied, a rule after column 2"
-    head: [feature, in spine, in depth, in apply]
+    head: [feature, required, optional expansion]
     rows:
-      - [definition, yes, "no", "no"]
-      - [derivation, "no", yes, "no"]
-      - [second instance, "no", "no", yes]
-      - [exam-testable, yes, "no", auto]
+      - [definition, yes, "no"]
+      - [necessary reasoning, yes, "no"]
+      - [supplementary context, "no", yes]
+      - [exam-testable, yes, "no"]
 
   - t: table
     cat: block-kinds
-    tier: depth
+    optional: true
     map: {req: v-y, opt: v-a, gen: v-n}
     cap: "map table: a value-to-class map declared on the block itself"
     head: [material file, status]
@@ -76,13 +76,13 @@ blocks:
       Highlighting is declared in <code>course.yaml</code>, so any language works with no renderer.
     src: |-
       # a subsection is data, highlighted by course.yaml syntax config
-      tier: spine            # one of spine, depth, apply
+      optional: true         # only when this block adds supplementary detail
       concept: "tier"        # resolves to concepts/tier.yaml
       review: true
       see_also: §3.2         # matched by a custom regex pattern
 
   - t: p
-    tier: depth
+    optional: true
     source: src/blocks/index.js
     h: |-
       The highlighter is one regex over the raw source: the comment marker, then string literals unless <code>strings: false</code>, then each course pattern, then <code>\b(keyword|…)\b</code>, joined into a single alternation and scanned once. Order is precedence. The earlier rule wins an overlap, so a keyword inside a comment stays part of the comment. Escaping happens per slice as the output is assembled, which is the point of scanning the raw text: a pass that re-read its own output would match the quoted class name in a span it had already emitted. A malformed pattern is dropped before the alternation is built, and <code>validate.mjs</code> reports it rather than leaving it silent.
@@ -92,8 +92,10 @@ quiz:
     concept: tier
     q: |-
       You want a truth table whose 0s and 1s are coloured the same way everywhere in the course. Which table switch?
-    a: |-
-      mono. It applies the course-level valueStyles, so every truth table in the course colours values identically.
+    response:
+      kind: self
+      model: |-
+        mono. It applies the course-level valueStyles, so every truth table in the course colours values identically.
     why: |-
       <p><code>map</code> would work but is per-block, so the mapping would have to be repeated on every table and could drift. <code>mono</code> centralises it.</p>
     verified: 2026-09-02
@@ -102,8 +104,10 @@ quiz:
     concept: non-redundancy
     q: |-
       A course needs Verilog code blocks highlighted. What is the smallest change, and where?
-    a: |-
-      Add a <code>syntax</code> block to that course's <code>course.yaml</code>: a comment marker, a keyword list, and any regex patterns. No renderer, no code.
+    response:
+      kind: self
+      model: |-
+        Add a <code>syntax</code> block to that course's <code>course.yaml</code>: a comment marker, a keyword list, and any regex patterns. No renderer, no code.
     why: |-
       <p>Highlighting is configuration consumed by one generic highlighter. Writing a Verilog renderer would be new code for a job the data already does.</p>
     verified: 2026-09-02
@@ -117,20 +121,20 @@ quiz:
         lang: yaml
         src: |-
           - t: note
-            tier: depth
+            optional: true
             h: Optional background for curious readers.
       - t: note
         label: Reading rule
-        h: '<p><code>spine</code> is the required path. <code>depth</code> is optional background. <code>apply</code> is additional application.</p>'
+        h: '<p>The required path is complete. An <code>optional: true</code> block adds supplementary explanation.</p>'
       - t: p
-        h: 'Read the <code>tier</code> field before choosing. The listing and this supporting card are both attached to the question.'
+        h: 'Check whether the listed block is optional. The listing and this supporting card are both attached to the question.'
     q: 'Which reading path does the listed block belong to?'
     response:
       kind: single
       correct: 2
       choices:
-        - {text: 'Spine: the required path', why: 'The listing explicitly says depth, rather than leaving the block on the default spine path.'}
-        - {text: 'Depth: optional background', why: 'The tier field is depth, matching the reading rule on the attached card.'}
-        - {text: 'Apply: additional application', why: 'The listing does not declare apply.'}
+        - {text: 'Required reading', why: 'This would be the default only if the listing lacked an optional flag.'}
+        - {text: 'Optional explanation', why: 'The listing marks this block optional, which indicates supplementary detail.'}
+        - {text: 'A separate practice item', why: 'An optional block is still part of the reading, not a retrieval question.'}
     why: '<p>Code can be part of the problem itself. It occupies a full-width band; the supporting rule is a flat callout rather than another boxed card.</p>'
     verified: 2026-10-04

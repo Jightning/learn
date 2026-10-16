@@ -1,0 +1,4 @@
+title: "Chain rules for functions of several variables"
+term: "Multivariable Chain Rule"
+body: >-
+  <p>If <m>z = f(x, y)</m> is differentiable and <m>x = g(t)</m>, <m>y = h(t)</m> are differentiable functions of one variable, the chain rule gives <m>\frac{dz}{dt} = \frac{\partial z}{\partial x} \frac{dx}{dt} + \frac{\partial z}{\partial y} \frac{dy}{dt}</m>. When intermediate variables depend on multiple independent variables, such as <m>x = g(u, v)</m> and <m>y = h(u, v)</m>, then <m>\frac{\partial z}{\partial u} = \frac{\partial z}{\partial x}\frac{\partial x}{\partial u} + \frac{\partial z}{\partial y}\frac{\partial y}{\partial u}</m>. Tree diagrams track the contributions of all intermediate pathways. The chain rule computes rates of change along parametric paths and under coordinate transformations.</p>

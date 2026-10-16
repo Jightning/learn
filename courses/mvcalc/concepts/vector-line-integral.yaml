@@ -1,0 +1,4 @@
+title: "Vector line integrals: work, flux and circulation"
+term: "Vector Line Integral"
+body: >-
+  <p>The line integral of a continuous vector field <m>\mathbf{F}</m> along an oriented smooth curve <m>C</m> parameterized by <m>\mathbf{r}(t)</m> on <m>[a, b]</m> is <m>\int_C \mathbf{F} \cdot d\mathbf{r} = \int_a^b \mathbf{F}(\mathbf{r}(t)) \cdot \mathbf{r}'(t)\, dt</m>. In differential form, this is written <m>\int_C P\, dx + Q\, dy + R\, dz</m>. Reversing curve orientation negates the integral: <m>\int_{-C} \mathbf{F} \cdot d\mathbf{r} = -\int_C \mathbf{F} \cdot d\mathbf{r}</m>. This integral computes mechanical work done by a force field along a path, and circulation around a closed loop.</p>

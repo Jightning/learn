@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "preact/hooks";
+import { watchFigureScroll } from "../lib/figure-scroll.js";
 import { qid } from "../lib/util.js";
 import { sectionEdges } from "../lib/refs.js";
 import { transitiveReduction } from "../lib/graph.js";
@@ -63,6 +65,8 @@ export default function DepMap({ ctx, onNode, focus }) {
      size the reader can read. */
   const svg = Figures.graph({ nodes, edges, layout: "layered", w: 960,
                               r: named ? 44 : 24, grow: named ? 2.4 : 1.7 });
+  const frame = useRef(null);
+  useEffect(() => watchFigureScroll(frame.current), [svg]);
 
   /* Light the other half of a pair. The node lives inside injected SVG, so it
      cannot carry a component handler — the same reason the reading column
@@ -91,14 +95,18 @@ export default function DepMap({ ctx, onNode, focus }) {
           {(C.sections.find(s => s.id === focus) || {}).title}
         </p>
       )}
-      <div class="figure mapwrap"
+      <div class="figure mapwrap" ref={frame}
            onMouseOver={e => pairFromNode(e, true)}
            onMouseOut={e => pairFromNode(e, false)}
            onClick={e => {
              const n = e.target.closest?.("[data-node]");
              if (n) onNode(n.getAttribute("data-node"));
            }}
-           dangerouslySetInnerHTML={{ __html: safeMarkup(svg) }} />
+           >
+        <div class="figure-viewport">
+          <div class="figure-scroll" dangerouslySetInnerHTML={{ __html: safeMarkup(svg) }} />
+        </div>
+      </div>
       {/* The list is an index, not a decoder.
        *
        * Pointing at a row lights its node and pointing at a node lights its

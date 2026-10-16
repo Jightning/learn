@@ -3,8 +3,8 @@ import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync, statSyn
 import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
-import { homedir } from "node:os";
 import { execFileSync } from "node:child_process";
+import { homedir } from "node:os";
 //#region \0rolldown/runtime.js
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -17002,13 +17002,13 @@ const stable = (value) => {
 	return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(",")}}`;
 };
 function sameDefinition(a, b, id, collection) {
+	if (collection === "concepts") return Object.keys(a).filter((k) => k !== "id" && k !== "key" && Object.hasOwn(b, k)).every((k) => stable(a[k]) === stable(b[k])) && (a.key || a.id || id) === (b.key || b.id || id);
 	const normalize = (value) => {
 		const out = { ...value };
 		delete out.id;
-		if (collection === "concepts") delete out.key;
 		return stable(out);
 	};
-	return normalize(a) === normalize(b) && (collection !== "concepts" || (a.key || a.id || id) === (b.key || b.id || id));
+	return normalize(a) === normalize(b);
 }
 /** Read and validate fixed canonical YAML collection files from a text map. */
 function readCurriculumCollections(files, errors = []) {
@@ -17081,11 +17081,73 @@ function mergeCurriculumDefinitions(canonical, legacy, errors = [], where = "leg
 		for (const value of canonical?.[name] || []) {
 			const id = value.id;
 			if (byId.has(id) && !sameDefinition(byId.get(id), value, id, name)) errors.push(`categorize/${name}.yaml conflicts with legacy ${name} definition "${id}"`);
-			else byId.set(id, value);
+			else byId.set(id, byId.has(id) ? Object.assign({}, byId.get(id), value) : value);
 		}
 		merged[name] = [...byId.values()];
 	}
 	return merged;
+}
+/** Resolve plan reference lists, retaining legacy definition copies for conflict checks. */
+function mergePlanCurriculum(plan, canonical, errors = [], where = "plan") {
+	const legacy = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const value = plan?.[name];
+		if (value == null) {
+			legacy[name] = [];
+			continue;
+		}
+		if (!Array.isArray(value)) {
+			errors.push(`${where}: ${name} must be a list`);
+			legacy[name] = [];
+			continue;
+		}
+		legacy[name] = value.flatMap((item, i) => {
+			if (typeof item === "string") {
+				const definition = (canonical[name] || []).find((entry) => entry.id === item);
+				if (!definition) errors.push(`${where}: ${name}[${i + 1}] references unknown ${singular(name)} "${item}"`);
+				return definition ? [definition] : [];
+			}
+			if (!mapping(item)) {
+				errors.push(`${where}: ${name}[${i + 1}] must be a definition mapping or id reference`);
+				return [];
+			}
+			return [item];
+		});
+	}
+	return mergeCurriculumDefinitions(canonical, legacy, errors, where, true);
+}
+/** Check references once canonical curriculum files make IDs authoritative. */
+function validateCurriculumReferences(plan, definitions, errors = []) {
+	const ids = Object.fromEntries(CURRICULUM_COLLECTIONS.map((name) => [name, new Set((definitions?.[name] || []).map((item) => item.id || item.key).filter(Boolean))]));
+	const background = new Set((Array.isArray(plan?.reader?.background) ? plan.reader.background : []).map((item) => typeof item === "string" ? item : item?.id).filter(Boolean));
+	const refs = (value, collection, where, label = singular(collection)) => {
+		if (value == null) return;
+		for (const item of Array.isArray(value) ? value : [value]) {
+			const id = typeof item === "string" ? item : item?.id;
+			if (typeof id !== "string" || !ids[collection].has(id) && !(label.includes("prerequisite") && background.has(id))) errors.push(`${where}: unknown ${label} reference "${id ?? item}"`);
+		}
+	};
+	for (const collection of CURRICULUM_COLLECTIONS) if (Array.isArray(plan?.[collection]) && plan[collection].every((item) => typeof item === "string")) refs(plan[collection], collection, `plan.${collection}`);
+	for (const [i, lesson] of (Array.isArray(plan?.lessons) ? plan.lessons : Array.isArray(plan?.subsections) ? plan.subsections : []).entries()) {
+		const where = `plan lesson ${lesson?.id || i + 1}`;
+		refs(lesson?.objectives ?? lesson?.objective, "objectives", where);
+		refs(lesson?.families ?? lesson?.family, "families", where);
+		refs(lesson?.concepts ?? lesson?.concept, "concepts", where);
+	}
+	for (const item of definitions?.objectives || []) {
+		const where = `objective "${item.id}"`;
+		refs(item.prerequisites ?? item.prerequisite, "objectives", where, "objective prerequisite");
+		refs(item.families ?? item.family, "families", where);
+		refs(item.concepts ?? item.concept, "concepts", where);
+	}
+	for (const item of definitions?.families || []) refs(item.concepts ?? item.concept, "concepts", `family "${item.id}"`);
+	for (const item of definitions?.concepts || []) {
+		const where = `concept "${item.id}"`;
+		refs(item.prerequisites ?? item.prerequisite, "concepts", where, "concept prerequisite");
+		refs(item.related, "concepts", where);
+		refs(item.confusable_with, "concepts", where);
+	}
+	return errors;
 }
 /** Validate curriculum tags and concept links in reader content. */
 function validateCourseCurriculumReferences(course, errors = []) {
@@ -17111,6 +17173,10 @@ function validateCourseCurriculumReferences(course, errors = []) {
 		check(item?.objectives ?? item?.objective, "objectives", where);
 		check(item?.families ?? item?.family, "families", where);
 		if (item?.concept != null) check(item.concept, "concepts", where);
+		if (item?.introduces != null) {
+			if (kind !== "block" || !Array.isArray(item.introduces)) errors.push(`${where}: introduces must be a block list of concept/objective IDs`);
+			else for (const id of item.introduces) if (typeof id !== "string" || !ids.concepts.has(id) && !ids.objectives.has(id)) errors.push(`${where}: unknown teaching introduction "${id}"`);
+		}
 		visitInlineConcepts(item, where);
 	}
 	for (const kind of ["practice", "drills"]) for (const key of Object.keys(course[kind] || {})) if (!ids.concepts.has(key)) errors.push(`${kind}/${key}: unknown concept reference "${key}"`);
@@ -17120,6 +17186,7 @@ function validateCourseCurriculumReferences(course, errors = []) {
 function curriculumMap(definitions) {
 	return Object.fromEntries((definitions || []).map((value) => [value.id || value.key, value]));
 }
+const curriculumSignature = (value) => stable(value);
 //#endregion
 //#region tools/lib/load.mjs
 const DATA_EXT = /* @__PURE__ */ new Set([
@@ -17354,6 +17421,860 @@ const COURSES = join(WORKSPACE, "courses");
 const STATE = join(WORKSPACE, ".author");
 existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");
 existsSync(join(ENGINE, "docs")) && join(ENGINE, "docs");
+//#endregion
+//#region src/lib/tiers.js
+const isOptional = (b) => typeof b?.optional === "boolean" ? b.optional : b?.tier === "depth";
+const tierOf = (b) => isOptional(b) ? "depth" : "spine";
+//#endregion
+//#region tools/lib/digest.mjs
+const DATA = /* @__PURE__ */ new Set([
+	".yaml",
+	".yml",
+	".json"
+]);
+const dataFiles = (dir) => existsSync(dir) ? readdirSync(dir).filter((f) => DATA.has(extname(f))).sort() : [];
+const stem$1 = (f) => basename(f, extname(f));
+const read = (p) => {
+	try {
+		return parseFile(p) || {};
+	} catch {
+		return {};
+	}
+};
+/** leading digits of a filename: "03-linear" -> 3, "2-integrals" -> 2 */
+const num = (f) => Number(/^(\d+)/.exec(f)?.[1] ?? 0);
+const cited = (blocks) => {
+	const out = /* @__PURE__ */ new Set();
+	for (const m of JSON.stringify(blocks || []).matchAll(/<c\s+k=\\?"([^"\\]+)/g)) out.add(m[1]);
+	return [...out];
+};
+/** One line per subsection: id, title, what it defines, what it states, what it cites. */
+function subLine(u, id) {
+	const blocks = Array.isArray(u.blocks) ? u.blocks : [];
+	const defs = blocks.filter((b) => b?.t === "def").map((b) => b.term).filter(Boolean);
+	const keys = blocks.filter((b) => b?.t === "key").map((b) => b.label).filter(Boolean);
+	const types = (Array.isArray(u.quiz) ? u.quiz : []).map((q) => q?.type).filter(Boolean);
+	const parts = [`${id} ${u.title || "(untitled)"}`];
+	if (defs.length) parts.push(`defines: ${defs.join("; ")}`);
+	if (keys.length) parts.push(`states: ${keys.join("; ")}`);
+	const c = cited(blocks);
+	if (c.length) parts.push(`cites: ${c.join(",")}`);
+	const cats = [...new Set(blocks.map((b) => b?.cat).filter(Boolean))];
+	if (cats.length) parts.push(`cat: ${cats.join(",")}`);
+	if (types.length) parts.push(`quiz: ${types.join(",")}`);
+	const claims = blocks.filter((b) => CLAIMY.has(b?.t));
+	if (claims.length) {
+		const withCore = claims.filter((b) => b.core).length;
+		const withGist = claims.filter((b) => b.gist).length;
+		if (withCore + withGist < claims.length) parts.push(`unclaimed: ${claims.length - withCore - withGist}/${claims.length}`);
+	}
+	if (!blocks.length) parts.push("EMPTY");
+	return parts.join(" | ");
+}
+const CLAIMY = /* @__PURE__ */ new Set([
+	"def",
+	"key",
+	"trap"
+]);
+/**
+* Walk a course folder, however far along it is.
+* Returns the structured view (for planning) and `text` (for prompts).
+*/
+function digest(dir) {
+	const sections = [];
+	const secRoot = join(dir, "sections");
+	for (const d of existsSync(secRoot) ? readdirSync(secRoot).sort() : []) {
+		const path = join(secRoot, d);
+		if (!existsSync(path) || !statSync(path).isDirectory()) continue;
+		if (!readdirSync(path).length) continue;
+		const meta = dataFiles(path).find((f) => stem$1(f) === "_section");
+		const s = meta ? read(join(path, meta)) : {};
+		const id = `s${num(d)}`;
+		const subs = dataFiles(path).filter((f) => stem$1(f) !== "_section").map((f) => ({
+			file: f,
+			n: num(f),
+			data: read(join(path, f))
+		})).sort((a, b) => a.n - b.n).map((f, i) => ({
+			id: `${id}-${i + 1}`,
+			file: join(path, f.file),
+			title: f.data.title || stem$1(f.file),
+			blocks: Array.isArray(f.data.blocks) ? f.data.blocks.length : 0,
+			spine: Array.isArray(f.data.blocks) ? f.data.blocks.filter((b) => b && !isOptional(b)).length : 0,
+			quiz: Array.isArray(f.data.quiz) ? f.data.quiz.length : 0,
+			tiers: new Set((Array.isArray(f.data.blocks) ? f.data.blocks : []).map(tierOf)),
+			line: subLine(f.data, `${id}-${i + 1}`)
+		}));
+		sections.push({
+			id,
+			dir: path,
+			title: s.title || d,
+			blurb: !!s.blurb,
+			subs
+		});
+	}
+	const conceptMap = /* @__PURE__ */ new Map();
+	const canonicalPath = [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `concepts.${ext}`)).find(existsSync);
+	if (canonicalPath) {
+		const list = read(canonicalPath);
+		if (Array.isArray(list)) {
+			for (const c of list) if (c && typeof c.id === "string") conceptMap.set(c.id, c);
+		}
+	}
+	for (const f of dataFiles(join(dir, "concepts"))) {
+		const c = read(join(dir, "concepts", f));
+		const key = c.id || c.key || stem$1(f);
+		if (!conceptMap.has(key)) conceptMap.set(key, c);
+		else Object.assign(conceptMap.get(key), c);
+	}
+	const concepts = [...conceptMap].map(([key, c]) => ({
+		key,
+		term: c.term || key,
+		review: !!c.review,
+		body: !!c.body,
+		variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
+	}));
+	const cats = dataFiles(join(dir, "categories")).map((f) => {
+		const c = read(join(dir, "categories", f));
+		return {
+			key: stem$1(f),
+			name: c.name || stem$1(f),
+			boundary: c.boundary || "",
+			siblings: c.siblings || []
+		};
+	});
+	return {
+		sections,
+		subs: sections.flatMap((s) => s.subs),
+		concepts,
+		cats,
+		text: [
+			sections.length ? "SECTIONS AND SUBSECTIONS (id, title, coverage)" : "",
+			...sections.map((s) => [`${s.id} ${s.title}`, ...s.subs.map((u) => "  " + u.line)].join("\n")),
+			concepts.length ? "\nCONCEPTS (key, term, practice variants)" : "",
+			...concepts.map((c) => `  ${c.key} — ${c.term} — ${c.variants} variants`),
+			cats.length ? "\nCATEGORIES (key — name — boundary) — tag into these, never beside them" : "",
+			...cats.map((c) => `  ${c.key} — ${c.name} — ${c.boundary.replace(/\s+/g, " ").trim()}`)
+		].filter(Boolean).join("\n")
+	};
+}
+//#endregion
+//#region tools/lib/author-bank.mjs
+function readAuthorBank(dir) {
+	const root = join(dir, "questions");
+	const records = {
+		types: [],
+		items: [],
+		assessments: []
+	};
+	for (const name of existsSync(root) ? readdirSync(root).filter((n) => /\.(yaml|yml|json)$/.test(n) && !/^aliases\./.test(n)).sort() : []) {
+		const key = /^types\./.test(name) ? "types" : /^assessment\./.test(name) ? "assessments" : "items";
+		const file = join(root, name), data = parseFile(file);
+		if (!Array.isArray(data)) throw new Error(`${file}: expected a sequence`);
+		records[key].push(...data.map((content, position) => ({
+			content,
+			file,
+			position: position + 1
+		})));
+	}
+	return records;
+}
+function resolveAuthorQuiz(dir, unit, bank = readAuthorBank(dir)) {
+	const types = new Map(bank.types.map((r) => [r.content.id, r.content]));
+	const items = new Map(bank.items.map((r) => [r.content.id, r.content]));
+	return {
+		...unit,
+		quiz: (unit.quiz || []).map((value) => {
+			if (typeof value !== "string") return value;
+			const item = items.get(value);
+			if (!item) throw new Error(`unknown bank question ${value}`);
+			const type = types.get(item.typeId);
+			if (!type) throw new Error(`${value}: unknown type ${item.typeId}`);
+			return {
+				...type,
+				...item,
+				type: type.id,
+				authorId: item.id
+			};
+		})
+	};
+}
+//#endregion
+//#region tools/lib/author-packets.mjs
+const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
+const fileHash = (path) => fingerprint(readFileSync(path));
+const readPlan = (dir) => {
+	const path = join(dir, "materials", "plan.yaml");
+	const legacy = ["plan.md", "source-family-review.md"].map((f) => join(dir, "materials", f)).filter(existsSync);
+	const rawPlan = existsSync(path) ? parseFile(path) : {};
+	if (rawPlan != null && (typeof rawPlan !== "object" || Array.isArray(rawPlan))) throw new Error(`${path}: expected a mapping`);
+	const data = { ...rawPlan || {} };
+	const errors = [];
+	const canonicalFiles = {};
+	let canonical = false;
+	for (const name of [
+		"objectives",
+		"families",
+		"concepts"
+	]) for (const file of [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `${name}.${ext}`)).filter((candidate) => existsSync(candidate))) {
+		canonical = true;
+		canonicalFiles[`categorize/${name}.${file.slice(file.lastIndexOf(".") + 1)}`] = readFileSync(file, "utf8");
+	}
+	if (!canonical) return existsSync(path) ? {
+		path,
+		hash: fileHash(path),
+		data: rawPlan || {},
+		canonical: false
+	} : {
+		path,
+		data: {},
+		canonical: false,
+		legacy
+	};
+	const canonicalDefinitions = readCurriculumCollections(canonicalFiles, errors);
+	const merged = mergePlanCurriculum(rawPlan || {}, canonicalDefinitions, errors, path);
+	if (canonical) validateCurriculumReferences(rawPlan || {}, merged, errors);
+	if (errors.length) throw new Error(errors.join("\n"));
+	for (const name of [
+		"objectives",
+		"families",
+		"concepts"
+	]) data[name] = merged[name];
+	const signature = fingerprint(curriculumSignature({
+		plan: rawPlan || {},
+		canonical: canonicalDefinitions
+	}));
+	return {
+		path,
+		...existsSync(path) ? { hash: signature } : {},
+		signature,
+		canonical,
+		data,
+		...!existsSync(path) ? { legacy } : {}
+	};
+};
+const asList = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
+const named = (value) => typeof value === "string" ? value : value?.id;
+const tags = (item) => asList(item?.objectives ?? item?.objective).map(named);
+const active = (item) => ![
+	"excluded",
+	"moved",
+	"prerequisite"
+].includes(item?.disposition);
+function selectItem(unit, selector) {
+	const match = /^(block|quiz):(\d+)$/.exec(selector || "");
+	if (!match || Number(match[2]) < 1) throw new Error("--item needs block:N or quiz:N (1-based)");
+	const item = (match[1] === "block" ? unit.blocks : unit.quiz)?.[Number(match[2]) - 1];
+	if (!item) throw new Error(`no ${selector}`);
+	return item;
+}
+function planCoverage(plan, subsections, { verifySource } = {}) {
+	const dir = join(plan.path, "../..");
+	const bank = readAuthorBank(dir);
+	const objectives = asList(plan.data.objectives).filter(active);
+	const familyIndex = new Map(asList(plan.data.families).map((f) => [f.id, f]));
+	const found = new Map(subsections.map((s) => [s.id, resolveAuthorQuiz(dir, parseFile(s.file) || {}, bank)]));
+	const evidence = /* @__PURE__ */ new Map(), assessedFamilies = /* @__PURE__ */ new Map();
+	for (const [sub, unit] of found) for (const kind of ["teaching", "questions"]) {
+		const items = kind === "teaching" ? unit.blocks : unit.quiz;
+		for (const [i, item] of (items || []).entries()) for (const id of tags(item)) {
+			if (!evidence.has(id)) evidence.set(id, {
+				teaching: [],
+				questions: []
+			});
+			evidence.get(id)[kind].push(`${sub}/${kind === "teaching" ? "block" : "quiz"}:${i + 1}`);
+			if (kind === "questions") {
+				if (!assessedFamilies.has(id)) assessedFamilies.set(id, /* @__PURE__ */ new Set());
+				for (const family of [
+					...asList(item.families).map(named),
+					item.family,
+					item.type
+				]) if (family) assessedFamilies.get(id).add(family);
+			}
+		}
+	}
+	for (const { content: item } of bank.items) {
+		const type = bank.types.find((r) => r.content.id === item.typeId)?.content;
+		if (!type || item.use === "diagnostic") continue;
+		for (const id of type.objectives || []) {
+			if (!evidence.has(id)) evidence.set(id, {
+				teaching: [],
+				questions: []
+			});
+			evidence.get(id).questions.push(item.id);
+			if (!assessedFamilies.has(id)) assessedFamilies.set(id, /* @__PURE__ */ new Set());
+			for (const family of type.families || []) assessedFamilies.get(id).add(family);
+		}
+	}
+	const locations = (objective, kind) => {
+		const out = [...evidence.get(objective.id)?.[kind] || []];
+		for (const ref of asList(objective.evidence?.[kind])) try {
+			selectItem(found.get(ref.sub) || {}, ref.item);
+			if (ref.item.startsWith(kind === "teaching" ? "block:" : "quiz:")) out.push(`${ref.sub}/${ref.item}`);
+		} catch {}
+		return out;
+	};
+	const rows = objectives.map((o) => {
+		const teaching = locations(o, "teaching"), questions = locations(o, "questions");
+		const families = asList(o.families).map(named).filter((id) => active(familyIndex.get(id)));
+		const assessed = families.filter((f) => assessedFamilies.get(o.id)?.has(f));
+		return {
+			id: o.id,
+			teaching,
+			questions,
+			families: families.length,
+			assessed: assessed.length,
+			complete: !!teaching.length && !!questions.length && assessed.length === families.length
+		};
+	});
+	const familyRows = asList(plan.data.families).filter((f) => f?.assessmentRequired === true).map((family) => {
+		const missing = [];
+		const disposition = family.disposition || "unspecified";
+		if (disposition !== "teach") missing.push(`disposition is ${disposition}; required assessment scope must remain teach`);
+		const candidates = asList(family.sources).filter((ref) => ref && typeof ref === "object" && typeof ref.source === "string" && ref.source.trim() && typeof ref.unit === "string" && ref.unit.trim() && (ref.source !== "generated" || typeof ref.provenance === "string" && ref.provenance.trim()));
+		const routes = [];
+		for (const ref of candidates) {
+			if (ref.source === "generated" || !verifySource) {
+				routes.push(ref);
+				continue;
+			}
+			try {
+				const evidence = verifySource(ref);
+				if (!substantiveSourceUnit(evidence) || /Source changed or disappeared since indexing/.test(evidence.warning || "")) continue;
+				routes.push({
+					source: ref.source,
+					unit: ref.unit,
+					locator: evidence.locator,
+					...evidence.warning ? { warning: evidence.warning } : {}
+				});
+			} catch {}
+		}
+		if (!routes.length) missing.push("no exact source or explicit generated-provenance route");
+		const mappedTypeIds = new Set(asList(family.questions).map(named).filter(Boolean));
+		const knownObjectives = new Set(objectives.map((objective) => objective.id));
+		const knownConcepts = new Set(asList(plan.data.concepts).map(named).filter(Boolean));
+		if ([
+			"course.yaml",
+			"course.yml",
+			"course.json"
+		].some((name) => existsSync(join(dir, name)))) for (const id of Object.keys(loadCourse(dir).course.concepts || {})) knownConcepts.add(id);
+		const mappedTypes = bank.types.map((record) => record.content).filter((type) => mappedTypeIds.has(type.id) && asList(type.families).map(named).includes(family.id) && type.assess !== false && knownConcepts.has(type.concept) && asList(type.objectives).map(named).some((id) => knownObjectives.has(id)));
+		if (!mappedTypes.length) missing.push("no mapped question type links this family");
+		const objectivesForFamily = /* @__PURE__ */ new Set([...objectives.filter((objective) => asList(objective.families).map(named).includes(family.id)).map((objective) => objective.id), ...mappedTypes.flatMap((type) => asList(type.objectives).map(named))]);
+		const conceptsForFamily = new Set(mappedTypes.map((type) => type.concept).filter(Boolean));
+		const familyTeaching = [];
+		const familyTeach = new Set(asList(family.teach).map(named).filter(Boolean));
+		const typeTeach = new Set(mappedTypes.flatMap((type) => asList(type.teach).map(named).filter(Boolean)));
+		const compatibleTeach = new Set([...familyTeach].filter((id) => typeTeach.has(id)));
+		if (!familyTeach.size) missing.push("no lesson teaching route is declared on the family");
+		else if (!compatibleTeach.size) missing.push("family and mapped question types have no compatible teach route");
+		for (const [sub, unit] of found) for (const [i, block] of (unit.blocks || []).entries()) {
+			if (!compatibleTeach.has(sub) || isOptional(block) || [
+				"depth",
+				"apply",
+				"attempt"
+			].includes(block?.t)) continue;
+			if (![...asList(block?.families ?? block?.family)].map(named).includes(family.id) || !hasMainPathContent(block)) continue;
+			const linkedObjective = tags(block).some((id) => objectivesForFamily.has(id));
+			const linkedConcept = conceptTags(block).some((id) => conceptsForFamily.has(id));
+			if (linkedObjective || linkedConcept) familyTeaching.push({
+				location: `${sub}/block:${i + 1}`,
+				...block.authorId ? { authorId: block.authorId } : {}
+			});
+		}
+		if (!familyTeaching.length) missing.push("no substantive main-path block on a compatible teach route links this family to its objective or concept");
+		const allowedTypes = new Set(mappedTypes.map((type) => type.id));
+		const tasks = [];
+		const addTask = (where, item) => {
+			const typeId = item?.typeId || item?.type;
+			if (!allowedTypes.has(typeId) || item?.use === "diagnostic" || !meaningfulQuestion(item)) return;
+			tasks.push(where);
+		};
+		for (const [sub, unit] of found) for (const [i, item] of (unit.quiz || []).entries()) addTask(`${sub}/quiz:${i + 1}`, item);
+		for (const record of bank.items) addTask(record.content.id, record.content);
+		const uniqueTasks = [...new Set(tasks)];
+		if (!uniqueTasks.length) missing.push("no active mapped assessment or practice item exists");
+		return {
+			id: family.id,
+			disposition,
+			required: true,
+			sources: routes,
+			questionTypes: mappedTypes.map((type) => type.id),
+			teaching: familyTeaching,
+			tasks: uniqueTasks,
+			complete: missing.length === 0,
+			missing
+		};
+	});
+	const assessmentReady = familyRows.every((row) => row.complete);
+	return {
+		available: !!plan.hash,
+		total: rows.length,
+		percent: rows.length ? Math.round(100 * rows.filter((r) => r.complete).length / rows.length) : null,
+		rows,
+		requiredFamilies: familyRows,
+		assessmentReady,
+		assessmentMessage: familyRows.length ? `${familyRows.filter((row) => row.complete).length}/${familyRows.length} declared assessment-required families have source, teaching, and task evidence. This is a routing check, not a semantic quality judgment.` : "No assessment-required families were declared; legacy family coverage remains report-only.",
+		message: "Explicit teaching/question links; author judgments, not proof of mastery."
+	};
+}
+const hasValue = (value) => {
+	if (typeof value === "string") return substantiveText(value);
+	if (typeof value === "number" || typeof value === "boolean") return true;
+	if (Array.isArray(value)) return value.some(hasValue);
+	if (value && typeof value === "object") return Object.entries(value).filter(([key]) => ![
+		"id",
+		"title",
+		"label",
+		"caption",
+		"cap",
+		"alt",
+		"gist",
+		"family",
+		"families",
+		"concept",
+		"concepts",
+		"objective",
+		"objectives",
+		"tier",
+		"source",
+		"authorId",
+		"introduces",
+		"layout"
+	].includes(key)).some(([, child]) => hasValue(child));
+	return false;
+};
+function substantiveText(value) {
+	return String(value).replace(/<c\s+k=["'][^"']+["'][^>]*>[\s\S]*?<\/c>/g, " ").replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|lt|gt|quot|#\d+);/g, " ").trim().length > 0;
+}
+function substantiveSourceUnit(evidence) {
+	if (!evidence?.locator) return false;
+	if (evidence.asset) return true;
+	if (typeof evidence.text !== "string") return false;
+	return evidence.text.replace(/^\s{0,3}#{1,6}\s.*$/gm, " ").replace(/<!-- [\s\S]*? -->/g, " ").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().length > 0;
+}
+function hasMainPathContent(block) {
+	if (![
+		"core",
+		"h",
+		"c"
+	].some((key) => typeof block?.[key] === "string" && substantiveText(block[key]))) return [
+		"items",
+		"rows",
+		"slides",
+		"spec"
+	].some((key) => hasValue(block?.[key]));
+	return true;
+}
+function conceptTags(item) {
+	const values = asList(item?.concepts ?? item?.concept).map(named).filter(Boolean);
+	const scan = (value) => {
+		if (typeof value === "string") for (const match of value.matchAll(/<c\s+k=["']([^"']+)["']/g)) values.push(match[1]);
+		else if (Array.isArray(value)) value.forEach(scan);
+		else if (value && typeof value === "object") Object.values(value).forEach(scan);
+	};
+	scan(item);
+	return [...new Set(values)];
+}
+function meaningfulQuestion(item) {
+	return typeof item?.q === "string" && !!item.q.trim() && item.response && typeof item.response === "object" && Object.entries(item.response).some(([key, value]) => key !== "kind" && hasValue(value));
+}
+//#endregion
+//#region tools/lib/sources.mjs
+const SYSTEM = [
+	"/bin",
+	"/boot",
+	"/dev",
+	"/etc",
+	"/lib",
+	"/proc",
+	"/sbin",
+	"/sys",
+	"/usr",
+	"/private/etc",
+	"/System",
+	"/Library",
+	"/Applications"
+];
+const BROAD = [
+	"/var",
+	"/private",
+	"/private/var",
+	"/Users",
+	"/home",
+	"/opt",
+	"/Volumes",
+	"/mnt"
+];
+const within$1 = (child, parent) => child === parent || child.startsWith(parent + sep);
+function roots(courseDir, paths = [], base = process.cwd()) {
+	const repo = resolve(courseDir, "..", "..");
+	const courses = join(repo, "courses");
+	const own = join(courseDir, "sources");
+	const out = existsSync(own) ? [realpathSync(own)] : [];
+	for (const p of paths) {
+		const abs = resolve(base, p.replace(/^~(?=$|\/)/, homedir()));
+		if (!existsSync(abs)) throw new Error(`--source ${p}: ${abs} does not exist`);
+		const real = realpathSync(abs);
+		const home = realpathSync(homedir());
+		const refuse = (why) => {
+			throw new Error(`--source ${p}: refused, ${why}`);
+		};
+		if (real === sep || real === home || within$1(home, real)) refuse("it contains your whole home folder or more");
+		if (SYSTEM.some((s) => within$1(real, s))) refuse("it is a system folder");
+		if (BROAD.includes(real)) refuse("it is too broad; name the folder you mean");
+		if (within$1(realpathSync(repo), real)) refuse("it contains this repository, and with it every private course");
+		if (within$1(real, realpathSync(courses)) && !within$1(real, realpathSync(courseDir))) refuse("it is inside another course");
+		if (!out.some((r) => within$1(real, r))) out.push(real);
+	}
+	return out;
+}
+const DOC = /* @__PURE__ */ new Set([
+	".md",
+	".markdown",
+	".mdx",
+	".txt",
+	".tex",
+	".html",
+	".htm",
+	".rst",
+	".adoc",
+	".org"
+]);
+const CODE = /* @__PURE__ */ new Set([
+	".js",
+	".mjs",
+	".cjs",
+	".jsx",
+	".ts",
+	".tsx",
+	".py",
+	".rb",
+	".go",
+	".rs",
+	".java",
+	".kt",
+	".swift",
+	".c",
+	".h",
+	".cc",
+	".cpp",
+	".hpp",
+	".cs",
+	".php",
+	".scala",
+	".sh",
+	".sql",
+	".r",
+	".jl",
+	".lua",
+	".dart",
+	".vue",
+	".svelte",
+	".css",
+	".scss",
+	".json",
+	".yaml",
+	".yml",
+	".toml",
+	".ini",
+	".csv",
+	".xml",
+	".proto",
+	".graphql",
+	".ipynb"
+]);
+/** Extraction registration only. `doc` and `text` retain their older meaning:
+binary teaching sources are catalogued, but never read as UTF-8 here. */
+const SOURCE_FORMATS = new Map([
+	...[...DOC, ...CODE].map((ext) => [ext, "text"]),
+	[".pdf", "pdf"],
+	[".pptx", "pptx"],
+	[".ppt", "ppt"],
+	[".png", "image"],
+	[".jpg", "image"],
+	[".jpeg", "image"],
+	[".gif", "image"],
+	[".webp", "image"],
+	[".svg", "image"]
+]);
+const SECRET = /(^|\/)(\.env[^/]*|.*\.(pem|key|p12|pfx|keystore|jks)|id_(rsa|dsa|ecdsa|ed25519)[^/]*|\.?(credentials|secrets?)(\.[^/]*)?|\.netrc|\.npmrc|\.pypirc)$/i;
+const BULK_DIR = /(^|\/)(node_modules|vendor|dist|build|out|target|coverage|__pycache__|\.[^/]*)(\/|$)/;
+const BULK_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|go\.sum|[^/]*\.min\.(js|css)|[^/]*\.map)$/;
+const LIMIT = 2e4;
+const skip = (rel) => SECRET.test(rel) || BULK_DIR.test(rel) || BULK_FILE.test(rel);
+function gitFiles(dir) {
+	const git = (args) => execFileSync("git", [
+		"-C",
+		dir,
+		...args
+	], {
+		encoding: "utf8",
+		maxBuffer: 268435456,
+		stdio: [
+			"ignore",
+			"pipe",
+			"ignore"
+		]
+	});
+	try {
+		git(["rev-parse", "--show-toplevel"]);
+	} catch {
+		return null;
+	}
+	try {
+		git([
+			"check-ignore",
+			"-q",
+			"."
+		]);
+		return null;
+	} catch {}
+	try {
+		return git([
+			"ls-files",
+			"-co",
+			"--exclude-standard",
+			"-z",
+			"--",
+			"."
+		]).split("\0").filter(Boolean);
+	} catch {
+		return null;
+	}
+}
+function walk(dir) {
+	const out = [];
+	const go = (d) => {
+		for (const f of readdirSync(d).sort()) {
+			if (out.length >= LIMIT) return;
+			const path = join(d, f);
+			const rel = relative(dir, path);
+			if (skip(rel)) continue;
+			const st = lstatSync(path);
+			if (st.isDirectory()) go(path);
+			else if (st.isFile() || st.isSymbolicLink()) out.push(rel);
+		}
+	};
+	go(dir);
+	return out;
+}
+/** Every material file under the roots, sorted, each checked to stay inside
+its root (a symlink pointing out is dropped, not followed). */
+function list(rootsList) {
+	const out = [];
+	for (const root of rootsList) {
+		if (statSync(root).isFile()) {
+			out.push(entry(dirname(root), basename(root), root));
+			continue;
+		}
+		const rels = (gitFiles(root) || walk(root)).filter((r) => !skip(r)).sort().slice(0, LIMIT);
+		for (const rel of rels) {
+			const path = join(root, rel);
+			let real;
+			try {
+				real = realpathSync(path);
+			} catch {
+				continue;
+			}
+			if (!within$1(real, root) || !statSync(real).isFile()) continue;
+			out.push(entry(root, rel, path));
+		}
+	}
+	return out;
+}
+function entry(root, rel, path) {
+	const ext = extname(rel).toLowerCase();
+	return {
+		root,
+		rel,
+		path,
+		doc: DOC.has(ext),
+		text: DOC.has(ext) || CODE.has(ext),
+		bytes: statSync(path).size,
+		format: SOURCE_FORMATS.get(ext) || "binary"
+	};
+}
+const mapPath = (repo, id) => join(repo, ".author", id, "map.txt");
+function loadMap(repo, id) {
+	const p = mapPath(repo, id);
+	const out = {};
+	if (!existsSync(p)) return out;
+	for (const line of readFileSync(p, "utf8").split("\n")) {
+		const m = /^(\S[^:]*\.(?:ya?ml|json)):\s*(.*)$/.exec(line.trim());
+		if (m) out[m[1]] = m[2].split("|").map((x) => x.trim()).filter((x) => x && !/^none$/i.test(x));
+	}
+	return out;
+}
+/** Does map entry `name` ("/abs/f.md" or "/abs/f.md#Heading") cover this topic? */
+const names = (name, path, heading) => {
+	const [file, head] = splitName(name);
+	return file === path && (!head || bare(head) === bare(heading));
+};
+const splitName = (name) => {
+	const i = name.indexOf("#");
+	return i < 0 ? [name, null] : [name.slice(0, i), name.slice(i + 1)];
+};
+const FIGURE = /^(Figure \d|The (horizontal|vertical) axis|The (graph|differential equation) (is|shows)|.{0,40}is shown below)|axis is labeled|is marked on|\b(starts|ends) (from|at) \(|toward (the )?(upper|lower) (left|right)/i;
+const describesFigure = (paragraph) => FIGURE.test(paragraph.trim());
+const SMALL = /^(a|an|and|as|at|by|for|from|in|of|on|or|the|to|vs\.?|with)$/;
+const NOT_TOPIC = /^(Figure|Example|Solution|Remark|Table|Interactive|Continued|Historical|Note|Theorem|Definition|Rule|Algorithm|Principle|Proof|Corollary)\b/;
+const titleCase = (s) => {
+	const w = s.trim().split(/\s+/);
+	if (w.length < 2 || w.length > 9 || NOT_TOPIC.test(s)) return false;
+	if (/[.,;:!?)]$/.test(s) || !/^[\w\s’'\-–,&]+$/.test(s)) return false;
+	return /^[A-Z0-9]/.test(w[0]) && /^[A-Z]/.test(w[w.length - 1]) && w.every((x) => /^[A-Z0-9]/.test(x) || SMALL.test(x));
+};
+/** A line's heading and the prose it runs into, or null when it is not one. */
+function headingOf(line) {
+	if (line.length > 1e3) return null;
+	const marked = /^##+\s+(.+?)\s*$/.exec(line);
+	if (marked) return {
+		heading: marked[1],
+		rest: "",
+		kind: "marked"
+	};
+	if (titleCase(line)) return {
+		heading: line.trim(),
+		rest: "",
+		kind: "inferred"
+	};
+	for (const m of line.matchAll(/[a-z](?=[A-Z])/g)) {
+		const head = line.slice(0, m.index + 1);
+		if (titleCase(head.replace(/^\d+(\.\d+)*\s+/, "X "))) return {
+			heading: head,
+			rest: line.slice(m.index + 1),
+			kind: "inferred"
+		};
+	}
+	return null;
+}
+const bare = (s) => s.replace(/^\d+(\.\d+)*\s+/, "").replace(/\s+/g, " ").trim();
+function readableHtml(html) {
+	return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<img\b[^>]*>/gi, " ").replace(/<h1\b[^>]*>/gi, "\n# ").replace(/<h[2-6]\b[^>]*>/gi, "\n## ").replace(/<\/h[1-6]>/gi, "\n").replace(/<\/(?:p|li|section|div)>/gi, "\n\n").replace(/<[^>]+>/g, " ").replace(/&(?:nbsp|#160);/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&#(?:39|x27);/gi, "'");
+}
+/** Text split into the topics its headings name. Text before any heading
+belongs to the `# ` title, or to "(untitled)". */
+function topics(md) {
+	if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
+	const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
+	const out = [{
+		heading: title,
+		lines: [],
+		kind: "title"
+	}];
+	for (const line of md.replace(/^#\s.*$/m, "").replace(/<!--[\s\S]*?-->/g, "").split("\n")) {
+		const h = headingOf(line);
+		if (h && bare(h.heading) !== bare(title)) out.push({
+			heading: h.heading,
+			lines: [h.rest],
+			kind: h.kind
+		});
+		else out[out.length - 1].lines.push(h ? h.rest : line);
+	}
+	return out.map((t) => ({
+		heading: t.heading,
+		body: t.lines.join("\n").trim(),
+		kind: t.kind
+	})).filter((t, i) => i === 0 || t.body);
+}
+//#endregion
+//#region tools/lib/source-catalog.mjs
+const EXTRACTOR_VERSION = 1;
+const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const within = (child, parent) => child === parent || child.startsWith(parent + sep);
+const unitFile = (source) => `units/${source.id}.yaml`;
+function catalogDirectory(catalog) {
+	if (typeof catalog === "string") return catalog.endsWith(".yaml") ? dirname(resolve(catalog)) : resolve(catalog);
+	return catalog?.directory;
+}
+function readUnit(catalog, reference) {
+	if (!reference?.source || !reference?.unit) throw new Error("unit reference requires source and unit IDs");
+	let value = catalog;
+	let directory = catalogDirectory(catalog);
+	if (typeof catalog === "string") {
+		const path = catalog.endsWith(".yaml") ? resolve(catalog) : join(resolve(catalog), "catalog.yaml");
+		value = load(readFileSync(path, "utf8"));
+		directory = resolve(path, "..");
+	}
+	if (!directory) throw new Error("catalog must be returned by indexSources or loaded from a catalog path");
+	const source = value?.sources?.find((item) => item.id === reference.source);
+	if (!source) throw new Error(`unknown source: ${reference.source}`);
+	const relativeFile = unitFile(source);
+	const file = resolve(directory, relativeFile);
+	if (!within(file, directory)) throw new Error(`unit file escapes catalog directory: ${relativeFile}`);
+	let stale = false;
+	try {
+		const current = realpathSync(source.path);
+		stale = current !== source.path || sha256(readFileSync(current)) !== source.hash;
+	} catch {
+		stale = true;
+	}
+	if (stale) {
+		const descriptor = source.units.find((item) => item.id === reference.unit);
+		if (!descriptor) throw new Error(`unknown unit: ${reference.unit}`);
+		return {
+			reference,
+			locator: descriptor.locator,
+			...descriptor.asset ? { asset: descriptor.asset } : {},
+			warning: "Source changed or disappeared since indexing; re-index before reading this unit."
+		};
+	}
+	const stored = load(readFileSync(file, "utf8"));
+	if (stored?.extractorVersion !== EXTRACTOR_VERSION || stored?.source !== source.id || stored?.hash !== source.hash) throw new Error(`unit cache does not match source: ${source.id}`);
+	const unit = stored.units?.find((item) => item.id === reference.unit);
+	if (!unit) throw new Error(`unknown unit: ${reference.unit}`);
+	let text = unit.text;
+	let locator = unit.locator;
+	if (reference.lines) {
+		if (!Array.isArray(reference.lines) || reference.lines.length !== 2 || !reference.lines.every(Number.isInteger)) throw new Error("reference lines must be [start, end]");
+		if (text == null || unit.lineStart == null) throw new Error("line narrowing is only available for text units");
+		const [start, end] = reference.lines;
+		if (start < unit.lineStart || end < start || end > unit.lineEnd) throw new Error(`line range is outside ${unit.locator}`);
+		text = text.split(/(?<=\n)/).slice(start - unit.lineStart, end - unit.lineStart + 1).join("");
+		locator = unit.lineMode === "local" ? `${unit.locator}:lines ${start}-${end}` : `${source.path}:lines ${start}-${end}`;
+	}
+	return {
+		reference,
+		locator,
+		...text != null ? { text } : {},
+		...unit.asset ? { asset: unit.asset } : {},
+		...unit.warning ? { warning: unit.warning } : {}
+	};
+}
+//#endregion
+//#region tools/lib/assessment-requirements.mjs
+function savedRequirements(stateDir) {
+	const path = join(stateDir, "required-assessment.yaml");
+	if (!existsSync(path)) return [];
+	const ids = parseFile(path)?.families;
+	if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !id.trim())) throw new Error(`${path}: expected a list of required family IDs`);
+	return ids;
+}
+function preserveAssessmentRequirements(report, stateDir) {
+	for (const id of savedRequirements(stateDir)) if (!report.requiredFamilies.some((row) => row.id === id)) {
+		report.requiredFamilies.push({
+			id,
+			complete: false,
+			missing: ["required family was removed or its assessmentRequired flag was cleared after writing began"]
+		});
+		report.assessmentReady = false;
+	}
+	return report;
+}
+/** Used by standalone publication/packing too, so bypassing finish cannot hide a gap. */
+function assessmentRequirementIssues(courseDir, stateDir) {
+	const plan = readPlan(courseDir);
+	if (!savedRequirements(stateDir).length && !(plan.data.families || []).some((f) => f.assessmentRequired === true)) return [];
+	return preserveAssessmentRequirements(planCoverage(plan, digest(courseDir).subs, { verifySource: (ref) => readUnit(join(stateDir, "sources/catalog.yaml"), ref) }), stateDir).requiredFamilies.filter((row) => !row.complete).map((row) => `${row.id}: ${row.missing.join("; ")}`);
+}
 //#endregion
 //#region src/figures/base.js
 function esc(s) {
@@ -45000,7 +45921,10 @@ const R = Blocks.register;
 const holdsOf = (t) => (Blocks.get(t) || {}).holds === "structure" ? "structure" : "prose";
 R("p", {
 	notes: "hidden",
-	render: (b) => `<p>${b.h}</p>`
+	render: (b) => {
+		const h = b.h || "";
+		return /<(?:p|ol|ul|blockquote|div|pre|table|h[1-6])(?:\s|>)/i.test(h) ? h : `<p>${h}</p>`;
+	}
 });
 R("def", {
 	apart: true,
@@ -45165,7 +46089,7 @@ const NOTES_MODES = [
 	"closed",
 	"hidden"
 ];
-/** the authored claim, whichever field carries it — `core` first, then `gist` */
+/** the authored summary, whichever optional field carries it — `core` first */
 const leadOf = (b) => b && (b.core || b.gist) || null;
 /** Does this block state its claim separately from its development? */
 const hasCore = (b) => !!(b && b.core);
@@ -45384,440 +46308,6 @@ function pointsAtNothing(C) {
 	const out = [];
 	for (const s of C.sections || []) for (const u of s.subs || []) for (const [where, text] of passages(u)) for (const name of pointsIn(text)) out.push(`${u.id} ${where}: "${name}"`);
 	return out;
-}
-//#endregion
-//#region tools/lib/digest.mjs
-const DATA = /* @__PURE__ */ new Set([
-	".yaml",
-	".yml",
-	".json"
-]);
-const dataFiles = (dir) => existsSync(dir) ? readdirSync(dir).filter((f) => DATA.has(extname(f))).sort() : [];
-const stem$1 = (f) => basename(f, extname(f));
-const read = (p) => {
-	try {
-		return parseFile(p) || {};
-	} catch {
-		return {};
-	}
-};
-/** leading digits of a filename: "03-linear" -> 3, "2-integrals" -> 2 */
-const num = (f) => Number(/^(\d+)/.exec(f)?.[1] ?? 0);
-const cited = (blocks) => {
-	const out = /* @__PURE__ */ new Set();
-	for (const m of JSON.stringify(blocks || []).matchAll(/<c\s+k=\\?"([^"\\]+)/g)) out.add(m[1]);
-	return [...out];
-};
-/** One line per subsection: id, title, what it defines, what it states, what it cites. */
-function subLine(u, id) {
-	const blocks = Array.isArray(u.blocks) ? u.blocks : [];
-	const defs = blocks.filter((b) => b?.t === "def").map((b) => b.term).filter(Boolean);
-	const keys = blocks.filter((b) => b?.t === "key").map((b) => b.label).filter(Boolean);
-	const types = (Array.isArray(u.quiz) ? u.quiz : []).map((q) => q?.type).filter(Boolean);
-	const parts = [`${id} ${u.title || "(untitled)"}`];
-	if (defs.length) parts.push(`defines: ${defs.join("; ")}`);
-	if (keys.length) parts.push(`states: ${keys.join("; ")}`);
-	const c = cited(blocks);
-	if (c.length) parts.push(`cites: ${c.join(",")}`);
-	const cats = [...new Set(blocks.map((b) => b?.cat).filter(Boolean))];
-	if (cats.length) parts.push(`cat: ${cats.join(",")}`);
-	if (types.length) parts.push(`quiz: ${types.join(",")}`);
-	const claims = blocks.filter((b) => CLAIMY.has(b?.t));
-	if (claims.length) {
-		const withCore = claims.filter((b) => b.core).length;
-		const withGist = claims.filter((b) => b.gist).length;
-		if (withCore + withGist < claims.length) parts.push(`unclaimed: ${claims.length - withCore - withGist}/${claims.length}`);
-	}
-	if (!blocks.length) parts.push("EMPTY");
-	return parts.join(" | ");
-}
-const CLAIMY = /* @__PURE__ */ new Set([
-	"def",
-	"key",
-	"trap"
-]);
-/**
-* Walk a course folder, however far along it is.
-* Returns the structured view (for planning) and `text` (for prompts).
-*/
-function digest(dir) {
-	const sections = [];
-	const secRoot = join(dir, "sections");
-	for (const d of existsSync(secRoot) ? readdirSync(secRoot).sort() : []) {
-		const path = join(secRoot, d);
-		if (!existsSync(path) || !statSync(path).isDirectory()) continue;
-		if (!readdirSync(path).length) continue;
-		const meta = dataFiles(path).find((f) => stem$1(f) === "_section");
-		const s = meta ? read(join(path, meta)) : {};
-		const id = `s${num(d)}`;
-		const subs = dataFiles(path).filter((f) => stem$1(f) !== "_section").map((f) => ({
-			file: f,
-			n: num(f),
-			data: read(join(path, f))
-		})).sort((a, b) => a.n - b.n).map((f, i) => ({
-			id: `${id}-${i + 1}`,
-			file: join(path, f.file),
-			title: f.data.title || stem$1(f.file),
-			blocks: Array.isArray(f.data.blocks) ? f.data.blocks.length : 0,
-			spine: Array.isArray(f.data.blocks) ? f.data.blocks.filter((b) => b && (!b.tier || b.tier === "spine")).length : 0,
-			quiz: Array.isArray(f.data.quiz) ? f.data.quiz.length : 0,
-			tiers: new Set((Array.isArray(f.data.blocks) ? f.data.blocks : []).map((b) => b?.tier || "spine")),
-			line: subLine(f.data, `${id}-${i + 1}`)
-		}));
-		sections.push({
-			id,
-			dir: path,
-			title: s.title || d,
-			blurb: !!s.blurb,
-			subs
-		});
-	}
-	const conceptMap = /* @__PURE__ */ new Map();
-	const canonicalPath = [
-		"yaml",
-		"yml",
-		"json"
-	].map((ext) => join(dir, "categorize", `concepts.${ext}`)).find(existsSync);
-	if (canonicalPath) {
-		const list = read(canonicalPath);
-		if (Array.isArray(list)) {
-			for (const c of list) if (c && typeof c.id === "string") conceptMap.set(c.id, c);
-		}
-	}
-	for (const f of dataFiles(join(dir, "concepts"))) {
-		const c = read(join(dir, "concepts", f));
-		const key = c.id || c.key || stem$1(f);
-		if (!conceptMap.has(key)) conceptMap.set(key, c);
-	}
-	const concepts = [...conceptMap].map(([key, c]) => ({
-		key,
-		term: c.term || key,
-		review: !!c.review,
-		body: !!c.body,
-		variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
-	}));
-	const cats = dataFiles(join(dir, "categories")).map((f) => {
-		const c = read(join(dir, "categories", f));
-		return {
-			key: stem$1(f),
-			name: c.name || stem$1(f),
-			boundary: c.boundary || "",
-			siblings: c.siblings || []
-		};
-	});
-	return {
-		sections,
-		subs: sections.flatMap((s) => s.subs),
-		concepts,
-		cats,
-		text: [
-			sections.length ? "SECTIONS AND SUBSECTIONS (id, title, coverage)" : "",
-			...sections.map((s) => [`${s.id} ${s.title}`, ...s.subs.map((u) => "  " + u.line)].join("\n")),
-			concepts.length ? "\nCONCEPTS (key, term, practice variants)" : "",
-			...concepts.map((c) => `  ${c.key} — ${c.term} — ${c.variants} variants`),
-			cats.length ? "\nCATEGORIES (key — name — boundary) — tag into these, never beside them" : "",
-			...cats.map((c) => `  ${c.key} — ${c.name} — ${c.boundary.replace(/\s+/g, " ").trim()}`)
-		].filter(Boolean).join("\n")
-	};
-}
-//#endregion
-//#region tools/lib/sources.mjs
-const SYSTEM = [
-	"/bin",
-	"/boot",
-	"/dev",
-	"/etc",
-	"/lib",
-	"/proc",
-	"/sbin",
-	"/sys",
-	"/usr",
-	"/private/etc",
-	"/System",
-	"/Library",
-	"/Applications"
-];
-const BROAD = [
-	"/var",
-	"/private",
-	"/private/var",
-	"/Users",
-	"/home",
-	"/opt",
-	"/Volumes",
-	"/mnt"
-];
-const within = (child, parent) => child === parent || child.startsWith(parent + sep);
-function roots(courseDir, paths = [], base = process.cwd()) {
-	const repo = resolve(courseDir, "..", "..");
-	const courses = join(repo, "courses");
-	const own = join(courseDir, "sources");
-	const out = existsSync(own) ? [realpathSync(own)] : [];
-	for (const p of paths) {
-		const abs = resolve(base, p.replace(/^~(?=$|\/)/, homedir()));
-		if (!existsSync(abs)) throw new Error(`--source ${p}: ${abs} does not exist`);
-		const real = realpathSync(abs);
-		const home = realpathSync(homedir());
-		const refuse = (why) => {
-			throw new Error(`--source ${p}: refused, ${why}`);
-		};
-		if (real === sep || real === home || within(home, real)) refuse("it contains your whole home folder or more");
-		if (SYSTEM.some((s) => within(real, s))) refuse("it is a system folder");
-		if (BROAD.includes(real)) refuse("it is too broad; name the folder you mean");
-		if (within(realpathSync(repo), real)) refuse("it contains this repository, and with it every private course");
-		if (within(real, realpathSync(courses)) && !within(real, realpathSync(courseDir))) refuse("it is inside another course");
-		if (!out.some((r) => within(real, r))) out.push(real);
-	}
-	return out;
-}
-const DOC = /* @__PURE__ */ new Set([
-	".md",
-	".markdown",
-	".mdx",
-	".txt",
-	".tex",
-	".html",
-	".htm",
-	".rst",
-	".adoc",
-	".org"
-]);
-const CODE = /* @__PURE__ */ new Set([
-	".js",
-	".mjs",
-	".cjs",
-	".jsx",
-	".ts",
-	".tsx",
-	".py",
-	".rb",
-	".go",
-	".rs",
-	".java",
-	".kt",
-	".swift",
-	".c",
-	".h",
-	".cc",
-	".cpp",
-	".hpp",
-	".cs",
-	".php",
-	".scala",
-	".sh",
-	".sql",
-	".r",
-	".jl",
-	".lua",
-	".dart",
-	".vue",
-	".svelte",
-	".css",
-	".scss",
-	".json",
-	".yaml",
-	".yml",
-	".toml",
-	".ini",
-	".csv",
-	".xml",
-	".proto",
-	".graphql",
-	".ipynb"
-]);
-/** Extraction registration only. `doc` and `text` retain their older meaning:
-binary teaching sources are catalogued, but never read as UTF-8 here. */
-const SOURCE_FORMATS = new Map([
-	...[...DOC, ...CODE].map((ext) => [ext, "text"]),
-	[".pdf", "pdf"],
-	[".pptx", "pptx"],
-	[".ppt", "ppt"],
-	[".png", "image"],
-	[".jpg", "image"],
-	[".jpeg", "image"],
-	[".gif", "image"],
-	[".webp", "image"],
-	[".svg", "image"]
-]);
-const SECRET = /(^|\/)(\.env[^/]*|.*\.(pem|key|p12|pfx|keystore|jks)|id_(rsa|dsa|ecdsa|ed25519)[^/]*|\.?(credentials|secrets?)(\.[^/]*)?|\.netrc|\.npmrc|\.pypirc)$/i;
-const BULK_DIR = /(^|\/)(node_modules|vendor|dist|build|out|target|coverage|__pycache__|\.[^/]*)(\/|$)/;
-const BULK_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Cargo\.lock|poetry\.lock|go\.sum|[^/]*\.min\.(js|css)|[^/]*\.map)$/;
-const LIMIT = 2e4;
-const skip = (rel) => SECRET.test(rel) || BULK_DIR.test(rel) || BULK_FILE.test(rel);
-function gitFiles(dir) {
-	const git = (args) => execFileSync("git", [
-		"-C",
-		dir,
-		...args
-	], {
-		encoding: "utf8",
-		maxBuffer: 268435456,
-		stdio: [
-			"ignore",
-			"pipe",
-			"ignore"
-		]
-	});
-	try {
-		git(["rev-parse", "--show-toplevel"]);
-	} catch {
-		return null;
-	}
-	try {
-		git([
-			"check-ignore",
-			"-q",
-			"."
-		]);
-		return null;
-	} catch {}
-	try {
-		return git([
-			"ls-files",
-			"-co",
-			"--exclude-standard",
-			"-z",
-			"--",
-			"."
-		]).split("\0").filter(Boolean);
-	} catch {
-		return null;
-	}
-}
-function walk(dir) {
-	const out = [];
-	const go = (d) => {
-		for (const f of readdirSync(d).sort()) {
-			if (out.length >= LIMIT) return;
-			const path = join(d, f);
-			const rel = relative(dir, path);
-			if (skip(rel)) continue;
-			const st = lstatSync(path);
-			if (st.isDirectory()) go(path);
-			else if (st.isFile() || st.isSymbolicLink()) out.push(rel);
-		}
-	};
-	go(dir);
-	return out;
-}
-/** Every material file under the roots, sorted, each checked to stay inside
-its root (a symlink pointing out is dropped, not followed). */
-function list(rootsList) {
-	const out = [];
-	for (const root of rootsList) {
-		if (statSync(root).isFile()) {
-			out.push(entry(dirname(root), basename(root), root));
-			continue;
-		}
-		const rels = (gitFiles(root) || walk(root)).filter((r) => !skip(r)).sort().slice(0, LIMIT);
-		for (const rel of rels) {
-			const path = join(root, rel);
-			let real;
-			try {
-				real = realpathSync(path);
-			} catch {
-				continue;
-			}
-			if (!within(real, root) || !statSync(real).isFile()) continue;
-			out.push(entry(root, rel, path));
-		}
-	}
-	return out;
-}
-function entry(root, rel, path) {
-	const ext = extname(rel).toLowerCase();
-	return {
-		root,
-		rel,
-		path,
-		doc: DOC.has(ext),
-		text: DOC.has(ext) || CODE.has(ext),
-		bytes: statSync(path).size,
-		format: SOURCE_FORMATS.get(ext) || "binary"
-	};
-}
-const mapPath = (repo, id) => join(repo, ".author", id, "map.txt");
-function loadMap(repo, id) {
-	const p = mapPath(repo, id);
-	const out = {};
-	if (!existsSync(p)) return out;
-	for (const line of readFileSync(p, "utf8").split("\n")) {
-		const m = /^(\S[^:]*\.(?:ya?ml|json)):\s*(.*)$/.exec(line.trim());
-		if (m) out[m[1]] = m[2].split("|").map((x) => x.trim()).filter((x) => x && !/^none$/i.test(x));
-	}
-	return out;
-}
-/** Does map entry `name` ("/abs/f.md" or "/abs/f.md#Heading") cover this topic? */
-const names = (name, path, heading) => {
-	const [file, head] = splitName(name);
-	return file === path && (!head || bare(head) === bare(heading));
-};
-const splitName = (name) => {
-	const i = name.indexOf("#");
-	return i < 0 ? [name, null] : [name.slice(0, i), name.slice(i + 1)];
-};
-const FIGURE = /^(Figure \d|The (horizontal|vertical) axis|The (graph|differential equation) (is|shows)|.{0,40}is shown below)|axis is labeled|is marked on|\b(starts|ends) (from|at) \(|toward (the )?(upper|lower) (left|right)/i;
-const describesFigure = (paragraph) => FIGURE.test(paragraph.trim());
-const SMALL = /^(a|an|and|as|at|by|for|from|in|of|on|or|the|to|vs\.?|with)$/;
-const NOT_TOPIC = /^(Figure|Example|Solution|Remark|Table|Interactive|Continued|Historical|Note|Theorem|Definition|Rule|Algorithm|Principle|Proof|Corollary)\b/;
-const titleCase = (s) => {
-	const w = s.trim().split(/\s+/);
-	if (w.length < 2 || w.length > 9 || NOT_TOPIC.test(s)) return false;
-	if (/[.,;:!?)]$/.test(s) || !/^[\w\s’'\-–,&]+$/.test(s)) return false;
-	return /^[A-Z0-9]/.test(w[0]) && /^[A-Z]/.test(w[w.length - 1]) && w.every((x) => /^[A-Z0-9]/.test(x) || SMALL.test(x));
-};
-/** A line's heading and the prose it runs into, or null when it is not one. */
-function headingOf(line) {
-	if (line.length > 1e3) return null;
-	const marked = /^##+\s+(.+?)\s*$/.exec(line);
-	if (marked) return {
-		heading: marked[1],
-		rest: "",
-		kind: "marked"
-	};
-	if (titleCase(line)) return {
-		heading: line.trim(),
-		rest: "",
-		kind: "inferred"
-	};
-	for (const m of line.matchAll(/[a-z](?=[A-Z])/g)) {
-		const head = line.slice(0, m.index + 1);
-		if (titleCase(head.replace(/^\d+(\.\d+)*\s+/, "X "))) return {
-			heading: head,
-			rest: line.slice(m.index + 1),
-			kind: "inferred"
-		};
-	}
-	return null;
-}
-const bare = (s) => s.replace(/^\d+(\.\d+)*\s+/, "").replace(/\s+/g, " ").trim();
-function readableHtml(html) {
-	return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ").replace(/<img\b[^>]*>/gi, " ").replace(/<h1\b[^>]*>/gi, "\n# ").replace(/<h[2-6]\b[^>]*>/gi, "\n## ").replace(/<\/h[1-6]>/gi, "\n").replace(/<\/(?:p|li|section|div)>/gi, "\n\n").replace(/<[^>]+>/g, " ").replace(/&(?:nbsp|#160);/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&#(?:39|x27);/gi, "'");
-}
-/** Text split into the topics its headings name. Text before any heading
-belongs to the `# ` title, or to "(untitled)". */
-function topics(md) {
-	if (/^\s*(?:<!doctype html|<html\b)/i.test(md)) md = readableHtml(md);
-	const title = /^#\s+(.+)$/m.exec(md)?.[1] || "(untitled)";
-	const out = [{
-		heading: title,
-		lines: [],
-		kind: "title"
-	}];
-	for (const line of md.replace(/^#\s.*$/m, "").replace(/<!--[\s\S]*?-->/g, "").split("\n")) {
-		const h = headingOf(line);
-		if (h && bare(h.heading) !== bare(title)) out.push({
-			heading: h.heading,
-			lines: [h.rest],
-			kind: h.kind
-		});
-		else out[out.length - 1].lines.push(h ? h.rest : line);
-	}
-	return out.map((t) => ({
-		heading: t.heading,
-		body: t.lines.join("\n").trim(),
-		kind: t.kind
-	})).filter((t, i) => i === 0 || t.body);
 }
 //#endregion
 //#region tools/lib/coverage.mjs
@@ -46068,7 +46558,7 @@ function strictCurrentIssues(C) {
 		}
 	}
 	const drillCount = Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0);
-	if (drillCount) issues.push(`drills/: strict current schema requires variants in practice/<concept>.yaml; migrate ${drillCount} legacy drill item(s)`);
+	if (drillCount) issues.push(`drills/: strict current authoring does not create drill banks; migrate ${drillCount} legacy item(s) to typed inline lesson questions or the reusable questions bank`);
 	return issues;
 }
 //#endregion
@@ -46093,8 +46583,6 @@ const METRICS = [
 	["unsourced", "claims name no source"],
 	["unverified", "answers lack a valid verification marker"],
 	["unrouted", "questions resolve to no concept"],
-	["unclaimed", "claims declare neither core: nor gist:"],
-	["repeat", "claims restate themselves in a gist: rather than splitting a core:"],
 	["nameonly", "blocks say nothing at notes depth until they are opened"]
 ];
 const pct = (x) => `${Math.round(x * 100)}%`;
@@ -46134,8 +46622,6 @@ function audit(id) {
 		unsourced: 0,
 		unverified: 0,
 		unrouted: 0,
-		unclaimed: 0,
-		repeat: 0,
 		nameonly: 0
 	};
 	let blocks = 0;
@@ -46151,8 +46637,6 @@ function audit(id) {
 			const kind = sourceKind(b.source);
 			if (kind !== "sourced") miss.unsourced++;
 			if (profile === "publish" && (kind === "missing" || b.sourceReview !== kind)) sourceIssues.push(`${u.id} block ${i + 1}: sourceReview must be ${kind === "missing" ? "sourced or disclosed, with a source: value" : kind} after reviewing source: ${b.source || "(missing)"}`);
-			if (!String(b.core || "").trim() && !String(b.gist || "").trim()) miss.unclaimed++;
-			else if (String(b.gist || "").trim()) miss.repeat++;
 		}
 		for (const q of u.quiz || []) {
 			n.quiz++;
@@ -46180,8 +46664,6 @@ function audit(id) {
 		unsourced: n.claims,
 		unverified: n.answers,
 		unrouted: n.quiz,
-		unclaimed: n.claims,
-		repeat: n.claims,
 		nameonly: blocks
 	};
 	const ceiling = C.audit || {};
@@ -46210,6 +46692,11 @@ if (wanted.some((id) => !ids.includes(id))) {
 let failed = 0;
 for (const id of ids) {
 	const { C, rows, over, sourceIssues, schemaIssues, details, points } = audit(id);
+	if (profile === "publish" && !subsection) try {
+		sourceIssues.push(...assessmentRequirementIssues(join(COURSES, id), join(STATE, id)));
+	} catch (error) {
+		sourceIssues.push(`assessment scope could not be verified: ${error.message}`);
+	}
 	let coverage = null, coverageError = null;
 	if (profile === "publish" && !subsection) try {
 		coverage = coverageReport(id);

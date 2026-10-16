@@ -1,0 +1,4 @@
+title: "Second derivative test (discriminant D)"
+term: "Second Derivative Test"
+body: >-
+  <p>At a critical point <m>(a, b)</m> where second partial derivatives are continuous, the Hessian discriminant is <m>D = f_{xx}(a, b) f_{yy}(a, b) - [f_{xy}(a, b)]^2</m>. If <m>D > 0</m> and <m>f_{xx}(a, b) > 0</m>, <m>f</m> has a local minimum; if <m>D > 0</m> and <m>f_{xx}(a, b) < 0</m>, <m>f</m> has a local maximum. If <m>D < 0</m>, <m>(a, b)</m> is a saddle point; if <m>D = 0</m>, the test is inconclusive. This test classifies the local behavior of smooth multivariable surfaces near stationary points.</p>

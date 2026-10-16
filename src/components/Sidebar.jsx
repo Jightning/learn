@@ -2,7 +2,6 @@ import { useEffect, useRef } from "preact/hooks";
 import { IconStart, IconMap, IconTuck, IconExplore, IconSaved,
          IconReview } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
-import LaneSelect from "./LaneSelect.jsx";
 import HueSelect from "./HueSelect.jsx";
 import Inline from "./Inline.jsx";
 
@@ -22,7 +21,7 @@ function Cycle({ n, active, visited }) {
 const EDGE = 28;
 
 export default function Sidebar({ course, cid, rest, here, open, onNavigate, onTuck, actions,
-                                  lane, onLane, due, zoom, onZoomReset,
+                                  due, zoom, onZoomReset,
                                   speech, onHue }) {
   const H = r => `#/${cid}${r ? "/" + r : ""}`;
   const rail = useRef(null);
@@ -130,28 +129,8 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
         })}
       </nav>
 
-      {/* Everything that is a setting rather than a place.
-       *
-       * It used to be called "Reading options" and hold the two axes the mode
-       * switch presets. The depth axis has gone: Study / Review / Names in the
-       * toolbar is the same three states under names that say what they are
-       * for, and two controls for one setting is one control too many — the
-       * reader who found both had to work out that they were the same thing.
-       * The lane is not that, so it stays: it is the one question the mode
-       * switch cannot ask on its own.
-       *
-       * What is left reads top to bottom by how long a control's reach is: the
-       * page actions first, on one line, because they are pressed mid-read and
-       * forgotten; then the two settings that stay set — the lane, and the
-       * colour the course wears on this device.
-       *
-       * It sits at the foot of the navigation and sticks there — the rail above
-       * it is as long as the course, and a panel that scrolls away is a panel
-       * that is not there on a 62-section course. Closed it is one line; open
-       * it is a card, set on its own ground and inside its own border, so that
-       * a panel that overlaps the section list is obviously in front of it
-       * rather than part of it. */}
-      {onLane && (
+      {/* Page actions and course identity settings stay beside navigation. */}
+      {cid && (
         <details class="axes">
           <summary><i class="caret" aria-hidden="true" />Settings</summary>
           <div class="axes-body">
@@ -180,7 +159,6 @@ export default function Sidebar({ course, cid, rest, here, open, onNavigate, onT
               <CourseActions inCourse cls="lane-b" show="look" />
             </div>
 
-            <LaneSelect lane={lane} onLane={onLane} />
             <HueSelect cid={cid} onHue={onHue} />
           </div>
         </details>

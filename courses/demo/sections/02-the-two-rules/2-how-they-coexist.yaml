@@ -23,8 +23,8 @@ blocks:
       One definition plus one link serves both subsections, and neither restates the other.
     h: |-
       <ol>
-        <li><a href="#s1-4">§1.4</a> defines <c k="tier">tier</c> in full.</li>
-        <li><a href="#s2-1">§2.1</a> needs the word and writes <code>&lt;c k="tier"&gt;concept&lt;/c&gt;</code>; a margin card appears beside that line.</li>
+        <li><a href="#s1-4">§1.4</a> defines an <c k="tier">optional expansion</c>.</li>
+        <li><a href="#s2-1">§2.1</a> needs the idea and writes <code>&lt;c k="tier"&gt;optional expansion&lt;/c&gt;</code>; a margin card appears beside that line.</li>
         <li>Neither subsection restates the other. Completeness holds for both readers; non-redundancy holds for the course.</li>
       </ol>
 
@@ -53,7 +53,7 @@ blocks:
       - if neither fits, it was not really a forward reference
 
   - t: p
-    tier: depth
+    optional: true
     source: docs/create_course.md §11.5
     h: |-
       Links can cross course boundaries too. An imported circuits course can point at a separately imported differential-equations course with <code>#/&lt;course-id&gt;/</code>; it renders as a plain link because the other course's index is not built until the reader opens it.
@@ -63,8 +63,10 @@ quiz:
     concept: non-redundancy
     q: |-
       In one sentence, how does a course stay complete while explaining each idea only once?
-    a: |-
-      Every definition is reachable by a link from anywhere it is used, so a subsection can rely on an idea without carrying its own copy.
+    response:
+      kind: self
+      model: |-
+        Every definition is reachable by a link from anywhere it is used, so a subsection can rely on an idea without carrying its own copy.
     why: |-
       <p>The contradiction is only apparent because "complete" does not require "self-contained". The reference system trades a second copy for a one-hop path to the first.</p>
     verified: 2026-09-02
@@ -73,8 +75,10 @@ quiz:
     concept: non-redundancy
     q: |-
       §2 uses an idea first defined in §6, with no link. Give two acceptable fixes.
-    a: |-
-      Move the idea earlier so it precedes §2, or promote it to a concept and link it from both places.
+    response:
+      kind: self
+      model: |-
+        Move the idea earlier so it precedes §2, or promote it to a concept and link it from both places.
     why: |-
       <p>An unresolvable forward reference strands the reader, which is the one thing the reference system exists to prevent. Restating the idea inline in §2 is not a fix; it is a non-redundancy violation.</p>
     verified: 2026-09-02
@@ -83,8 +87,10 @@ quiz:
     concept: two-loops
     q: |-
       Besides the margin card, name two other things the engine builds automatically from a single <code>&lt;c k="…"&gt;</code> mention.
-    a: |-
-      A concept-hub entry, an "appears in" line for that concept, and a dependency-map edge (any two).
+    response:
+      kind: self
+      model: |-
+        A concept-hub entry, an "appears in" line for that concept, and a dependency-map edge (any two).
     why: |-
       <p>The point of routing everything through one mention is leverage: the author writes a link, the engine writes the navigation. This is also why the two loops can share a concept identity without extra bookkeeping.</p>
     verified: 2026-09-02
@@ -97,16 +103,18 @@ quiz:
       <p>Non-redundancy appears to forbid it. The concept hub already does
       something very close to it and is allowed. State the rule that separates
       the two, and give a case your rule gets wrong.</p>
-    a: |-
-      <p>A good answer finds that the rule governs <em>sources</em> of
-      explanation, not renderings of one. The hub is generated from the concept
-      files, so there is still one copy to edit and nothing can drift. A typed
-      glossary is a second copy. The sharper version of the rule is that a
-      second appearance is legal when it cannot disagree with the first.</p>
-      <p>Then it breaks its own rule. A generated page can still be wrong in a
-      way an author would have caught, and a hand-written glossary that says
-      something the definitions do not is the one place a reader might notice
-      the definitions are unclear.</p>
+    response:
+      kind: self
+      model: |-
+        <p>A good answer finds that the rule governs <em>sources</em> of
+        explanation, not renderings of one. The hub is generated from the concept
+        files, so there is still one copy to edit and nothing can drift. A typed
+        glossary is a second copy. The sharper version of the rule is that a
+        second appearance is legal when it cannot disagree with the first.</p>
+        <p>Then it breaks its own rule. A generated page can still be wrong in a
+        way an author would have caught, and a hand-written glossary that says
+        something the definitions do not is the one place a reader might notice
+        the definitions are unclear.</p>
     why: |-
       <p>The version of non-redundancy stated in §2.1 is
       about words on a page, and it is the version worth holding day to day. It

@@ -1,0 +1,21 @@
+- id: mix-concentration
+  title: Calculate the result of a two-stage concentration dilution
+  outcome: Calculate final concentration from initial concentration and volumes, assuming the solute is conserved.
+  lesson: s1-1
+  families: []
+  prerequisites: []
+  sources: []
+- id: feedback-response
+  title: Explain how a measured gap guides a corrective action
+  outcome: Explain how a target-reading difference guides an action and a later reading checks its effect.
+  lesson: s2-1
+  families: []
+  prerequisites: []
+  sources: []
+- id: evidence-causality
+  title: Distinguish an observed association from evidence of causation
+  outcome: State what an observational group difference supports and what it cannot establish about cause.
+  lesson: s3-1
+  families: []
+  prerequisites: []
+  sources: []

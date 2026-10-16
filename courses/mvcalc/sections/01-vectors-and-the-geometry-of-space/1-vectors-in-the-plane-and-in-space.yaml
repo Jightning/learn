@@ -1,0 +1,117 @@
+title: Vectors in the Plane and in Space
+blocks:
+  - t: p
+    h: <p>A vector represents a quantity with both magnitude and direction, independent of where it is positioned in space. In contrast to a scalar (which is a single real number representing magnitude alone), vectors model physical quantities such as displacement, velocity, force, and acceleration.</p>
+    authorId: block-4be1d6b5-bbe
+  - t: def
+    term: Vector and Component Form
+    source: OpenStax Calculus Volume 3, Section 2.1
+    sourceReview: sourced
+    core: A vector in 2D or 3D space is determined by its components representing directed displacement along the coordinate axes.
+    introduces:
+      - vector
+      - obj-s1-1
+    objectives:
+      - obj-s1-1
+    family: family-vector-operations
+    h: <p>If a vector has initial point <m>P(x_1, y_1, z_1)</m> and terminal point <m>Q(x_2, y_2, z_2)</m>, its component form is <m>\mathbf{v} = \vec{PQ} = \langle x_2 - x_1, y_2 - y_1, z_2 - z_1 \rangle</m>. In terms of the standard unit basis vectors <m>\mathbf{i} = \langle 1, 0, 0 \rangle</m>, <m>\mathbf{j} = \langle 0, 1, 0 \rangle</m>, and <m>\mathbf{k} = \langle 0, 0, 1 \rangle</m>, the vector is written as <m>\mathbf{v} = v_1 \mathbf{i} + v_2 \mathbf{j} + v_3 \mathbf{k}</m>.</p>
+    authorId: block-ce62588f-706
+  - t: key
+    label: Vector Operations and Normalization
+    source: OpenStax Calculus Volume 3, Section 2.1-2.2
+    sourceReview: sourced
+    core: Vectors add and scale componentwise, and normalize to unit vectors by dividing by their magnitude.
+    objectives:
+      - obj-s1-1
+    family: family-vector-operations
+    h: <p>For vectors <m>\mathbf{u} = \langle u_1, u_2, u_3 \rangle</m> and <m>\mathbf{v} = \langle v_1, v_2, v_3 \rangle</m> and scalar <m>c \in \mathbb{R}</m>:</p>
+    items:
+      - 'Addition: <m>\mathbf{u} + \mathbf{v} = \langle u_1 + v_1, u_2 + v_2, u_3 + v_3 \rangle</m>, geometrically given by the head-to-tail triangle or parallelogram rule.'
+      - 'Scalar multiplication: <m>c\mathbf{u} = \langle cu_1, cu_2, cu_3 \rangle</m>, scaling length by <m>|c|</m> and reversing direction if <m>c < 0</m>.'
+      - 'Magnitude: <m>|\mathbf{u}| = \sqrt{u_1^2 + u_2^2 + u_3^2}</m>.'
+      - 'Unit vector: For nonzero <m>\mathbf{u}</m>, the vector <m>\hat{\mathbf{u}} = \frac{\mathbf{u}}{|\mathbf{u}|}</m> has length 1 and shares the direction of <m>\mathbf{u}</m>.'
+    ordered: true
+    authorId: block-7ec15c6a-10c
+  - t: ex
+    title: Magnitude and Unit Vector in 3D
+    objectives:
+      - obj-s1-1
+    family: family-vector-operations
+    h: <p>Let <m>P(1, -2, 4)</m> and <m>Q(3, 2, 0)</m>. The displacement vector is <m>\mathbf{v} = \vec{PQ} = \langle 3 - 1, 2 - (-2), 0 - 4 \rangle = \langle 2, 4, -4 \rangle</m>. Its magnitude is <m>|\mathbf{v}| = \sqrt{2^2 + 4^2 + (-4)^2} = \sqrt{4 + 16 + 16} = \sqrt{36} = 6</m>. The unit vector in the direction of <m>\mathbf{v}</m> is <m>\hat{\mathbf{v}} = \frac{1}{6}\langle 2, 4, -4 \rangle = \langle \frac{1}{3}, \frac{2}{3}, -\frac{2}{3} \rangle</m>.</p>
+    authorId: block-ec644388-b1d
+  - t: key
+    label: Resultant Vectors and Resolving Forces
+    source: OpenStax Calculus Volume 3, Section 2.1
+    sourceReview: sourced
+    core: A 2D vector with magnitude M and direction angle θ has components ⟨M cos θ, M sin θ⟩; resultant forces are vector sums.
+    objectives:
+      - obj-s1-1
+    family: family-vector-resultant
+    h: <p>When several forces or velocities act concurrently, the net effect is the resultant vector <m>\mathbf{R} = \sum \mathbf{F}_i</m>. To combine forces given by magnitudes and angles, resolve each into Cartesian components <m>F_x = |\mathbf{F}|\cos\theta</m> and <m>F_y = |\mathbf{F}|\sin\theta</m>, add corresponding components, and compute resultant magnitude <m>|\mathbf{R}| = \sqrt{R_x^2 + R_y^2}</m>.</p>
+    authorId: block-c8ec3232-60e
+  - t: trap
+    label: Adding Magnitudes Directly
+    source: OpenStax Calculus Volume 3, Section 2.1
+    sourceReview: sourced
+    core: Vector magnitudes do not add linearly unless the vectors point in the identical direction.
+    objectives:
+      - obj-s1-1
+    family: family-vector-resultant
+    h: <p>By the triangle inequality, <m>|\mathbf{u} + \mathbf{v}| \le |\mathbf{u}| + |\mathbf{v}|</m>, with equality only when the vectors are positive scalar multiples of each other. If a force of 3 N acts eastward and a force of 4 N acts northward, the net force magnitude is <m>\sqrt{3^2 + 4^2} = 5\text{ N}</m>, not <m>3 + 4 = 7\text{ N}</m>.</p>
+    authorId: block-91dde04b-a97
+  - t: def
+    term: Distance in Space and Equations of Spheres
+    source: OpenStax Calculus Volume 3, Section 2.2
+    sourceReview: sourced
+    core: In 3D space, distance between points is √(Δx² + Δy² + Δz²), and a sphere is the set of points at fixed distance R from a center.
+    introduces:
+      - space-coordinates
+    objectives:
+      - obj-s1-1
+    family: family-space-distance-sphere
+    h: <p>The standard equation of a sphere with center <m>(h, k, l)</m> and radius <m>R > 0</m> is <m>(x - h)^2 + (y - k)^2 + (z - l)^2 = R^2</m>. When given an expanded quadratic equation <m>x^2 + y^2 + z^2 + Gx + Hy + Iz + J = 0</m>, complete the square on <m>x</m>, <m>y</m>, and <m>z</m> to identify the center and radius.</p>
+    authorId: block-49e5fbd2-4d3
+  - t: ex
+    title: Completing the Square for a Sphere
+    objectives:
+      - obj-s1-1
+    family: family-space-distance-sphere
+    h: '<p>Find the center and radius of <m>x^2 + y^2 + z^2 - 4x + 6y - 2z - 11 = 0</m>. Group variables: <m>(x^2 - 4x + 4) + (y^2 + 6y + 9) + (z^2 - 2z + 1) = 11 + 4 + 9 + 1 = 25</m>. This yields <m>(x - 2)^2 + (y + 3)^2 + (z - 1)^2 = 5^2</m>. The center is <m>(2, -3, 1)</m> and radius is <m>5</m>.</p>'
+    authorId: block-c3ba5157-db1
+quiz:
+  - type: Vector magnitude
+    concept: vector
+    objectives:
+      - obj-s1-1
+    family: family-vector-operations
+    q: What is the magnitude of the vector <m>\mathbf{v} = \langle 1, -4, 8 \rangle</m>?
+    verified: true
+    response:
+      kind: number
+      value: 9
+    why: The magnitude is <m>\sqrt{1^2 + (-4)^2 + 8^2} = \sqrt{1 + 16 + 64} = \sqrt{81} = 9</m>.
+    authorId: quiz-29587c2c-a10
+  - type: Resultant vector
+    concept: vector
+    objectives:
+      - obj-s1-1
+    family: family-vector-resultant
+    q: 'Two forces act on a particle: <m>\mathbf{F}_1 = \langle 2, 5 \rangle</m> and <m>\mathbf{F}_2 = \langle 4, 3 \rangle</m>. What is the magnitude of the resultant force <m>\mathbf{F}_1 + \mathbf{F}_2</m>?'
+    verified: true
+    response:
+      kind: number
+      value: 10
+    why: The resultant is <m>\mathbf{R} = \langle 2+4, 5+3 \rangle = \langle 6, 8 \rangle</m>. Its magnitude is <m>\sqrt{6^2 + 8^2} = \sqrt{36 + 64} = \sqrt{100} = 10</m>.
+    authorId: quiz-afdabc29-119
+  - type: Sphere radius
+    concept: space-coordinates
+    objectives:
+      - obj-s1-1
+    family: family-space-distance-sphere
+    q: What is the radius of the sphere described by <m>x^2 + y^2 + z^2 - 6x + 2y - 10z + 26 = 0</m>?
+    verified: true
+    response:
+      kind: number
+      value: 3
+    why: Completing the square yields <m>(x-3)^2 + (y+1)^2 + (z-5)^2 = -26 + 9 + 1 + 25 = 9 = 3^2</m>, so the radius is 3.
+    authorId: quiz-a5df3476-d7c

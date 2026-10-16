@@ -1,15 +1,12 @@
 # Prose packet
 
-Write to the reader in direct, concise sentences. Second person can name the
+Write to the reader in direct, clear sentences. Second person can name the
 reader's situation; it should not turn every fact into an imperative. Keep the
-subject and verb close, vary sentence length, and give each sentence one job.
-Remove clauses that add no claim. Avoid generated cadence: hung tails,
-encyclopedic balance, nominalizations, repeated examples, hedged assertions,
-and judgement words such as “crucial” or “obvious.” Use a full stop, colon,
-comma, or brackets where an em dash hides the relationship.
+subject and verb close, and remove clauses that add no useful meaning. Avoid
+generated cadence: hung tails, nominalizations, hedged assertions, and
+judgement words such as “crucial” or “obvious.” Use punctuation that makes the
+relationship clear.
 
 Before emitting, check the YAML mapping trap: quote any scalar containing `: `
-or `#`, including list items and table cells. Read prose aloud. A `def` or
-`key` of four or more sentences should contain one short sentence, and a
-subsection should not use the same sentence shape throughout. The separate
+or `#`, including list items and table cells. Read prose aloud. The separate
 `examples/` files carry format examples; this module carries only prose rules.

@@ -158,12 +158,8 @@
    rows — and the space around them. */
 .axes-body{display:flex;flex-direction:column;padding:11px 0 2px}
 .axes .lane{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 8px}
-/* The rail is 308px and a three-button set plus its label does not fit on one
-   line in it. The cycling button is the narrow form the responsive sheet
-   already switches to, so here it is simply the one that shows. */
+/* The set wraps inside the rail; each depth remains directly selectable. */
 .axes .lane-set{display:flex;gap:4px;flex-wrap:wrap}
-.axes .lane-cycle{display:none}
-.axes .lane-k{display:none}
 /* Reveal all, Listen, Theme and the zoom reset, on one line above the settings
    that stay set. They wrap rather than scroll: the rail is 308px and "Stop
    reading" is a wide label, so a second line is the honest outcome at that
@@ -208,3 +204,14 @@
   padding:3px 8px;
 }
 .hue-own.sel{color:var(--ink);box-shadow:none;border-color:var(--ink-2)}
+
+/* Utility pages have no lesson margin rail; center their full content area. */
+.shell.utility:not(.solo){--wrap-max:calc(44rem + 2 * var(--wrap-pad))}
+.shell.utility:not(.solo) .wrap{margin-left:auto;margin-right:auto}
+.shell.utility:not(.solo) .topbar{
+  padding-left:max(calc(var(--wrap-pad) + var(--safe-l)),calc((100% - var(--wrap-max)) / 2 + var(--wrap-pad)));
+  padding-right:max(calc(var(--wrap-pad) + var(--safe-r)),calc((100% - var(--wrap-max)) / 2 + var(--wrap-pad)));
+}
+
+/* Keep the panel toggle as quiet as the navigation icons. */
+.tuck svg,.untuck svg{width:18px;height:18px;opacity:.8}

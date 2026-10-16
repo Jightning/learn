@@ -89,7 +89,7 @@ identical tooltip on all three states, and dependency-map nodes carried mastery
 in their stroke colour alone. Both now differ in shape or stroke pattern and
 name the state in text.
 
-This extends to every state the newer machinery introduces. A tier stub carries
+This extends to every state the reader interface introduces. An optional-content stub carries
 a count in text. A concept's review state is named in words. Generated content
 says it is generated.
 
@@ -144,7 +144,7 @@ those were once set in caps here, including the line that rendered "Edwards, Pen
 Calvis 6e" as "EDWARDS, PENNEY & CALVIS 6E", which is the same string with its
 information removed.
 
-A button, an eyebrow and a tier badge stay in caps: those strings are fixed in
+A button, an eyebrow and a mode badge stay in caps: those strings are fixed in
 the engine at one or two words, and there the caps is doing signalling work
 (T13). An *authored* field is the case that settles the rule — a block's
 `label:` defaults to "Definition" and is also written as "The cut property —
@@ -176,38 +176,29 @@ learner-advanced units, never as one continuous scroll.
 (g = 0.19 in the source corpus, g = 0.32–0.36 independently (Rey et al. 2019),
 against the same lesson delivered continuously.)
 
-**T11. Coherence: nothing appears in the spine that does not serve the lesson.**
+**T11. Coherence: nothing in the required reading path distracts from the lesson.**
 Decoration costs attention and returns nothing. This is the largest of the
 layout effects and it is subtractive: the win comes from removing, not adding.
 (Removing seductive detail: g = 0.37–0.41, Sundararajan & Adesope 2020.
 Sentence-level coherence: g = 0.63.)
 
-**Coherence is enforced per lane, not per course.** What was measured is
-nonessential material embedded in a lesson the learner cannot avoid. A tier the
-reader chose to expand is not that manipulation. So T11 binds the spine
-absolutely, and a `depth` tier is not a coherence violation. Whether opt-in
-depth *helps* is untested and sits in Trade-offs.
+Optional expansions can contain useful additional context, but the required
+reading must stand on its own. An optional block belongs beside the passage it
+extends; it cannot supply a prerequisite, an examinable point, or a missing step.
+Whether a particular optional addition helps depends on the reader and the
+material, so judge it by the assembled lesson.
 
-**T33. The spine tier is complete alone.** Depth and apply may depend on the
-spine; the spine may never depend on them. This is an internal-consistency
-property, not a finding, and it is enforced as far as it is mechanical: a
-spine-only render must resolve every reference, and a spine block may not cite a
-figure only a collapsed tier declares.
-
-T33 is what makes T11's per-lane scoping safe. Without it, collapsing a tier
-silently removes part of the argument.
+**T33. The required reading path is complete by itself.** Optional material may
+extend an explanation, but the default path must resolve its own references and
+carry the reasoning needed to understand and use the lesson. This is an
+internal-consistency property, not an evidence claim.
 
 **T42. The reader sets the resolution, and no resolution removes anything.**
-Depth (`full`, `notes`, `index`) decides how much of each block is open; it
-never decides which blocks exist. Every closed block opens in place, so every
-depth is the same course at a different resolution rather than a subset of it.
-
-Depth is orthogonal to tier and neither substitutes for the other. Tier asks
-*which blocks belong to the argument* and removes the rest; depth asks *how
-much of each surviving block is open*. Conflating them was measured and it
-fails: across this project's own courses 99% of blocks in one and 80% in
-another are `spine`, so the lane has almost nothing to remove and the prose it
-cannot touch is four fifths of the text.
+Study, Review, and Names (`full`, `notes`, and `index`) present required
+material at different levels of detail. Every mode retains the complete
+required reading path; closed content can be opened in place. Optional
+expansions may be collapsed because they are supplementary, never because the
+reading mode decides which required blocks exist.
 
 **A closed view is a lookup surface, not a reading one.** Instructor-provided
 outlining raises memory (g = 0.61) and does not reliably raise comprehension
@@ -249,12 +240,12 @@ is an enumeration is declared `holds: structure`, and a claim on one of those
 opens it rather than replacing it. Where the kind cannot decide — prose with a
 list inside it — the gate warns and the author chooses.
 
-**T45. A disclosure that opens can close, from the same control.** Not merely
+**T45. Optional content that opens can close, from the same control.** Not merely
 somewhere — the thing you press to open is the thing you press to close. A
 separate close button puts the way out in a different place from the way in, so
 the reader has to go looking for the exit to a room they just entered; and it
 lands at the foot of a block whose top is where their eye already is. A
-page-level "reveal all" likewise returns to the state the reader's current depth
+page-level "reveal all" likewise returns to the state the reader's current mode
 defines, not to the full text. Otherwise closing is a different act from never
 having opened, and a reader who opened one block to check something has no route
 back to the view they were reading in.
@@ -266,15 +257,15 @@ the reader's place together. A collapsed selection is what separates the two,
 and the control stays selectable rather than being made inert to avoid the
 question.
 
-"What the depth defines" is the whole of it, which means closing everything also
-re-closes a tier stub the reader had opened by hand. The property to hold is
+"What the reading mode defines" is the whole of it, which means closing everything also
+re-closes an optional block the reader had opened by hand. The property to hold is
 idempotence — one reveal-and-close and two land in the same place — not a return
 to whatever happened to be on screen a moment earlier, because that is a
 different and unreachable state.
 
 **T43. Grouping by membership is a separate mechanism from grouping by
-position, role or mention.** Sections group by position, tiers by role in the
-argument, concepts by mention. A category groups by *what kind a thing is*, and
+position, role or mention.** Sections group by position, required and optional
+content by its role in the explanation, concepts by mention. A category groups by *what kind a thing is*, and
 its members may sit anywhere. It carries a boundary and named siblings, because
 a comparison against what a thing is *not* is the mechanism (d = 0.50 for case
 comparison against sequential or single cases; Alfieri, Nokes-Malach & Schunn
@@ -291,10 +282,11 @@ it.** Never collected at the end of a section, never behind navigation that
 loses the reader's place. Requiring the reader to mentally bridge a gap is the
 split-attention effect. (Small and positive; g ≈ 0.13 in the source corpus.)
 
-**Collapsing a tier is not hiding a reference.** T12 forbids moving a reference
-away from its mention. A tier stub expands in place, preserving scroll position
-and keeping the reference where it was. The distinction is whether the reader
-loses their place, not whether something starts collapsed.
+**Collapsing optional content is not hiding a reference.** T12 forbids moving a
+reference away from its mention. Optional content expands in place, preserving
+scroll position and keeping the reference beside the passage it develops. The
+distinction is whether the reader loses their place, not whether an expansion
+starts collapsed.
 
 **T29. A margin card is a reminder, not a copy.** Its length is a layout
 constraint, not a matter of taste: a reading row is as tall as the taller of
@@ -303,7 +295,7 @@ annotates. Exact alignment and a gapless reading column cannot both hold, so
 the card is what gives: previews clip, stacks cap, and the overflow becomes a
 compact list that is still adjacent.
 
-**A collapsed tier's cards demote to chips inside its stub.** A stub is one
+**Cards attached to collapsed optional content demote to chips inside its stub.** A stub is one
 line, and a card anchored to a one-line row is a hole by construction. This is
 the same defect that once measured 966px and was brought down to 308px, and
 chips are already the mechanism T29 uses for overflow.
@@ -411,7 +403,7 @@ network failure may delay sync, but it cannot block reading or answering.
 
 **T24. Every claim the project makes about itself is enforced by a gate.**
 `npm run check` builds, validates the bundled demo, runs browser tests, sweeps
-contrast, renders the demo spine alone, and proves `_template` can produce an
+contrast, renders the demo required reading alone, and proves `_template` can produce an
 importable course from data alone. User courses are runtime inputs and are
 validated explicitly by id; an incomplete one cannot fail engine development.
 A claim without a gate is an assumption with a good reputation.
@@ -543,26 +535,20 @@ page where the data itself is shown.
 T25 requires mechanical rules to have build checks. Current validation checks
 question response shapes, grading keys, explanations, stimuli, concept routing,
 and asset existence. Semantic differences between a practice variant and a
-worked example still require author review. Some older courses retain legacy
-free-response content; the loader adapts it to self-check cards, and authors can
-migrate it incrementally to `response` and `practice/`.
+worked example still require author review. The loader retains compatibility
+with older course data while new authoring uses typed responses.
 
 ## Trade-offs
 
 Real decisions with defensible answers on both sides. These are **not** truths,
 and changing them is a design choice rather than a regression.
 
-### Tiering itself
+### Optional explanations
 
-That the spine must stand alone is T33 and is not negotiable. Whether a course
-should carry `depth` and `apply` tiers at all is a preference, because no
-meta-analysis tests opt-in collapsed detail against a single-density
-alternative. The coherence evidence covers material the learner cannot avoid,
-and extending it to material the learner chose to open is an inference, not a
-finding.
-
-A course that ships spine-only is correct. A course that tiers is also correct,
-provided T33 and M25 hold.
+The required reading path must stand alone under T33. Optional expansions can
+add context or another derivation, but the evidence does not settle when that
+extra material helps. Keep it adjacent to the passage it supports and judge the
+assembled reading for repetition or missing reasoning.
 
 ### Feedback timing, genuinely contested
 
@@ -632,8 +618,8 @@ constraint to watch, not a threshold anyone has established.
 
 Whether navigation is collapsible, how dense the type is, and how much chrome
 shows are preference. **What is not preference:** moving the margin references
-away from their mention (T12) to achieve it. Collapsing a tier in place is a
-different act and is permitted.
+away from their mention (T12) to achieve it. Collapsing an optional expansion in
+place is a different act and is permitted.
 
 How many beats the spacing scale has, and which block gets which, is likewise
 preference. That the scale exists at all is closer to T13 than to taste: if

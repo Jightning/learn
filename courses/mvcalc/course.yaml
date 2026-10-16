@@ -1,0 +1,42 @@
+# Every field here is data. Adding a subject requires no code.
+code: MVCALC
+title: Multivariable Calculus
+tagline: Vectors, vector-valued functions, multivariable differentiation, multiple integration, and vector calculus through the divergence theorem.
+meta: Generic Calculus III course · OpenStax Calculus Volume 3 (CC BY-NC-SA 4.0)
+
+# Accent rotation in degrees (0-359). Rotates the whole palette at once;
+# lightness stays fixed, so contrast holds. `npm run new` fills this in with
+# the angle furthest from every course you already have, so two subjects are
+# never the same colour; change it only if you want a particular one.
+theme:
+  hue: 310
+
+# Learner state: review and mastery tracking (localStorage).
+# Set enabled:false for a purely stateless reference site. That also gives up
+# the review loop, so only do it where a reference is all you want.
+state:
+  enabled: true
+
+# Draft audit (`npm run audit -- --profile draft <id>`) reports all debt without
+# failing. Publish audit (`--profile publish`) enforces these optional ceilings,
+# always requires zero unverified answers, and requires sourceReview on every
+# def/key/trap claim. Absent ceilings mean 1; lower them as review lands.
+audit:
+  unsourced: 1      # claims (def/key/trap) whose source: is absent or ungrounded
+  unrouted: 1       # questions that resolve to no concept in the concept set
+
+# Optional: how table/grid cell values are coloured. Keys are cell contents,
+# values are CSS class names you define in `styles` below.
+valueStyles: {}
+
+# Optional: extra CSS for this subject. Plain data, injected at load.
+styleClasses: []   # classes used in authored blocks beyond valueStyles
+styles: ""
+
+# Optional: syntax highlighting for `code` blocks. No renderer needed.
+# syntax:
+#   comment: "#"
+#   keywords: [def, return, if, else, for, while, import]
+#   patterns:
+#     - {re: "\\b\\d+\\b", cls: tok-n}
+#   strings: true

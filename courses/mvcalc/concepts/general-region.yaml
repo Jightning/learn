@@ -1,0 +1,4 @@
+title: "Type I and Type II regions"
+term: "General Region"
+body: >-
+  <p>A Type I region is bounded by vertical lines and continuous curves: <m>D = \{(x, y) \mid a \le x \le b,\; g_1(x) \le y \le g_2(x)\}</m>, with iterated integral <m>\int_a^b \int_{g_1(x)}^{g_2(x)} f(x, y)\, dy\, dx</m>. A Type II region is bounded by horizontal lines and continuous functions of <m>y</m>: <m>D = \{(x, y) \mid c \le y \le d,\; h_1(y) \le x \le h_2(y)\}</m>, with iterated integral <m>\int_c^d \int_{h_1(y)}^{h_2(y)} f(x, y)\, dx\, dy</m>. Regions that are neither can be partitioned into a union of non-overlapping Type I and Type II subregions. Classifying the region correctly establishes the proper integration limits.</p>

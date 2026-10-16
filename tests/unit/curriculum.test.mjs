@@ -7,6 +7,7 @@ import { loadCourse } from "../../tools/lib/load.mjs";
 import { courseFiles } from "../../tools/lib/files.mjs";
 import { digest } from "../../tools/lib/digest.mjs";
 import { readPlan, indexPlan } from "../../tools/lib/author-packets.mjs";
+import { validateCourseCurriculumReferences } from "../../src/lib/curriculum.js";
 import { parseCourse } from "../../src/lib/parse.js";
 
 function fixture(fn) {
@@ -146,3 +147,13 @@ test("legacy plans without canonical collections retain their existing reference
   assert.equal(plan.canonical, false);
   assert.doesNotThrow(() => indexPlan(plan));
 }));
+
+test("teaching anchors reuse known curriculum IDs and belong only to blocks", () => {
+  const course = { concepts: { c: {} }, objectives: { o: {} }, sections: [{ subs: [{ id: "s1-1", blocks: [{ t: "p", h: "Establish the relation.", introduces: ["c", "o"] }], quiz: [] }] }] };
+  assert.deepEqual(validateCourseCurriculumReferences(course), []);
+  course.sections[0].subs[0].blocks[0].introduces = ["typo"];
+  assert.match(validateCourseCurriculumReferences(course).join("\n"), /unknown teaching introduction/);
+  course.sections[0].subs[0].blocks[0].introduces = ["c"];
+  course.sections[0].subs[0].quiz = [{ introduces: ["c"] }];
+  assert.match(validateCourseCurriculumReferences(course).join("\n"), /block list/);
+});

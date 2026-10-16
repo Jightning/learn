@@ -38,6 +38,7 @@ import { dropLane } from "./tiers.js";
 import { invalidate } from "./replay.js";
 import { dropCourse } from "./log.js";
 import { flush } from "./store.js";
+import { deleteCourseGoals } from "./learn-by.js";
 
 /**
  * Erase everything this device holds about one course except the course
@@ -57,6 +58,7 @@ export async function purge(cid, code) {
   dropDepth(cid);
   dropHue(cid);
   invalidate(cid);
+  deleteCourseGoals(cid);
   await flush();
   return dropped;
 }

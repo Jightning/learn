@@ -2,7 +2,7 @@
 /* A private course is user data, not application source. Prove that dev and
  * build ignore it: malformed YAML must not enter the generated course index,
  * and malformed blocks.js must not enter Vite's module graph. */
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,10 +46,17 @@ async function checkDevServer() {
     check("the dev server still serves the public demo",
           demo.ok && (demo.headers.get("content-type") || "").includes("json"));
 
+    const mvcalc = await fetch(`http://127.0.0.1:${port}/courses/mvcalc.json`);
+    const mvcalcFiles = await mvcalc.json();
+    check("the dev server serves MVCALC reader files without authoring sources",
+          mvcalc.ok && mvcalcFiles["course.yaml"].includes("Multivariable Calculus") &&
+          !Object.keys(mvcalcFiles).some(path => path.startsWith("sources/")));
+
     const index = await fetch(`http://127.0.0.1:${port}/@id/__x00__virtual:courses`);
     const indexSource = await index.text();
     check("the dev course index contains only allowlisted source",
-          index.ok && indexSource.includes('"demo"') && !indexSource.includes(id));
+          index.ok && indexSource.includes('"demo"') && indexSource.includes('"mvcalc"') &&
+          indexSource.includes('"Mathematics"') && !indexSource.includes(id));
 
     const privateCourse = await fetch(`http://127.0.0.1:${port}/courses/${id}.json`);
     check("the dev server does not serve private courses",
@@ -79,6 +86,13 @@ try {
   check("a malformed private course cannot fail the build", built.status === 0,
         built.status === 0 ? "" : output.trim().slice(0, 300));
   check("the build does not inspect or report private courses", !output.includes(id));
+  const mvcalcFiles = JSON.parse(readFileSync(join(ROOT, "dist/courses/mvcalc.json"), "utf8"));
+  check("the production build includes MVCALC reader content",
+        mvcalcFiles["course.yaml"].includes("Multivariable Calculus") &&
+        Object.keys(mvcalcFiles).some(path => path.startsWith("sections/")));
+  check("the production build excludes MVCALC authoring sources",
+        !Object.keys(mvcalcFiles).some(path => path.startsWith("sources/")));
+
   check("the private course is absent from dist",
         !existsSync(join(ROOT, "dist", "courses", `${id}.json`)));
 

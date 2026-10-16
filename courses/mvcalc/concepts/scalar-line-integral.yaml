@@ -1,0 +1,4 @@
+title: "Scalar line integrals"
+term: "Scalar Line Integral"
+body: >-
+  <p>The line integral of a continuous scalar function <m>f(x, y, z)</m> along a smooth curve <m>C</m> parameterized by <m>\mathbf{r}(t)</m> for <m>a \le t \le b</m> is <m>\int_C f\, ds = \int_a^b f(\mathbf{r}(t)) \|\mathbf{r}'(t)\|\, dt</m>. Here <m>ds = \|\mathbf{r}'(t)\|\, dt</m> represents the arc-length element along the curve. If <m>f(x, y, z) = 1</m>, the integral yields the total arc length of <m>C</m>; if <m>f</m> represents linear mass density, it gives the total mass of a thin wire. Scalar line integrals are independent of the orientation chosen for <m>C</m>.</p>

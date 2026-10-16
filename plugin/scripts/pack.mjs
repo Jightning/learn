@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
+import { createHash } from "node:crypto";
 //#region \0rolldown/runtime.js
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -16940,13 +16941,13 @@ const stable = (value) => {
 	return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(",")}}`;
 };
 function sameDefinition(a, b, id, collection) {
+	if (collection === "concepts") return Object.keys(a).filter((k) => k !== "id" && k !== "key" && Object.hasOwn(b, k)).every((k) => stable(a[k]) === stable(b[k])) && (a.key || a.id || id) === (b.key || b.id || id);
 	const normalize = (value) => {
 		const out = { ...value };
 		delete out.id;
-		if (collection === "concepts") delete out.key;
 		return stable(out);
 	};
-	return normalize(a) === normalize(b) && (collection !== "concepts" || (a.key || a.id || id) === (b.key || b.id || id));
+	return normalize(a) === normalize(b);
 }
 /** Read and validate fixed canonical YAML collection files from a text map. */
 function readCurriculumCollections(files, errors = []) {
@@ -17019,11 +17020,73 @@ function mergeCurriculumDefinitions(canonical, legacy, errors = [], where = "leg
 		for (const value of canonical?.[name] || []) {
 			const id = value.id;
 			if (byId.has(id) && !sameDefinition(byId.get(id), value, id, name)) errors.push(`categorize/${name}.yaml conflicts with legacy ${name} definition "${id}"`);
-			else byId.set(id, value);
+			else byId.set(id, byId.has(id) ? Object.assign({}, byId.get(id), value) : value);
 		}
 		merged[name] = [...byId.values()];
 	}
 	return merged;
+}
+/** Resolve plan reference lists, retaining legacy definition copies for conflict checks. */
+function mergePlanCurriculum(plan, canonical, errors = [], where = "plan") {
+	const legacy = {};
+	for (const name of CURRICULUM_COLLECTIONS) {
+		const value = plan?.[name];
+		if (value == null) {
+			legacy[name] = [];
+			continue;
+		}
+		if (!Array.isArray(value)) {
+			errors.push(`${where}: ${name} must be a list`);
+			legacy[name] = [];
+			continue;
+		}
+		legacy[name] = value.flatMap((item, i) => {
+			if (typeof item === "string") {
+				const definition = (canonical[name] || []).find((entry) => entry.id === item);
+				if (!definition) errors.push(`${where}: ${name}[${i + 1}] references unknown ${singular(name)} "${item}"`);
+				return definition ? [definition] : [];
+			}
+			if (!mapping(item)) {
+				errors.push(`${where}: ${name}[${i + 1}] must be a definition mapping or id reference`);
+				return [];
+			}
+			return [item];
+		});
+	}
+	return mergeCurriculumDefinitions(canonical, legacy, errors, where, true);
+}
+/** Check references once canonical curriculum files make IDs authoritative. */
+function validateCurriculumReferences(plan, definitions, errors = []) {
+	const ids = Object.fromEntries(CURRICULUM_COLLECTIONS.map((name) => [name, new Set((definitions?.[name] || []).map((item) => item.id || item.key).filter(Boolean))]));
+	const background = new Set((Array.isArray(plan?.reader?.background) ? plan.reader.background : []).map((item) => typeof item === "string" ? item : item?.id).filter(Boolean));
+	const refs = (value, collection, where, label = singular(collection)) => {
+		if (value == null) return;
+		for (const item of Array.isArray(value) ? value : [value]) {
+			const id = typeof item === "string" ? item : item?.id;
+			if (typeof id !== "string" || !ids[collection].has(id) && !(label.includes("prerequisite") && background.has(id))) errors.push(`${where}: unknown ${label} reference "${id ?? item}"`);
+		}
+	};
+	for (const collection of CURRICULUM_COLLECTIONS) if (Array.isArray(plan?.[collection]) && plan[collection].every((item) => typeof item === "string")) refs(plan[collection], collection, `plan.${collection}`);
+	for (const [i, lesson] of (Array.isArray(plan?.lessons) ? plan.lessons : Array.isArray(plan?.subsections) ? plan.subsections : []).entries()) {
+		const where = `plan lesson ${lesson?.id || i + 1}`;
+		refs(lesson?.objectives ?? lesson?.objective, "objectives", where);
+		refs(lesson?.families ?? lesson?.family, "families", where);
+		refs(lesson?.concepts ?? lesson?.concept, "concepts", where);
+	}
+	for (const item of definitions?.objectives || []) {
+		const where = `objective "${item.id}"`;
+		refs(item.prerequisites ?? item.prerequisite, "objectives", where, "objective prerequisite");
+		refs(item.families ?? item.family, "families", where);
+		refs(item.concepts ?? item.concept, "concepts", where);
+	}
+	for (const item of definitions?.families || []) refs(item.concepts ?? item.concept, "concepts", `family "${item.id}"`);
+	for (const item of definitions?.concepts || []) {
+		const where = `concept "${item.id}"`;
+		refs(item.prerequisites ?? item.prerequisite, "concepts", where, "concept prerequisite");
+		refs(item.related, "concepts", where);
+		refs(item.confusable_with, "concepts", where);
+	}
+	return errors;
 }
 /** Validate curriculum tags and concept links in reader content. */
 function validateCourseCurriculumReferences(course, errors = []) {
@@ -17049,6 +17112,10 @@ function validateCourseCurriculumReferences(course, errors = []) {
 		check(item?.objectives ?? item?.objective, "objectives", where);
 		check(item?.families ?? item?.family, "families", where);
 		if (item?.concept != null) check(item.concept, "concepts", where);
+		if (item?.introduces != null) {
+			if (kind !== "block" || !Array.isArray(item.introduces)) errors.push(`${where}: introduces must be a block list of concept/objective IDs`);
+			else for (const id of item.introduces) if (typeof id !== "string" || !ids.concepts.has(id) && !ids.objectives.has(id)) errors.push(`${where}: unknown teaching introduction "${id}"`);
+		}
 		visitInlineConcepts(item, where);
 	}
 	for (const kind of ["practice", "drills"]) for (const key of Object.keys(course[kind] || {})) if (!ids.concepts.has(key)) errors.push(`${kind}/${key}: unknown concept reference "${key}"`);
@@ -17058,6 +17125,7 @@ function validateCourseCurriculumReferences(course, errors = []) {
 function curriculumMap(definitions) {
 	return Object.fromEntries((definitions || []).map((value) => [value.id || value.key, value]));
 }
+const curriculumSignature = (value) => stable(value);
 //#endregion
 //#region tools/lib/load.mjs
 const DATA_EXT = /* @__PURE__ */ new Set([
@@ -17079,7 +17147,7 @@ function findFile(dir, name) {
 	}
 	return null;
 }
-function dataFiles(dir) {
+function dataFiles$1(dir) {
 	if (!existsSync(dir)) return [];
 	return readdirSync(dir).filter((f) => DATA_EXT.has(extname(f)) && !f.startsWith("_")).sort();
 }
@@ -17147,7 +17215,7 @@ function loadCourse(dir) {
 	C.practice = {};
 	C.cats = Object.assign({}, meta.cats || {});
 	const catdir = join(dir, "categories");
-	for (const f of dataFiles(catdir)) {
+	for (const f of dataFiles$1(catdir)) {
 		const key = basename(f, extname(f));
 		const body = parseFile(join(catdir, f));
 		if (!body || typeof body !== "object") {
@@ -17157,7 +17225,7 @@ function loadCourse(dir) {
 		C.cats[body.key || key] = body;
 	}
 	const cdir = join(dir, "concepts");
-	for (const f of dataFiles(cdir)) {
+	for (const f of dataFiles$1(cdir)) {
 		const key = basename(f, extname(f));
 		const body = parseFile(join(cdir, f));
 		if (!body || typeof body !== "object") {
@@ -17181,7 +17249,7 @@ function loadCourse(dir) {
 		C.families = curriculumMap(merged.families);
 	}
 	const ddir = join(dir, "drills");
-	for (const f of dataFiles(ddir)) {
+	for (const f of dataFiles$1(ddir)) {
 		const key = basename(f, extname(f));
 		const body = parseFile(join(ddir, f));
 		if (!body || typeof body !== "object") {
@@ -17194,7 +17262,7 @@ function loadCourse(dir) {
 		};
 	}
 	const pdir = join(dir, "practice");
-	for (const f of dataFiles(pdir)) {
+	for (const f of dataFiles$1(pdir)) {
 		const key = basename(f, extname(f));
 		const body = parseFile(join(pdir, f));
 		if (!body || typeof body !== "object") {
@@ -17219,7 +17287,7 @@ function loadCourse(dir) {
 		const smeta = metaFile ? parseFile(metaFile) || {} : {};
 		const num = smeta.num != null ? smeta.num : prefixNum(folder, si + 1);
 		const id = smeta.id || `s${num}`;
-		const subs = dataFiles(full).map((f, k) => {
+		const subs = dataFiles$1(full).map((f, k) => {
 			const sub = parseFile(join(full, f));
 			if (!sub || typeof sub !== "object") {
 				errors.push(`${folder}/${f}: not a mapping`);
@@ -17326,9 +17394,633 @@ const requestedWorkspace = workspaceAt >= 0 ? process.argv[workspaceAt + 1] : nu
 if (workspaceAt >= 0 && (!requestedWorkspace || requestedWorkspace.startsWith("--"))) throw new Error("--workspace needs a directory path");
 const WORKSPACE = requestedWorkspace ? resolve(requestedWorkspace) : process.env.AUTHOR_WORKSPACE ? resolve(process.env.AUTHOR_WORKSPACE) : here();
 const COURSES$1 = join(WORKSPACE, "courses");
-join(WORKSPACE, ".author");
+const STATE = join(WORKSPACE, ".author");
 existsSync(join(ENGINE, "courses", "_template")) ? join(ENGINE, "courses", "_template") : join(ENGINE, "template");
 existsSync(join(ENGINE, "docs")) && join(ENGINE, "docs");
+//#endregion
+//#region src/lib/tiers.js
+const isOptional = (b) => typeof b?.optional === "boolean" ? b.optional : b?.tier === "depth";
+const tierOf = (b) => isOptional(b) ? "depth" : "spine";
+//#endregion
+//#region tools/lib/digest.mjs
+const DATA = /* @__PURE__ */ new Set([
+	".yaml",
+	".yml",
+	".json"
+]);
+const dataFiles = (dir) => existsSync(dir) ? readdirSync(dir).filter((f) => DATA.has(extname(f))).sort() : [];
+const stem = (f) => basename(f, extname(f));
+const read = (p) => {
+	try {
+		return parseFile(p) || {};
+	} catch {
+		return {};
+	}
+};
+/** leading digits of a filename: "03-linear" -> 3, "2-integrals" -> 2 */
+const num = (f) => Number(/^(\d+)/.exec(f)?.[1] ?? 0);
+const cited = (blocks) => {
+	const out = /* @__PURE__ */ new Set();
+	for (const m of JSON.stringify(blocks || []).matchAll(/<c\s+k=\\?"([^"\\]+)/g)) out.add(m[1]);
+	return [...out];
+};
+/** One line per subsection: id, title, what it defines, what it states, what it cites. */
+function subLine(u, id) {
+	const blocks = Array.isArray(u.blocks) ? u.blocks : [];
+	const defs = blocks.filter((b) => b?.t === "def").map((b) => b.term).filter(Boolean);
+	const keys = blocks.filter((b) => b?.t === "key").map((b) => b.label).filter(Boolean);
+	const types = (Array.isArray(u.quiz) ? u.quiz : []).map((q) => q?.type).filter(Boolean);
+	const parts = [`${id} ${u.title || "(untitled)"}`];
+	if (defs.length) parts.push(`defines: ${defs.join("; ")}`);
+	if (keys.length) parts.push(`states: ${keys.join("; ")}`);
+	const c = cited(blocks);
+	if (c.length) parts.push(`cites: ${c.join(",")}`);
+	const cats = [...new Set(blocks.map((b) => b?.cat).filter(Boolean))];
+	if (cats.length) parts.push(`cat: ${cats.join(",")}`);
+	if (types.length) parts.push(`quiz: ${types.join(",")}`);
+	const claims = blocks.filter((b) => CLAIMY.has(b?.t));
+	if (claims.length) {
+		const withCore = claims.filter((b) => b.core).length;
+		const withGist = claims.filter((b) => b.gist).length;
+		if (withCore + withGist < claims.length) parts.push(`unclaimed: ${claims.length - withCore - withGist}/${claims.length}`);
+	}
+	if (!blocks.length) parts.push("EMPTY");
+	return parts.join(" | ");
+}
+const CLAIMY = /* @__PURE__ */ new Set([
+	"def",
+	"key",
+	"trap"
+]);
+/**
+* Walk a course folder, however far along it is.
+* Returns the structured view (for planning) and `text` (for prompts).
+*/
+function digest(dir) {
+	const sections = [];
+	const secRoot = join(dir, "sections");
+	for (const d of existsSync(secRoot) ? readdirSync(secRoot).sort() : []) {
+		const path = join(secRoot, d);
+		if (!existsSync(path) || !statSync(path).isDirectory()) continue;
+		if (!readdirSync(path).length) continue;
+		const meta = dataFiles(path).find((f) => stem(f) === "_section");
+		const s = meta ? read(join(path, meta)) : {};
+		const id = `s${num(d)}`;
+		const subs = dataFiles(path).filter((f) => stem(f) !== "_section").map((f) => ({
+			file: f,
+			n: num(f),
+			data: read(join(path, f))
+		})).sort((a, b) => a.n - b.n).map((f, i) => ({
+			id: `${id}-${i + 1}`,
+			file: join(path, f.file),
+			title: f.data.title || stem(f.file),
+			blocks: Array.isArray(f.data.blocks) ? f.data.blocks.length : 0,
+			spine: Array.isArray(f.data.blocks) ? f.data.blocks.filter((b) => b && !isOptional(b)).length : 0,
+			quiz: Array.isArray(f.data.quiz) ? f.data.quiz.length : 0,
+			tiers: new Set((Array.isArray(f.data.blocks) ? f.data.blocks : []).map(tierOf)),
+			line: subLine(f.data, `${id}-${i + 1}`)
+		}));
+		sections.push({
+			id,
+			dir: path,
+			title: s.title || d,
+			blurb: !!s.blurb,
+			subs
+		});
+	}
+	const conceptMap = /* @__PURE__ */ new Map();
+	const canonicalPath = [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `concepts.${ext}`)).find(existsSync);
+	if (canonicalPath) {
+		const list = read(canonicalPath);
+		if (Array.isArray(list)) {
+			for (const c of list) if (c && typeof c.id === "string") conceptMap.set(c.id, c);
+		}
+	}
+	for (const f of dataFiles(join(dir, "concepts"))) {
+		const c = read(join(dir, "concepts", f));
+		const key = c.id || c.key || stem(f);
+		if (!conceptMap.has(key)) conceptMap.set(key, c);
+		else Object.assign(conceptMap.get(key), c);
+	}
+	const concepts = [...conceptMap].map(([key, c]) => ({
+		key,
+		term: c.term || key,
+		review: !!c.review,
+		body: !!c.body,
+		variants: (read(join(dir, "practice", `${key}.yaml`)).items || read(join(dir, "drills", `${key}.yaml`)).items || []).length
+	}));
+	const cats = dataFiles(join(dir, "categories")).map((f) => {
+		const c = read(join(dir, "categories", f));
+		return {
+			key: stem(f),
+			name: c.name || stem(f),
+			boundary: c.boundary || "",
+			siblings: c.siblings || []
+		};
+	});
+	return {
+		sections,
+		subs: sections.flatMap((s) => s.subs),
+		concepts,
+		cats,
+		text: [
+			sections.length ? "SECTIONS AND SUBSECTIONS (id, title, coverage)" : "",
+			...sections.map((s) => [`${s.id} ${s.title}`, ...s.subs.map((u) => "  " + u.line)].join("\n")),
+			concepts.length ? "\nCONCEPTS (key, term, practice variants)" : "",
+			...concepts.map((c) => `  ${c.key} — ${c.term} — ${c.variants} variants`),
+			cats.length ? "\nCATEGORIES (key — name — boundary) — tag into these, never beside them" : "",
+			...cats.map((c) => `  ${c.key} — ${c.name} — ${c.boundary.replace(/\s+/g, " ").trim()}`)
+		].filter(Boolean).join("\n")
+	};
+}
+//#endregion
+//#region tools/lib/author-bank.mjs
+function readAuthorBank(dir) {
+	const root = join(dir, "questions");
+	const records = {
+		types: [],
+		items: [],
+		assessments: []
+	};
+	for (const name of existsSync(root) ? readdirSync(root).filter((n) => /\.(yaml|yml|json)$/.test(n) && !/^aliases\./.test(n)).sort() : []) {
+		const key = /^types\./.test(name) ? "types" : /^assessment\./.test(name) ? "assessments" : "items";
+		const file = join(root, name), data = parseFile(file);
+		if (!Array.isArray(data)) throw new Error(`${file}: expected a sequence`);
+		records[key].push(...data.map((content, position) => ({
+			content,
+			file,
+			position: position + 1
+		})));
+	}
+	return records;
+}
+function resolveAuthorQuiz(dir, unit, bank = readAuthorBank(dir)) {
+	const types = new Map(bank.types.map((r) => [r.content.id, r.content]));
+	const items = new Map(bank.items.map((r) => [r.content.id, r.content]));
+	return {
+		...unit,
+		quiz: (unit.quiz || []).map((value) => {
+			if (typeof value !== "string") return value;
+			const item = items.get(value);
+			if (!item) throw new Error(`unknown bank question ${value}`);
+			const type = types.get(item.typeId);
+			if (!type) throw new Error(`${value}: unknown type ${item.typeId}`);
+			return {
+				...type,
+				...item,
+				type: type.id,
+				authorId: item.id
+			};
+		})
+	};
+}
+//#endregion
+//#region tools/lib/author-packets.mjs
+const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
+const fileHash = (path) => fingerprint(readFileSync(path));
+const readPlan = (dir) => {
+	const path = join(dir, "materials", "plan.yaml");
+	const legacy = ["plan.md", "source-family-review.md"].map((f) => join(dir, "materials", f)).filter(existsSync);
+	const rawPlan = existsSync(path) ? parseFile(path) : {};
+	if (rawPlan != null && (typeof rawPlan !== "object" || Array.isArray(rawPlan))) throw new Error(`${path}: expected a mapping`);
+	const data = { ...rawPlan || {} };
+	const errors = [];
+	const canonicalFiles = {};
+	let canonical = false;
+	for (const name of [
+		"objectives",
+		"families",
+		"concepts"
+	]) for (const file of [
+		"yaml",
+		"yml",
+		"json"
+	].map((ext) => join(dir, "categorize", `${name}.${ext}`)).filter((candidate) => existsSync(candidate))) {
+		canonical = true;
+		canonicalFiles[`categorize/${name}.${file.slice(file.lastIndexOf(".") + 1)}`] = readFileSync(file, "utf8");
+	}
+	if (!canonical) return existsSync(path) ? {
+		path,
+		hash: fileHash(path),
+		data: rawPlan || {},
+		canonical: false
+	} : {
+		path,
+		data: {},
+		canonical: false,
+		legacy
+	};
+	const canonicalDefinitions = readCurriculumCollections(canonicalFiles, errors);
+	const merged = mergePlanCurriculum(rawPlan || {}, canonicalDefinitions, errors, path);
+	if (canonical) validateCurriculumReferences(rawPlan || {}, merged, errors);
+	if (errors.length) throw new Error(errors.join("\n"));
+	for (const name of [
+		"objectives",
+		"families",
+		"concepts"
+	]) data[name] = merged[name];
+	const signature = fingerprint(curriculumSignature({
+		plan: rawPlan || {},
+		canonical: canonicalDefinitions
+	}));
+	return {
+		path,
+		...existsSync(path) ? { hash: signature } : {},
+		signature,
+		canonical,
+		data,
+		...!existsSync(path) ? { legacy } : {}
+	};
+};
+const asList = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
+const named = (value) => typeof value === "string" ? value : value?.id;
+const tags = (item) => asList(item?.objectives ?? item?.objective).map(named);
+const active = (item) => ![
+	"excluded",
+	"moved",
+	"prerequisite"
+].includes(item?.disposition);
+function selectItem(unit, selector) {
+	const match = /^(block|quiz):(\d+)$/.exec(selector || "");
+	if (!match || Number(match[2]) < 1) throw new Error("--item needs block:N or quiz:N (1-based)");
+	const item = (match[1] === "block" ? unit.blocks : unit.quiz)?.[Number(match[2]) - 1];
+	if (!item) throw new Error(`no ${selector}`);
+	return item;
+}
+function planCoverage(plan, subsections, { verifySource } = {}) {
+	const dir = join(plan.path, "../..");
+	const bank = readAuthorBank(dir);
+	const objectives = asList(plan.data.objectives).filter(active);
+	const familyIndex = new Map(asList(plan.data.families).map((f) => [f.id, f]));
+	const found = new Map(subsections.map((s) => [s.id, resolveAuthorQuiz(dir, parseFile(s.file) || {}, bank)]));
+	const evidence = /* @__PURE__ */ new Map(), assessedFamilies = /* @__PURE__ */ new Map();
+	for (const [sub, unit] of found) for (const kind of ["teaching", "questions"]) {
+		const items = kind === "teaching" ? unit.blocks : unit.quiz;
+		for (const [i, item] of (items || []).entries()) for (const id of tags(item)) {
+			if (!evidence.has(id)) evidence.set(id, {
+				teaching: [],
+				questions: []
+			});
+			evidence.get(id)[kind].push(`${sub}/${kind === "teaching" ? "block" : "quiz"}:${i + 1}`);
+			if (kind === "questions") {
+				if (!assessedFamilies.has(id)) assessedFamilies.set(id, /* @__PURE__ */ new Set());
+				for (const family of [
+					...asList(item.families).map(named),
+					item.family,
+					item.type
+				]) if (family) assessedFamilies.get(id).add(family);
+			}
+		}
+	}
+	for (const { content: item } of bank.items) {
+		const type = bank.types.find((r) => r.content.id === item.typeId)?.content;
+		if (!type || item.use === "diagnostic") continue;
+		for (const id of type.objectives || []) {
+			if (!evidence.has(id)) evidence.set(id, {
+				teaching: [],
+				questions: []
+			});
+			evidence.get(id).questions.push(item.id);
+			if (!assessedFamilies.has(id)) assessedFamilies.set(id, /* @__PURE__ */ new Set());
+			for (const family of type.families || []) assessedFamilies.get(id).add(family);
+		}
+	}
+	const locations = (objective, kind) => {
+		const out = [...evidence.get(objective.id)?.[kind] || []];
+		for (const ref of asList(objective.evidence?.[kind])) try {
+			selectItem(found.get(ref.sub) || {}, ref.item);
+			if (ref.item.startsWith(kind === "teaching" ? "block:" : "quiz:")) out.push(`${ref.sub}/${ref.item}`);
+		} catch {}
+		return out;
+	};
+	const rows = objectives.map((o) => {
+		const teaching = locations(o, "teaching"), questions = locations(o, "questions");
+		const families = asList(o.families).map(named).filter((id) => active(familyIndex.get(id)));
+		const assessed = families.filter((f) => assessedFamilies.get(o.id)?.has(f));
+		return {
+			id: o.id,
+			teaching,
+			questions,
+			families: families.length,
+			assessed: assessed.length,
+			complete: !!teaching.length && !!questions.length && assessed.length === families.length
+		};
+	});
+	const familyRows = asList(plan.data.families).filter((f) => f?.assessmentRequired === true).map((family) => {
+		const missing = [];
+		const disposition = family.disposition || "unspecified";
+		if (disposition !== "teach") missing.push(`disposition is ${disposition}; required assessment scope must remain teach`);
+		const candidates = asList(family.sources).filter((ref) => ref && typeof ref === "object" && typeof ref.source === "string" && ref.source.trim() && typeof ref.unit === "string" && ref.unit.trim() && (ref.source !== "generated" || typeof ref.provenance === "string" && ref.provenance.trim()));
+		const routes = [];
+		for (const ref of candidates) {
+			if (ref.source === "generated" || !verifySource) {
+				routes.push(ref);
+				continue;
+			}
+			try {
+				const evidence = verifySource(ref);
+				if (!substantiveSourceUnit(evidence) || /Source changed or disappeared since indexing/.test(evidence.warning || "")) continue;
+				routes.push({
+					source: ref.source,
+					unit: ref.unit,
+					locator: evidence.locator,
+					...evidence.warning ? { warning: evidence.warning } : {}
+				});
+			} catch {}
+		}
+		if (!routes.length) missing.push("no exact source or explicit generated-provenance route");
+		const mappedTypeIds = new Set(asList(family.questions).map(named).filter(Boolean));
+		const knownObjectives = new Set(objectives.map((objective) => objective.id));
+		const knownConcepts = new Set(asList(plan.data.concepts).map(named).filter(Boolean));
+		if ([
+			"course.yaml",
+			"course.yml",
+			"course.json"
+		].some((name) => existsSync(join(dir, name)))) for (const id of Object.keys(loadCourse(dir).course.concepts || {})) knownConcepts.add(id);
+		const mappedTypes = bank.types.map((record) => record.content).filter((type) => mappedTypeIds.has(type.id) && asList(type.families).map(named).includes(family.id) && type.assess !== false && knownConcepts.has(type.concept) && asList(type.objectives).map(named).some((id) => knownObjectives.has(id)));
+		if (!mappedTypes.length) missing.push("no mapped question type links this family");
+		const objectivesForFamily = /* @__PURE__ */ new Set([...objectives.filter((objective) => asList(objective.families).map(named).includes(family.id)).map((objective) => objective.id), ...mappedTypes.flatMap((type) => asList(type.objectives).map(named))]);
+		const conceptsForFamily = new Set(mappedTypes.map((type) => type.concept).filter(Boolean));
+		const familyTeaching = [];
+		const familyTeach = new Set(asList(family.teach).map(named).filter(Boolean));
+		const typeTeach = new Set(mappedTypes.flatMap((type) => asList(type.teach).map(named).filter(Boolean)));
+		const compatibleTeach = new Set([...familyTeach].filter((id) => typeTeach.has(id)));
+		if (!familyTeach.size) missing.push("no lesson teaching route is declared on the family");
+		else if (!compatibleTeach.size) missing.push("family and mapped question types have no compatible teach route");
+		for (const [sub, unit] of found) for (const [i, block] of (unit.blocks || []).entries()) {
+			if (!compatibleTeach.has(sub) || isOptional(block) || [
+				"depth",
+				"apply",
+				"attempt"
+			].includes(block?.t)) continue;
+			if (![...asList(block?.families ?? block?.family)].map(named).includes(family.id) || !hasMainPathContent(block)) continue;
+			const linkedObjective = tags(block).some((id) => objectivesForFamily.has(id));
+			const linkedConcept = conceptTags(block).some((id) => conceptsForFamily.has(id));
+			if (linkedObjective || linkedConcept) familyTeaching.push({
+				location: `${sub}/block:${i + 1}`,
+				...block.authorId ? { authorId: block.authorId } : {}
+			});
+		}
+		if (!familyTeaching.length) missing.push("no substantive main-path block on a compatible teach route links this family to its objective or concept");
+		const allowedTypes = new Set(mappedTypes.map((type) => type.id));
+		const tasks = [];
+		const addTask = (where, item) => {
+			const typeId = item?.typeId || item?.type;
+			if (!allowedTypes.has(typeId) || item?.use === "diagnostic" || !meaningfulQuestion(item)) return;
+			tasks.push(where);
+		};
+		for (const [sub, unit] of found) for (const [i, item] of (unit.quiz || []).entries()) addTask(`${sub}/quiz:${i + 1}`, item);
+		for (const record of bank.items) addTask(record.content.id, record.content);
+		const uniqueTasks = [...new Set(tasks)];
+		if (!uniqueTasks.length) missing.push("no active mapped assessment or practice item exists");
+		return {
+			id: family.id,
+			disposition,
+			required: true,
+			sources: routes,
+			questionTypes: mappedTypes.map((type) => type.id),
+			teaching: familyTeaching,
+			tasks: uniqueTasks,
+			complete: missing.length === 0,
+			missing
+		};
+	});
+	const assessmentReady = familyRows.every((row) => row.complete);
+	return {
+		available: !!plan.hash,
+		total: rows.length,
+		percent: rows.length ? Math.round(100 * rows.filter((r) => r.complete).length / rows.length) : null,
+		rows,
+		requiredFamilies: familyRows,
+		assessmentReady,
+		assessmentMessage: familyRows.length ? `${familyRows.filter((row) => row.complete).length}/${familyRows.length} declared assessment-required families have source, teaching, and task evidence. This is a routing check, not a semantic quality judgment.` : "No assessment-required families were declared; legacy family coverage remains report-only.",
+		message: "Explicit teaching/question links; author judgments, not proof of mastery."
+	};
+}
+const hasValue = (value) => {
+	if (typeof value === "string") return substantiveText(value);
+	if (typeof value === "number" || typeof value === "boolean") return true;
+	if (Array.isArray(value)) return value.some(hasValue);
+	if (value && typeof value === "object") return Object.entries(value).filter(([key]) => ![
+		"id",
+		"title",
+		"label",
+		"caption",
+		"cap",
+		"alt",
+		"gist",
+		"family",
+		"families",
+		"concept",
+		"concepts",
+		"objective",
+		"objectives",
+		"tier",
+		"source",
+		"authorId",
+		"introduces",
+		"layout"
+	].includes(key)).some(([, child]) => hasValue(child));
+	return false;
+};
+function substantiveText(value) {
+	return String(value).replace(/<c\s+k=["'][^"']+["'][^>]*>[\s\S]*?<\/c>/g, " ").replace(/<[^>]*>/g, " ").replace(/&(?:nbsp|amp|lt|gt|quot|#\d+);/g, " ").trim().length > 0;
+}
+function substantiveSourceUnit(evidence) {
+	if (!evidence?.locator) return false;
+	if (evidence.asset) return true;
+	if (typeof evidence.text !== "string") return false;
+	return evidence.text.replace(/^\s{0,3}#{1,6}\s.*$/gm, " ").replace(/<!-- [\s\S]*? -->/g, " ").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().length > 0;
+}
+function hasMainPathContent(block) {
+	if (![
+		"core",
+		"h",
+		"c"
+	].some((key) => typeof block?.[key] === "string" && substantiveText(block[key]))) return [
+		"items",
+		"rows",
+		"slides",
+		"spec"
+	].some((key) => hasValue(block?.[key]));
+	return true;
+}
+function conceptTags(item) {
+	const values = asList(item?.concepts ?? item?.concept).map(named).filter(Boolean);
+	const scan = (value) => {
+		if (typeof value === "string") for (const match of value.matchAll(/<c\s+k=["']([^"']+)["']/g)) values.push(match[1]);
+		else if (Array.isArray(value)) value.forEach(scan);
+		else if (value && typeof value === "object") Object.values(value).forEach(scan);
+	};
+	scan(item);
+	return [...new Set(values)];
+}
+function meaningfulQuestion(item) {
+	return typeof item?.q === "string" && !!item.q.trim() && item.response && typeof item.response === "object" && Object.entries(item.response).some(([key, value]) => key !== "kind" && hasValue(value));
+}
+//#endregion
+//#region tools/lib/sources.mjs
+const DOC = /* @__PURE__ */ new Set([
+	".md",
+	".markdown",
+	".mdx",
+	".txt",
+	".tex",
+	".html",
+	".htm",
+	".rst",
+	".adoc",
+	".org"
+]);
+const CODE = /* @__PURE__ */ new Set([
+	".js",
+	".mjs",
+	".cjs",
+	".jsx",
+	".ts",
+	".tsx",
+	".py",
+	".rb",
+	".go",
+	".rs",
+	".java",
+	".kt",
+	".swift",
+	".c",
+	".h",
+	".cc",
+	".cpp",
+	".hpp",
+	".cs",
+	".php",
+	".scala",
+	".sh",
+	".sql",
+	".r",
+	".jl",
+	".lua",
+	".dart",
+	".vue",
+	".svelte",
+	".css",
+	".scss",
+	".json",
+	".yaml",
+	".yml",
+	".toml",
+	".ini",
+	".csv",
+	".xml",
+	".proto",
+	".graphql",
+	".ipynb"
+]);
+new Map([
+	...[...DOC, ...CODE].map((ext) => [ext, "text"]),
+	[".pdf", "pdf"],
+	[".pptx", "pptx"],
+	[".ppt", "ppt"],
+	[".png", "image"],
+	[".jpg", "image"],
+	[".jpeg", "image"],
+	[".gif", "image"],
+	[".webp", "image"],
+	[".svg", "image"]
+]);
+//#endregion
+//#region tools/lib/source-catalog.mjs
+const EXTRACTOR_VERSION = 1;
+const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const within = (child, parent) => child === parent || child.startsWith(parent + sep);
+const unitFile = (source) => `units/${source.id}.yaml`;
+function catalogDirectory(catalog) {
+	if (typeof catalog === "string") return catalog.endsWith(".yaml") ? dirname(resolve(catalog)) : resolve(catalog);
+	return catalog?.directory;
+}
+function readUnit(catalog, reference) {
+	if (!reference?.source || !reference?.unit) throw new Error("unit reference requires source and unit IDs");
+	let value = catalog;
+	let directory = catalogDirectory(catalog);
+	if (typeof catalog === "string") {
+		const path = catalog.endsWith(".yaml") ? resolve(catalog) : join(resolve(catalog), "catalog.yaml");
+		value = load(readFileSync(path, "utf8"));
+		directory = resolve(path, "..");
+	}
+	if (!directory) throw new Error("catalog must be returned by indexSources or loaded from a catalog path");
+	const source = value?.sources?.find((item) => item.id === reference.source);
+	if (!source) throw new Error(`unknown source: ${reference.source}`);
+	const relativeFile = unitFile(source);
+	const file = resolve(directory, relativeFile);
+	if (!within(file, directory)) throw new Error(`unit file escapes catalog directory: ${relativeFile}`);
+	let stale = false;
+	try {
+		const current = realpathSync(source.path);
+		stale = current !== source.path || sha256(readFileSync(current)) !== source.hash;
+	} catch {
+		stale = true;
+	}
+	if (stale) {
+		const descriptor = source.units.find((item) => item.id === reference.unit);
+		if (!descriptor) throw new Error(`unknown unit: ${reference.unit}`);
+		return {
+			reference,
+			locator: descriptor.locator,
+			...descriptor.asset ? { asset: descriptor.asset } : {},
+			warning: "Source changed or disappeared since indexing; re-index before reading this unit."
+		};
+	}
+	const stored = load(readFileSync(file, "utf8"));
+	if (stored?.extractorVersion !== EXTRACTOR_VERSION || stored?.source !== source.id || stored?.hash !== source.hash) throw new Error(`unit cache does not match source: ${source.id}`);
+	const unit = stored.units?.find((item) => item.id === reference.unit);
+	if (!unit) throw new Error(`unknown unit: ${reference.unit}`);
+	let text = unit.text;
+	let locator = unit.locator;
+	if (reference.lines) {
+		if (!Array.isArray(reference.lines) || reference.lines.length !== 2 || !reference.lines.every(Number.isInteger)) throw new Error("reference lines must be [start, end]");
+		if (text == null || unit.lineStart == null) throw new Error("line narrowing is only available for text units");
+		const [start, end] = reference.lines;
+		if (start < unit.lineStart || end < start || end > unit.lineEnd) throw new Error(`line range is outside ${unit.locator}`);
+		text = text.split(/(?<=\n)/).slice(start - unit.lineStart, end - unit.lineStart + 1).join("");
+		locator = unit.lineMode === "local" ? `${unit.locator}:lines ${start}-${end}` : `${source.path}:lines ${start}-${end}`;
+	}
+	return {
+		reference,
+		locator,
+		...text != null ? { text } : {},
+		...unit.asset ? { asset: unit.asset } : {},
+		...unit.warning ? { warning: unit.warning } : {}
+	};
+}
+//#endregion
+//#region tools/lib/assessment-requirements.mjs
+function savedRequirements(stateDir) {
+	const path = join(stateDir, "required-assessment.yaml");
+	if (!existsSync(path)) return [];
+	const ids = parseFile(path)?.families;
+	if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !id.trim())) throw new Error(`${path}: expected a list of required family IDs`);
+	return ids;
+}
+function preserveAssessmentRequirements(report, stateDir) {
+	for (const id of savedRequirements(stateDir)) if (!report.requiredFamilies.some((row) => row.id === id)) {
+		report.requiredFamilies.push({
+			id,
+			complete: false,
+			missing: ["required family was removed or its assessmentRequired flag was cleared after writing began"]
+		});
+		report.assessmentReady = false;
+	}
+	return report;
+}
+/** Used by standalone publication/packing too, so bypassing finish cannot hide a gap. */
+function assessmentRequirementIssues(courseDir, stateDir) {
+	const plan = readPlan(courseDir);
+	if (!savedRequirements(stateDir).length && !(plan.data.families || []).some((f) => f.assessmentRequired === true)) return [];
+	return preserveAssessmentRequirements(planCoverage(plan, digest(courseDir).subs, { verifySource: (ref) => readUnit(join(stateDir, "sources/catalog.yaml"), ref) }), stateDir).requiredFamilies.filter((row) => !row.complete).map((row) => `${row.id}: ${row.missing.join("; ")}`);
+}
 //#endregion
 //#region tools/pack.mjs
 join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -17353,6 +18045,12 @@ if (unknown.length) {
 }
 mkdirSync(OUT, { recursive: true });
 for (const id of ids) {
+	const gaps = assessmentRequirementIssues(join(COURSES, id), join(STATE, id));
+	if (gaps.length) {
+		console.error(`FAIL ${id}: declared assessment requirements are incomplete`);
+		gaps.forEach((gap) => console.error(`       ✗ ${gap}`));
+		process.exit(1);
+	}
 	const { course, errors } = loadCourse(join(COURSES, id));
 	if (errors.length) {
 		console.error(`FAIL  ${id}`);

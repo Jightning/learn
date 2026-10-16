@@ -1,0 +1,48 @@
+title: Calculate a diluted concentration
+blocks:
+  - t: p
+    source: generated
+    sourceReview: disclosed
+    objectives: [mix-concentration]
+    h: >-
+      This synthetic example assumes the solute is evenly mixed and none is lost.
+      Those assumptions let us track the solute before calculating the new
+      concentration.
+
+  - t: def
+    source: generated
+    sourceReview: disclosed
+    objectives: [mix-concentration]
+    introduces: [concentration-dilution]
+    term: Concentration after dilution
+    core: Solute amount stays fixed when solvent is added; concentration uses the final volume.
+    h: >-
+      <c k="concentration-dilution">Concentration after dilution</c> is amount
+      divided by volume. First calculate the amount in the original sample:
+      <m>20\,\mathrm{mg/mL} \times 100\,\mathrm{mL} = 2{,}000\,\mathrm{mg}</m>.
+      Adding solvent changes volume, not that amount. The final concentration is
+      therefore <m>2{,}000\,\mathrm{mg} \div 500\,\mathrm{mL} = 4\,\mathrm{mg/mL}</m>.
+      The milliliters cancel in the first multiplication, leaving milligrams;
+      dividing by final milliliters gives mg/mL.
+
+  - t: ex
+    source: generated
+    sourceReview: disclosed
+    objectives: [mix-concentration]
+    title: Why the final volume matters
+    h: >-
+      The added solvent is 400 mL, but the mixture's final volume is 500 mL.
+      Use 500 mL in the last division because all 2,000 mg occupy the complete
+      mixture. Dividing by only the added solvent would describe a different
+      volume and give the wrong concentration.
+
+quiz:
+  - type: Calculate final concentration
+    concept: concentration-dilution
+    objectives: [mix-concentration]
+    q: A 30 mg/mL solution is diluted from 40 mL to a final volume of 240 mL, with no solute lost. What is the final concentration in mg/mL?
+    response: {kind: number, value: 5, tolerance: 0, unit: mg/mL}
+    why: >-
+      The conserved amount is <m>30\,\mathrm{mg/mL} \times 40\,\mathrm{mL} = 1{,}200\,\mathrm{mg}</m>.
+      Dividing by the final 240 mL gives 5 mg/mL.
+    verified: true

@@ -64,13 +64,6 @@
 }
 
 
-/* Below the rail breakpoint the three lane buttons become one that cycles,
-   named by the lane it is in. Both forms are rendered; this picks. */
-@media (max-width:1215px){
-  .lane-set,.lane-k{display:none}
-  .lane-cycle{display:inline-block}
-}
-
 /* ---------------------------------------------------------------------------
  * Touch targets.
  *

@@ -1,0 +1,4 @@
+title: "Parametric surfaces and surface area"
+term: "Parametric Surface"
+body: >-
+  <p>A parametric surface is defined by a vector function <m>\mathbf{r}(u, v) = \langle x(u, v), y(u, v), z(u, v) \rangle</m> defined on a parameter domain <m>D</m> in the <m>uv</m>-plane. The tangent vectors along grid curves are <m>\mathbf{r}_u</m> and <m>\mathbf{r}_v</m>, and the normal vector is <m>\mathbf{r}_u \times \mathbf{r}_v</m>. A surface is smooth where this cross product is nonzero. The surface area of <m>S</m> is computed by <m>A(S) = \iint_D \|\mathbf{r}_u \times \mathbf{r}_v\|\, dA</m>. Parametric representations model general two-dimensional surfaces in space such as tori, spheres, and helicoids.</p>

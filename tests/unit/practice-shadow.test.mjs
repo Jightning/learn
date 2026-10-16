@@ -10,7 +10,7 @@ test("shadow replay compares deterministic proposals without leaking reserves or
   assert.deepEqual(rows, copy);
   assert.deepEqual(report, shadowPractice(idx, rows, 17));
   assert.equal(report.decisions.length, 1);
-  for (const key of ["adaptive", "weightedRandom", "roundRobin"]) assert.notEqual(report.decisions[0][key], "reserved");
+  for (const key of ["adaptive", "scored", "weightedRandom", "roundRobin"]) assert.notEqual(report.decisions[0][key], "reserved");
   assert.equal(report.promotion, "pending-learner-study");
   assert.equal(report.learningEffect, "unobserved for unchosen actions");
 });

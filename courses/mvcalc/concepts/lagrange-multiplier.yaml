@@ -1,0 +1,4 @@
+title: "Method of Lagrange multipliers"
+term: "Lagrange Multiplier"
+body: >-
+  <p>The method of Lagrange multipliers finds the extrema of an objective function <m>f(x, y, z)</m> subject to a constraint <m>g(x, y, z) = k</m> where <m>\nabla g \ne \mathbf{0}</m>. It requires solving the system <m>\nabla f = \lambda \nabla g</m> alongside the constraint equation <m>g(x, y, z) = k</m>, where <m>\lambda</m> is the Lagrange multiplier. Geometrically, extrema occur where the level surfaces of <m>f</m> and <m>g</m> are tangent, meaning their normal gradients are collinear. For two constraints <m>g = k</m> and <m>h = c</m>, the condition extends to <m>\nabla f = \lambda \nabla g + \mu \nabla h</m>.</p>

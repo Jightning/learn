@@ -45,8 +45,7 @@ styles: |
   .v-y{color:var(--hi-ink);font-weight:700}
   .v-n{color:var(--lo-ink)}
   .v-a{color:var(--dc-ink);font-style:italic}
-  .metric{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:1px solid var(--rule);border-radius:8px;margin:0 0 var(--sp-2)}
-  .metric-v{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--hi-ink)}
+  .metric-v{display:block;font-family:var(--mono);font-size:1.15rem;font-weight:600;color:var(--ink-2)}
   .metric-l{font-size:.8rem;color:var(--ink-2)}
 
 # Syntax highlighting for `code` blocks: pure configuration, no renderer.

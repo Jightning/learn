@@ -7,7 +7,7 @@ export function watchFigureScroll(root) {
       const limit = scroll.scrollWidth - scroll.clientWidth;
       view.classList.toggle("has-left", scroll.scrollLeft > 2);
       view.classList.toggle("has-right", limit - scroll.scrollLeft > 2);
-      scroll.tabIndex = limit > 2 ? 0 : -1;
+      scroll.tabIndex = limit > 2 || scroll.scrollHeight - scroll.clientHeight > 2 ? 0 : -1;
     };
     scroll.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);

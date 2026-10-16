@@ -30,9 +30,10 @@ strong reviewer checks flagged uncertainty, high-risk claims and a representativ
 family sample using exact item/span packets; widen only when insufficient.
 Rereading or a verified flag alone is not verification.
 
-Check closure from the reader background, forward references, spine-only
-coherence, definitions, claim fields, category boundaries, question routes,
-figure captions and alt text, YAML scalar safety, math, and source dispositions.
+Check that the teaching path follows the reader background, introduces what it
+relies on, and makes its reasoning reconstructable. Check forward references,
+required-reading coherence, definitions, claim fields, category boundaries, question
+routes, figure captions and alt text, YAML scalar safety, math, and source dispositions.
 Inspect the packed reader once, sampling supported depths and unusual shapes;
 fully inspect changed or flagged content. Do not reread every lesson at every
 depth merely to repeat the writer's checks. Coverage scores identify leads; they do not prove pedagogical or

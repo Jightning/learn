@@ -1,0 +1,141 @@
+title: Change of Variables in Multiple Integrals
+blocks:
+  - t: p
+    h: <p>In single-variable calculus, the substitution rule <m>x = g(u)</m> simplifies an integral by re-scaling the differential via <m>dx = g'(u)\,du</m>. In two and three dimensions, a change of variables transforms an intractable region <m>R</m> or complicated integrand into a simpler region <m>S</m> (often a rectangle or box) by defining transformations <m>x = g(u, v)</m> and <m>y = h(u, v)</m>. Because multidimensional coordinate changes distort angles, lengths, and areas, the differential area element must be scaled by the Jacobian determinant—the multivariable counterpart of the single-variable derivative.</p>
+    authorId: block-18ee224f-625
+  - t: def
+    term: Planar Transformations and the Jacobian
+    source: OpenStax Calculus Volume 3, Section 5.7
+    sourceReview: sourced
+    core: The Jacobian determinant of a <m>C^1</m> transformation <m>x = g(u, v)</m>, <m>y = h(u, v)</m> is <m>J(u, v) = \frac{\partial(x, y)}{\partial(u, v)} = \frac{\partial x}{\partial u}\frac{\partial y}{\partial v} - \frac{\partial x}{\partial v}\frac{\partial y}{\partial u}</m>.
+    introduces:
+      - obj-s4-7
+      - jacobian
+    objectives:
+      - obj-s4-7
+    family: family-jacobian-compute
+    h: '<p>A coordinate mapping <m>T(u, v) = (x(u, v), y(u, v))</m> transforms a small grid rectangle <m>\Delta u \times \Delta v</m> in the <m>uv</m>-plane into a curved patch in the <m>xy</m>-plane. The vector edges of this patch are approximately the tangent vectors <m>\mathbf{r}_u\,\Delta u = \langle x_u, y_u \rangle \Delta u</m> and <m>\mathbf{r}_v\,\Delta v = \langle x_v, y_v \rangle \Delta v</m>. The area of the approximating parallelogram is given by the cross product magnitude: <m>|\mathbf{r}_u \times \mathbf{r}_v|\,\Delta u\,\Delta v = |x_u y_v - x_v y_u|\,\Delta u\,\Delta v = |J(u, v)|\,\Delta u\,\Delta v</m>. The Jacobian determinant measures the local area magnification factor of the transformation.</p>'
+    authorId: block-f2a2a773-8b2
+  - t: math
+    label: Change of Variables Theorem in Two Dimensions
+    tex: \iint_R f(x, y)\,dA = \iint_S f(g(u, v), h(u, v)) \left| \frac{\partial(x, y)}{\partial(u, v)} \right| du\,dv
+    note: 'The absolute value of the Jacobian determinant scales the area differential: <m>dA = |J(u, v)|\,du\,dv</m>.'
+    objectives:
+      - obj-s4-7
+    family: family-change-variables-integral
+    authorId: block-bd67b3fc-8a1
+  - t: ex
+    title: Jacobian of the Polar Coordinate Transformation
+    objectives:
+      - obj-s4-7
+    family: family-jacobian-compute
+    h: <p>Compute the Jacobian of the polar coordinate transformation <m>x = r\cos\theta</m> and <m>y = r\sin\theta</m>.</p><p>Compute the partial derivatives:</p><p><m>\frac{\partial x}{\partial r} = \cos\theta, \quad \frac{\partial x}{\partial \theta} = -r\sin\theta</m></p><p><m>\frac{\partial y}{\partial r} = \sin\theta, \quad \frac{\partial y}{\partial \theta} = r\cos\theta</m></p><p>Evaluate the determinant:</p><p><m>\frac{\partial(x, y)}{\partial(r, \theta)} = \begin{vmatrix} \cos\theta & -r\sin\theta \\ \sin\theta & r\cos\theta \end{vmatrix} = (\cos\theta)(r\cos\theta) - (-r\sin\theta)(\sin\theta) = r(\cos^2\theta + \sin^2\theta) = r</m>.</p><p>Since <m>r \ge 0</m>, <m>|J| = r</m>, confirming the polar area differential <m>dA = r\,dr\,d\theta</m> directly from the general transformation theorem.</p>
+    authorId: block-4cc888a5-63e
+  - t: def
+    term: Coordinate Substitution and Region Mapping
+    source: OpenStax Calculus Volume 3, Section 5.7
+    sourceReview: sourced
+    core: A change of variables maps an irregular region <m>R</m> in the <m>xy</m>-plane to a simpler region <m>S</m> in the <m>uv</m>-plane by tracking the transformation of boundary curves.
+    introduces:
+      - change-of-variables
+    objectives:
+      - obj-s4-7
+    family: family-transform-region
+    h: <p>Choosing effective substitution variables <m>u</m> and <m>v</m> is dictated by the geometry of the boundary equations. For example, when a region is bounded by pairs of lines <m>a_1 x + b_1 y = c</m> and <m>a_2 x + b_2 y = d</m>, setting <m>u = a_1 x + b_1 y</m> and <m>v = a_2 x + b_2 y</m> maps the region directly to a coordinate rectangle in the <m>uv</m>-plane. One-to-one continuous transformations map boundary curves of <m>R</m> directly onto the boundary curves of <m>S</m>, simplifying both limits and integrand structure.</p>
+    authorId: block-bf17a062-206
+  - t: ex
+    title: Evaluating an Integral over a Parallelogram via Substitution
+    objectives:
+      - obj-s4-7
+    family: family-change-variables-integral
+    h: <p>Evaluate <m>\iint_R (x + y)^2\,dA</m>, where <m>R</m> is the parallelogram bounded by <m>x + y = 0</m>, <m>x + y = 2</m>, <m>x - y = 0</m>, and <m>x - y = 2</m>.</p><p>Let <m>u = x + y</m> and <m>v = x - y</m>. The transformed domain <m>S</m> is the rectangle <m>[0, 2] \times [0, 2]</m> in the <m>uv</m>-plane. Solving for <m>x</m> and <m>y</m> gives <m>x = \frac{u + v}{2}</m> and <m>y = \frac{u - v}{2}</m>.</p><p>Compute the Jacobian:</p><p><m>J = \begin{vmatrix} 1/2 & 1/2 \\ 1/2 & -1/2 \end{vmatrix} = -\frac{1}{4} - \frac{1}{4} = -\frac{1}{2} \implies |J| = \frac{1}{2}</m>.</p><p>Transform the integral:</p><p><m>\iint_R (x + y)^2\,dA = \int_0^2 \int_0^2 u^2 \left(\frac{1}{2}\right) dv\,du = \frac{1}{2}\left(\int_0^2 dv\right)\left(\int_0^2 u^2\,du\right) = \frac{1}{2}(2)\left[\frac{u^3}{3}\right]_0^2 = \frac{8}{3}</m>.</p>
+    authorId: block-80c0fa01-a18
+  - t: key
+    label: Inverse Jacobian Property and 3D Transformations
+    source: OpenStax Calculus Volume 3, Section 5.7
+    sourceReview: sourced
+    core: The Jacobian of an inverse transformation satisfies <m>\frac{\partial(x, y)}{\partial(u, v)} = \left[ \frac{\partial(u, v)}{\partial(x, y)} \right]^{-1}</m>, and extends to 3D via 3x3 determinants.
+    objectives:
+      - obj-s4-7
+    family: family-jacobian-compute
+    h: <p>Important algebraic and higher-dimensional properties of Jacobians include:</p>
+    items:
+      - 'Inverse Jacobian shortcut: When <m>u(x, y)</m> and <m>v(x, y)</m> are known explicitly, <m>\frac{\partial(x, y)}{\partial(u, v)} = \frac{1}{\frac{\partial(u, v)}{\partial(x, y)}}</m>, avoiding algebraic inversion of variable expressions.'
+      - 'Three-dimensional transformations: For <m>x(u, v, w)</m>, <m>y(u, v, w)</m>, <m>z(u, v, w)</m>, the volume scaling is the absolute value of the <m>3 \times 3</m> determinant <m>\frac{\partial(x, y, z)}{\partial(u, v, w)}</m>.'
+      - 'Elliptic scaling: Under <m>x = au</m> and <m>y = bv</m>, the unit disk <m>u^2 + v^2 \le 1</m> maps to the ellipse <m>\frac{x^2}{a^2} + \frac{y^2}{b^2} \le 1</m> with Jacobian <m>J = ab</m>, giving area <m>\pi ab</m>.'
+    ordered: true
+    authorId: block-8087b130-f11
+  - t: trap
+    label: Forgetting the Absolute Value of the Jacobian
+    source: OpenStax Calculus Volume 3, Section 5.7
+    sourceReview: sourced
+    core: The area distortion scale factor is strictly the absolute value <m>|J|</m>; a negative determinant reflects orientation change but scale is always positive.
+    objectives:
+      - obj-s4-7
+    family: family-change-variables-integral
+    h: <p>A common mistake is using a negative Jacobian determinant directly inside the integral. If <m>J < 0</m>, the mapping reverses spatial orientation (reflecting coordinate axes). Because physical area and volume elements are non-negative magnitudes, the change-of-variables formula always takes the absolute value <m>|J|</m>. Omitting the absolute value sign yields an erroneous negative area or volume.</p>
+    authorId: block-b4d8d3d8-4b3
+quiz:
+  - type: Linear transformation region image
+    concept: change-of-variables
+    objectives:
+      - obj-s4-7
+    family: family-transform-region
+    q: A linear transformation is given by <m>x = 2u + v</m> and <m>y = u + 3v</m>. What is the image in the <m>xy</m>-plane of the unit square <m>S = [0, 1] \times [0, 1]</m> in the <m>uv</m>-plane?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: A parallelogram with vertices <m>(0, 0)</m>, <m>(2, 1)</m>, <m>(1, 3)</m>, and <m>(3, 4)</m> with area 5
+          why: Linear transformations map lines to lines. The vertices of the unit square (0, 0), (1, 0), (0, 1), and (1, 1) map directly to (0, 0), (2, 1), (1, 3), and (3, 4), and the area is <m>|J| \times \text{Area}(S) = |2(3) - 1(1)|(1) = 5</m>.
+        - text: A rectangle with vertices <m>(0, 0)</m>, <m>(2, 0)</m>, <m>(0, 3)</m>, and <m>(2, 3)</m> with area 6
+          why: Cross terms u and v skew the rectangle into a non-rectangular parallelogram.
+        - text: A triangle with vertices <m>(0, 0)</m>, <m>(2, 1)</m>, and <m>(1, 3)</m> with area 2.5
+          why: The unit square has 4 vertices and maps to a 4-vertex quadrangle, not a triangle.
+        - text: A square with side length <m>\sqrt{5}</m>
+          why: The edge lengths and angles between mapped vectors are unequal, so the shape is not a square.
+    why: The four corners of the unit square map to the vertices of a parallelogram with area <m>|J| = 5</m>.
+    authorId: quiz-1bfe9a22-2f4
+  - type: Jacobian computation for quadratic map
+    concept: jacobian
+    objectives:
+      - obj-s4-7
+    family: family-jacobian-compute
+    q: What is the Jacobian determinant <m>\frac{\partial(x, y)}{\partial(u, v)}</m> for the transformation <m>x = u^2 - v^2</m> and <m>y = 2uv</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>4(u^2 + v^2)</m>
+          why: The partial derivatives are <m>x_u = 2u</m>, <m>x_v = -2v</m>, <m>y_u = 2v</m>, and <m>y_v = 2u</m>. The determinant is <m>J = (2u)(2u) - (-2v)(2v) = 4u^2 + 4v^2 = 4(u^2 + v^2)</m>.
+        - text: <m>2(u^2 - v^2)</m>
+          why: Subtracting the off-diagonal terms incorrectly yields an erroneous difference of squares.
+        - text: <m>4(u^2 - v^2)</m>
+          why: Sign error on the negative product (-2v)(2v) gives minus instead of plus.
+        - text: <m>2(u + v)</m>
+          why: Taking linear derivatives rather than the 2x2 determinant gives 2(u + v).
+    why: The determinant evaluates to <m>4u^2 - (-4v^2) = 4(u^2 + v^2)</m>.
+    authorId: quiz-19081cfc-150
+  - type: Elliptical substitution double integral
+    concept: change-of-variables
+    objectives:
+      - obj-s4-7
+    family: family-change-variables-integral
+    q: Use the transformation <m>x = 3u</m>, <m>y = 2v</m> to evaluate the double integral <m>\iint_R 1\,dA</m>, where <m>R</m> is the region bounded by the ellipse <m>\frac{x^2}{9} + \frac{y^2}{4} \le 1</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>6\pi</m>
+          why: Under <m>x = 3u</m> and <m>y = 2v</m>, the ellipse transforms into the unit disk <m>u^2 + v^2 \le 1</m>. The Jacobian is <m>J = (3)(2) - 0 = 6</m>. The area is <m>\iint_S 6\,du\,dv = 6\pi(1^2) = 6\pi</m>.
+        - text: <m>12\pi</m>
+          why: Multiplying by an extra factor of 2 doubles the elliptical area to 12pi.
+        - text: <m>3\pi</m>
+          why: Missing the semi-major or semi-minor axis scaling factor halves the result.
+        - text: <m>36\pi</m>
+          why: Squaring the Jacobian determinant gives 36pi instead of 6pi.
+    why: The ellipse has area <m>\pi ab = \pi(3)(2) = 6\pi</m>, which the Jacobian scales to <m>6 \times \pi = 6\pi</m>.
+    authorId: quiz-7cb04996-b28

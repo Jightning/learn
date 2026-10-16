@@ -21,11 +21,10 @@ bodies in `concepts/<key>.yaml` after scope is approved.
   reason: Required to meet the requested goal
   source_loci: [src-1/section-4]
   teaching: [obj-1]
-  questions: [obj-1]
+  questions: [normalize]
 
 # categorize/concepts.yaml
 - id: initial-value-problem
-  reuse: 3
   objectives: [obj-1]
 ```
 
@@ -41,15 +40,10 @@ short: PPT
 boundary: '<p>Dissolved substances form one or more solid products.</p>'
 siblings: [acid-base-reactions, redox-reactions]
 
-# practice/<key>.yaml
-concept: initial-value-problem
-items:
-  - q: Solve the changed surface.
-    response: {kind: number, value: 4, tolerance: 0}
-    verified: '2026-10-02'
 ```
 
-Promote an idea used in three or more places to a concept. Categories need a
+Use a concept ID consistently where it is taught and assessed. Categories need a
 boundary, declared siblings, and members; `cat` is one principal kind and tags
-are secondary slugs. Variants hold the concept and response kind while changing
-surface, context, or difficulty.
+are secondary slugs. Repeated practice and reusable variants belong in
+`questions/bank.yaml` and use type definitions from `questions/types.yaml`.
+Keep small, self-contained checks inline with the lesson.

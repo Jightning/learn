@@ -43,3 +43,28 @@ test("reimporting a course replaces the parsed lesson", async () => {
     await server.close();
   }
 });
+
+
+test("catalog additions are explicit and independent of hiding or restoring DEMO", async () => {
+  const server = await createServer({ logLevel: "silent", server: { middlewareMode: true, hmr: false }, appType: "custom" });
+  try {
+    const library = await server.ssrLoadModule("/lib/library.js");
+    library.refresh();
+    assert.deepEqual(library.ORDER, ["demo"]);
+    assert.ok(library.dismissed().includes("mvcalc"));
+    assert.ok(library.catalog().some(c => c.id === "mvcalc"));
+    library.setDismissed("demo", true);
+    assert.deepEqual(library.ORDER, []);
+    library.setDismissed("demo", false);
+    assert.deepEqual(library.ORDER, ["demo"]);
+    library.setDismissed("mvcalc", false);
+    library.refresh();
+    assert.deepEqual(library.ORDER, ["demo", "mvcalc"]);
+    library.setDismissed("mvcalc", true);
+    library.refresh();
+    assert.deepEqual(library.ORDER, ["demo"]);
+    assert.ok(library.INDEX.mvcalc, "hidden catalog course still resolves from links");
+    library.setDismissed("mvcalc", false);
+    assert.deepEqual(library.ORDER, ["demo", "mvcalc"]);
+  } finally { await server.close(); }
+});

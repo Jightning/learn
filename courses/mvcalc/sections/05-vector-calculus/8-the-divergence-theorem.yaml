@@ -1,0 +1,178 @@
+title: The Divergence Theorem
+blocks:
+  - t: p
+    h: |
+      <p>Throughout multivariable calculus, we have encountered versions of the fundamental principle that integrating a derivative over a region equals evaluating the original quantity on the boundary of that region. In single-variable calculus, this is the Fundamental Theorem of Calculus. For curves in space, it is the Fundamental Theorem for Line Integrals. For planar regions, it is Green's Theorem; and for surfaces in three dimensions, it is Stokes' Theorem. The <strong>Divergence Theorem</strong> (also known as Gauss's Theorem) is the 3D culmination of this hierarchy: it equates the triple integral of divergence throughout a three-dimensional solid to the net outward flux across its closed boundary surface.</p>
+    authorId: block-d075813b-234
+  - t: def
+    term: The Divergence Theorem (Gauss's Theorem)
+    source: OpenStax Calculus Volume 3, Section 6.8
+    sourceReview: sourced
+    core: The divergence theorem equates the outward flux of a vector field across a closed boundary surface to the triple integral of divergence throughout the enclosed solid.
+    introduces:
+      - obj-s5-8
+      - divergence-theorem
+    objectives:
+      - obj-s5-8
+    family: family-divergence-closed
+    h: |
+      <p>Let <m>E</m> be a bounded, simple solid region in <m>\mathbb{R}^3</m> whose boundary is a closed, piecewise smooth surface <m>S = \partial E</m>, oriented outward (with unit normal <m>\mathbf{n}</m> pointing away from <m>E</m>). If <m>\mathbf{F} = \langle P, Q, R \rangle</m> is a vector field with continuous partial derivatives on an open region containing <m>E</m>, then the <strong>Divergence Theorem</strong> states that <m>\iint_S \mathbf{F} \cdot d\mathbf{S} = \iiint_E \operatorname{div}\mathbf{F}\,dV = \iiint_E \left(\frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y} + \frac{\partial R}{\partial z}\right) dV</m>.</p>
+    authorId: block-2c572381-8e7
+  - t: math
+    label: Statement of the Divergence Theorem
+    tex: \iint_{\partial E} \mathbf{F} \cdot d\mathbf{S} = \iiint_E \nabla \cdot \mathbf{F}\,dV = \iiint_E \left(\frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y} + \frac{\partial R}{\partial z}\right) dV
+    note: The outward flux across the closed boundary surface S equals the total volumetric source strength inside solid E.
+    objectives:
+      - obj-s5-8
+    family: family-divergence-closed
+    authorId: block-e8ce96c2-afe
+  - t: ex
+    title: Computing Outward Flux Through a Spherical Boundary
+    objectives:
+      - obj-s5-8
+    family: family-divergence-closed
+    h: |
+      <p><strong>Problem:</strong> Evaluate the outward flux <m>\iint_S \mathbf{F} \cdot d\mathbf{S}</m> of <m>\mathbf{F}(x, y, z) = \langle x^3 + y, y^3 + z, z^3 + x \rangle</m> across the sphere <m>S: x^2 + y^2 + z^2 = 4</m>.</p><p><strong>Solution:</strong></p><p>1. Compute the divergence of <m>\mathbf{F}</m>:</p><p><m>\operatorname{div}\mathbf{F} = \frac{\partial}{\partial x}(x^3 + y) + \frac{\partial}{\partial y}(y^3 + z) + \frac{\partial}{\partial z}(z^3 + x) = 3x^2 + 3y^2 + 3z^2 = 3(x^2 + y^2 + z^2)</m></p><p>2. By the Divergence Theorem, the flux equals the triple integral over the solid ball <m>E: x^2 + y^2 + z^2 \le 4</m>:</p><p><m>\iint_S \mathbf{F} \cdot d\mathbf{S} = \iiint_E 3(x^2 + y^2 + z^2)\,dV</m></p><p>3. Convert to spherical coordinates, where <m>x^2 + y^2 + z^2 = \rho^2</m>, <m>dV = \rho^2\sin\phi\,d\rho\,d\phi\,d\theta</m>, and radius <m>0 \le \rho \le 2</m>:</p><p><m>\iiint_E 3\rho^2 (\rho^2\sin\phi)\,d\rho\,d\phi\,d\theta = 3 \left( \int_0^{2\pi} d\theta \right) \left( \int_0^\pi \sin\phi\,d\phi \right) \left( \int_0^2 \rho^4\,d\rho \right)</m></p><p><m>= 3(2\pi)(2)\left[ \frac{\rho^5}{5} \right]_0^2 = 12\pi \cdot \frac{32}{5} = \frac{384\pi}{5}</m>.</p>
+    authorId: block-b6580c20-4e4
+  - t: ex
+    title: Flux Between Concentric Boundaries and Gauss's Law
+    objectives:
+      - obj-s5-8
+    family: family-divergence-between
+    h: |
+      <p><strong>Problem:</strong> For the electric field of a point charge at the origin, <m>\mathbf{F}(\mathbf{r}) = \frac{\mathbf{r}}{\|\mathbf{r}\|^3} = \frac{\langle x, y, z \rangle}{(x^2 + y^2 + z^2)^{3/2}}</m>, find the outward flux through any smooth closed surface <m>S</m> enclosing the origin.</p><p><strong>Solution:</strong></p><p>1. Compute divergence away from the origin:</p><p><m>\frac{\partial}{\partial x}\left(\frac{x}{r^3}\right) = \frac{r^3(1) - x(3r^2 \cdot \frac{x}{r})}{r^6} = \frac{r^2 - 3x^2}{r^5}</m></p><p>Summing cyclic partials gives <m>\operatorname{div}\mathbf{F} = \frac{3r^2 - 3(x^2 + y^2 + z^2)}{r^5} = \frac{3r^2 - 3r^2}{r^5} = 0</m> for all <m>\mathbf{r} \ne \mathbf{0}</m>.</p><p>2. Choose a small sphere <m>S_a</m> of radius <m>a</m> centered at the origin lying entirely inside <m>S</m>. Apply the Divergence Theorem to the solid region <m>E</m> between <m>S</m> and <m>S_a</m>:</p><p><m>\iint_S \mathbf{F} \cdot d\mathbf{S} - \iint_{S_a} \mathbf{F} \cdot d\mathbf{S} = \iiint_E \operatorname{div}\mathbf{F}\,dV = \iiint_E 0\,dV = 0</m></p><p>3. Thus, outward flux through <m>S</m> equals outward flux through the sphere <m>S_a</m>:</p><p>On <m>S_a</m>, <m>\mathbf{n} = \frac{\mathbf{r}}{a}</m> and <m>\|\mathbf{r}\| = a</m>, so <m>\mathbf{F} \cdot \mathbf{n} = \frac{\mathbf{r}}{a^3} \cdot \frac{\mathbf{r}}{a} = \frac{a^2}{a^4} = \frac{1}{a^2}</m>.</p><p><m>\iint_{S_a} \mathbf{F} \cdot d\mathbf{S} = \frac{1}{a^2}\,\text{Area}(S_a) = \frac{1}{a^2}(4\pi a^2) = 4\pi</m>.</p><p>The flux is identically <m>4\pi</m> for any closed surface enclosing the origin (Gauss's Law).</p>
+    authorId: block-f36e63aa-6c6
+  - t: def
+    term: Flux Through Multiply Connected Solids and Gauss's Law
+    source: OpenStax Calculus Volume 3, Section 6.8
+    sourceReview: sourced
+    core: For a solid region between nested closed surfaces, outward flux across the outer boundary equals outward flux across inner boundaries when divergence vanishes.
+    objectives:
+      - obj-s5-8
+    family: family-divergence-between
+    h: |
+      <p>If a solid region <m>E</m> has an outer boundary surface <m>S_{\text{outer}}</m> and internal cavity boundaries <m>S_{\text{inner}}</m>, the Divergence Theorem applies with <m>\partial E = S_{\text{outer}} - S_{\text{inner}}</m>, where both surfaces are oriented outward from their respective volumes. Consequently, when <m>\operatorname{div}\mathbf{F} = 0</m> throughout <m>E</m>, the flux across the outer surface equals the total flux escaping the inner boundaries: <m>\iint_{S_{\text{outer}}} \mathbf{F} \cdot d\mathbf{S} = \iint_{S_{\text{inner}}} \mathbf{F} \cdot d\mathbf{S}</m>. This deformation invariance is the spatial counterpart to path deformation in conservative vector fields.</p>
+    authorId: block-827637be-dcd
+  - t: table
+    id: fundamental-theorems-comparison
+    cap: Comparison of the Fundamental Theorems of Vector Calculus
+    head:
+      - Theorem
+      - Differential Operator
+      - Interior Domain (R)
+      - Boundary (∂R)
+      - Statement
+    rows:
+      - - Fundamental Theorem of Calculus
+        - <m>f'(x)</m>
+        - Interval <m>[a, b]</m>
+        - Endpoints <m>\{a, b\}</m>
+        - <m>\int_a^b f'(x)\,dx = f(b) - f(a)</m>
+      - - Fundamental Theorem for Line Integrals
+        - <m>\nabla f</m>
+        - Curve <m>C</m>
+        - Endpoints <m>\{A, B\}</m>
+        - <m>\int_C \nabla f \cdot d\mathbf{r} = f(B) - f(A)</m>
+      - - Green's Theorem (Circulation)
+        - <m>Q_x - P_y</m>
+        - Planar region <m>D</m>
+        - Closed curve <m>C</m>
+        - <m>\iint_D (Q_x - P_y)\,dA = \oint_C P\,dx + Q\,dy</m>
+      - - Stokes' Theorem
+        - <m>\nabla \times \mathbf{F}</m>
+        - Oriented surface <m>S</m>
+        - Closed curve <m>C</m>
+        - <m>\iint_S (\nabla \times \mathbf{F}) \cdot d\mathbf{S} = \oint_C \mathbf{F} \cdot d\mathbf{r}</m>
+      - - Divergence Theorem
+        - <m>\nabla \cdot \mathbf{F}</m>
+        - Solid region <m>E</m>
+        - Closed surface <m>S</m>
+        - <m>\iiint_E (\nabla \cdot \mathbf{F})\,dV = \iint_S \mathbf{F} \cdot d\mathbf{S}</m>
+    objectives:
+      - obj-s5-8
+    family: family-fundamental-theorems-summary
+    authorId: block-5ffc8ed7-815
+  - t: key
+    label: Strategic Selection of Integral Theorems
+    source: OpenStax Calculus Volume 3, Section 6.8
+    sourceReview: sourced
+    core: Determine the geometric dimensions of the region and its boundary to select among FTLI for curves, Green for planar regions, Stokes for 3D surfaces, and Divergence for 3D solids.
+    objectives:
+      - obj-s5-8
+    family: family-fundamental-theorems-summary
+    h: |
+      <p>When given an integral to evaluate, choose the optimal theorem using geometric dimensions:</p>
+    items:
+      - 'Line integral <m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> over an open curve: Check if <m>\operatorname{curl}\mathbf{F} = \mathbf{0}</m> (<m>P_y = Q_x</m> in 2D). If conservative, find potential <m>f</m> and apply FTLI: <m>f(B) - f(A)</m>.'
+      - 'Line integral <m>\oint_C \mathbf{F} \cdot d\mathbf{r}</m> over a closed curve in 2D: Apply Green''s Theorem to convert to a double integral of <m>Q_x - P_y</m> over the planar interior.'
+      - 'Line integral <m>\oint_C \mathbf{F} \cdot d\mathbf{r}</m> over a closed curve in 3D: Apply Stokes'' Theorem to convert to a surface flux integral of <m>\operatorname{curl}\mathbf{F}</m> over a convenient capping surface.'
+      - 'Surface integral <m>\iint_S \mathbf{F} \cdot d\mathbf{S}</m> over an open surface: If <m>\mathbf{F} = \operatorname{curl}\mathbf{A}</m>, use Stokes'' Theorem to convert to a line integral around <m>\partial S</m> or swap to a simpler surface.'
+      - 'Surface integral <m>\iint_S \mathbf{F} \cdot d\mathbf{S}</m> over a closed surface: Apply the Divergence Theorem to convert to a triple integral of <m>\operatorname{div}\mathbf{F}</m> over the enclosed 3D solid.'
+    ordered: true
+    authorId: block-51880e06-49a
+  - t: trap
+    label: Open Surface Misapplications and Interior Singularities
+    source: OpenStax Calculus Volume 3, Section 6.8
+    sourceReview: sourced
+    core: The divergence theorem applies only to closed surfaces; if the vector field is undefined at any point in the solid, the theorem cannot be applied directly.
+    objectives:
+      - obj-s5-8
+    family: family-divergence-closed
+    h: |
+      <p>The Divergence Theorem requires a <strong>closed</strong> surface that completely encloses a solid volume. Applying it to an open surface (such as a bowl, paraboloid without a cap, or cylinder without ends) without accounting for the missing boundary face leads to incorrect results. To use divergence methods on an open surface, cap the open ends with flat disks, apply the theorem to the whole closed surface, and subtract the flux through the caps. Additionally, verify that <m>\mathbf{F}</m> and its partial derivatives are continuous throughout the solid; if a singularity (like <m>1/r^2</m>) lies inside, you must isolate the point using an inner boundary.</p>
+    authorId: block-c7422e06-e23
+quiz:
+  - type: Outward flux via divergence theorem
+    concept: divergence-theorem
+    objectives:
+      - obj-s5-8
+    family: family-divergence-closed
+    q: Use the Divergence Theorem to find the outward flux <m>\iint_S \mathbf{F} \cdot d\mathbf{S}</m> of <m>\mathbf{F}(x, y, z) = \langle 2x + \sin(yz), 3y + \cos(xz), 5z + e^{xy} \rangle</m> across the surface of the cube <m>E = [0, 2] \times [0, 2] \times [0, 2]</m>.
+    verified: true
+    response:
+      kind: number
+      value: 80
+    why: 'Compute divergence: <m>\operatorname{div}\mathbf{F} = 2 + 3 + 5 = 10</m>, since all other terms depend only on the other variables and differentiate to zero. By the Divergence Theorem, the outward flux equals <m>\iiint_E \operatorname{div}\mathbf{F}\,dV = 10\,\text{Volume}(E) = 10(2^3) = 80</m>.'
+    authorId: quiz-801825b1-8b2
+  - type: Flux of inverse-square field
+    concept: divergence-theorem
+    objectives:
+      - obj-s5-8
+    family: family-divergence-between
+    q: Let <m>\mathbf{F} = \frac{\mathbf{r}}{\|\mathbf{r}\|^3}</m> be the inverse-square vector field on <m>\mathbb{R}^3 \setminus \{(0, 0, 0)\}</m>. What is the outward flux of <m>\mathbf{F}</m> across the surface of the ellipsoid <m>2x^2 + 3y^2 + 4z^2 = 12</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>4\pi</m>
+          why: 'Because <m>\operatorname{div}\mathbf{F} = 0</m> everywhere except at the origin, the Divergence Theorem implies the outward flux across any closed surface enclosing the origin equals the outward flux across a sphere of radius <m>a</m> centered at the origin: <m>\iint_{\text{sphere}} \frac{\mathbf{r}}{a^3} \cdot \frac{\mathbf{r}}{a}\,dS = \frac{1}{a^2}(4\pi a^2) = 4\pi</m>.'
+        - text: <m>0</m>
+          why: The divergence is zero away from the origin, but the origin itself is enclosed inside the ellipsoid, creating a source with net flux <m>4\pi</m>.
+        - text: <m>12\pi</m>
+          why: Multiplied by the ellipsoid constant 12 instead of applying Gauss's law.
+        - text: <m>48\pi</m>
+          why: Calculated using ellipsoid volume rather than Gauss's law flux.
+    why: By Gauss's law and the Divergence Theorem on nested surfaces, the flux across any closed surface enclosing the origin is <m>4\pi</m>.
+    authorId: quiz-70b84c0b-949
+  - type: Selecting the appropriate integral theorem
+    concept: divergence-theorem
+    objectives:
+      - obj-s5-8
+    family: family-fundamental-theorems-summary
+    q: You need to evaluate the work done <m>\oint_C \mathbf{F} \cdot d\mathbf{r}</m> by a spatial force field <m>\mathbf{F}</m> around an ellipse <m>C</m> lying in the tilted plane <m>2x + y + 3z = 6</m>. Which theorem converts this directly into a double integral over the flat elliptical disk bounded by <m>C</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Stokes' Theorem
+          why: Stokes' Theorem relates the line integral around a space curve <m>C</m> to the surface integral of <m>\operatorname{curl}\mathbf{F}</m> across any oriented surface bounded by <m>C</m> (here, the planar elliptical disk).
+        - text: The Divergence Theorem
+          why: The Divergence Theorem relates flux through a closed 2D surface to a triple integral over a 3D solid, not a line integral around a 1D curve.
+        - text: Green's Theorem in normal form
+          why: Green's Theorem applies only to 2D regions in the <m>xy</m>-plane, not curves tilted in 3D space.
+        - text: The single-variable Fundamental Theorem of Calculus
+          why: Single-variable FTC applies to intervals on the real line, not closed space curves.
+    why: Stokes' Theorem connects line integrals around 3D curves to surface integrals over capped surfaces.
+    authorId: quiz-ec3c8e18-fe6

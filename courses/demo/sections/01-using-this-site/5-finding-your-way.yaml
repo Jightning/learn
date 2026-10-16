@@ -59,13 +59,13 @@ blocks:
       <p>Add the site to your Home Screen. That is not a preference: on iOS, a browser tab's storage is deleted after seven days without a visit, and a review schedule routinely plans further ahead than that. A home-screen install is exempt, and it is also what lets the site open with no network.</p>
 
   - t: p
-    tier: depth
+    optional: true
     source: docs/deploy.md
     h: |-
       Two devices can be kept in step without an account existing anywhere: <code>npm run sync</code> runs a server on your own machine, prints an address and a token, and stops on its own after ten idle minutes. Your answers and courses move between your devices and nowhere else. There is no middle.
 
   - t: trap
-    tier: depth
+    optional: true
     source: docs/deploy.md
     label: The folder is the backup
     core: |-
@@ -78,8 +78,10 @@ quiz:
     concept: non-redundancy
     q: |-
       You are mid-paragraph and it uses a term you have forgotten. What does the site expect you to do?
-    a: |-
-      Read the margin card that is already beside that line. For the full entry, follow the link and use the return pill to come back.
+    response:
+      kind: self
+      model: |-
+        Read the margin card that is already beside that line. For the full entry, follow the link and use the return pill to come back.
     why: |-
       <p>The reference is placed next to the mention rather than collected at the end because a definition you have to go looking for is one you read the paragraph without.</p>
     verified: 2026-09-06
@@ -88,8 +90,10 @@ quiz:
     concept: non-redundancy
     q: |-
       You remember reading a table of something, but not which section it was in. The index has two bands, Ideas and Kinds. Which one is built to answer that, and why is the other one not?
-    a: |-
-      Kinds. A category groups things by what kind they are regardless of where they sit, so it does not need you to remember the position. Ideas is an index of <em>mentions</em>: it answers "where else is this idea talked about", which still starts from knowing which idea you want.
+    response:
+      kind: self
+      model: |-
+        Kinds. A category groups things by what kind they are regardless of where they sit, so it does not need you to remember the position. Ideas is an index of <em>mentions</em>: it answers "where else is this idea talked about", which still starts from knowing which idea you want.
     why: |-
       <p>"Search" is the tempting answer and it works only if you can recall a word that was actually in the table. The point of a category is that it is reachable when the thing you have retained is the <em>kind</em> rather than the wording or the place.</p>
     verified: 2026-09-11
@@ -98,8 +102,10 @@ quiz:
     concept: completeness
     q: |-
       Why does reading on an iPhone specifically call for adding the site to the Home Screen?
-    a: |-
-      Because iOS deletes a tab's stored data after seven days without a visit, and review intervals are routinely longer than that. Home-screen apps are exempt.
+    response:
+      kind: self
+      model: |-
+        Because iOS deletes a tab's stored data after seven days without a visit, and review intervals are routinely longer than that. Home-screen apps are exempt.
     why: |-
       <p>It is the one platform rule that can silently destroy a schedule, and it does so precisely when the schedule is working. Long intervals are the goal, and long intervals are what trip the deletion.</p>
     verified: 2026-09-06
@@ -107,13 +113,15 @@ quiz:
   - type: Synthesis
     concept: confidence
     q: |-
-      <p>You read a course end to end in the Spine lane, answer every quiz item
+      <p>You study the complete required reading in Study mode, answer every quiz item
       on the first try. Your review queue
       stays empty the whole way. Six weeks later most of it is gone.</p>
       <p>Which part of the design let that happen, and what would you change
       about it? Say what your change would cost.</p>
-    a: |-
-      <p>A good answer names the mechanism: answered concepts enter Review, while reading alone creates no answer history. It then picks a side. Auto-enrolling every concept on first read buys retention and costs the reader a queue they did not ask for, full of items about things they already hold. The current design waits for an answer before scheduling.</p>
+    response:
+      kind: self
+      model: |-
+        <p>A good answer names the mechanism: answered concepts enter Review, while reading alone creates no answer history. It then picks a side. Auto-enrolling every concept on first read buys retention and costs the reader a queue they did not ask for, full of items about things they already hold. The current design waits for an answer before scheduling.</p>
     why: |-
       <p>There is no right answer here, and the trade-off is real rather than a
       teaching device. The site takes the second option on purpose. What is

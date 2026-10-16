@@ -1,0 +1,18 @@
+- id: concentration-dilution
+  term: Concentration after dilution
+  body: >-
+    <p>Solute amount is conserved when solvent is added; concentration is
+    solute amount divided by final volume.</p>
+  src: Generated
+- id: feedback-correction
+  term: Feedback and corrective action
+  body: >-
+    <p>A feedback process measures the difference from a target and uses that
+    difference to choose a change.</p>
+  src: Generated
+- id: association-causality
+  term: Association and causality
+  body: >-
+    <p>An observed relationship does not establish that changing one variable
+    caused a change in another.</p>
+  src: Generated

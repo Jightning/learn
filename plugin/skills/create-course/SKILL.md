@@ -24,7 +24,8 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" packet <id> --ids id1,id2 [--exp
 node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" issues <id> --report PATH
 node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" corrected <id> --report PATH
 node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" write <id>
-node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" pilot <id> --sub sN-M # first representative lesson only
+node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" preview <id> --sub sN-M # inspect assembled reading
+node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" pilot <id> --sub sN-M # format smoke check when needed
 node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" done <id> --all
 node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" reviewed <id> --all
 node "${CLAUDE_PLUGIN_ROOT}/scripts/author.mjs" finish <id>
@@ -52,6 +53,10 @@ alone accepts through `screen --changed` and `reviewed --all` after rechecking
 changed items and context. Acceptance requires a fresh screen or full packet
 for every current changed or affected item. The writer correction handoff does not include
 `finish`; reviewer validation is the next paired step.
+
+Target one complete writing pass from the teaching plan. Load shared rules once
+per writer context; read local prerequisite anchors and selected format recipes.
+Run a format smoke check for unfamiliar shapes, not a recurring model handoff.
 
 Size follows the learning need: one subject or a large course, without padding
 or omitted families. The planner owns scope and difficult judgment; the writer

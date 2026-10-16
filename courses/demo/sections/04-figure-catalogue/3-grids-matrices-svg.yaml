@@ -72,8 +72,10 @@ quiz:
     concept: tier
     q: |-
       You want a 4×4 map with two overlapping highlighted regions and an index in each cell. Which kind, and could a table do it?
-    a: |-
-      grid. A plain table has no concept of highlighted cell groups or a per-cell binary index, so it would need manual markup in every cell, which is what grid exists to avoid.
+    response:
+      kind: self
+      model: |-
+        grid. A plain table has no concept of highlighted cell groups or a per-cell binary index, so it would need manual markup in every cell, which is what grid exists to avoid.
     why: |-
       <p>grid takes the groups and the index as data and renders the decoration itself. The table block is for tabular values without that structure.</p>
     verified: 2026-09-02
@@ -82,8 +84,10 @@ quiz:
     concept: tier
     q: |-
       An author wants a bracketed 3×3 matrix of symbols. Reach for svg?
-    a: |-
-      No. That is exactly the matrix kind. svg is only for shapes none of the other figure kinds cover.
+    response:
+      kind: self
+      model: |-
+        No. That is exactly the matrix kind. svg is only for shapes none of the other figure kinds cover.
     why: |-
       <p>The escape hatch trades away theme-awareness, validation, and future maintainability. Using it for something a built-in already does is a strict loss.</p>
     verified: 2026-09-02

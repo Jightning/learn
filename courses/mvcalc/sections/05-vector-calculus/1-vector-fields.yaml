@@ -1,0 +1,142 @@
+title: Vector Fields
+blocks:
+  - t: p
+    h: <p>In single-variable calculus and our earlier work in multivariable calculus, functions usually produced single scalar outputs—such as temperature <m>T(x, y, z)</m>, elevation <m>h(x, y)</m>, or electric potential <m>V(x, y, z)</m>. In physical phenomena such as atmospheric wind patterns, ocean currents, and gravitational or electrostatic forces, each point in space is characterized not merely by a scalar magnitude, but by a magnitude and a direction. A mathematical model that assigns a vector to every point in a region of space is called a <strong>vector field</strong>.</p>
+    authorId: block-fe0fc3ff-5f8
+  - t: def
+    term: Vector Field in Two and Three Dimensions
+    source: OpenStax Calculus Volume 3, Section 6.1
+    sourceReview: sourced
+    core: A vector field on a domain in 2D or 3D space is a function that assigns a vector to each point in that domain.
+    introduces:
+      - obj-s5-1
+      - vector-field
+    objectives:
+      - obj-s5-1
+    family: family-vector-field-describe
+    h: <p>A <strong>vector field</strong> in <m>\mathbb{R}^2</m> is a function <m>\mathbf{F}</m> that associates with each point <m>(x, y)</m> in a domain <m>D \subset \mathbb{R}^2</m> a two-dimensional vector <m>\mathbf{F}(x, y) = \langle P(x, y), Q(x, y) \rangle = P(x, y)\mathbf{i} + Q(x, y)\mathbf{j}</m>, where <m>P</m> and <m>Q</m> are scalar-valued component functions. Similarly, a vector field in <m>\mathbb{R}^3</m> is a function <m>\mathbf{F}</m> assigning to each point <m>(x, y, z)</m> in <m>D \subset \mathbb{R}^3</m> a vector <m>\mathbf{F}(x, y, z) = \langle P(x, y, z), Q(x, y, z), R(x, y, z) \rangle = P\mathbf{i} + Q\mathbf{j} + R\mathbf{k}</m>. In graphical representations, the vector <m>\mathbf{F}(x_0, y_0)</m> is drawn as an arrow starting at the base point <m>(x_0, y_0)</m>.</p>
+    authorId: block-09905572-4aa
+  - t: math
+    label: Component Form of 2D and 3D Vector Fields
+    tex: \mathbf{F}(x, y) = P(x, y)\,\mathbf{i} + Q(x, y)\,\mathbf{j}, \qquad \mathbf{F}(x, y, z) = P(x, y, z)\,\mathbf{i} + Q(x, y, z)\,\mathbf{j} + R(x, y, z)\,\mathbf{k}
+    note: The components P, Q, and R are scalar functions of the spatial coordinates.
+    objectives:
+      - obj-s5-1
+    family: family-vector-field-describe
+    authorId: block-77bd5d10-2dd
+  - t: ex
+    title: Evaluating and Describing Radial and Rotational Vector Fields
+    objectives:
+      - obj-s5-1
+    family: family-vector-field-describe
+    h: <p>Examine and describe the qualitative behavior of two foundational planar vector fields:</p><p><strong>1. Radial field:</strong> Let <m>\mathbf{F}(x, y) = \langle x, y \rangle</m>. At any point <m>(x, y)</m>, the vector <m>\mathbf{F}(x, y)</m> is directed along the position vector <m>\mathbf{r} = \langle x, y \rangle</m>, pointing straight away from the origin with magnitude <m>\|\mathbf{F}(x, y)\| = \sqrt{x^2 + y^2} = r</m>. The field arrows point radially outward and grow longer as distance from the origin increases.</p><p><strong>2. Rotational field:</strong> Let <m>\mathbf{G}(x, y) = \langle -y, x \rangle</m>. The dot product with the radial position vector is <m>\mathbf{G}(x, y) \cdot \langle x, y \rangle = (-y)(x) + (x)(y) = 0</m>, proving that <m>\mathbf{G}(x, y)</m> is orthogonal to the radial line everywhere. Evaluating at specific points:</p><ul><li><m>\mathbf{G}(1, 0) = \langle 0, 1 \rangle</m> (points upward)</li><li><m>\mathbf{G}(0, 1) = \langle -1, 0 \rangle</m> (points leftward)</li><li><m>\mathbf{G}(-1, 0) = \langle 0, -1 \rangle</m> (points downward)</li><li><m>\mathbf{G}(0, -1) = \langle 1, 0 \rangle</m> (points rightward)</li></ul><p>These vectors circulate in a counterclockwise direction along concentric circles centered at the origin, with speed <m>\|\mathbf{G}(x, y)\| = \sqrt{(-y)^2 + x^2} = r</m> proportional to radius.</p>
+    authorId: block-977c7dd0-e28
+  - t: def
+    term: Gradient Vector Field and Potential Function
+    source: OpenStax Calculus Volume 3, Section 6.1
+    sourceReview: sourced
+    core: 'A vector field is a gradient field when it equals the gradient of a differentiable scalar potential function.'
+    introduces:
+      - gradient-field
+    objectives:
+      - obj-s5-1
+    family: family-gradient-field-check
+    h: <p>If <m>f</m> is a differentiable scalar function of two or three variables, its gradient defines a vector field <m>\mathbf{F} = \nabla f</m>. In two dimensions, <m>\nabla f(x, y) = \langle f_x(x, y), f_y(x, y) \rangle</m>, and in three dimensions, <m>\nabla f(x, y, z) = \langle f_x, f_y, f_z \rangle</m>. A vector field that can be expressed as the gradient of a scalar function is called a <strong>gradient vector field</strong>, and the function <m>f</m> is called a <strong>potential function</strong> for <m>\mathbf{F}</m>.</p>
+    authorId: block-53827ac7-976
+  - t: ex
+    title: Computing Gradient Fields and Checking Potentials
+    objectives:
+      - obj-s5-1
+    family: family-gradient-field-check
+    h: <p><strong>Problem:</strong> Find the gradient vector field for <m>f(x, y) = x^2 y - 3y^3</m>, and verify whether <m>g(x, y, z) = x^2 e^y + y z^3</m> is a potential function for <m>\mathbf{F}(x, y, z) = \langle 2x e^y, x^2 e^y + z^3, 3y z^2 \rangle</m>.</p><p><strong>Solution:</strong></p><p>1. Compute partial derivatives of <m>f(x, y)</m>:</p><p><m>f_x = \frac{\partial}{\partial x}(x^2 y - 3y^3) = 2xy</m>, and <m>f_y = \frac{\partial}{\partial y}(x^2 y - 3y^3) = x^2 - 9y^2</m>. Thus, the gradient vector field is <m>\nabla f(x, y) = \langle 2xy, x^2 - 9y^2 \rangle</m>.</p><p>2. To check whether <m>g</m> is a potential function for <m>\mathbf{F}</m>, compute <m>\nabla g</m>:</p><ul><li><m>g_x = \frac{\partial}{\partial x}(x^2 e^y + y z^3) = 2x e^y</m></li><li><m>g_y = \frac{\partial}{\partial y}(x^2 e^y + y z^3) = x^2 e^y + z^3</m></li><li><m>g_z = \frac{\partial}{\partial z}(x^2 e^y + y z^3) = 3y z^2</m></li></ul><p>Comparing components shows <m>\nabla g = \langle 2x e^y, x^2 e^y + z^3, 3y z^2 \rangle = \mathbf{F}</m>. Therefore, <m>g</m> is indeed a potential function for <m>\mathbf{F}</m>.</p>
+    authorId: block-37e9211b-408
+  - t: key
+    label: Geometric Properties of Gradient Vector Fields
+    source: OpenStax Calculus Volume 3, Section 6.1
+    sourceReview: sourced
+    core: Gradient vectors point in the direction of greatest scalar increase, have magnitude equal to that rate of change, and are orthogonal to level curves or surfaces.
+    objectives:
+      - obj-s5-1
+    family: family-gradient-field-check
+    h: <p>Gradient fields exhibit distinctive geometric structure directly tied to the level sets of their potential functions:</p>
+    items:
+      - 'Direction of maximum rate of increase: At every point, <m>\nabla f</m> points in the direction along which <m>f</m> increases most rapidly.'
+      - 'Magnitude represents steepness: The magnitude <m>\|\nabla f\|</m> equals the maximal directional derivative at that point.'
+      - 'Orthogonality to level sets: <m>\nabla f(x, y)</m> is perpendicular to the tangent line of the level curve <m>f(x, y) = c</m> at every point where <m>\nabla f \ne \mathbf{0}</m>. In 3D, <m>\nabla f(x, y, z)</m> is normal to the tangent plane of the level surface <m>f(x, y, z) = c</m>.'
+      - 'Uniqueness of potential: If <m>f</m> and <m>g</m> are potentials for the same field <m>\mathbf{F}</m> on a connected domain, then <m>f</m> and <m>g</m> differ only by a constant: <m>g(x, y) = f(x, y) + C</m>.'
+    ordered: true
+    authorId: block-86f0b857-fa7
+  - t: trap
+    label: Distinguishing Points from Field Vectors and Potential Uniqueness
+    source: OpenStax Calculus Volume 3, Section 6.1
+    sourceReview: sourced
+    core: 'A field vector is attached to its base point rather than pointing toward that position; potential functions are unique only up to an additive constant.'
+    objectives:
+      - obj-s5-1
+    family: family-vector-field-describe
+    h: <p>Do not confuse the base point <m>(x, y)</m> where a vector is evaluated with the terminal point of the vector. A vector <m>\mathbf{F}(x, y) = \langle u, v \rangle</m> has its tail at <m>(x, y)</m> and tip at <m>(x + u, y + v)</m>. Furthermore, not every vector field is a gradient field; whether a field admits a potential function requires specific derivative compatibility conditions that we will formalize in upcoming lessons.</p>
+    authorId: block-5972fb1f-0e9
+quiz:
+  - type: Identifying vector field behavior
+    concept: vector-field
+    objectives:
+      - obj-s5-1
+    family: family-vector-field-describe
+    q: For the rotational vector field <m>\mathbf{F}(x, y) = \langle -y, x \rangle</m>, what is the vector assigned to the point <m>(3, -4)</m>, and what is its magnitude?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\mathbf{F}(3, -4) = \langle 4, 3 \rangle</m> with magnitude <m>5</m>
+          why: Substituting <m>x = 3</m> and <m>y = -4</m> into <m>\mathbf{F}(x, y) = \langle -y, x \rangle</m> gives <m>\langle -(-4), 3 \rangle = \langle 4, 3 \rangle</m>. Its magnitude is <m>\sqrt{4^2 + 3^2} = \sqrt{25} = 5</m>.
+        - text: <m>\mathbf{F}(3, -4) = \langle -4, 3 \rangle</m> with magnitude <m>5</m>
+          why: 'Missed the negation of <m>y</m>: <m>-y = -(-4) = 4</m>, not <m>-4</m>.'
+        - text: <m>\mathbf{F}(3, -4) = \langle 3, -4 \rangle</m> with magnitude <m>5</m>
+          why: Swapped components incorrectly; this is the radial field <m>\langle x, y \rangle</m>, not the rotational field.
+        - text: <m>\mathbf{F}(3, -4) = \langle 4, -3 \rangle</m> with magnitude <m>5</m>
+          why: Negated both components instead of substituting into <m>\langle -y, x \rangle</m>.
+    why: Substituting <m>x = 3</m> and <m>y = -4</m> into <m>\langle -y, x \rangle</m> gives <m>\langle 4, 3 \rangle</m>, which has magnitude <m>\sqrt{4^2 + 3^2} = 5</m>.
+    authorId: quiz-7c5fdbed-3f2
+  - type: Computing a gradient field
+    concept: gradient-field
+    objectives:
+      - obj-s5-1
+    family: family-gradient-field-check
+    q: Find the gradient vector field <m>\mathbf{F} = \nabla f</m> for the potential function <m>f(x, y, z) = x^3 y^2 + 4y z^2</m>. What is the value of <m>\mathbf{F}(1, 2, -1)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\langle 12, 8, -16 \rangle</m>
+          why: The partial derivatives are <m>f_x = 3x^2 y^2</m>, <m>f_y = 2x^3 y + 4z^2</m>, and <m>f_z = 8yz</m>. Evaluating at <m>(1, 2, -1)</m> yields <m>f_x = 3(1)^2(2)^2 = 12</m>, <m>f_y = 2(1)^3(2) + 4(-1)^2 = 8</m>, and <m>f_z = 8(2)(-1) = -16</m>.
+        - text: <m>\langle 12, 4, -8 \rangle</m>
+          why: Omitted <m>4z^2</m> when differentiating with respect to <m>y</m>, or calculated <m>f_z</m> with an incorrect factor.
+        - text: <m>\langle 6, 8, -16 \rangle</m>
+          why: Miscalculated <m>f_x = 3(1)(2) = 6</m> instead of <m>3(1)^2(2)^2 = 12</m>.
+        - text: <m>\langle 12, 8, 16 \rangle</m>
+          why: Dropped the negative sign in <m>z = -1</m> for <m>f_z = 8(2)(-1) = -16</m>.
+    why: The gradient vector evaluates at <m>(1, 2, -1)</m> to <m>\langle 12, 8, -16 \rangle</m>.
+    authorId: quiz-6e47d45e-776
+  - type: Verifying a potential function
+    concept: gradient-field
+    objectives:
+      - obj-s5-1
+    family: family-gradient-field-check
+    q: Is <m>f(x, y) = x^2 \sin(y) + 3x</m> a potential function for the vector field <m>\mathbf{F}(x, y) = \langle 2x \sin(y) + 3, x^2 \cos(y) \rangle</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Yes, because <m>\nabla f(x, y) = \langle 2x \sin(y) + 3, x^2 \cos(y) \rangle = \mathbf{F}(x, y)</m>.
+          why: Taking partial derivatives gives <m>f_x = 2x\sin(y) + 3</m> and <m>f_y = x^2\cos(y)</m>, which matches both components of <m>\mathbf{F}</m> everywhere.
+        - text: No, because <m>f_y = -x^2 \cos(y)</m>.
+          why: The derivative of <m>\sin(y)</m> with respect to <m>y</m> is <m>+\cos(y)</m>, not <m>-\cos(y)</m>.
+        - text: No, because the linear term 3 in <m>f_x</m> does not belong to a potential function.
+          why: The derivative of <m>3x</m> with respect to <m>x</m> is 3, which correctly matches the first component.
+        - text: No, because potential functions must only depend on <m>x^2 + y^2</m>.
+          why: Potential functions can be any scalar function; they are not restricted to radial symmetry.
+    why: The gradient of <m>f(x, y)</m> exactly matches <m>\mathbf{F}(x, y)</m>.
+    authorId: quiz-19f57fc2-3af

@@ -148,6 +148,16 @@ function polynomialDegree(node) {
   return Math.max(...degrees);
 }
 
+// Normalize the exact identity e^u = exp(u) before symbolic comparison.
+function canonicalExponential(node) {
+  const mapped = node.map(child => canonicalExponential(child));
+  let base = mapped.args?.[0];
+  while (base?.isParenthesisNode) base = base.content;
+  if (mapped.isOperatorNode && mapped.fn === "pow" && base?.isSymbolNode && base.name === "e")
+    return parse(`exp(${mapped.args[1].toString()})`);
+  return mapped;
+}
+
 /* Credit requires symbolic evidence. A valid form that cannot match the key
  * is incorrect; syntax and infrastructure failures remain editable errors. */
 export function gradeFormula(response, value) {
@@ -159,12 +169,14 @@ export function gradeFormula(response, value) {
   if (actual.nodes.length !== expected.nodes.length)
     throw new Error(expected.nodes.length === 2 ? "Enter the whole equation, including the answer variable." : "Enter an expression without an equals sign.");
   const solveFor = primeName(response.solveFor || "", independent);
-  const a = expected.nodes.length === 2 ? equationExpression(expected, solveFor) : expected.nodes[0];
+  let a = expected.nodes.length === 2 ? equationExpression(expected, solveFor) : expected.nodes[0];
   let b;
   try { b = actual.nodes.length === 2 ? equationExpression(actual, solveFor) : actual.nodes[0]; }
   catch { return false; }
   if (a.toString() === b.toString()) return true;
   if (expected.guards.size !== actual.guards.size || [...expected.guards].some(g => !actual.guards.has(g))) return false;
+  a = canonicalExponential(a);
+  b = canonicalExponential(b);
   const source = `(${a.toString()}) - (${b.toString()})`;
   const difference = simplify(source, {}, { context: simplify.realContext });
   if (difference.isConstantNode && difference.value === 0) return true;

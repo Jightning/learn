@@ -4,13 +4,17 @@
  * in the reading column, not about how it is typeset. */
 
 .mathblk{
-  margin:var(--sp-3) 0;
-  padding:0;
+  box-sizing:border-box;max-width:100%;min-width:0;
+  margin:var(--sp-2) 0;padding:var(--panel-padding);
+  border:1px solid var(--rule);border-radius:var(--panel-radius);background:var(--surface);
   overflow-x:auto;            /* a wide equation scrolls rather than the page */
   overflow-y:hidden;
 }
 .mathblk .katex-display{margin:0}
 .mathblk .blabel{margin-bottom:9px}
+.equation{display:block;max-width:100%;overflow-x:auto;margin:1rem 0;
+  padding:.35rem 0 .35rem 1rem;border-left:2px solid var(--panel-accent);
+  font-size:1.08rem}
 .mathnote{
   display:block;margin-top:9px;
   font-size:.82rem;color:var(--ink-3);max-width:var(--measure);

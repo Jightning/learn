@@ -1,0 +1,108 @@
+title: Partial Derivatives
+blocks:
+  - t: p
+    h: '<p>To measure rates of change for a surface <m>z = f(x, y)</m>, single-variable differentiation alone is insufficient because an input can vary in infinitely many directions. The foundational strategy is to isolate one coordinate axis at a time: we hold all other independent variables constant and differentiate with respect to a single variable. Geometrically, fixing <m>y = b</m> produces a single-variable trace curve lying in the vertical plane <m>y = b</m>; its tangent slope at <m>x = a</m> is precisely the partial derivative of <m>f</m> with respect to <m>x</m>.</p>'
+    authorId: block-8eb71878-142
+  - t: def
+    term: First Partial Derivatives
+    source: OpenStax Calculus Volume 3, Section 4.3
+    sourceReview: sourced
+    core: The partial derivative of <m>f(x, y)</m> with respect to <m>x</m> is computed by differentiating with respect to <m>x</m> while treating <m>y</m> as a constant; with respect to <m>y</m>, <m>x</m> is treated as a constant.
+    introduces:
+      - obj-s3-3
+      - partial-derivative
+    objectives:
+      - obj-s3-3
+    family: family-partial-compute
+    h: '<p>The first-order partial derivatives of <m>z = f(x, y)</m> are defined by the single-variable difference quotients: <m>f_x(x, y) = \frac{\partial f}{\partial x} = \lim_{h \to 0} \frac{f(x + h, y) - f(x, y)}{h}</m> and <m>f_y(x, y) = \frac{\partial f}{\partial y} = \lim_{h \to 0} \frac{f(x, y + h) - f(x, y)}{h}</m>. In practice, all standard differentiation tools—the power, product, quotient, and chain rules—apply directly, treating every unvaried variable as a fixed constant. For functions of three or more variables <m>w = f(x, y, z)</m>, each partial derivative <m>f_x</m>, <m>f_y</m>, and <m>f_z</m> is computed by holding the remaining two variables fixed.</p>'
+    authorId: block-be2e465a-a11
+  - t: math
+    label: Limit Definitions of First Partial Derivatives
+    tex: \frac{\partial f}{\partial x}(a, b) = \lim_{h \to 0} \frac{f(a + h, b) - f(a, b)}{h}, \qquad \frac{\partial f}{\partial y}(a, b) = \lim_{h \to 0} \frac{f(a, b + h) - f(a, b)}{h}
+    note: Each partial derivative represents the slope of the tangent line to a cross-sectional trace on the surface.
+    objectives:
+      - obj-s3-3
+    family: family-partial-compute
+    authorId: block-729f4375-738
+  - t: ex
+    title: Computing First Partial Derivatives of Three Variables
+    objectives:
+      - obj-s3-3
+    family: family-partial-compute
+    h: '<p>Find all first partial derivatives of <m>f(x, y, z) = x^2 y^3 \cos(2z) + \ln(x + y^2)</m>.</p><p>Differentiating with respect to <m>x</m> with <m>y</m> and <m>z</m> held constant yields: <m>\frac{\partial f}{\partial x} = 2x y^3 \cos(2z) + \frac{1}{x + y^2}</m>.</p><p>Differentiating with respect to <m>y</m> with <m>x</m> and <m>z</m> held constant yields: <m>\frac{\partial f}{\partial y} = 3x^2 y^2 \cos(2z) + \frac{2y}{x + y^2}</m>.</p><p>Differentiating with respect to <m>z</m> with <m>x</m> and <m>y</m> held constant (noting that the second term <m>\ln(x + y^2)</m> contains no <m>z</m> and differentiates to 0) yields: <m>\frac{\partial f}{\partial z} = -2x^2 y^3 \sin(2z)</m>.</p>'
+    authorId: block-5969a9ea-688
+  - t: def
+    term: Higher-Order Partial Derivatives and Clairaut's Theorem
+    source: OpenStax Calculus Volume 3, Section 4.3
+    sourceReview: sourced
+    core: Clairaut’s theorem states that if the mixed second partial derivatives <m>f_{xy}</m> and <m>f_{yx}</m> are continuous on an open disk, then <m>f_{xy} = f_{yx}</m>.
+    introduces:
+      - higher-order-partials
+    objectives:
+      - obj-s3-3
+    family: family-higher-partials-clairaut
+    h: '<p>Because first partials <m>f_x</m> and <m>f_y</m> are themselves multivariable functions, they can be differentiated again to produce four second-order partial derivatives: <m>f_{xx} = \frac{\partial^2 f}{\partial x^2}</m>, <m>f_{yy} = \frac{\partial^2 f}{\partial y^2}</m>, and the mixed partials <m>f_{xy} = (f_x)_y = \frac{\partial^2 f}{\partial y \partial x}</m> and <m>f_{yx} = (f_y)_x = \frac{\partial^2 f}{\partial x \partial y}</m>. Under Clairaut’s theorem (Schwarz’s theorem), if <m>f_{xy}</m> and <m>f_{yx}</m> are continuous on an open disk containing <m>(a, b)</m>, the order of differentiation does not affect the result: <m>f_{xy}(a, b) = f_{yx}(a, b)</m>.</p>'
+    authorId: block-9d1ebb84-88b
+  - t: ex
+    title: Verifying That a Function Satisfies Laplace's Equation
+    objectives:
+      - obj-s3-3
+    family: family-pde-verify
+    h: '<p>A function <m>u(x, y)</m> that satisfies Laplace’s equation <m>u_{xx} + u_{yy} = 0</m> is called harmonic. Show that <m>u(x, y) = e^x \sin y</m> is harmonic on <m>\mathbb{R}^2</m>.</p><p>First compute the partial derivatives with respect to <m>x</m>: <m>u_x = e^x \sin y</m> and <m>u_{xx} = e^x \sin y</m>.</p><p>Next compute the partial derivatives with respect to <m>y</m>: <m>u_y = e^x \cos y</m> and <m>u_{yy} = -e^x \sin y</m>.</p><p>Adding the two unmixed second partials gives: <m>u_{xx} + u_{yy} = e^x \sin y + (-e^x \sin y) = 0</m>. Therefore, <m>u(x, y)</m> satisfies Laplace’s equation everywhere on <m>\mathbb{R}^2</m>.</p>'
+    authorId: block-c75e8131-866
+  - t: trap
+    label: Notation Sequence for Mixed Partials
+    source: OpenStax Calculus Volume 3, Section 4.3
+    sourceReview: sourced
+    core: In subscript notation <m>f_{xy}</m> differentiate with respect to <m>x</m> first and <m>y</m> second; in Leibniz notation <m>\frac{\partial^2 f}{\partial y \partial x}</m> the operators evaluate right-to-left.
+    objectives:
+      - obj-s3-3
+    family: family-higher-partials-clairaut
+    h: '<p>Beware of the opposite reading order between subscript and fraction notations. In subscript form <m>f_{xy} = (f_x)_y</m>, differentiation progresses left to right: first <m>x</m>, then <m>y</m>. In Leibniz form <m>\frac{\partial^2 f}{\partial y \partial x} = \frac{\partial}{\partial y}\left(\frac{\partial f}{\partial x}\right)</m>, operations proceed from right to left in the denominator: first <m>x</m>, then <m>y</m>. Although Clairaut’s theorem guarantees their numerical equality whenever the mixed partials are continuous, tracking operator order is essential in advanced multivariable analysis.</p>'
+    authorId: block-95310e7e-ec9
+quiz:
+  - type: First partial derivative evaluation
+    concept: partial-derivative
+    objectives:
+      - obj-s3-3
+    family: family-partial-compute
+    q: If <m>f(x, y) = x^3 y^2 - 4x y + 2y^3</m>, what is the value of <m>f_x(2, 3)</m>?
+    verified: true
+    response:
+      kind: number
+      value: 96
+    why: Differentiating with respect to <m>x</m> holding <m>y</m> constant gives <m>f_x(x, y) = 3x^2 y^2 - 4y</m>. Evaluating at <m>(2, 3)</m> yields <m>3(2^2)(3^2) - 4(3) = 3(4)(9) - 12 = 108 - 12 = 96</m>.
+    authorId: quiz-af7cca08-435
+  - type: Mixed partial derivatives with Clairaut
+    concept: higher-order-partials
+    objectives:
+      - obj-s3-3
+    family: family-higher-partials-clairaut
+    q: For the function <m>f(x, y) = x^4 e^{3y} + \cos(xy)</m>, which condition guarantees that <m>f_{xy} = f_{yx}</m> across <m>\mathbb{R}^2</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Both mixed second partial derivatives <m>f_{xy}</m> and <m>f_{yx}</m> are continuous everywhere on <m>\mathbb{R}^2</m>.
+          why: Clairaut’s theorem guarantees that <m>f_{xy} = f_{yx}</m> wherever the mixed second partial derivatives exist and are continuous on an open neighborhood. Since polynomials, exponentials, and trigonometric functions are infinitely differentiable, the mixed partials are continuous everywhere.
+        - text: The function satisfies <m>f(x, y) = f(y, x)</m> symmetrically.
+          why: Symmetry of the function is not required; Clairaut’s theorem requires continuity of the mixed partial derivatives.
+        - text: The first partial derivatives <m>f_x</m> and <m>f_y</m> both equal zero.
+          why: Vanishing first partials define critical points, which are unrelated to Clairaut’s equality of mixed partials.
+        - text: The mixed partials are identically zero for all multivariable functions.
+          why: Mixed partial derivatives are generally non-zero functions; they are merely equal to one another when continuous.
+    why: Clairaut’s theorem guarantees equality of mixed partials whenever they are continuous on an open disk.
+    authorId: quiz-b6f23ae7-7aa
+  - type: PDE coefficient determination
+    concept: higher-order-partials
+    objectives:
+      - obj-s3-3
+    family: family-pde-verify
+    q: The one-dimensional heat equation is <m>u_t = 2 u_{xx}</m>. If <m>u(x, t) = e^{-a t} \sin(3x)</m> satisfies this equation, what is the value of the positive constant <m>a</m>?
+    verified: true
+    response:
+      kind: number
+      value: 18
+    why: Differentiating gives <m>u_t = -a e^{-a t} \sin(3x)</m>, <m>u_x = 3 e^{-a t} \cos(3x)</m>, and <m>u_{xx} = -9 e^{-a t} \sin(3x)</m>. Substituting into <m>u_t = 2 u_{xx}</m> gives <m>-a e^{-a t} \sin(3x) = 2(-9 e^{-a t} \sin(3x)) = -18 e^{-a t} \sin(3x)</m>, so <m>a = 18</m>.
+    authorId: quiz-e9208217-e88

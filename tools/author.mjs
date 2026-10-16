@@ -8,12 +8,15 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import * as YAML from "js-yaml";
 import { loadContext, selectContext, shapeNeeds, estimateTokens } from "./lib/author-context.mjs";
+import { readingPreview } from "./lib/author-reading.mjs";
+import { numberFigures } from "../src/lib/figures.js";
 import { readPlan, buildPacket, packetText, planCoverage, fileHash, planSignature, indexPlan, fingerprint } from "./lib/author-packets.mjs";
 import { indexSources, readUnit } from "./lib/source-catalog.mjs";
 import { loadWorkflow, flowState } from "./lib/author-flow.mjs";
 import { digest } from "./lib/digest.mjs";
 import { parseFile, loadCourse } from "./lib/load.mjs";
 import { readReader } from "./lib/reader.mjs";
+import { captureAssessmentRequirements, preserveAssessmentRequirements } from "./lib/assessment-requirements.mjs";
 import { roots as resolveRoots, list, index, outline, loadMap, mapPath } from "./lib/sources.mjs";
 import { ENGINE, WORKSPACE, COURSES, STATE, DOCS, TEMPLATE } from "./lib/paths.mjs";
 import { note } from "./author-log.mjs";
@@ -28,7 +31,7 @@ const READER = process.env.AUTHOR_READER || join(COURSES, "_reader.yaml");
 
 /* ------------------------------------------------------------- arguments --*/
 const [cmd, id, ...rest] = process.argv.slice(2);
-const USAGE = "usage: author.mjs <begin|sources|index|screen|issues|corrected|packet|batch|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
+const USAGE = "usage: author.mjs <begin|sources|index|screen|issues|corrected|packet|batch|preview|write|rules|pilot|done|reviewed|finish|status|redo|reset|plan> <course-id> [args]";
 const say = s => console.log(s);
 /* Every refusal is logged where the course is, so the record of a build does
    not depend on the agent keeping a readable transcript. */
@@ -166,7 +169,7 @@ function progress() {
   const planIndex = indexPlan(plan), freshness = new Map();
   const fresh = u => {
     if (!freshness.has(u.id)) freshness.set(u.id, !checks[key(u)] || (checks[key(u)].hash === fileHash(u.file) &&
-      checks[key(u)].plan === planSignature(plan, u.id, planIndex)));
+      checks[key(u)].plan === planSignature(plan, u.id, planIndex, d.subs)));
     return freshness.get(u.id);
   };
   const review = readReview(stateDir);
@@ -185,7 +188,7 @@ function progress() {
   };
 }
 
-const thin = u => !u.spine ? "no spine blocks" : !u.quiz ? "no quiz items" : null;
+const thin = u => !u.spine ? "no main-path blocks" : !u.quiz ? "no quiz items" : null;
 function recordLine(path, file, sources = null) {
   const kept = existsSync(path) ? readFileSync(path, "utf8").split("\n")
     .filter(l => l && l.split(":")[0].trim() !== file) : [];
@@ -232,7 +235,14 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
     return match ? { source: match[1], unit: match[2], ...(match[3] ? { lines: [+match[3], +match[4]] } : {}) } : { source: value };
   });
   const packet = buildPacket({ context, plan, index: plan.index ||= indexPlan(plan), subsection, phase, mode,
-    role: option("--role"), needs: options("--need"), item: option("--item"), issue: option("--issue"), sourceRefs: refs });
+    role: option("--role"), needs: options("--need"), item: option("--item"), issue: option("--issue"), sourceRefs: refs, subsections: p.d.subs,
+    assigned: flow.batch?.tasks?.includes(sub) ? flow.batch.tasks : sub ? [sub] : [] });
+  if (phase === "write" && flow.stage === "write" && !option("--item")) {
+    const missing = (packet.prerequisiteEvidence || []).filter(e => e.status === "planned" && !e.assigned);
+    if (missing.length) fail(`write prerequisite teaching first: ${missing.map(e => `${e.id} (${e.owner})`).join(", ")}; add substantive introduces anchors and run author index`);
+    if (packet.teaching && packet.warnings.some(w => /shared objective needs lesson-local/.test(w)))
+      fail("teaching plans need lesson-local families and sources before writing; resolve the packet mapping warnings");
+  }
   packet.workflow = { mode: flow.mode, handoff: flow.handoff, stage: flow.stage, role: flow.role,
     ...(flow.subsection ? { subsection: flow.subsection } : {}), action: flow.action };
   packet.catalog = join(stateDir, "sources/catalog.yaml");
@@ -242,7 +252,7 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
   }
   const record = flowRecords()[sub];
   const consolidated = readReview(stateDir);
-  if (phase === "write" && (consolidated?.status === "issues" || (record?.status === "correct" && record.plan === planSignature(plan, sub)))) {
+  if (phase === "write" && (consolidated?.status === "issues" || (record?.status === "correct" && record.plan === planSignature(plan, sub, undefined, p.d.subs)))) {
     const correctionPath = consolidated?.status === "issues" ? join(stateDir, "corrections.yaml") : record.corrections;
     const directives = parseFile(correctionPath) || {};
     packet.corrections = correctionPath;
@@ -270,9 +280,31 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
           ...(evidence.warning ? { warning: evidence.warning } : {}) });
       } else (packet.sources ||= []).push(evidence);
     }
-    catch (e) { packet.warnings.push(e.message); }
+    catch (e) {
+      if (phase === "write" && flow.stage === "write" && packet.teaching)
+        fail(`resolve lesson source evidence before writing: ${e.message}`);
+      packet.warnings.push(e.message);
+    }
   }
   if (phase === "plan") packet.profile = context.manifest.profiles?.[mode];
+  if (phase === "write" && !packet.corrections && packet.outline) {
+    // The course outline is shared, not copied into every lesson handoff.
+    const shared = { outline: packet.outline };
+    const sharedPath = join(stateDir, "writer-outline.yaml");
+    mkdirSync(stateDir, { recursive: true });
+    const sharedText = packetText(shared);
+    if (!existsSync(sharedPath) || readFileSync(sharedPath, "utf8") !== sharedText)
+      writeFileSync(sharedPath, sharedText);
+    packet.outline = { path: sharedPath };
+  }
+  const excerptPaths = [...new Set((packet.sources || []).map(s => s.excerpt).filter(Boolean))];
+  packet.contextSize = {
+    packet: est(packetText(packet)),
+    rules: (packet.rules || []).reduce((total, path) => total + est(readFileSync(path, "utf8")), 0),
+    sourceExcerpts: excerptPaths.reduce((total, path) => total + est(readFileSync(path, "utf8")), 0),
+    ...(packet.outline?.path ? { sharedOutline: est(readFileSync(packet.outline.path, "utf8")) } : {}),
+    unit: "estimated tokens; read shared files once per writer context, not a usage-limit measurement"
+  };
   const name = [phase, sub, option("--item")?.replace(":", "-")].filter(Boolean).join("-");
   const path = join(stateDir, "packets", `${name}.yaml`);
   mkdirSync(dirname(path), { recursive: true });
@@ -298,11 +330,15 @@ function catalogSources() {
   return indexSources(list(savedRoots()), join(stateDir, "sources"), { refresh: rest.includes("--refresh") });
 }
 
-function coverageSummary() {
-  const report = planCoverage(readPlan(courseDir), progress().d.subs);
+function coverageSummary(options = {}) {
+  const report = planCoverage(readPlan(courseDir), progress().d.subs, options);
+  preserveAssessmentRequirements(report, stateDir);
   say(`Plan coverage: ${report.percent == null ? "unavailable" : report.percent + "%"} (${report.total} required objectives). ${report.message}`);
   for (const row of report.rows.filter(r => !r.complete))
     say(`  ! ${row.id}: teaching ${row.teaching.length}, questions ${row.questions.length}, families ${row.assessed}/${row.families}`);
+  say(report.assessmentMessage);
+  for (const row of (report.requiredFamilies || []).filter(r => !r.complete))
+    say(`  ! ${row.id}: ${row.missing.join("; ")}`);
   return report;
 }
 
@@ -351,10 +387,10 @@ const commands = {
     const indexed = reviewIndex(courseDir, stateDir);
     const review = saveIssues(stateDir, indexed, parseFile(report));
     const affected = affectedItems(indexed, review.issues.flatMap(i => i.targets));
-    const records = flowRecords(), plan = readPlan(courseDir);
+    const records = flowRecords(), plan = readPlan(courseDir), subsections = digest(courseDir).subs;
     for (const sub of new Set(affected.map(e => e.sub).filter(Boolean))) {
-      const unit = digest(courseDir).subs.find(s => s.id === sub);
-      records[sub] = { status: "correct", hash: fileHash(unit.file), plan: planSignature(plan, sub),
+      const unit = subsections.find(s => s.id === sub);
+      records[sub] = { status: "correct", hash: fileHash(unit.file), plan: planSignature(plan, sub, undefined, subsections),
         corrections: join(stateDir, "corrections.yaml") };
     }
     mkdirSync(stateDir, { recursive: true }); writeFileSync(flowFile, packetText(records));
@@ -413,6 +449,7 @@ const commands = {
   /* The second call: the writing rules, once, and the first subsection. */
   write() {
     const p = progress();
+    captureAssessmentRequirements(readPlan(courseDir), stateDir);
     if (!p.courseDone) {
       const missing = [
         !existsSync(join(courseDir, "materials", "expectations.md")) && "materials/expectations.md",
@@ -522,6 +559,8 @@ const commands = {
       entrypoint: join(context.root, context.manifest.entrypoint),
       orchestration: join(context.root, context.manifest.orchestration),
       profile, ...(flow.batch ? { batch: flow.batch.id, members: flow.batch.members } : {}),
+      ...(flow.phase === "write" ? { shared_rules: [...new Set(tasks.flatMap(t => parseFile(t.packet)?.rules || []))],
+        context_instruction: "Read shared rules and outline once. Write assigned prerequisites before dependent lessons; read only required anchors and selected excerpts." } : {}),
       ...(reviewPackets.length ? { review_packets: reviewPackets, review_context: join(stateDir, "review-context.yaml") } : {}),
       ...(flow.stage === "migrate" ? { legacy: plan.legacy } : {}),
       ...(plan.hash ? { plan: { path: plan.path, hash: plan.hash } } : {}), tasks };
@@ -538,6 +577,25 @@ const commands = {
     const selected = selection(option("--phase", currentFlow(p).phase), options("--need").length ? options("--need") : inferred, flag("--full-spec"));
     say(`# Context ${context.version}\n${selected.text}`);
     for (const warning of selected.warnings) warn(warning);
+  },
+
+  preview() {
+    const sub = option("--sub");
+    if (!sub) fail("preview needs --sub sN-M; inspect one complete lesson at a time");
+    const { course, errors } = loadCourse(courseDir);
+    if (errors.length) fail(`preview cannot load course: ${errors.join("; ")}`);
+    const unit = course.sections.flatMap(section => section.subs).find(unit => unit.id === sub);
+    if (!unit) fail(`no subsection ${sub}`);
+    const figures = numberFigures(course);
+    const views = [{ lane: "apply", depth: "full" }, { lane: "spine", depth: "full" },
+      { lane: "all", depth: "full" }, { lane: "apply", depth: "notes" }, { lane: "apply", depth: "index" }]
+      .map(options => readingPreview(unit, { ...options, numberOf: b => figures.numOf(b) }));
+    const path = join(stateDir, `preview-${sub}.yaml`);
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(path, packetText({ subsection: sub, views }));
+    say(`Composition preview: ${path}`);
+    say("Uses the reader's lane, depth and HTML renderer. Inspect component interactions and final layout in the real reader.");
+    if (flag("--show")) say(packetText({ subsection: sub, views }));
   },
 
   pilot() {
@@ -582,7 +640,7 @@ const commands = {
       const catalogPath = join(stateDir, "sources/catalog.yaml");
       const sourcePaths = new Map((existsSync(catalogPath) ? parseFile(catalogPath)?.sources || [] : []).map(s => [s.id, s.path]));
       for (const u of p.d.subs) {
-        const file = relative(courseDir, u.file), signature = planSignature(plan, u.id, planIndex);
+        const file = relative(courseDir, u.file), signature = planSignature(plan, u.id, planIndex, p.d.subs);
         checks[file] = { hash: fileHash(u.file), plan: signature, status: "structural" };
         const lesson = planIndex.lessons.get(u.id);
         const refs = lesson?.sources || lesson?.sourceRefs || (lesson?.objectives || []).flatMap(id => planIndex.objectives.get(typeof id === "string" ? id : id.id)?.sources || []);
@@ -637,12 +695,12 @@ const commands = {
     recordLine(flag("--staging") ? stagedPath : mapPath(WORKSPACE, id), file, sources);
     const path = join(stateDir, "checks.yaml");
     const checks = existsSync(path) ? parseFile(path) || {} : {};
-    checks[file] = { hash: fileHash(u.file), plan: planSignature(readPlan(courseDir), u.id),
+    checks[file] = { hash: fileHash(u.file), plan: planSignature(readPlan(courseDir), u.id, undefined, p.d.subs),
       status: flag("--staging") ? "staged" : "structural" };
     writeFileSync(path, YAML.dump(checks));
     const records = flowRecords();
     if (records[sub]?.status === "correct" && !flag("--staging"))
-      records[sub] = { status: "recheck", hash: fileHash(u.file), plan: planSignature(readPlan(courseDir), sub) };
+      records[sub] = { status: "recheck", hash: fileHash(u.file), plan: planSignature(readPlan(courseDir), sub, undefined, p.d.subs) };
     else delete records[sub];
     writeFileSync(flowFile, YAML.dump(records));
     if (flag("--staging")) say(`${sub} staged; it is not complete until done passes without --staging.`);
@@ -657,7 +715,7 @@ const commands = {
       if (p.done.length !== p.d.subs.length) fail("run checked done for every subsection before reviewed --all");
       acceptReview(stateDir, reviewIndex(courseDir, stateDir), option("--report") ? parseFile(option("--report")) : null);
       const records = flowRecords(), plan = readPlan(courseDir), planIndex = indexPlan(plan);
-      for (const unit of p.d.subs) records[unit.id] = { status: "reviewed", hash: fileHash(unit.file), plan: planSignature(plan, unit.id, planIndex) };
+      for (const unit of p.d.subs) records[unit.id] = { status: "reviewed", hash: fileHash(unit.file), plan: planSignature(plan, unit.id, planIndex, p.d.subs) };
       mkdirSync(stateDir, { recursive: true }); writeFileSync(flowFile, YAML.dump(records));
       rmSync(marker("finish"), { force: true });
       say("All clean review outcomes recorded by the agent; not an independent quality certificate.");
@@ -670,7 +728,7 @@ const commands = {
     const corrections = flag("--corrections") ? join(courseDir, "materials", "review", `${sub}.yaml`) : null;
     if (corrections && !existsSync(corrections)) fail(`save correction directives at ${corrections} before recording them`);
     records[sub] = { status: corrections ? "correct" : "reviewed", hash: fileHash(unit.file),
-      plan: planSignature(readPlan(courseDir), sub), ...(corrections ? { corrections } : {}) };
+      plan: planSignature(readPlan(courseDir), sub, undefined, p.d.subs), ...(corrections ? { corrections } : {}) };
     mkdirSync(stateDir, { recursive: true });
     writeFileSync(flowFile, YAML.dump(records));
     rmSync(marker("finish"), { force: true });
@@ -699,7 +757,10 @@ const commands = {
     ].filter(Boolean);
     if (required.length) refuse(required.join("\n"));
     for (const u of p.d.subs.filter(thin)) warn(`${u.id} has ${thin(u)}; inspect the declared teaching decision`);
-    coverageSummary();
+    const hasRequirements = readPlan(courseDir).data.families?.some(f => f.assessmentRequired === true);
+    const catalog = hasRequirements ? catalogSources() : null;
+    const coverage = coverageSummary(catalog ? { verifySource: ref => readUnit(catalog, ref) } : {});
+    if (!coverage.assessmentReady) refuse("declared assessment requirements lack source, teaching or task evidence; resolve the listed families");
     const g = run("gen-materials", id);
     say(`materials: ${g.status === 0 ? "generated" : "FAILED\n" + (g.stderr || g.stdout).trim()}`);
     if (g.status !== 0) { saveDiagnostics(); refuse("materials generation failed"); }

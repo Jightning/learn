@@ -1,0 +1,131 @@
+title: Grouped panels
+blocks:
+  - t: p
+    h: >-
+      <span class="block-options-marker">Related content sits inside quiet, bounded surfaces. Panels make each
+      teaching object easy to locate, at the cost of a more segmented reading rhythm.</span>
+  - t: attempt
+    label: Try it
+    h: >-
+      <p>A displacement moves 3 units right and 4 units up. Predict its length, and explain your reasoning
+      before reading on.</p>
+  - t: p
+    h: >-
+      The components describe two perpendicular moves. The distance between the endpoints is the diagonal
+      connecting them, so we can connect vector length to a familiar right triangle.
+  - t: def
+    label: Definition
+    term: Vector magnitude
+    source: courses/demo/materials/visual-options.md
+    core: Magnitude measures the length of a vector, regardless of its direction.
+    h: >-
+      <p>For a vector with perpendicular components, the Pythagorean theorem gives its length.</p><p
+      class="equation"><m>\displaystyle \lVert\mathbf v\rVert=\sqrt{v_x^2+v_y^2}</m></p><p>The square
+      root applies to the entire sum. Length is nonnegative.</p>
+  - t: key
+    label: Key relation
+    source: courses/demo/materials/visual-options.md
+    core: Square each component before adding; take the square root of the sum.
+    h: >-
+      <p>Perpendicular components form the legs of a right triangle. This is why the sum uses squares rather
+      than the components themselves.</p>
+    items:
+      - Identify the perpendicular components.
+      - Add their squares.
+      - Take the nonnegative square root.
+    ordered: true
+  - t: math
+    label: Magnitude in two dimensions
+    tex: \lVert\mathbf v\rVert=\sqrt{v_x^2+v_y^2}
+    note: The two components must be measured in the same units.
+  - t: p
+    h: >-
+      The formula tells us how to calculate the length. Following one displacement through the calculation
+      shows how its component description and geometric length refer to the same object.
+  - t: ex
+    label: Worked example
+    title: From components to length
+    core: The displacement ⟨3, 4⟩ has length 5.
+    h: >-
+      <p>Start with <m>\mathbf v=\langle3,4\rangle</m>.</p><p class="equation"><m>\displaystyle
+      \lVert\mathbf v\rVert=\sqrt{3^2+4^2}=\sqrt{25}=5</m></p><p>The result measures the diagonal, not the
+      length of the two-part route along the axes.</p>
+  - t: trap
+    label: Common mistake
+    source: courses/demo/materials/visual-options.md
+    core: Adding the component lengths measures a different path.
+    h: >-
+      <p>Adding 3 and 4 gives 7: the distance along a horizontal leg and then a vertical leg. The direct
+      displacement has length 5.</p>
+  - t: note
+    label: Further context
+    core: Reversing a vector changes its direction but preserves its length.
+    h: <p>The components become −3 and −4. Squaring them still gives 9 and 16, so the magnitude remains 5.</p>
+  - t: list
+    label: Compare the quantities
+    core: Keep the route and the displacement distinct.
+    items:
+      - 'Horizontal component: 3 units.'
+      - 'Vertical component: 4 units.'
+      - 'Direct displacement: 5 units.'
+  - t: table
+    label: Table
+    core: The route and displacement measure different paths.
+    cap: Two paths connect the same endpoints.
+    head:
+      - Quantity
+      - Length
+      - What it measures
+    rows:
+      - - Along the two legs
+        - '7'
+        - Horizontal, then vertical
+      - - Direct displacement
+        - '5'
+        - Straight between endpoints
+  - t: code
+    label: Code
+    core: The calculation follows the same sequence in code.
+    lang: js
+    src: |-
+      const x = 3;
+      const y = 4;
+      const length = Math.sqrt(x * x + y * y); // 5
+  - t: figure
+    label: Figure
+    kind: flow
+    cap: The magnitude calculation proceeds from components to a nonnegative length.
+    spec:
+      steps:
+        - label: Components
+          note: 3 and 4
+        - label: Sum of squares
+          note: 9 + 16 = 25
+        - label: Square root
+          note: 5 units
+  - t: image
+    label: Image
+    src: assets/visual-vector.svg
+    alt: >-
+      A right triangle has horizontal leg 3, vertical leg 4, and diagonal 5. An arrow along the diagonal runs
+      from the origin to the opposite vertex.
+    cap: The diagonal is the vector; the two legs show its components.
+    width: 460
+  - t: slides
+    label: Slides
+    cap: Follow the same displacement from components to length.
+    frames:
+      - title: Resolve
+        text: <p>Separate the displacement into 3 horizontal units and 4 vertical units.</p>
+        image:
+          src: assets/visual-vector.svg
+          alt: A triangle connects the horizontal component 3 and vertical component 4 to the diagonal 5.
+      - title: Combine
+        text: '<p>Square and add the perpendicular components: <m>3^2+4^2=25</m>.</p>'
+      - title: Interpret
+        text: <p>The square root is 5. This is the direct displacement length; the two-leg route has length 7.</p>
+  - t: metric
+    core: The direct displacement has length 5 units.
+    value: <m>5</m> units
+    label: Direct displacement length
+    source: courses/demo/materials/visual-options.md

@@ -28,7 +28,7 @@ export async function testPracticeAndNotes(ctx, state) {
        const options = el.getBoundingClientRect();
        const content = document.querySelector(".review > section").getBoundingClientRect();
        return options.right >= head.right - 1 && options.top >= head.top &&
-         head.right > content.right + 30;
+         Math.abs(head.right - content.right) <= 1;
      }));
   ck(P("Review course ID stays close beneath the title"),
      await page.locator(".review-heading").evaluate(el => {
@@ -38,21 +38,13 @@ export async function testPracticeAndNotes(ctx, state) {
          Math.abs(scope.left - title.left) <= 1;
      }));
 
-  /* The page opens on its action, not on its settings.
-   *
-   * It used to open as a form — three dropdowns and a dead checkbox — in front
-   * of the activity with the largest effect on the site, when all four controls
-   * already had the right default. Start is now primary; the controls are one
-   * disclosure away. */
-  ck(P("practice opens on Start, not on a form"),
-     await page.locator("#p-start").isVisible());
-  ck(P("the controls are not in the way"),
-     await page.locator(".pcfg-row").isVisible() === false);
+  /* Start remains primary and all set controls stay visible in one card. */
+  ck(P("practice opens on Start"), await page.locator("#p-start").isVisible());
+  ck(P("the set controls are visible together"),
+     await page.getByRole("group", { name: "Practice settings" }).isVisible());
   /* A control nothing reads is a promise the page does not keep. */
   ck(P("no dead controls remain"), await page.locator("#p-timed").count() === 0);
 
-  const pcfg = page.locator(".pcfg > summary");
-  if (await pcfg.count()) { await pcfg.click(); await page.waitForTimeout(200); }
   ck(P("Mixed Practice chooses a subsection range"),
      await page.locator("#p-from").count() === 1 && await page.locator("#p-to").count() === 1);
   ck(P("Mixed Practice has no drill source or confidence mode"),
@@ -60,7 +52,7 @@ export async function testPracticeAndNotes(ctx, state) {
   if (await page.locator("#p-from option").count() > 1) {
     await page.selectOption("#p-from", { index: 1 });
     ck(P("the selected range is reflected in the available pool"),
-       /available/.test(await page.locator(".pinfo").innerText()));
+       /^\d+$/.test(await page.locator(".practice-settings .practice-stats strong").innerText()));
   }
 
   await page.locator("#p-start").click(); await page.waitForTimeout(400);

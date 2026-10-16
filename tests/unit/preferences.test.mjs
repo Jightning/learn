@@ -25,7 +25,7 @@ const of = k => mine().find(p => p.k === k);
 /* ------------------------------------------------------------ what travels --*/
 check("a course colour is a synced setting", isPref("hue:ma26600"));
 check("so are the shelf's order and its dismissals",
-      isPref("order:v1") && isPref("hidden:v1"));
+      isPref("order:v1") && isPref("hidden:v1") && isPref("added:v1"));
 check("written notes and blank saved markers are synced per anchor",
       isPref("note:ma26600:s1-2") && isPref("note:ma26600:s1-2#3"));
 check("an answer attempt that happens to use the note prefix stays local",

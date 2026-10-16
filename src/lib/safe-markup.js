@@ -22,6 +22,8 @@ const CSS = new Set((
   "vertical-align border-bottom-width stroke background color"
 ).split(" "));
 const CSS_VALUE = /^(?:[-+]?(?:\d+\.?\d*|\.\d+)(?:px|em|rem|%|ex)?|var\(--(?:hi|lo|dc|hz)\)|currentColor|transparent)$/i;
+/* Preserve grid figures' integer column counts, with a bounded layout size. */
+const GRID_COLUMNS = /^repeat\((?:[1-9]|[1-5]\d|6[0-5]),\s*auto\)$/;
 /* SVG data URLs are allowed only in an img src. Browsers render SVG images in
  * image mode, where scripts and interactive content cannot run. */
 const IMAGE = /^data:image\/(?:png|jpeg|gif|webp|svg\+xml);base64,[a-z0-9+/=]+$/i;
@@ -47,6 +49,7 @@ function safeStyle(value) {
     if (at < 0) return "";
     const key = part.slice(0, at).trim().toLowerCase();
     const val = part.slice(at + 1).trim();
+    if (key === "grid-template-columns" && GRID_COLUMNS.test(val)) return `${key}:${val}`;
     return CSS.has(key) && CSS_VALUE.test(val) ? `${key}:${val}` : "";
   }).filter(Boolean).join(";");
 }

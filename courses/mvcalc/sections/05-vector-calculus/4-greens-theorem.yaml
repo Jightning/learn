@@ -1,0 +1,130 @@
+title: Green's Theorem
+blocks:
+  - t: p
+    h: |
+      <p>The Fundamental Theorem of Calculus links the derivative of a function on an interval to values at its two endpoints. In multivariable calculus, <strong>Green's Theorem</strong> establishes the two-dimensional analogue of this principle: it connects the macroscopic circulation or flux of a vector field along the boundary curve of a planar region to the microscopic circulation or expansion of the field across the entire interior domain.</p>
+    authorId: block-85929901-edf
+  - t: def
+    term: Green's Theorem in Tangential and Normal Forms
+    source: OpenStax Calculus Volume 3, Section 6.4
+    sourceReview: sourced
+    core: Green's theorem equates a line integral around a positively oriented simple closed curve to a double integral over the enclosed planar region in both circulation and flux forms.
+    introduces:
+      - obj-s5-4
+      - greens-theorem
+    objectives:
+      - obj-s5-4
+    family: family-greens-circulation
+    notes: open
+    h: |
+      <p>Let <m>D</m> be an open bounded region in the plane whose boundary <m>\partial D = C</m> is a piecewise smooth, simple closed curve. Assume <m>C</m> is <strong>positively oriented</strong> (traversed counterclockwise, so the region <m>D</m> always remains to the left as one moves along <m>C</m>). If <m>\mathbf{F} = \langle P, Q \rangle</m> has continuous first partial derivatives on an open region containing <m>D</m>, then:</p><ul><li><strong>Circulation (tangential) form:</strong> <m>\oint_C P\,dx + Q\,dy = \iint_D \left(\frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y}\right) dA</m></li><li><strong>Flux (normal) form:</strong> <m>\oint_C \mathbf{F} \cdot \mathbf{n}\,ds = \oint_C P\,dy - Q\,dx = \iint_D \left(\frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y}\right) dA</m></li></ul>
+    authorId: block-4f05c96e-c3e
+  - t: math
+    label: Circulation and Flux Forms of Green's Theorem
+    tex: \oint_C P\,dx + Q\,dy = \iint_D \left(\frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y}\right) dA, \qquad \oint_C \mathbf{F} \cdot \mathbf{n}\,ds = \iint_D \left(\frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y}\right) dA
+    note: Both forms require a positively oriented simple closed curve bounding the region of integration.
+    objectives:
+      - obj-s5-4
+    family: family-greens-circulation
+    authorId: block-9e7f7cc6-a62
+  - t: ex
+    title: Evaluating a Boundary Line Integral with Green's Theorem
+    objectives:
+      - obj-s5-4
+    family: family-greens-circulation
+    h: |
+      <p><strong>Problem:</strong> Evaluate <m>\oint_C (y^2 + e^x)\,dx + (x^2 + \sin y)\,dy</m>, where <m>C</m> is the triangle with vertices <m>(0, 0)</m>, <m>(2, 0)</m>, and <m>(0, 2)</m>, oriented counterclockwise.</p><p><strong>Solution:</strong></p><p>1. Identify components and partial derivatives:</p><p><m>P(x, y) = y^2 + e^x \implies \frac{\partial P}{\partial y} = 2y</m></p><p><m>Q(x, y) = x^2 + \sin y \implies \frac{\partial Q}{\partial x} = 2x</m></p><p>2. The integrand in the double integral is <m>Q_x - P_y = 2x - 2y</m>.</p><p>3. Set up the double integral over the triangular region <m>D</m>, where <m>0 \le x \le 2</m> and <m>0 \le y \le 2 - x</m>:</p><p><m>\iint_D (2x - 2y)\,dA = \int_0^2 \int_0^{2-x} (2x - 2y)\,dy\,dx = \int_0^2 \left[ 2xy - y^2 \right]_0^{2-x}\,dx</m></p><p><m>= \int_0^2 \left( 2x(2-x) - (2-x)^2 \right) dx = \int_0^2 \left( 4x - 2x^2 - (4 - 4x + x^2) \right) dx</m></p><p><m>= \int_0^2 (-3x^2 + 8x - 4)\,dx = \left[ -x^3 + 4x^2 - 4x \right]_0^2 = -8 + 16 - 8 = 0</m>.</p>
+    authorId: block-2875812a-066
+  - t: ex
+    title: Computing Outward Flux Across a Boundary
+    objectives:
+      - obj-s5-4
+    family: family-greens-flux
+    h: |
+      <p><strong>Problem:</strong> Calculate the outward flux <m>\oint_C \mathbf{F} \cdot \mathbf{n}\,ds</m> of <m>\mathbf{F}(x, y) = \langle 2x + y^3, x^2 + 3y \rangle</m> across the circle <m>C: x^2 + y^2 = 4</m> oriented counterclockwise.</p><p><strong>Solution:</strong></p><p>1. Identify components and compute divergence:</p><p><m>\frac{\partial P}{\partial x} = \frac{\partial}{\partial x}(2x + y^3) = 2, \qquad \frac{\partial Q}{\partial y} = \frac{\partial}{\partial y}(x^2 + 3y) = 3</m></p><p>2. Apply the flux form of Green's theorem:</p><p><m>\oint_C \mathbf{F} \cdot \mathbf{n}\,ds = \iint_D \left(\frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y}\right) dA = \iint_D (2 + 3)\,dA = 5 \iint_D dA = 5\,\text{Area}(D)</m></p><p>3. The region <m>D</m> is a disk of radius <m>R = 2</m>, so <m>\text{Area}(D) = \pi(2^2) = 4\pi</m>.</p><p>Thus the outward flux is <m>5(4\pi) = 20\pi</m>.</p>
+    authorId: block-af8c2608-1c8
+  - t: def
+    term: Planar Area by Line Integrals and Multiply Connected Regions
+    source: OpenStax Calculus Volume 3, Section 6.4
+    sourceReview: sourced
+    core: Planar area can be computed by a boundary line integral, and Green's theorem extends to regions with holes by orienting inner boundaries clockwise.
+    objectives:
+      - obj-s5-4
+    family: family-greens-area
+    h: |
+      <p>If <m>Q_x - P_y = 1</m>, Green's theorem provides a direct method to compute planar area using line integrals: <m>\text{Area}(D) = \iint_D 1\,dA = \oint_C x\,dy = -\oint_C y\,dx = \frac{1}{2}\oint_C (x\,dy - y\,dx)</m>. Furthermore, Green's theorem extends to regions with holes: if <m>D</m> has outer boundary <m>C_1</m> and inner hole boundaries <m>C_2, \dots, C_k</m>, the theorem holds provided the outer boundary is traversed counterclockwise and all inner boundaries are traversed clockwise, ensuring that the interior region is consistently on the left.</p>
+    authorId: block-ffb30c97-560
+  - t: ex
+    title: Area of an Ellipse Using Green's Formula
+    objectives:
+      - obj-s5-4
+    family: family-greens-area
+    h: |
+      <p><strong>Problem:</strong> Use the line integral formula <m>\text{Area}(D) = \frac{1}{2} \oint_C (x\,dy - y\,dx)</m> to determine the area enclosed by the ellipse <m>\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1</m>.</p><p><strong>Solution:</strong></p><p>1. Parametrize the ellipse counterclockwise: <m>x = a\cos(t)</m>, <m>y = b\sin(t)</m> for <m>0 \le t \le 2\pi</m>.</p><p>2. Differentials are <m>dx = -a\sin(t)\,dt</m> and <m>dy = b\cos(t)\,dt</m>.</p><p>3. Substitute into the integrand:</p><p><m>x\,dy - y\,dx = (a\cos t)(b\cos t\,dt) - (b\sin t)(-a\sin t\,dt) = ab(\cos^2 t + \sin^2 t)\,dt = ab\,dt</m></p><p>4. Integrate over <m>[0, 2\pi]</m>:</p><p><m>\text{Area} = \frac{1}{2} \int_0^{2\pi} ab\,dt = \frac{1}{2} (2\pi ab) = \pi ab</m>.</p>
+    authorId: block-9d764a42-019
+  - t: trap
+    label: Orientation Signs and Inner Boundary Traversal
+    source: OpenStax Calculus Volume 3, Section 6.4
+    sourceReview: sourced
+    core: Traversing a boundary clockwise reverses the sign of the line integral; inner boundaries of regions with holes must be oriented clockwise.
+    objectives:
+      - obj-s5-4
+    family: family-greens-circulation
+    h: |
+      <p>Always verify curve orientation before applying Green's theorem. Standard Green's theorem formulas assume positive orientation (counterclockwise). If a curve is traversed clockwise, the sign flips: <m>\oint_C P\,dx + Q\,dy = -\iint_D (Q_x - P_y)\,dA</m>. In regions with holes, remember that positive boundary orientation requires the interior to remain on the left, which directs the outer boundary counterclockwise and each internal hole boundary clockwise.</p>
+    authorId: block-4c9edff6-3e5
+quiz:
+  - type: Line integral via Green circulation theorem
+    concept: greens-theorem
+    objectives:
+      - obj-s5-4
+    family: family-greens-circulation
+    q: Use Green's theorem to evaluate the line integral <m>\oint_C (3y - e^x)\,dx + (7x + \sin y)\,dy</m>, where <m>C</m> is the circle <m>x^2 + y^2 = 9</m> oriented counterclockwise.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>36\pi</m>
+          why: By Green's theorem, <m>\oint_C P\,dx + Q\,dy = \iint_D (Q_x - P_y)\,dA</m>. Here <m>Q_x = 7</m> and <m>P_y = 3</m>, giving <m>Q_x - P_y = 4</m>. The double integral is <m>\iint_D 4\,dA = 4\,\text{Area}(D) = 4(\pi \cdot 3^2) = 36\pi</m>.
+        - text: <m>90\pi</m>
+          why: Added partial derivatives <m>7 + 3 = 10</m> instead of subtracting them.
+        - text: <m>-36\pi</m>
+          why: Subtracted in reverse order <m>P_y - Q_x = 3 - 7 = -4</m>.
+        - text: <m>12\pi</m>
+          why: Used the radius 3 instead of the area <m>9\pi</m>.
+    why: Green's theorem converts the line integral into <m>\iint_D 4\,dA = 36\pi</m>.
+    authorId: quiz-e91e9285-da2
+  - type: Outward flux via Green flux theorem
+    concept: greens-theorem
+    objectives:
+      - obj-s5-4
+    family: family-greens-flux
+    q: Compute the outward flux of <m>\mathbf{F}(x, y) = \langle 3x + y^2, 2y - x^2 \rangle</m> across the boundary of the rectangle <m>R = [0, 2] \times [0, 3]</m>.
+    verified: true
+    response:
+      kind: number
+      value: 30
+    why: By the normal (flux) form of Green's theorem, outward flux equals <m>\iint_R (P_x + Q_y)\,dA</m>. Differentiating gives <m>P_x = 3</m> and <m>Q_y = 2</m>, so <m>P_x + Q_y = 5</m>. The area of the rectangle is <m>2 \times 3 = 6</m>. Multiplying yields <m>5 \times 6 = 30</m>.
+    authorId: quiz-b1ba7386-dcc
+  - type: Computing area using Green theorem
+    concept: greens-theorem
+    objectives:
+      - obj-s5-4
+    family: family-greens-area
+    q: Using the line integral formula for area <m>\text{Area}(D) = \frac{1}{2} \oint_C (x\,dy - y\,dx)</m>, what is the area of an ellipse bounded by <m>x = 4\cos(t)</m>, <m>y = 3\sin(t)</m> for <m>0 \le t \le 2\pi</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>12\pi</m>
+          why: Using the parametric equations <m>x = 4\cos t</m> and <m>y = 3\sin t</m>, we have <m>dx = -4\sin t\,dt</m> and <m>dy = 3\cos t\,dt</m>. Then <m>x\,dy - y\,dx = (4\cos t)(3\cos t\,dt) - (3\sin t)(-4\sin t\,dt) = 12(\cos^2 t + \sin^2 t)\,dt = 12\,dt</m>. The area is <m>\frac{1}{2} \int_0^{2\pi} 12\,dt = \frac{1}{2}(24\pi) = 12\pi</m>.
+        - text: <m>24\pi</m>
+          why: Forgot the factor of <m>\frac{1}{2}</m> in the area formula.
+        - text: <m>7\pi</m>
+          why: Added the semi-axes <m>4 + 3</m> instead of multiplying them.
+        - text: <m>6\pi</m>
+          why: Divided by 4 instead of multiplying by <m>\frac{1}{2}</m>.
+    why: The line integral evaluates to <m>\frac{1}{2}(24\pi) = 12\pi</m>.
+    authorId: quiz-ded7318a-9e3

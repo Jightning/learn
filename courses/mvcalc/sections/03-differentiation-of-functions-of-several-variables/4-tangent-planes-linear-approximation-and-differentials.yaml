@@ -1,0 +1,133 @@
+title: Tangent Planes, Linear Approximation and Differentials
+blocks:
+  - t: p
+    h: '<p>In single-variable calculus, the tangent line to a differentiable curve provides the best local linear approximation near a point. In three-dimensional space, the graph of <m>z = f(x, y)</m> forms a curved surface. At a smooth point <m>(x_0, y_0, z_0)</m>, the tangent lines to cross-sectional traces in the <m>x</m>- and <m>y</m>-directions determine a unique plane that kisses the surface without cutting through it locally: the tangent plane. The tangent plane serves as the two-variable analogue of the tangent line, enabling linear approximation and differential error analysis.</p>'
+    authorId: block-878890d7-977
+  - t: def
+    term: Tangent Plane and Linearization
+    source: OpenStax Calculus Volume 3, Section 4.4
+    sourceReview: sourced
+    core: The tangent plane to the surface <m>z = f(x, y)</m> at <m>(x_0, y_0, z_0)</m> is <m>z - z_0 = f_x(x_0, y_0)(x - x_0) + f_y(x_0, y_0)(y - y_0)</m>, defining the linear approximation <m>L(x, y)</m>.
+    introduces:
+      - obj-s3-4
+      - tangent-plane
+    objectives:
+      - obj-s3-4
+    family: family-tangent-plane-graph
+    h: <p>Let <m>z = f(x, y)</m> be a function whose first partial derivatives exist and are continuous at <m>(x_0, y_0)</m>. The tangent plane to the surface at <m>P_0(x_0, y_0, z_0)</m> with <m>z_0 = f(x_0, y_0)</m> has normal vector <m>\mathbf{n} = \langle f_x(x_0, y_0), f_y(x_0, y_0), -1 \rangle</m>. Its equation is <m>z - z_0 = f_x(x_0, y_0)(x - x_0) + f_y(x_0, y_0)(y - y_0)</m>. Solving for <m>z</m> yields the linearization <m>L(x, y) = f(x_0, y_0) + f_x(x_0, y_0)(x - x_0) + f_y(x_0, y_0)(y - y_0)</m>, which satisfies <m>f(x, y) \approx L(x, y)</m> for inputs near <m>(x_0, y_0)</m>.</p>
+    authorId: block-79ab9307-34f
+  - t: math
+    label: Linearization and Tangent Plane Equation
+    tex: L(x, y) = f(x_0, y_0) + \frac{\partial f}{\partial x}(x_0, y_0)(x - x_0) + \frac{\partial f}{\partial y}(x_0, y_0)(y - y_0)
+    note: The linearization matches the function value and its two partial derivative slopes at the base point.
+    objectives:
+      - obj-s3-4
+    family: family-tangent-plane-graph
+    authorId: block-fadeb85e-10e
+  - t: ex
+    title: Finding a Tangent Plane and Estimating a Function Value
+    objectives:
+      - obj-s3-4
+    family: family-linear-approximation
+    h: '<p>Find the tangent plane to <m>z = \sqrt{36 - x^2 - y^2}</m> at <m>(4, 2)</m>, and use the linearization to approximate <m>f(4.02, 1.96)</m>.</p><p>First compute the base height: <m>z_0 = f(4, 2) = \sqrt{36 - 16 - 4} = \sqrt{16} = 4</m>.</p><p>Compute first partial derivatives: <m>f_x(x, y) = \frac{-x}{\sqrt{36 - x^2 - y^2}}</m> and <m>f_y(x, y) = \frac{-y}{\sqrt{36 - x^2 - y^2}}</m>. Evaluating at <m>(4, 2)</m> gives <m>f_x(4, 2) = \frac{-4}{4} = -1</m> and <m>f_y(4, 2) = \frac{-2}{4} = -\frac{1}{2}</m>.</p><p>The tangent plane equation is <m>z - 4 = -1(x - 4) - \frac{1}{2}(y - 2)</m>, giving linearization <m>L(x, y) = 4 - (x - 4) - \frac{1}{2}(y - 2)</m>. For <m>(4.02, 1.96)</m>, <m>\Delta x = 0.02</m> and <m>\Delta y = -0.04</m>, so <m>L(4.02, 1.96) = 4 - (0.02) - \frac{1}{2}(-0.04) = 4 - 0.02 + 0.02 = 4.00</m>.</p>'
+    authorId: block-f422ee8f-74d
+  - t: def
+    term: Differentiability and the Total Differential
+    source: OpenStax Calculus Volume 3, Section 4.4
+    sourceReview: sourced
+    core: A function <m>f(x, y)</m> is differentiable at <m>(x_0, y_0)</m> if the increment <m>\Delta z</m> is well-approximated by the linear change <m>dz = f_x\,dx + f_y\,dy</m> with error vanishing faster than distance.
+    introduces:
+      - differentiability
+    objectives:
+      - obj-s3-4
+    family: family-differentiability
+    h: <p>A function <m>z = f(x, y)</m> is differentiable at <m>(x_0, y_0)</m> if the actual change satisfies <m>\Delta z = f_x(x_0, y_0)\Delta x + f_y(x_0, y_0)\Delta y + \varepsilon_1 \Delta x + \varepsilon_2 \Delta y</m>, where <m>\varepsilon_1, \varepsilon_2 \to 0</m> as <m>(\Delta x, \Delta y) \to (0, 0)</m>. The differential (or total differential) is <m>dz = f_x(x, y)\,dx + f_y(x, y)\,dy</m>, where <m>dx = \Delta x</m> and <m>dy = \Delta y</m>. For small coordinate increments, <m>\Delta z \approx dz</m>, making the total differential the central tool for propagating measurement errors.</p>
+    authorId: block-2ffb9786-322
+  - t: key
+    label: Relations Between Partial Derivatives, Differentiability, and Continuity
+    source: OpenStax Calculus Volume 3, Section 4.4
+    sourceReview: sourced
+    core: Continuous partial derivatives imply differentiability, and differentiability implies continuity; merely having partial derivatives exist does not imply continuity.
+    objectives:
+      - obj-s3-4
+    family: family-differentiability
+    h: <p>The relationships among multivariable regularity conditions form a strict logical hierarchy:</p>
+    items:
+      - 'Sufficient condition for differentiability: If the partial derivatives <m>f_x</m> and <m>f_y</m> exist and are continuous on an open disk containing <m>(x_0, y_0)</m>, then <m>f</m> is guaranteed to be differentiable at <m>(x_0, y_0)</m>.'
+      - 'Differentiability implies continuity: If <m>f</m> is differentiable at <m>(x_0, y_0)</m>, then <m>f</m> is continuous at <m>(x_0, y_0)</m>.'
+      - 'Failure of converse: The mere existence of first partial derivatives <m>f_x</m> and <m>f_y</m> at a point does NOT imply that <m>f</m> is differentiable, nor does it even imply that <m>f</m> is continuous.'
+    ordered: true
+    authorId: block-e59b8276-c80
+  - t: ex
+    title: Estimating Measurement Error in Cylindrical Volume
+    objectives:
+      - obj-s3-4
+    family: family-linear-approximation
+    h: '<p>The volume of a right circular cylinder is <m>V = \pi r^2 h</m>. A cylinder is measured to have radius <m>r = 5\text{ cm}</m> and height <m>h = 20\text{ cm}</m>, each with a maximum measurement error of <m>\pm 0.1\text{ cm}</m>. Use differentials to estimate the maximum propagated error in the computed volume.</p><p>Compute the total differential of volume: <m>dV = \frac{\partial V}{\partial r} dr + \frac{\partial V}{\partial h} dh = 2\pi r h\,dr + \pi r^2\,dh</m>.</p><p>Substitute <m>r = 5</m>, <m>h = 20</m>, and <m>|dr| \le 0.1</m>, <m>|dh| \le 0.1</m>: <m>|dV| \le 2\pi(5)(20)(0.1) + \pi(5^2)(0.1) = 20\pi + 2.5\pi = 22.5\pi\text{ cm}^3 \approx 70.69\text{ cm}^3</m>.</p>'
+    authorId: block-1da13560-d73
+  - t: trap
+    label: Assuming Existing Partial Derivatives Guarantee Continuity
+    source: OpenStax Calculus Volume 3, Section 4.4
+    sourceReview: sourced
+    core: Unlike single-variable calculus, the existence of both partial derivatives <m>f_x</m> and <m>f_y</m> at a point does not guarantee continuity.
+    objectives:
+      - obj-s3-4
+    family: family-differentiability
+    h: <p>In single-variable calculus, existence of the derivative <m>f'(x_0)</m> guarantees that <m>f</m> is continuous at <m>x_0</m>. In multivariable calculus, having both <m>f_x(0, 0)</m> and <m>f_y(0, 0)</m> exist merely demonstrates that limits exist along the two coordinate axes. The function can be severely discontinuous along every diagonal approach <m>y = mx</m>. True differentiability requires that the tangent plane approximates the surface smoothly from all possible directions simultaneously.</p>
+    authorId: block-1c942525-8bc
+quiz:
+  - type: Tangent plane equation
+    concept: tangent-plane
+    objectives:
+      - obj-s3-4
+    family: family-tangent-plane-graph
+    q: What is the equation of the tangent plane to the surface <m>z = 3x^2 - y^2 + 5</m> at the point <m>(2, 1, 16)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>12x - 2y - z = 6</m>
+          why: Computing partial derivatives gives <m>f_x = 6x \implies f_x(2, 1) = 12</m> and <m>f_y = -2y \implies f_y(2, 1) = -2</m>. The tangent plane equation is <m>z - 16 = 12(x - 2) - 2(y - 1)</m>, which expands to <m>z - 16 = 12x - 24 - 2y + 2 \implies 12x - 2y - z = 6</m>.
+        - text: <m>6x - 2y - z = -6</m>
+          why: This uses <m>f_x = 3x</m> instead of differentiating <m>3x^2</m> to get <m>6x</m>.
+        - text: <m>12x + 2y - z = 10</m>
+          why: This incorrectly takes the derivative of <m>-y^2</m> as <m>+2y</m> instead of <m>-2y</m>.
+        - text: <m>12x - 2y + z = 38</m>
+          why: This moves <m>z</m> with the incorrect sign when writing the plane equation in standard linear form.
+    why: The tangent plane has normal <m>\langle f_x, f_y, -1 \rangle = \langle 12, -2, -1 \rangle</m> through <m>(2, 1, 16)</m>, simplifying to <m>12x - 2y - z = 6</m>.
+    authorId: quiz-b79ca51c-00b
+  - type: Linear approximation computation
+    concept: tangent-plane
+    objectives:
+      - obj-s3-4
+    family: family-linear-approximation
+    q: Using the linearization of <m>f(x, y) = x^2 + 3x y - y^2</m> at the point <m>(1, 2)</m>, what is the approximate value of <m>f(1.02, 1.98)</m>?
+    verified: true
+    response:
+      kind: number
+      value: 3.18
+      tolerance: 0.001
+    why: At <m>(1, 2)</m>, <m>f(1, 2) = 1 + 6 - 4 = 3</m>. The partial derivatives are <m>f_x = 2x + 3y \implies f_x(1, 2) = 8</m> and <m>f_y = 3x - 2y \implies f_y(1, 2) = -1</m>. With increments <m>\Delta x = 0.02</m> and <m>\Delta y = -0.02</m>, the linearization yields <m>L(1.02, 1.98) = 3 + 8(0.02) + (-1)(-0.02) = 3 + 0.16 + 0.02 = 3.18</m>.
+    authorId: quiz-10728d4f-bfe
+  - type: Multivariable differentiability conditions
+    concept: differentiability
+    objectives:
+      - obj-s3-4
+    family: family-differentiability
+    q: Which of the following statements is mathematically true for a function of two variables <m>f(x, y)</m> at a point <m>(a, b)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: If the partial derivatives <m>f_x</m> and <m>f_y</m> exist and are continuous on an open disk containing <m>(a, b)</m>, then <m>f</m> is differentiable at <m>(a, b)</m>.
+          why: Continuity of the first-order partial derivatives on a neighborhood is the fundamental sufficient condition guaranteeing differentiability at that point.
+        - text: If both partial derivatives <m>f_x(a, b)</m> and <m>f_y(a, b)</m> exist at <m>(a, b)</m>, then <m>f</m> is guaranteed to be continuous at <m>(a, b)</m>.
+          why: The existence of partial derivatives along coordinate axes alone does not even guarantee continuity.
+        - text: If <m>f(x, y)</m> is continuous at <m>(a, b)</m>, then <m>f</m> must be differentiable at <m>(a, b)</m>.
+          why: Continuous surfaces can feature sharp corners, cusps, or cone vertices where tangent planes do not exist.
+        - text: Differentiability at <m>(a, b)</m> does not imply continuity at <m>(a, b)</m>.
+          why: Multivariable differentiability strictly implies continuity.
+    why: Continuous first partial derivatives guarantee differentiability, which in turn guarantees continuity.
+    authorId: quiz-dcb1d152-f7e

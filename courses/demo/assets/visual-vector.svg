@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 260">
+  <rect width="460" height="260" fill="#f4f6f7"/>
+  <path d="M65 210H365V50Z" fill="#e3edf3" stroke="#526570" stroke-width="2"/>
+  <path d="M65 210L365 50M349 53L365 50L358 65" fill="none" stroke="#245d80" stroke-width="4"/>
+  <path d="M348 210V193H365" fill="none" stroke="#526570" stroke-width="2"/>
+  <g font-family="sans-serif" font-size="20" fill="#243742" text-anchor="middle">
+    <text x="210" y="242">3 units</text><text x="409" y="140">4 units</text>
+    <text x="194" y="112">5 units</text><text x="55" y="235">O</text>
+  </g>
+</svg>

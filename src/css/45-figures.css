@@ -3,21 +3,22 @@
 /* Keep the caption fixed while a wide drawing scrolls below it. The small
    edge fades appear only where content remains; they follow scroll position
    rather than painting a permanent dark stripe on the frame. */
-.figure{container-type:inline-size;margin:var(--sp-3) 0 var(--sp-4);border:1px solid var(--rule);border-radius:3px;
-  background:var(--surface);padding:15px 0;overflow:hidden}
+.figure{box-sizing:border-box;container-type:inline-size;max-width:100%;min-width:0;
+  margin:var(--sp-2) 0;border:1px solid var(--rule);border-radius:var(--panel-radius);
+  background:var(--surface);padding:var(--panel-padding);overflow:hidden}
 .figure-viewport{position:relative}
 .figure-viewport::before,.figure-viewport::after{content:"";position:absolute;z-index:1;
   top:0;bottom:0;width:24px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .figure-viewport::before{left:0;background:linear-gradient(to right,var(--surface),transparent)}
 .figure-viewport::after{right:0;background:linear-gradient(to left,var(--surface),transparent)}
 .figure-viewport.has-left::before,.figure-viewport.has-right::after{opacity:1}
-.figure-scroll{overflow-x:auto;padding:0 16px 8px}
+.figure-scroll{overflow-x:auto;padding:0 0 8px}
 /* A caption is a sentence — it describes the figure — so it is read, not
    scanned, and it is not a label however much it looks like one. */
 /* A caption describes; the number beside it identifies. Only the number keeps
    the mono, via .fnum. */
 .figure .fcap{font-family:var(--sans);font-size:var(--fs-small);
-  color:var(--ink-3);margin:0 16px 11px;display:block}
+  color:var(--ink-3);margin:0 0 11px;display:block}
 svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
 .fx-t{font-family:var(--mono);fill:var(--ink-2)}
 .fx-nl{font-size:11px;fill:var(--ink);font-weight:600}
@@ -78,7 +79,6 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
     display:flex;align-items:stretch;gap:1.5rem;
     padding-bottom:4px;
   }
-  .fx-flow.is-row::after{content:"";flex:0 0 16px;margin-left:-1.5rem}
   /* A step's floor is a measure, not a token width. `flex:1 1 0` alone divides
      whatever the column has by the number of steps, and a note is a sentence:
      four of them across a 566px reading column came out at seventeen
@@ -88,8 +88,7 @@ svg.fx{display:block;max-width:100%;height:auto;margin:0 auto}
      shrinking and the figure frame scrolls, which is the same trade the graph
      kind already makes rather than shrink to unreadable. */
   .fx-flow.is-row .fx-step{
-    flex:1 1 0;min-width:10.5rem;padding:.6rem .7rem;
-    border:1px solid var(--rule);border-radius:3px;background:var(--surface);
+    flex:1 1 0;min-width:10.5rem;padding:.6rem 0;
   }
   .fx-flow.is-row .fx-step::before{display:none}
   .fx-flow.is-row .fx-step+.fx-step::after{

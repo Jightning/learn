@@ -1,0 +1,53 @@
+title: Read a feedback process
+blocks:
+  - t: p
+    source: generated
+    sourceReview: disclosed
+    objectives: [feedback-response]
+    h: >-
+      <c k="feedback-correction">Feedback</c> connects a target, a measurement,
+      and an action. In this
+      synthetic greenhouse, the 27 °C reading is 3 °C above the 24 °C target,
+      so the stated rule opens a vent. A later measurement checks whether the
+      action moved temperature toward the target.
+
+  - t: table
+    source: generated
+    sourceReview: disclosed
+    objectives: [feedback-response]
+    cap: The table traces how the measured gap determines an action and what to inspect next.
+    head: [Stage, Value or action, Reason]
+    rows:
+      - [Target, 24 °C, Desired temperature]
+      - [Reading, 27 °C, 3 °C above target]
+      - [Action, Open vent, The stated rule responds to an above-target reading]
+      - [Next check, Measure temperature again, See whether the action moved it toward target]
+
+  - t: def
+    source: generated
+    sourceReview: disclosed
+    objectives: [feedback-response]
+    introduces: [feedback-correction]
+    term: Feedback and corrective action
+    gist: Measure the gap, choose an action, then measure again to check its effect.
+    asides:
+      sensor-role: The sensor only reports temperature; the vent changes it.
+    h: >-
+      The sign of the gap matters: 27 − 24 = +3 °C, so the reading is high,
+      not low. The rule maps that direction to opening the vent. The <n k="sensor-role">sensor only reports temperature</n>; it does not change it. A second
+      reading closes the loop by showing what happened after the action.
+
+quiz:
+  - type: Trace the process
+    concept: feedback-correction
+    objectives: [feedback-response]
+    q: In the example, which sequence correctly describes the controller's reasoning?
+    response:
+      kind: single
+      correct: 2
+      choices:
+        - {text: 'Open the vent, then measure the gap.', why: 'The stated process measures before choosing an action.'}
+        - {text: 'Compare 27 °C with 24 °C, open the vent for a positive gap, then measure again.', why: 'This follows the target, comparison, action, and check sequence.'}
+        - {text: 'Use the sensor to lower the temperature by 3 °C.', why: 'The sensor reports a value; the vent changes temperature.'}
+    why: The measured value is compared with the target before the vent action; a new reading checks the result.
+    verified: true

@@ -18,7 +18,9 @@ export default function MathAnswer({ value, onInput, readOnly, editor, freeform 
       // MathLive option getters require a connected field.
       host.current.replaceChildren(field);
       field.setAttribute("aria-label", "Your answer");
-      field.mathVirtualKeyboardPolicy = "manual";
+      /* Mobile readers need an on-focus keyboard: the in-field toggle is
+         intentionally hidden with the unrelated symbol palette. */
+      field.mathVirtualKeyboardPolicy = "auto";
       field.smartFence = true;
       field.smartMode = freeform;
       // Recognize completed function names even when the reader types slowly.

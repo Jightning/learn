@@ -1,0 +1,140 @@
+title: Equations of Lines and Planes in Space
+blocks:
+  - t: p
+    h: '<p>In two-dimensional analytic geometry, a single linear equation describes a line. In three-dimensional space, geometric dimension shifts: a single linear equation describes a two-dimensional plane, whereas a one-dimensional line requires a parametric vector equation or a system of symmetric equations. Vector methods connect points, direction vectors, and normal vectors into clean algebraic descriptions of both objects.</p>'
+    authorId: block-e1abedc6-622
+  - t: def
+    term: Equations of Lines in Space
+    source: OpenStax Calculus Volume 3, Section 2.5
+    sourceReview: sourced
+    core: A line through point <m>P_0(x_0, y_0, z_0)</m> with direction vector <m>\mathbf{v} = \langle a, b, c \rangle</m> has vector equation <m>\mathbf{r}(t) = \mathbf{r}_0 + t\mathbf{v}</m> and parametric equations <m>x = x_0 + at, y = y_0 + bt, z = z_0 + ct</m>.
+    introduces:
+      - obj-s1-4
+      - line-in-space
+    objectives:
+      - obj-s1-4
+    family: family-line-equations
+    h: <p>The path traced by a point moving with constant velocity in space gives rise to several equivalent algebraic representations:</p>
+    items:
+      - 'Vector form: <m>\mathbf{r}(t) = \langle x_0, y_0, z_0 \rangle + t\langle a, b, c \rangle</m> for parameter <m>t \in \mathbb{R}</m>.'
+      - 'Parametric form: <m>x = x_0 + at</m>, <m>y = y_0 + bt</m>, <m>z = z_0 + ct</m>.'
+      - 'Symmetric form: When <m>a, b, c \neq 0</m>, solving for <m>t</m> yields <m>\frac{x - x_0}{a} = \frac{y - y_0}{b} = \frac{z - z_0}{c}</m>.'
+      - 'Line relationships: Two lines in space are parallel (direction vectors are scalar multiples, no common points), intersecting (share exactly one point), identical (all points shared), or skew (nonparallel and nonintersecting).'
+    ordered: true
+    authorId: block-b772632d-18e
+  - t: def
+    term: Equations of Planes in Space
+    source: OpenStax Calculus Volume 3, Section 2.5
+    sourceReview: sourced
+    core: A plane through <m>P_0(x_0, y_0, z_0)</m> with normal vector <m>\mathbf{n} = \langle a, b, c \rangle</m> is given by <m>a(x - x_0) + b(y - y_0) + c(z - z_0) = 0</m>.
+    introduces:
+      - plane-equation
+    objectives:
+      - obj-s1-4
+    family: family-plane-equations
+    h: <p>Every plane divides three-dimensional space and is characterized by its orientation and geometric relationships:</p>
+    items:
+      - 'Vector equation: <m>\mathbf{n} \cdot (\mathbf{r} - \mathbf{r}_0) = 0</m>.'
+      - 'Linear (general) form: <m>ax + by + cz + d = 0</m>, where <m>d = -(ax_0 + by_0 + cz_0)</m>.'
+      - 'Plane through three noncollinear points <m>P, Q, R</m>: Form displacement vectors <m>\vec{PQ}</m> and <m>\vec{PR}</m>, then take the normal <m>\mathbf{n} = \vec{PQ} \times \vec{PR}</m>.'
+      - 'Angle between two planes: The angle between planes with normals <m>\mathbf{n}_1</m> and <m>\mathbf{n}_2</m> satisfies <m>\cos\theta = \frac{|\mathbf{n}_1 \cdot \mathbf{n}_2|}{|\mathbf{n}_1||\mathbf{n}_2|}</m>.'
+    ordered: true
+    authorId: block-dee2bf81-ea1
+  - t: math
+    label: Distance from a Point to a Plane
+    tex: D = \frac{|a x_1 + b y_1 + c z_1 + d|}{\sqrt{a^2 + b^2 + c^2}}
+    note: This equals the absolute scalar projection of the displacement vector from any plane point to M(x₁, y₁, z₁) onto the normal vector n.
+    authorId: block-fa401660-82f
+  - t: key
+    label: Distance Formulas in Three Dimensions
+    source: OpenStax Calculus Volume 3, Section 2.5
+    sourceReview: sourced
+    core: Distance from a point to a line is computed using <m>|\vec{P_0 M} \times \mathbf{v}|/|\mathbf{v}|</m>, while distance to a plane uses the projection formula with the normal vector.
+    objectives:
+      - obj-s1-4
+    family: family-space-distances
+    h: <p>Spatial distance computations rely on projecting displacement vectors onto normal directions:</p>
+    items:
+      - 'Point <m>M</m> to line with direction <m>\mathbf{v}</m> containing point <m>P</m>: <m>D = \frac{|\vec{PM} \times \mathbf{v}|}{|\mathbf{v}|}</m>.'
+      - 'Point <m>M(x_1, y_1, z_1)</m> to plane <m>ax + by + cz + d = 0</m>: <m>D = \frac{|a x_1 + b y_1 + c z_1 + d|}{\sqrt{a^2 + b^2 + c^2}}</m>.'
+      - 'Parallel planes: Choose any point <m>P</m> on the first plane and compute its distance to the second plane.'
+      - 'Skew lines with directions <m>\mathbf{v}_1, \mathbf{v}_2</m> and points <m>P_1, P_2</m>: Distance is the projection of <m>\vec{P_1 P_2}</m> onto <m>\mathbf{n} = \mathbf{v}_1 \times \mathbf{v}_2</m>, giving <m>D = \frac{|\vec{P_1 P_2} \cdot (\mathbf{v}_1 \times \mathbf{v}_2)|}{|\mathbf{v}_1 \times \mathbf{v}_2|}</m>.'
+    ordered: true
+    authorId: block-7df05cb0-e31
+  - t: ex
+    title: Plane Passing Through Three Given Points
+    objectives:
+      - obj-s1-4
+    family: family-plane-equations
+    h: '<p>Find an equation of the plane containing <m>P(1, 0, -1)</m>, <m>Q(2, 3, 1)</m>, and <m>R(0, 2, 1)</m>. Two vectors lying in the plane are <m>\vec{PQ} = \langle 1, 3, 2 \rangle</m> and <m>\vec{PR} = \langle -1, 2, 2 \rangle</m>. Their cross product provides the normal: <m>\mathbf{n} = \vec{PQ} \times \vec{PR} = (6 - 4)\mathbf{i} - (2 - (-2))\mathbf{j} + (2 - (-3))\mathbf{k} = \langle 2, -4, 5 \rangle</m>. Using point <m>P(1, 0, -1)</m>, the equation is <m>2(x - 1) - 4(y - 0) + 5(z - (-1)) = 0</m>, which simplifies to <m>2x - 4y + 5z + 3 = 0</m>. Substituting <m>R(0, 2, 1)</m> verifies: <m>2(0) - 4(2) + 5(1) + 3 = 0</m>.</p>'
+    authorId: block-a60c7cb2-6d2
+  - t: ex
+    title: Classifying Lines in Space
+    objectives:
+      - obj-s1-4
+    family: family-line-equations
+    h: '<p>Classify lines <m>L_1: \mathbf{r}_1(t) = \langle 1 + t, 2 - t, 3t \rangle</m> and <m>L_2: \mathbf{r}_2(s) = \langle 2s, 1 + s, 4 - s \rangle</m>. Their direction vectors are <m>\mathbf{v}_1 = \langle 1, -1, 3 \rangle</m> and <m>\mathbf{v}_2 = \langle 2, 1, -1 \rangle</m>. Since no scalar <m>k</m> satisfies <m>\mathbf{v}_1 = k\mathbf{v}_2</m>, the lines are not parallel. Setting components equal gives <m>1 + t = 2s</m> and <m>2 - t = 1 + s</m>. Adding these gives <m>3 = 1 + 3s \implies s = \frac{2}{3}</m>, which yields <m>t = 2(\frac{2}{3}) - 1 = \frac{1}{3}</m>. Testing <m>z</m>-components: <m>z_1 = 3(\frac{1}{3}) = 1</m> but <m>z_2 = 4 - \frac{2}{3} = \frac{10}{3} \neq 1</m>. Because the coordinates cannot be simultaneously satisfied, the lines do not intersect. Since they are neither parallel nor intersecting, <m>L_1</m> and <m>L_2</m> are skew lines.</p>'
+    authorId: block-75664f91-29f
+  - t: trap
+    label: One Linear Equation in 3D Defines a Plane, Not a Line
+    source: OpenStax Calculus Volume 3, Section 2.5
+    sourceReview: sourced
+    core: In three dimensions, a single linear equation represents a two-dimensional plane; specifying a line requires two independent equations or a vector parameterization.
+    objectives:
+      - obj-s1-4
+    family: family-plane-equations
+    h: <p>Students often mistake an equation like <m>2x - y + 3z = 6</m> for a line because it resembles the 2D line equation <m>2x - y = 6</m>. In three-dimensional space, each linear equation restricts one degree of freedom, leaving two free parameters and therefore defining a plane. To define a one-dimensional line, you must specify two intersecting planes or provide parametric equations with a single parameter <m>t</m>.</p>
+    authorId: block-ddcf38b8-aad
+quiz:
+  - type: Line relationship classification
+    concept: line-in-space
+    objectives:
+      - obj-s1-4
+    family: family-line-equations
+    q: Line <m>L_1</m> has parameterization <m>\mathbf{r}_1(t) = \langle 1 + 2t, -1 + 4t, 3 - 2t \rangle</m> and line <m>L_2</m> has parameterization <m>\mathbf{r}_2(s) = \langle -s, 3 - 2s, s \rangle</m>. How are these two lines related?
+    verified: true
+    response:
+      kind: single
+      correct: 2
+      choices:
+        - text: Intersecting at a unique point
+          why: The direction vectors are scalar multiples, so the lines cannot intersect at a single point.
+        - text: Parallel and distinct
+          why: The direction vectors <m>\langle 2, 4, -2 \rangle</m> and <m>\langle -1, -2, 1 \rangle</m> satisfy <m>\mathbf{v}_1 = -2\mathbf{v}_2</m>, meaning they are parallel. Testing <m>(0, 3, 0)</m> on <m>L_1</m> yields no solution for <m>t</m>, so they are distinct.
+        - text: Skew lines
+          why: Skew lines must have nonparallel direction vectors.
+        - text: Coincident (identical lines)
+          why: Points on <m>L_2</m> such as <m>(0, 3, 0)</m> do not lie on <m>L_1</m>.
+    authorId: quiz-d56713ec-bd7
+  - type: Equation of a plane
+    concept: plane-equation
+    objectives:
+      - obj-s1-4
+    family: family-plane-equations
+    q: What is the standard linear equation of the plane passing through <m>P(2, -1, 3)</m> with normal vector <m>\mathbf{n} = \langle 3, 1, -2 \rangle</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>3x + y - 2z = -1</m>
+          why: 'In point-normal form: <m>3(x - 2) + 1(y + 1) - 2(z - 3) = 0 \implies 3x + y - 2z - 6 + 1 + 6 = 0 \implies 3x + y - 2z = -1</m>.'
+        - text: <m>3x + y - 2z = 1</m>
+          why: 'Check the constant term: <m>3(2) + 1(-1) - 2(3) = 6 - 1 - 6 = -1</m>.'
+        - text: <m>2x - y + 3z = 11</m>
+          why: The coefficients of the plane equation come from the normal vector, not the point coordinates.
+        - text: <m>3x - y - 2z = 1</m>
+          why: The normal vector has <m>y</m>-component <m>+1</m>, not <m>-1</m>.
+    authorId: quiz-83fe8c49-996
+  - type: Distance from point to plane
+    concept: plane-equation
+    objectives:
+      - obj-s1-4
+    family: family-space-distances
+    q: What is the distance from the point <m>M(2, 1, -1)</m> to the plane <m>2x - 2y + z - 10 = 0</m>?
+    verified: true
+    response:
+      kind: number
+      value: 3
+    why: 'Using the distance formula: <m>D = \frac{|2(2) - 2(1) + 1(-1) - 10|}{\sqrt{2^2 + (-2)^2 + 1^2}} = \frac{|4 - 2 - 1 - 10|}{\sqrt{9}} = \frac{9}{3} = 3</m>.'
+    authorId: quiz-1c5f97b7-bc7

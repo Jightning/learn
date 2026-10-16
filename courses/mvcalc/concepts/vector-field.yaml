@@ -1,0 +1,4 @@
+title: "Vector fields in the plane and in space"
+term: "Vector Field"
+body: >-
+  <p>A vector field in <m>\mathbb{R}^2</m> is a function <m>\mathbf{F}(x, y) = P(x, y)\mathbf{i} + Q(x, y)\mathbf{j}</m> that assigns a two-dimensional vector to each point in its domain. In <m>\mathbb{R}^3</m>, a vector field is <m>\mathbf{F}(x, y, z) = P\mathbf{i} + Q\mathbf{j} + R\mathbf{k}</m>. Vector fields are visualized by drawing representative directed vectors anchored at sample points in the grid. They are the standard mathematical framework for modeling fluid velocity fields, gravitational fields, and electromagnetic fields.</p>

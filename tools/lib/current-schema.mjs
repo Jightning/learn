@@ -46,6 +46,6 @@ export function strictCurrentIssues(C) {
 
   const drillCount = Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0);
   if (drillCount)
-    issues.push(`drills/: strict current schema requires variants in practice/<concept>.yaml; migrate ${drillCount} legacy drill item(s)`);
+    issues.push(`drills/: strict current authoring does not create drill banks; migrate ${drillCount} legacy item(s) to typed inline lesson questions or the reusable questions bank`);
   return issues;
 }

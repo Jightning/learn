@@ -7117,7 +7117,7 @@ function arraySize(x) {
 * @param {Array} array
 * @param {function} callback
 */
-function map(array, callback) {
+function map$1(array, callback) {
 	return Array.prototype.map.call(array, callback);
 }
 /**
@@ -8009,18 +8009,18 @@ var createArrayNode = /* #__PURE__ */ factory(name$20, ["Node"], (_ref) => {
 		*                        evalNode(scope: Object, args: Object, context: *)
 		*/
 		_compile(math, argNames) {
-			var evalItems = map(this.items, function(item) {
+			var evalItems = map$1(this.items, function(item) {
 				return item._compile(math, argNames);
 			});
 			if (math.config.matrix !== "Array") {
 				var matrix = math.matrix;
 				return function evalArrayNode(scope, args, context) {
-					return matrix(map(evalItems, function(evalItem) {
+					return matrix(map$1(evalItems, function(evalItem) {
 						return evalItem(scope, args, context);
 					}));
 				};
 			} else return function evalArrayNode(scope, args, context) {
-				return map(evalItems, function(evalItem) {
+				return map$1(evalItems, function(evalItem) {
 					return evalItem(scope, args, context);
 				});
 			};
@@ -8438,7 +8438,7 @@ var createBlockNode = /* #__PURE__ */ factory(name$18, ["ResultSet", "Node"], (_
 		*                        evalNode(scope: Object, args: Object, context: *)
 		*/
 		_compile(math, argNames) {
-			var evalBlocks = map(this.blocks, function(block) {
+			var evalBlocks = map$1(this.blocks, function(block) {
 				return {
 					evaluate: block.node._compile(math, argNames),
 					visible: block.visible
@@ -9442,7 +9442,7 @@ var createIndexNode = /* #__PURE__ */ factory(name$14, ["Node", "size"], (_ref) 
 		*                        evalNode(scope: Object, args: Object, context: *)
 		*/
 		_compile(math, argNames) {
-			var evalDimensions = map(this.dimensions, function(dimension, i) {
+			var evalDimensions = map$1(this.dimensions, function(dimension, i) {
 				if (dimension.filter((node) => node.isSymbolNode && node.name === "end").length > 0) {
 					var childArgNames = Object.create(argNames);
 					childArgNames.end = true;
@@ -9458,7 +9458,7 @@ var createIndexNode = /* #__PURE__ */ factory(name$14, ["Node", "size"], (_ref) 
 			});
 			var index = getSafeProperty(math, "index");
 			return function evalIndexNode(scope, args, context) {
-				return index(...map(evalDimensions, function(evalDimension) {
+				return index(...map$1(evalDimensions, function(evalDimension) {
 					return evalDimension(scope, args, context);
 				}));
 			};
@@ -9901,7 +9901,7 @@ var createOperatorNode = /* #__PURE__ */ factory(name$12, ["Node"], (_ref) => {
 				else throw new Error("No access to function \"" + this.fn + "\"");
 			}
 			var fn = getSafeProperty(math, this.fn);
-			var evalArgs = map(this.args, function(arg) {
+			var evalArgs = map$1(this.args, function(arg) {
 				return arg._compile(math, argNames);
 			});
 			if (typeof fn === "function" && fn.rawArgs === true) {
@@ -9921,7 +9921,7 @@ var createOperatorNode = /* #__PURE__ */ factory(name$12, ["Node"], (_ref) => {
 					return fn(_evalArg(scope, args, context), evalArg1(scope, args, context));
 				};
 			} else return function evalOperatorNode(scope, args, context) {
-				return fn.apply(null, map(evalArgs, function(evalArg) {
+				return fn.apply(null, map$1(evalArgs, function(evalArg) {
 					return evalArg(scope, args, context);
 				}));
 			};
@@ -17009,13 +17009,13 @@ const stable = (value) => {
 	return `{${Object.keys(value).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(",")}}`;
 };
 function sameDefinition(a, b, id, collection) {
+	if (collection === "concepts") return Object.keys(a).filter((k) => k !== "id" && k !== "key" && Object.hasOwn(b, k)).every((k) => stable(a[k]) === stable(b[k])) && (a.key || a.id || id) === (b.key || b.id || id);
 	const normalize = (value) => {
 		const out = { ...value };
 		delete out.id;
-		if (collection === "concepts") delete out.key;
 		return stable(out);
 	};
-	return normalize(a) === normalize(b) && (collection !== "concepts" || (a.key || a.id || id) === (b.key || b.id || id));
+	return normalize(a) === normalize(b);
 }
 /** Read and validate fixed canonical YAML collection files from a text map. */
 function readCurriculumCollections(files, errors = []) {
@@ -17088,7 +17088,7 @@ function mergeCurriculumDefinitions(canonical, legacy, errors = [], where = "leg
 		for (const value of canonical?.[name] || []) {
 			const id = value.id;
 			if (byId.has(id) && !sameDefinition(byId.get(id), value, id, name)) errors.push(`categorize/${name}.yaml conflicts with legacy ${name} definition "${id}"`);
-			else byId.set(id, value);
+			else byId.set(id, byId.has(id) ? Object.assign({}, byId.get(id), value) : value);
 		}
 		merged[name] = [...byId.values()];
 	}
@@ -17180,6 +17180,10 @@ function validateCourseCurriculumReferences(course, errors = []) {
 		check(item?.objectives ?? item?.objective, "objectives", where);
 		check(item?.families ?? item?.family, "families", where);
 		if (item?.concept != null) check(item.concept, "concepts", where);
+		if (item?.introduces != null) {
+			if (kind !== "block" || !Array.isArray(item.introduces)) errors.push(`${where}: introduces must be a block list of concept/objective IDs`);
+			else for (const id of item.introduces) if (typeof id !== "string" || !ids.concepts.has(id) && !ids.objectives.has(id)) errors.push(`${where}: unknown teaching introduction "${id}"`);
+		}
 		visitInlineConcepts(item, where);
 	}
 	for (const kind of ["practice", "drills"]) for (const key of Object.keys(course[kind] || {})) if (!ids.concepts.has(key)) errors.push(`${kind}/${key}: unknown concept reference "${key}"`);
@@ -17407,6 +17411,92 @@ function loadCourse(dir) {
 	};
 }
 //#endregion
+//#region src/lib/follows.js
+/** is this block attached to the block above it? */
+const isFollow = (b) => !!(b && b.follows);
+/** index of the block `blocks[i]` attaches to, or -1 when it attaches to nothing */
+function parentIndex(blocks, i) {
+	if (!isFollow(blocks[i])) return -1;
+	for (let j = i - 1; j >= 0; j--) if (!isFollow(blocks[j])) return j;
+	return -1;
+}
+//#endregion
+//#region src/lib/tiers.js
+const TIERS = [
+	"spine",
+	"depth",
+	"apply"
+];
+const isOptional = (b) => typeof b?.optional === "boolean" ? b.optional : b?.tier === "depth";
+const tierOf = (b) => isOptional(b) ? "depth" : "spine";
+//#endregion
+//#region tools/lib/author-teaching.mjs
+const list = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
+const idOf = (value) => typeof value === "string" ? value : value?.id;
+const map = (value) => value != null && typeof value === "object" && !Array.isArray(value);
+const ids = (value) => list(value).map(idOf).filter((value) => typeof value === "string" && value);
+const asText = (value) => typeof value === "string" && value.trim();
+function validateBrief(brief, lessonId) {
+	const at = `lesson "${lessonId}" teaching`;
+	if (!map(brief)) throw new Error(`${at} must be a mapping`);
+	if (!asText(brief.outcome)) throw new Error(`${at}.outcome must state a nonempty lesson capability`);
+	for (const key of ["requires", "introduces"]) if (brief[key] != null && !Array.isArray(brief[key])) throw new Error(`${at}.${key} must be a list of IDs`);
+	for (const key of [
+		"outcome",
+		"reasoning",
+		"practice",
+		"boundary"
+	]) if (brief[key] != null && !asText(brief[key])) throw new Error(`${at}.${key} must be nonempty text`);
+	for (const key of ["requires", "introduces"]) for (const value of list(brief[key])) if (!idOf(value) || typeof idOf(value) !== "string") throw new Error(`${at}.${key} entries need IDs`);
+	if (brief.representation != null) {
+		if (!map(brief.representation)) throw new Error(`${at}.representation must be a mapping`);
+		if (brief.representation.job != null && !asText(brief.representation.job)) throw new Error(`${at}.representation.job must be nonempty text`);
+		if (brief.representation.needs != null && !Array.isArray(brief.representation.needs)) throw new Error(`${at}.representation.needs must be a list`);
+		if (list(brief.representation.needs).some((value) => typeof value !== "string" || !value.trim())) throw new Error(`${at}.representation.needs entries must be nonempty strings`);
+	}
+}
+/** Validate optional lesson briefs against existing curriculum and reading order. */
+function indexTeaching(plan) {
+	const lessons = list(plan.data.lessons ?? plan.data.subsections);
+	const objectives = new Set(list(plan.data.objectives).map(idOf).filter(Boolean));
+	const concepts = new Set(list(plan.data.concepts).map(idOf).filter(Boolean));
+	const allowed = /* @__PURE__ */ new Set([...objectives, ...concepts]);
+	const backgroundEntries = list(plan.data.reader?.background);
+	const background = new Set(backgroundEntries.map(idOf).filter(Boolean));
+	const owners = /* @__PURE__ */ new Map(), requiredByLesson = /* @__PURE__ */ new Map(), positions = /* @__PURE__ */ new Map();
+	lessons.forEach((lesson, position) => positions.set(lesson.id, position));
+	for (const lesson of lessons) {
+		const brief = lesson?.teaching;
+		if (brief == null) continue;
+		validateBrief(brief, lesson.id);
+		for (const id of ids(brief.introduces)) {
+			if (!allowed.has(id)) throw new Error(`lesson "${lesson.id}" teaching.introduces references unknown concept/objective "${id}"`);
+			if (owners.has(id)) throw new Error(`teaching introduction "${id}" is owned by both "${owners.get(id)}" and "${lesson.id}"`);
+			owners.set(id, lesson.id);
+		}
+	}
+	lessons.forEach((lesson, position) => {
+		const brief = lesson?.teaching;
+		if (brief == null) return;
+		const required = ids(brief.requires);
+		requiredByLesson.set(lesson.id, required);
+		for (const id of required) {
+			if (!allowed.has(id) && !background.has(id)) throw new Error(`lesson "${lesson.id}" teaching.requires references unknown prerequisite "${id}"`);
+			if (background.has(id)) continue;
+			const owner = owners.get(id);
+			if (!owner) throw new Error(`lesson "${lesson.id}" requires "${id}", but it is not in reader.background or introduced by a lesson`);
+			if (positions.get(owner) >= position) throw new Error(`lesson "${lesson.id}" requires "${id}" from "${owner}" before it is introduced`);
+		}
+	});
+	return {
+		owners,
+		requiredByLesson,
+		background,
+		backgroundEntries,
+		lessons
+	};
+}
+//#endregion
 //#region tools/lib/author-packets.mjs
 const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 const fileHash = (path) => fingerprint(readFileSync(path));
@@ -17486,6 +17576,7 @@ function indexPlan(plan) {
 			continue;
 		}
 		if (strict && familyIndex.has(f.id)) throw new Error(`duplicate family id "${f.id}"`);
+		if (Object.hasOwn(f, "assessmentRequired") && typeof f.assessmentRequired !== "boolean") throw new Error(`family "${f.id}": assessmentRequired must be boolean`);
 		familyIndex.set(f.id, f);
 	}
 	const lessons = asList(plan.data.lessons ?? plan.data.subsections);
@@ -17527,12 +17618,14 @@ function indexPlan(plan) {
 			byLesson.get(id).push(o);
 		}
 	}
+	const teaching = indexTeaching(plan);
 	return {
 		lessons: new Map(lessons.map((s) => [s.id, s])),
 		objectives: objectiveIndex,
 		families: familyIndex,
 		byLesson,
-		uses
+		uses,
+		teaching
 	};
 }
 //#endregion
@@ -45601,24 +45694,6 @@ function checkSlides(b, where, errs) {
 	}
 }
 //#endregion
-//#region src/lib/follows.js
-/** is this block attached to the block above it? */
-const isFollow = (b) => !!(b && b.follows);
-/** index of the block `blocks[i]` attaches to, or -1 when it attaches to nothing */
-function parentIndex(blocks, i) {
-	if (!isFollow(blocks[i])) return -1;
-	for (let j = i - 1; j >= 0; j--) if (!isFollow(blocks[j])) return j;
-	return -1;
-}
-//#endregion
-//#region src/lib/tiers.js
-const TIERS = [
-	"spine",
-	"depth",
-	"apply"
-];
-const tierOf = (b) => TIERS.includes(b.tier) ? b.tier : "spine";
-//#endregion
 //#region src/lib/math.js
 const OPTS = {
 	throwOnError: false,
@@ -45700,7 +45775,10 @@ const R = Blocks.register;
 const holdsOf = (t) => (Blocks.get(t) || {}).holds === "structure" ? "structure" : "prose";
 R("p", {
 	notes: "hidden",
-	render: (b) => `<p>${b.h}</p>`
+	render: (b) => {
+		const h = b.h || "";
+		return /<(?:p|ol|ul|blockquote|div|pre|table|h[1-6])(?:\s|>)/i.test(h) ? h : `<p>${h}</p>`;
+	}
 });
 R("def", {
 	apart: true,
@@ -45865,7 +45943,7 @@ const NOTES_MODES = [
 	"closed",
 	"hidden"
 ];
-/** the authored claim, whichever field carries it — `core` first, then `gist` */
+/** the authored summary, whichever optional field carries it — `core` first */
 const leadOf = (b) => b && (b.core || b.gist) || null;
 /** Does this block state its claim separately from its development? */
 const hasCore = (b) => !!(b && b.core);
@@ -46075,7 +46153,7 @@ function checkFollows(C, errs) {
 			}
 			if (b.t === "attempt") errs.push(`${at}: an attempt cannot follow anything`);
 			const pt = tierOf(bs[p]), t = tierOf(b);
-			if (pt !== "spine" && t !== pt) errs.push(`${at}: a ${t} block follows block ${p + 1}, which is ${pt} — the lane hides ${pt} on its own, so a follow-up of it must be ${pt} too`);
+			if (pt !== "spine" && t !== pt) errs.push(`${at}: required content follows optional block ${p + 1}; keep the dependency in the main reading or make its follow-up optional`);
 		});
 	}
 }
@@ -46232,7 +46310,7 @@ function strictCurrentIssues(C) {
 		}
 	}
 	const drillCount = Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0);
-	if (drillCount) issues.push(`drills/: strict current schema requires variants in practice/<concept>.yaml; migrate ${drillCount} legacy drill item(s)`);
+	if (drillCount) issues.push(`drills/: strict current authoring does not create drill banks; migrate ${drillCount} legacy item(s) to typed inline lesson questions or the reusable questions bank`);
 	return issues;
 }
 //#endregion
@@ -46267,7 +46345,7 @@ function checkSpineStandsAlone(C, errs) {
 	for (const s of C.sections) for (const u of s.subs) for (const b of u.blocks || []) if (b && b.id && tierOf(b) === "spine") spineFigs.add(b.id);
 	for (const s of C.sections) for (const u of s.subs) for (const b of u.blocks || []) {
 		if (!b || tierOf(b) !== "spine") continue;
-		for (const m of textOf(b).matchAll(/<f\s+k="([^"]+)"/g)) if (!spineFigs.has(m[1])) errs.push(`${u.id}: a spine block cites figure "${m[1]}", which only exists in a collapsed tier`);
+		for (const m of textOf(b).matchAll(/<f\s+k="([^"]+)"/g)) if (!spineFigs.has(m[1])) errs.push(`${u.id}: required content cites figure "${m[1]}", which is available only in optional content`);
 	}
 }
 const FORMATS = /* @__PURE__ */ new Set([
@@ -46375,7 +46453,7 @@ function checkExaminableInSpine(C, warns) {
 	for (const [key, file] of Object.entries(C.drills)) {
 		if (!(file.items || []).some((it) => examFormats.has(it.format))) continue;
 		const tiers = tiersOf[key];
-		if (tiers && !tiers.has("spine")) warns.push(`concepts/${key}: the exam can test it, but every block citing it is ${[...tiers].join("/")} — a spine-only reader never meets it (M25)`);
+		if (tiers && !tiers.has("spine")) warns.push(`concepts/${key}: the exam can test it, but every block citing it is optional — the default reading never introduces it (M25)`);
 	}
 }
 const RESTATE = 8;
@@ -46552,6 +46630,7 @@ for (const id of courses) {
 			if (b.t === "figure") checkFigure(b, where, errs);
 			if (b.t === "slides") checkSlides(b, where, errs);
 			if (b.tier && !TIERS.includes(b.tier)) errs.push(`${where}: unknown tier "${b.tier}" — one of ${TIERS.join(", ")}`);
+			if (b.optional != null && typeof b.optional !== "boolean") errs.push(`${where}: optional must be true or false`);
 			if (b.notes && !NOTES_MODES.includes(b.notes)) errs.push(`${where}: unknown notes: "${b.notes}" — one of ${NOTES_MODES.join(", ")}`);
 			if (b.t === "attempt" && u.blocks.indexOf(b) !== 0) warns.push(`${where}: an "attempt" block is usually first; retain another placement if deliberate`);
 			if (b.t === "def" && b.term) namedTerms++;

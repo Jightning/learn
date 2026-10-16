@@ -13,7 +13,7 @@ blocks:
     core: |-
       A short retrieval item attached to a <b>concept</b>, available to practice and review.
     h: |-
-      <p>A concept's practice bank holds several items, so the same idea comes back wearing a different surface each time. Mixed Practice lets you choose a subsection range and count; Review serves scheduled items. Answered concepts enter Review automatically, and misses or challenging outcomes receive more weight.</p>
+      <p>The course question bank can hold several items for a concept, so the same idea comes back wearing a different surface each time. Mixed Practice lets you choose a subsection range and count; Review serves scheduled items. Answered concepts enter Review automatically, and misses or challenging outcomes receive more weight.</p>
 
   - t: key
     source: src/lib/retention.js
@@ -46,13 +46,12 @@ blocks:
       <p>Mixed Practice is available at any time. Choose a subsection range and count; the selector weights missed, due, and challenging items so "nothing is due" is never a reason to close the tab.</p>
 
   - t: p
-    tier: depth
+    optional: true
     source: docs/architecture.md §3c
     h: |-
       The schedule is per concept and cross-course: one queue, not one per subject. It survives closing the tab, and it is rebuilt by replaying your answer log, which is also what lets two of your own devices merge their history without either losing a session.
 
   - t: ex
-    tier: apply
     source: docs/architecture.md §3c
     title: A concept's first week
     core: |-
@@ -69,8 +68,10 @@ quiz:
     concept: confidence
     q: |-
       A reader has read three sections and answered every quiz correctly. The review count says 0. Why?
-    a: |-
-      Nothing is due yet. Answered concepts enter the schedule automatically, but the first due date may still be later; reading alone does not create an answer history.
+    response:
+      kind: self
+      model: |-
+        Nothing is due yet. Answered concepts enter the schedule automatically, but the first due date may still be later; reading alone does not create an answer history.
     why: |-
       <p>The schedule starts from answered items, so it has evidence about what the learner encountered. It does not fill with every concept merely because a course was opened.</p>
     verified: 2026-09-06
@@ -86,7 +87,7 @@ quiz:
           why: Mixed Practice is the on-demand surface and weights missed, due, and challenging items.
         - text: Review, which serves only items due today.
           why: Review follows the schedule rather than an on-demand count.
-        - text: Reading controls, which change the page depth.
+        - text: Reading modes, which change presentation while keeping required material complete.
           why: Reading controls do not ask retrieval questions.
       correct: [1]
     why: |-

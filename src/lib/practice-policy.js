@@ -1,7 +1,6 @@
 import { get as retentionGet } from "./retention.js";
 import { POLICY, recentPerformance, exposedItems, provisionalDemonstrations } from './evidence.js';
-/* Promotion is deliberately off until the controlled learner comparison. */
-export const adaptiveEnabled = policy => policy.experimental === true;
+/* The older rotation heuristic remains shadow-only; scored selection is live. */
 export function duePracticeTypes(pool, cid, lookup = retentionGet, now = Date.now()) {
   return [...new Set(pool.filter(q=>!q.use || q.use === 'practice').filter(q=>{
     const schedule = lookup(cid,q.typeId ? `type:${q.typeId}` : q.concept);

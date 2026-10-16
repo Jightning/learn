@@ -116,10 +116,9 @@ export async function testLearning(ctx, state) {
     const axes = page.locator(".axes");
     ck(P("the axes are reachable from the navigation"), await axes.count() === 1);
     await axes.locator("summary").click(); await page.waitForTimeout(200);
-    await page.locator(".lane-b[data-lane='spine']").click(); await page.waitForTimeout(300);
-    const spine = await page.locator(".brow").count();
-    ck(P("the spine lane never shows more than every lane"), spine <= all, `${spine} of ${all} rows`);
-    ck(P("changing lane does not change the route"), await page.evaluate(() => location.hash) === hash);
+    ck(P("reading settings no longer classify the teaching path"),
+       await page.locator("[data-lane], [data-lane-cycle]").count() === 0);
+    ck(P("opening settings does not remove teaching"), await page.locator(".brow").count() === all);
     const tab = page.locator('.dtab[aria-expanded="false"]').first();
     if (await tab.count()) {
       const panelId = await tab.getAttribute("aria-controls");
@@ -131,7 +130,6 @@ export async function testLearning(ctx, state) {
       await toggle.click(); await page.waitForTimeout(200);
       ck(P("a tab closes its content"), await toggle.getAttribute("aria-expanded") === "false");
     }
-    await page.locator(".lane-b[data-lane='apply']").click(); await page.waitForTimeout(250);
   }
 
   /* depth: a second axis that closes prose rather than removing blocks.
@@ -383,18 +381,18 @@ export async function testLearning(ctx, state) {
        structural check while failing the thing it is there for. */
     const row = await page.evaluate(() => {
       const acts = document.querySelector(".axes .axes-acts");
-      const lane = document.querySelector(".axes .lane");
-      if (!acts || !lane) return null;
+      const identity = document.querySelector(".axes .hues");
+      if (!acts || !identity) return null;
       const btns = [...acts.querySelectorAll(".lane-b")];
       return {
         labels: btns.map(b => b.textContent.trim()),
         rows: new Set(btns.map(b => Math.round(b.getBoundingClientRect().top))).size,
-        above: acts.getBoundingClientRect().bottom <= lane.getBoundingClientRect().top + 1
+        above: acts.getBoundingClientRect().bottom <= identity.getBoundingClientRect().top + 1
       };
     });
     ck(P("the page actions sit on one line"),
        row && row.labels.length >= 2 && row.rows === 1, JSON.stringify(row));
-    ck(P("above the reading lane, not beside it"), row && row.above, JSON.stringify(row));
+    ck(P("page actions sit above course identity settings"), row && row.above, JSON.stringify(row));
 
     /* The course's accent, which the reader may overrule on this device. */
     const swatch = page.locator(".hues .hue-b:not(.hue-own)");

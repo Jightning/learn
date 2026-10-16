@@ -1,0 +1,4 @@
+title: "Integrals of vector-valued functions"
+term: "Integral of Vector-Valued Function"
+body: >-
+  <p>The definite integral of a continuous vector-valued function <m>\mathbf{r}(t) = \langle f(t), g(t), h(t) \rangle</m> is evaluated by integrating each component function separately: <m>\int_a^b \mathbf{r}(t)\, dt = \left\langle \int_a^b f(t)\, dt, \int_a^b g(t)\, dt, \int_a^b h(t)\, dt \right\rangle</m>. By the Fundamental Theorem of Calculus, <m>\int_a^b \mathbf{r}'(t)\, dt = \mathbf{r}(b) - \mathbf{r}(a)</m>. Indefinite integrals include a constant vector of integration <m>\mathbf{C}</m>. These integrals are used to recover position and velocity from acceleration data.</p>

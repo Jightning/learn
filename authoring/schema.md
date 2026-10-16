@@ -3,9 +3,9 @@
 The current course shape is positional: `sections/NN-slug/_section.yaml` and
 one subsection YAML file per reader-facing subsection. `course.yaml` holds
 identity and state; `categorize/{objectives,families,concepts}.yaml` owns new
-curriculum definitions. `questions/`, `categories/`, `practice/`, `materials/`, and `assets/`
-hold their named artifacts. Legacy `concepts/`, `q/a`, and `drills/` remain
-supported; new work uses typed `response:` and the current publish contract.
+curriculum definitions. `questions/`, `categories/`, `materials/`, and `assets/`
+hold their named artifacts. Questions use typed `response:` values; small
+courses can keep them inline, while reusable questions use stable bank IDs.
 
 Run `node tools/author.mjs index <course>` after drafting. It assigns missing
 `authorId` values to blocks, quiz items and practice items. Metadata must already
@@ -36,9 +36,11 @@ quiz:
     verified: true # only after independently working out the answer
 ```
 
-`core:` stores the block's own opening claim. `gist:` is a deliberate second
-copy shown when a block is closed and must state the claim, not merely name its
-topic. A `def`, `key`, or `trap` has exactly one of them and has `source:`.
+`core:` is an optional opening that belongs to the full reading and can also
+serve Notes. `gist:` is an optional separate summary shown in Notes, absent
+from full reading. A block may use either or neither, but not both; a `def`,
+`key`, or `trap` still has `source:`. Keep essential teaching in the full
+reading path; these fields do not replace the block's development.
 Define a term once where first needed; a subsection need not repeat a `def`.
 Every quiz has `type`, `q`,
 `response`, and a resolvable `concept`. Teaching blocks and questions carry
@@ -71,25 +73,26 @@ secondary lowercase hyphenated `tags:` sparingly. A `label` names one block.
 Do not write interface words, positional IDs, or generated material fields by
 hand when the reader derives them.
 
-Use only blocks that serve the planned outcome, in dependency order. No fixed
-opener/definition/rule/example/figure/trap sequence is required. A depth block
-explains an already reached claim; an apply block builds fluency without
-re-explaining. Test the first representative lesson with `author pilot` before
-bulk writing; fix format/tag gaps once and carry that pattern forward.
+Use blocks that serve the planned outcome, in dependency order. No fixed
+opener/definition/rule/example/figure/trap sequence is required. The common
+teaching contract is in `core.md`. An `optional: true` block extends the
+required reading without carrying a needed premise or step. Inspect an
+assembled subsection; use `author pilot` for an unfamiliar format before
+writing it throughout the course.
 
 Questions allow one try by default. To allow more, add `tries: 3` beside
 `q:` and `response:` (not inside `response`). This means three total tries,
-including the first; use a positive integer. The same field works in quiz,
-practice, and legacy question items. See `formats/questions.md` for retry behavior.
+including the first; use a positive integer. The same field works for inline
+and bank questions. See `formats/questions.md` for retry behavior.
 
 Bank courses use ordered `quiz: [q-id]` references and inherited metadata.
-Read `formats/question-bank.md` only for bank/type/assessment work; legacy
-inline questions keep the shape above. The index assigns bank `id` once and
+Read `formats/question-bank.md` for bank/type/assessment work; inline questions
+keep the typed shape above. The index assigns bank `id` once and
 reuses it as its review handle.
 
-For an inline-to-bank migration only, run `node tools/migrate-question-ids.mjs`
-with the unchanged legacy snapshot and migrated course as directed by its
-usage. Unique prompt/response/tries/stimulus matches create stable aliases once
-in `questions/aliases.yaml`; resolve ambiguous matches explicitly. Do not
-regenerate aliases during routine author startup or rewrite learner history.
-Unknown first-try legacy evidence remains unknown.
+When moving current typed inline questions into a bank while preserving learner
+history, run `node tools/migrate-question-ids.mjs` with the original and bank
+course snapshots as directed by its usage. Unique prompt/response/tries/stimulus
+matches create stable aliases once in `questions/aliases.yaml`; resolve
+ambiguous matches explicitly. Do not regenerate aliases during routine author
+startup or rewrite learner history. Unknown first-try evidence remains unknown.

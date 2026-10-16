@@ -97,7 +97,7 @@ function checkSpineStandsAlone(C, errs) {
         if (!b || tierOf(b) !== "spine") continue;
         for (const m of textOf(b).matchAll(/<f\s+k="([^"]+)"/g))
           if (!spineFigs.has(m[1]))
-            errs.push(`${u.id}: a spine block cites figure "${m[1]}", which only exists in a collapsed tier`);
+            errs.push(`${u.id}: required content cites figure "${m[1]}", which is available only in optional content`);
       }
 }
 
@@ -230,21 +230,20 @@ function checkExaminableInSpine(C, warns) {
     const tiers = tiersOf[key];
     if (tiers && !tiers.has("spine"))
       warns.push(`concepts/${key}: the exam can test it, but every block citing it is ` +
-        `${[...tiers].join("/")} — a spine-only reader never meets it (M25)`);
+        `optional — the default reading never introduces it (M25)`);
   }
 }
 
-/* M34: a block states its claim once.
+/* A block may use no separate summary, an opening `core:`, or a Notes-only
+ * `gist:`. A block declaring both is invalid. The overlap checks below are
+ * exact lexical diagnostics: useful leads for review, not a semantic test for
+ * whether the full passage repeats its claim.
  *
- * `core:` holds the claim and `h:` holds only what develops it — one paragraph
- * split at a declared point, so nothing is written twice. `gist:` is a summary
- * *about* the block and is a second copy on purpose, for prose that withholds
- * its claim until the end. A block declaring both has recorded one decision in
- * two places, which is the shape every other rule here exists to prevent; and a
- * `core:` whose sentence still opens its own `h:` is the duplication sneaking
- * back in under the field that was meant to remove it.
+ * `core:` is an opening included in full reading; `gist:` is a separate Notes
+ * summary excluded from full reading. Both together are invalid. Repeated text
+ * detected below is only a lexical lead for review.
  */
-const RESTATE = 8;   /* words of verbatim overlap that make a phrase a copy */
+const RESTATE = 8;   /* minimum exact word run for a lexical warning */
 
 function checkClaims(C, errs, warns) {
   const norm = t => String(t).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
@@ -259,18 +258,12 @@ function checkClaims(C, errs, warns) {
         if (!core) continue;
         const c = norm(core), h = norm(b.h || "");
         if (!c) { errs.push(`${u.id} ${b.t}: core: is empty`); continue; }
-        /* Failed on the opening of h rather than anywhere inside it: a claim
-           legitimately recurs in a later sentence that qualifies it, and only
-           the restatement at the head is unambiguously the duplication core:
-           removes. */
+        /* Exact text at the start is a strong lexical lead; wording or
+           semantic similarity elsewhere cannot be judged reliably here. */
         if (h && (h.startsWith(c) || c.startsWith(h.slice(0, Math.max(24, c.length)))))
           errs.push(`${u.id} ${b.t}: core: repeats the opening of its own h: — ` +
             `h: holds what develops the claim, not the claim again`);
-        /* Warned on a long verbatim run anywhere else in h, because the
-           opening check alone misses the case that actually happens: a claim
-           hoisted into core: while the sentence it was hoisted from stays put
-           further down. Eight words is long enough that a shared phrase is a
-           copy rather than a coincidence of vocabulary. */
+        /* A verbatim run elsewhere is also only a lead. */
         else if (h) {
           const w = c.split(" ").filter(Boolean);
           for (let i = 0; i + RESTATE <= w.length; i++) {
@@ -551,6 +544,8 @@ for (const id of courses) {
         if (b.t === "slides") checkSlides(b, where, errs);
         if (b.tier && !TIERS.includes(b.tier))
           errs.push(`${where}: unknown tier "${b.tier}" — one of ${TIERS.join(", ")}`);
+        if (b.optional != null && typeof b.optional !== "boolean")
+          errs.push(`${where}: optional must be true or false`);
         /* `notes:` overrides how this block behaves at a closed depth. A value
            the engine does not know silently falls back to the default, which is
            the failure shape every other enum here is checked for. */

@@ -60,7 +60,8 @@ const FIELDS = new Set([
   ...[...readFileSync(join(ROOT, "src/lib/gist.js"), "utf8")
         .matchAll(/\bb\.([a-zA-Z_]\w*)/g)].map(m => m[1]),
   "id",        /* lib/figures.js — numbering and citation */
-  "tier",      /* lib/tiers.js   — the lane */
+  "tier",      /* compatibility for existing course data */
+  "optional",  /* optional expansions of a complete reading */
   "follows",   /* lib/follows.js — attaches a block to the one above it */
   "asides",    /* lib/asides.js  — margin notes anchored by <n k> */
   "notes",     /* lib/gist.js    — the per-block depth override */
@@ -70,7 +71,7 @@ const FIELDS = new Set([
   "sourceReview", /* audit-content.mjs — checked or disclosed claim origin */
   "alt",       /* blocks/index.js image alt text */
   "frames",    /* Slides.jsx — sequenced visual frames */
-  "objectives", "objective", "family", "sourceRefs" /* Authoring evidence only. */
+  "objectives", "objective", "family", "sourceRefs", "introduces" /* Authoring evidence only. */
 ]);
 
 let fail = 0;

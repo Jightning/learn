@@ -11,7 +11,7 @@ for (const width of [1440, 390]) test(`demo attachment examples render and grade
     const examples = [
       { sub: "s5-1", id: "read-an-attached-code-listing", answer: 2, kind: "code" },
       { sub: "s5-2", id: "read-an-attached-circuit", answer: 1, kind: "figure" },
-      { sub: "s5-2", id: "compare-an-attached-image", answer: 3, kind: "image" }
+      { sub: "s5-2", id: "read-an-attached-image", answer: 1, kind: "image" }
     ];
     for (const { sub, id, answer, kind } of examples) {
       await page.goto(`${server.origin}/#/demo/${sub}`);
@@ -24,7 +24,7 @@ for (const width of [1440, 390]) test(`demo attachment examples render and grade
       assert.equal(await card.locator(`.qstim-${kind}`).count(), 1);
       assert.equal(await card.locator(".qstim-p").count(), 2);
       if (kind === "code") {
-        assert.match(await card.locator("pre").innerText(), /tier: depth/);
+        assert.match(await card.locator("pre").innerText(), /optional: true/);
         assert.equal(await card.locator(".qstim-note").count(), 1);
       }
       if (kind === "figure") {

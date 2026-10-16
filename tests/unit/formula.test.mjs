@@ -98,3 +98,14 @@ test("editor differential and integral exports preserve their mathematical struc
   assert.equal(normalizeMathText("int _0^1x^2 d x"), "integral(x^2,x,0,1)");
   assert.equal(normalizeMathText("int _a^bx^2 d x"), "integral(x^2,x,a,b)");
 });
+
+test("exponential notation matches exp keys without accepting changed exponents or coefficients", () => {
+  const key = expression("exp(x)-exp(2*x)");
+  assert.equal(gradeFormula(key, "e^x-e^(2*x)"), true);
+  assert.equal(gradeFormula(expression("e^(2*x)"), "exp(2*x)"), true);
+  assert.equal(gradeFormula(key, "e^x-e^2*x"), false);
+  assert.equal(gradeFormula(key, "e^x-e^(3*x)"), false);
+  const courseKey = { ...equation, answer: "y=2*exp(x)-exp(2*x)" };
+  assert.equal(gradeFormula(courseKey, "y=2*e^x-e^(2*x)"), true);
+  assert.equal(gradeFormula(courseKey, "y=e^x-e^(2*x)"), false);
+});

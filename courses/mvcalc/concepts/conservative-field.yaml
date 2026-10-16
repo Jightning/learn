@@ -1,0 +1,4 @@
+title: "Conservative fields, path independence and curve/region types"
+term: "Conservative Field"
+body: >-
+  <p>A vector field <m>\mathbf{F}</m> is conservative if <m>\int_C \mathbf{F} \cdot d\mathbf{r}</m> depends only on the endpoints of <m>C</m> (path independence), which holds if and only if <m>\oint_C \mathbf{F} \cdot d\mathbf{r} = 0</m> for every closed curve <m>C</m>. On an open simply connected domain, a <m>C^1</m> field is conservative if and only if <m>\text{curl}\, \mathbf{F} = \mathbf{0}</m> (in 2D: <m>\frac{\partial Q}{\partial x} = \frac{\partial P}{\partial y}</m>). Simply connected domains contain no holes that prevent curves from contracting to a point. Conservative fields conserve mechanical energy along paths.</p>

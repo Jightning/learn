@@ -1,13 +1,13 @@
 /* What one block looks like at one depth.
  *
- * Two authored fields decide it, and a block declares at most one of them. The
- * field name *is* the declaration — there is no mode flag, for the same reason
- * an absent `tier:` is the declaration of spine: a second field recording a
+ * Two optional authored fields decide it, and a block declares at most one of
+ * them. Neither is required when a separate summary is not useful. The field
+ * name *is* the declaration — there is no mode flag, for the same reason an
+ * absent `tier:` is the declaration of spine: a second field recording a
  * choice the first already made is a second record to drift.
  *
- *   core:   the block's own opening claim, stored apart from its development.
- *           Renders in `full` AND `notes`. `h:` holds only what develops it,
- *           so nothing is written twice and M1 is satisfied outright.
+ *   core:   the block's optional opening claim. Renders in `full` AND `notes`.
+ *           `h:` holds what develops it; without `core:`, `h:` is the passage.
  *
  *   gist:   a summary *about* the block. Renders in `notes` ONLY; `h:` is
  *           whole and untouched. This is a second copy, deliberately, and it
@@ -30,7 +30,7 @@ import { M } from "./math.js";
    `lead` is the interesting one: show the claim, close the development. */
 export const NOTES_MODES = ["open", "lead", "caption", "closed", "hidden"];
 
-/** the authored claim, whichever field carries it — `core` first, then `gist` */
+/** the authored summary, whichever optional field carries it — `core` first */
 export const leadOf = b => (b && (b.core || b.gist)) || null;
 
 /* A claim may be one sentence or several parallel ones.
@@ -51,26 +51,11 @@ export const hasCore = b => !!(b && b.core);
 
 /* ------------------------------------------------------- a derived claim --*/
 /*
- * What `notes` shows for a block whose author never wrote a claim.
- *
- * The architecture argues against extraction, and the argument is right about
- * what it measured. What it did not price is what the reader gets when the
- * guess is declined: `present()` fell through to the block's *name*, so on a
- * course with no claims every prose row in Review reads "Slope field …". Both
- * real courses sit at 100% unclaimed, so Review and Index rendered the same
- * page — which is exactly what a reader looking at them reported.
- *
- * The choice was therefore never "authored claim or derived claim". It was
- * "derived claim or no claim".
- *
- * And the measured failure rate turns out to be a property of the rule that was
- * measured rather than of extraction. That rule is `pretrain.js`'s, and it
- * terminates a sentence on `[.;:]` — so it cuts at the colon introducing a
- * list and returns the fragment before it, which is most of the 33% it was
- * charged with. Terminating on `[.!?]` alone and rejecting what is left over
- * yields useful claims from ordinary opening sentences. At six words the gate
- * admits "Order is the highest derivative present." — a real claim the
- * previous eight-word threshold rejected.
+ * Optional authored summaries are useful where they fit, but a block can have
+ * no separate summary. For Notes, derive a short opening sentence when it is
+ * sentence-shaped; otherwise `present()` falls back to the block name with an
+ * expansion affordance. This derived lead is a reader convenience, not an
+ * authored `core:` or `gist:`.
  *
  * The gate is what keeps the guess honest. A sentence ending on a colon or a
  * semicolon was leading into something that is not here; one under six words is
@@ -78,15 +63,8 @@ export const hasCore = b => !!(b && b.core);
  * Any of those and the row falls back to the name, which is where it already
  * was — so this strictly adds and can never take a row backwards.
  *
- * `demo`, at 0% unclaimed, is what the authored version looks like, and nothing
- * here touches it: this runs only where the author wrote nothing. An authored
- * `core:` remains better than a derived claim and `audit-content.mjs` still
- * counts what is missing.
- *
- * Nothing is marked as derived on the row. The reader's question is "what does
- * this block say", and a badge on two thirds of the rows is the texture T44
- * names — the author's question is a different one and `audit-content.mjs`
- * already answers it with the unclaimed fraction.
+ * Nothing is marked as derived on the row: the reader needs the passage, not
+ * an authorship badge.
  */
 const MIN_WORDS = 6;
 const MAX_CHARS = 200;

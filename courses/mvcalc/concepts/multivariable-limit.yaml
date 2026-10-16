@@ -1,0 +1,4 @@
+title: "Limits and continuity of functions of several variables"
+term: "Multivariable Limit"
+body: >-
+  <p>The limit <m>\lim_{(x,y) \to (a,b)} f(x, y) = L</m> means that <m>f(x, y)</m> approaches <m>L</m> along every possible path in the domain approaching <m>(a, b)</m>. If two distinct paths yield different limiting values, the two-path test proves the limit does not exist. A function is continuous at <m>(a, b)</m> if <m>\lim_{(x,y) \to (a,b)} f(x, y) = f(a, b)</m>. Multivariable continuity ensures smooth surfaces without tears, holes, or step discontinuities.</p>

@@ -42,3 +42,70 @@ test("ZIP bomb and oversized folder are refused by the import dialog", async () 
     await rm(temp, { recursive: true, force: true });
   }
 });
+
+test("folder, ZIP, and JSON imports retain lessons and assets without storing sources", async () => {
+  const temp = await mkdtemp(join(tmpdir(), "course-import-sources-"));
+  const files = {
+    "course.json": JSON.stringify({ code: "SOURCES", title: "Source-free import" }),
+    "sections/01-test/_section.json": JSON.stringify({ title: "Test" }),
+    "sections/01-test/1-check.json": JSON.stringify({
+      title: "Imported lesson", blocks: [{ t: "p", h: "<p>Lesson survived</p>" }], quiz: []
+    }),
+    "assets/dot.svg": '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>'
+  };
+  const folder = join(temp, "source-test");
+  for (const [path, text] of Object.entries(files)) {
+    await mkdir(dirname(join(folder, path)), { recursive: true });
+    await writeFile(join(folder, path), text);
+  }
+  await mkdir(join(folder, "sources"));
+  await writeFile(join(folder, "sources/book.pdf"), Buffer.alloc(9 * 1024 * 1024));
+  await writeFile(join(folder, "sources/extracted.txt"), "Source text");
+  const server = await serveDist(ROOT);
+  const browser = await chromium.launch();
+  try {
+    for (const mode of ["folder", "zip", "json"]) {
+      const page = await browser.newPage();
+      await page.goto(server.origin + "/");
+      await page.locator("#lib-add").click();
+      if (mode === "folder") {
+        await page.locator('.modal .cio input[data-folder]').setInputFiles(folder);
+      } else {
+        const entries = {
+          ...files, "sources/book.pdf": "x".repeat(3 * 1024 * 1024),
+          "sources/extracted.txt": "Source text",
+          "assets/dot.svg": `data:image/svg+xml;base64,${Buffer.from(files["assets/dot.svg"]).toString("base64")}`
+        };
+        const buffer = mode === "json" ? Buffer.from(JSON.stringify(entries)) : Buffer.from(zipSync({
+          ...Object.fromEntries(Object.entries(files).map(([p, text]) => [`source-test/${p}`, Buffer.from(text)])),
+          "source-test/sources/book.pdf": new Uint8Array(9 * 1024 * 1024),
+          "source-test/sources/extracted.txt": Buffer.from("Source text")
+        }, { level: 0 }));
+        await page.locator('.modal .cio input[accept*="zip"]').setInputFiles({
+          name: `source-test.${mode === "json" ? "course.json" : "zip"}`,
+          mimeType: mode === "json" ? "application/json" : "application/zip", buffer
+        });
+      }
+      await page.locator('.lcard .lhit[href="#/source-test"]').waitFor();
+      const stored = await page.evaluate(() => new Promise((resolve, reject) => {
+        const open = indexedDB.open("learn");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const request = db.transaction("courses").objectStore("courses").get("source-test");
+          request.onsuccess = () => { resolve(request.result.files); db.close(); };
+          request.onerror = () => { reject(request.error); db.close(); };
+        };
+      }));
+      assert.deepEqual(Object.keys(stored).sort(), Object.keys(files).sort(), mode);
+      assert.match(stored["assets/dot.svg"], /^data:image\/svg\+xml;base64,/);
+      await page.goto(server.origin + "/#/source-test/s1-1");
+      await page.getByText("Lesson survived", { exact: true }).waitFor();
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+    server.close();
+    await rm(temp, { recursive: true, force: true });
+  }
+});

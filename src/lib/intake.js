@@ -17,7 +17,7 @@
  * All three produce the same thing, so nothing downstream knows the difference.
  * ==========================================================================*/
 import { Unzip, UnzipInflate, strFromU8 } from "fflate";
-import { MAX_BYTES, MAX_FILES, MAX_ENTRY, kb, tooManyFiles, oversizedEntry, oversizedCourse } from "./intake-limits.js";
+import { MAX_BYTES, MAX_FILES, MAX_ENTRY, tooManyFiles, oversizedEntry, oversizedCourse } from "./intake-limits.js";
 
 const TEXT = /\.(ya?ml|json|md|txt)$/i;
 const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
@@ -50,6 +50,8 @@ const clean = p => p.replace(/^\.?\//, "").replace(/\\/g, "/");
    is not a mistake worth guessing the intent of. */
 const junk = p => !p || p.endsWith("/") || /(^|\/)(\.|__MACOSX|node_modules)/.test(p);
 const hostile = p => p.startsWith("/") || p.split("/").includes("..");
+// Authoring evidence stays on disk, as it does in the course packer.
+const source = p => clean(p).split("/").includes("sources");
 
 function build(entries) {
   const kept = entries.filter(e => !junk(clean(e.path)));
@@ -70,18 +72,19 @@ function build(entries) {
 
 /** A directory chosen with `webkitdirectory`, or any FileList with paths. */
 export async function fromFolder(fileList) {
-  /* A picker exposes sizes without reading contents. Check the entire
-     selection first so even an oversized last file leaves every file unread. */
+  /* A picker exposes sizes without reading contents. Check reader files first
+     so even an oversized last file leaves every file unread. */
   const selected = [];
   let count = 0, total = 0;
   for (const f of fileList) {
     const path = f.webkitRelativePath || f.name;
+    if (hostile(clean(path))) throw new Error(`unsafe path: ${path}`);
+    if (source(path)) continue;
     if (++count > MAX_FILES) throw new Error(tooManyFiles(count));
     if (f.size > MAX_ENTRY) throw new Error(oversizedEntry(path));
     total += f.size;
     if (total > MAX_BYTES) throw new Error(oversizedCourse(total));
     if (junk(clean(path))) continue;
-    if (hostile(clean(path))) throw new Error(`unsafe path: ${path}`);
     selected.push({ f, path });
   }
   const entries = [];
@@ -95,15 +98,17 @@ export async function fromFolder(fileList) {
 
 /** A .zip of the course folder. */
 export async function fromZip(file) {
-  if (file.size > MAX_BYTES) throw new Error(`${kb(file.size)} exceeds the ${kb(MAX_BYTES)} limit`);
+  // Stream the archive: its compressed size may mostly be excluded sources.
   const entries = [];
   let count = 0, declaredTotal = 0, actualTotal = 0;
   const limit = message => { const error = new Error(message); error.intakeLimit = true; throw error; };
   const unzip = new Unzip(entry => {
     const path = entry.name;
+    if (hostile(clean(path))) throw new Error(`unsafe path: ${path}`);
+    // Not starting this entry skips it without inflating or retaining its data.
+    if (source(path)) return;
     if (++count > MAX_FILES) limit(tooManyFiles(count));
     const ignored = junk(clean(path));
-    if (!ignored && hostile(clean(path))) throw new Error(`unsafe path: ${path}`);
     /* Local ZIP headers normally declare the uncompressed size. Reject it
        before starting inflation, then also count output for descriptor-based
        or dishonest headers. */
@@ -161,5 +166,6 @@ export async function fromJSON(file) {
   if (!files || typeof files !== "object" || Array.isArray(files))
     throw new Error("expected a map of file paths to text");
   for (const p of Object.keys(files)) if (hostile(p)) throw new Error(`unsafe path: ${p}`);
+  files = Object.fromEntries(Object.entries(files).filter(([p]) => !source(p)));
   return { id: file.name.replace(/\.course\.json$/, "").replace(/\.json$/, ""), files };
 }

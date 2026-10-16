@@ -1,0 +1,4 @@
+title: "Vector-valued functions, their limits and continuity"
+term: "Vector-Valued Function"
+body: >-
+  <p>A vector-valued function <m>\mathbf{r}(t) = \langle f(t), g(t), h(t) \rangle</m> maps a real scalar parameter <m>t</m> to vectors in <m>\mathbb{R}^3</m>, tracing out a space curve as <m>t</m> varies. The domain is the intersection of the domains of its component functions. Limits and continuity are evaluated componentwise: <m>\lim_{t \to a} \mathbf{r}(t) = \langle \lim_{t \to a} f(t), \lim_{t \to a} g(t), \lim_{t \to a} h(t) \rangle</m>, and <m>\mathbf{r}</m> is continuous at <m>a</m> if this limit equals <m>\mathbf{r}(a)</m>. Vector-valued functions parameterize trajectories of moving particles and geometric curves in space.</p>

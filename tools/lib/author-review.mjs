@@ -7,6 +7,7 @@ import * as YAML from "js-yaml";
 import { readAuthorBank, bankMatrix } from "./author-bank.mjs";
 import { digest } from "./digest.mjs";
 import { parseFile } from "./load.mjs";
+import { isOptional } from "../../src/lib/tiers.js";
 import { readPlan, fingerprint, packetText, fileHash } from "./author-packets.mjs";
 
 const list = x => x == null ? [] : Array.isArray(x) ? x : [x];
@@ -98,8 +99,10 @@ export function reviewIndex(dir, state, { assign = true, persist = true } = {}) 
     for (const [id, { item, file }] of concepts) {
       const prior = entries.find(e => e.id === id);
       if (!prior) { add("concept", item, file, {}, id); continue; }
-      const normalize = value => { const copy = { ...value }; delete copy.id; delete copy.key; return YAML.dump(copy, { sortKeys: true }); };
-      if (prior.kind !== "concept" || normalize(prior.content) !== normalize(item)) throw new Error(`conflicting review ID ${id} in ${file}`);
+      if (prior.kind !== "concept") throw new Error(`conflicting review ID ${id} in ${file}`);
+      Object.assign(prior.content, withoutIdentity(item));
+      prior.hash = fingerprint(JSON.stringify(prior.content));
+      prior.file = relative(dir, file);
     }
   }
   // Validate every identity before writing any file.
@@ -283,7 +286,7 @@ export function reviewContext(index, plan) {
     ...(index.bankCoverage ? { bankCoverage: index.bankCoverage } : {}),
     ...(index.blueprints ? { blueprints: index.blueprints } : {}),
     map: index.entries.map(e => ({ id: e.id, kind: e.kind, ...(e.sub ? { subsection: e.sub } : {}),
-      ...(e.kind === "block" ? { order: e.position, tier: e.content.tier || "spine" } : {}),
+      ...(e.kind === "block" ? { order: e.position, optional: isOptional(e.content) } : {}),
       ...(e.content.term ? { defines: e.content.term } : {}), references: references(e) })) };
 }
 

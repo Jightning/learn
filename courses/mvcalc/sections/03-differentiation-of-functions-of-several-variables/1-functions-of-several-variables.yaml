@@ -1,0 +1,141 @@
+title: Functions of Several Variables
+blocks:
+  - t: p
+    h: <p>In single-variable calculus, a function <m>y = f(x)</m> relates one dependent output to one independent input. In the physical sciences and engineering, however, most quantities depend on multiple variables simultaneously—temperature varies with latitude, longitude, and elevation; atmospheric pressure depends on volume and temperature; and financial cost depends on labor, materials, and transport. A function of several variables models these interactions by taking an ordered pair <m>(x, y)</m> or triple <m>(x, y, z)</m> and producing a single real-valued output.</p>
+    authorId: block-ba2f17b8-082
+  - t: def
+    term: Functions of Several Variables and Domain
+    source: OpenStax Calculus Volume 3, Section 4.1
+    sourceReview: sourced
+    core: 'A function of two variables assigns a unique real number <m>z = f(x, y)</m> to each ordered pair in its domain <m>D \subseteq \mathbb{R}^2</m>; its natural domain is the largest set in <m>\mathbb{R}^2</m> where the expression evaluates to a real number.'
+    introduces:
+      - obj-s3-1
+      - multivariable-function
+    objectives:
+      - obj-s3-1
+    family: family-domain-range
+    h: <p>A function <m>z = f(x, y)</m> maps a domain <m>D \subseteq \mathbb{R}^2</m> into the real numbers <m>\mathbb{R}</m>. The input variables <m>x</m> and <m>y</m> are independent variables, while <m>z</m> is the dependent variable. Similarly, a function of three variables <m>w = f(x, y, z)</m> assigns a real value to points in <m>D \subseteq \mathbb{R}^3</m>. Unless specified otherwise, the domain of a function is its natural domain—the set of all inputs for which the formula is mathematically defined and produces a real number. Common restrictions include non-negative radicands for even roots, non-zero denominators, and strictly positive arguments for logarithms.</p>
+    authorId: block-4ee8e97a-a44
+  - t: ex
+    title: Finding Domain and Range of a Two-Variable Function
+    objectives:
+      - obj-s3-1
+    family: family-domain-range
+    h: '<p>Find the domain and range of <m>f(x, y) = \sqrt{25 - x^2 - y^2}</m>.</p><p>For the natural domain, the radicand cannot be negative: <m>25 - x^2 - y^2 \ge 0 \implies x^2 + y^2 \le 25</m>. Geometrically, the domain is the closed disk of radius <m>5</m> centered at the origin in the <m>xy</m>-plane, including the boundary circle <m>x^2 + y^2 = 25</m>.</p><p>For the range, observe that <m>x^2 + y^2 \ge 0</m> on the disk, with minimum value <m>0</m> at the origin <m>(0, 0)</m>. At this point, <m>f(0, 0) = \sqrt{25 - 0} = 5</m>. Along the boundary circle <m>x^2 + y^2 = 25</m>, <m>f(x, y) = \sqrt{25 - 25} = 0</m>. Because <m>f</m> is continuous across the closed disk, it assumes every intermediate value, so the range is the closed interval <m>[0, 5]</m>. The graph <m>z = \sqrt{25 - x^2 - y^2}</m> forms the upper hemisphere of radius 5 centered at the origin.</p>'
+    authorId: block-5271859d-b29
+  - t: def
+    term: Level Curves and Contour Maps
+    source: OpenStax Calculus Volume 3, Section 4.1
+    sourceReview: sourced
+    core: 'The level curves of a function <m>f(x, y)</m> are the curves in the <m>xy</m>-plane with equations <m>f(x, y) = c</m> for constants <m>c</m> in the range; a collection of level curves forms a contour map.'
+    introduces:
+      - level-curve
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    h: <p>To visualize the surface graph <m>z = f(x, y)</m> in three dimensions, we can slice it with horizontal planes <m>z = c</m> at constant heights. The intersection curve projected down into the input plane <m>\mathbb{R}^2</m> is the level curve <m>f(x, y) = c</m>. A collection of level curves drawn in the <m>xy</m>-plane for equally spaced values of <m>c</m> is called a contour map. For functions of three variables <m>w = f(x, y, z)</m>, setting <m>f(x, y, z) = c</m> produces a two-dimensional level surface in <m>\mathbb{R}^3</m>.</p>
+    authorId: block-a3a663cf-df3
+  - t: math
+    label: Level Sets in Two and Three Dimensions
+    tex: f(x, y) = c \quad (\text{Level Curve in } \mathbb{R}^2), \qquad f(x, y, z) = c \quad (\text{Level Surface in } \mathbb{R}^3)
+    note: Each level set represents the locus of points where the multivariable function maintains a constant output c.
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    authorId: block-4dd64b25-83a
+  - t: key
+    label: Contour Spacing and Vertical Traces
+    source: OpenStax Calculus Volume 3, Section 4.1
+    sourceReview: sourced
+    core: Closely spaced contour lines indicate steep changes in surface elevation, while widely spaced contour lines indicate gradual slopes.
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    h: <p>Contour maps convey three-dimensional surface topography through two-dimensional curve patterns:</p>
+    items:
+      - 'Gradient steepness: When adjacent contours representing equal step changes in <m>c</m> are bunched tightly together, the surface climbs or drops rapidly over short horizontal distances.'
+      - 'Gentle slopes: When adjacent contours are spaced far apart, the surface is relatively flat.'
+      - 'Vertical traces: Setting <m>x = a</m> or <m>y = b</m> produces vertical traces in planes parallel to the coordinate axes, revealing single-variable cross-sectional profiles of the 3D surface.'
+    ordered: true
+    authorId: block-b823675a-ae0
+  - t: ex
+    title: Level Curves for an Elliptic Paraboloid
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    h: <p>Describe the level curves of <m>f(x, y) = 4x^2 + y^2</m> for <m>c = 0, 4, 16</m>.</p><p>For <m>c = 0</m>, <m>4x^2 + y^2 = 0</m> has only the single real solution <m>(0, 0)</m>, so the level curve collapses to the origin. For <m>c = 4</m>, the equation is <m>4x^2 + y^2 = 4</m>, or <m>x^2 + \frac{y^2}{4} = 1</m>, which is an ellipse centered at the origin with semi-minor axis 1 along the <m>x</m>-axis and semi-major axis 2 along the <m>y</m>-axis. For <m>c = 16</m>, <m>4x^2 + y^2 = 16</m> becomes <m>\frac{x^2}{4} + \frac{y^2}{16} = 1</m>, an ellipse dilated by a factor of 2. For any <m>c > 0</m>, the level curves are concentric nested ellipses, revealing that the graph <m>z = 4x^2 + y^2</m> is an elliptic paraboloid opening upward.</p>
+    authorId: block-b33bd02e-3de
+  - t: trap
+    label: Confusing Level Curves with Surface Graph Traces
+    source: OpenStax Calculus Volume 3, Section 4.1
+    sourceReview: sourced
+    core: Level curves exist exclusively in the two-dimensional input domain ℝ², not in three-dimensional space ℝ³.
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    h: <p>A common error is referring to the level curve of <m>z = f(x, y)</m> as a three-dimensional curve. A level curve is defined solely by <m>f(x, y) = c</m> in the <m>xy</m>-plane; it contains no <m>z</m>-coordinate. The corresponding 3D object is the horizontal trace <m>\{(x, y, c) \mid f(x, y) = c\}</m> on the surface. Similarly, for <m>w = f(x, y, z)</m>, a level surface <m>f(x, y, z) = c</m> lives in 3D space <m>\mathbb{R}^3</m>, whereas the full graph of <m>f</m> lives in four dimensions <m>\mathbb{R}^4</m>.</p>
+    authorId: block-a5199877-bb0
+quiz:
+  - type: Domain of logarithmic function
+    concept: multivariable-function
+    objectives:
+      - obj-s3-1
+    family: family-domain-range
+    q: What is the natural domain of the function <m>f(x, y) = \ln(9 - x^2 - 9y^2)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: The open region inside the ellipse <m>\frac{x^2}{9} + y^2 < 1</m>, excluding the boundary.
+          why: The natural logarithm requires a strictly positive argument, so <m>9 - x^2 - 9y^2 > 0 \iff x^2 + 9y^2 < 9 \iff \frac{x^2}{9} + y^2 < 1</m>.
+        - text: The closed region inside the ellipse <m>\frac{x^2}{9} + y^2 \le 1</m>, including the boundary.
+          why: At points on the boundary <m>x^2 + 9y^2 = 9</m>, the argument is <m>\ln(0)</m>, which is undefined.
+        - text: The region outside the ellipse <m>\frac{x^2}{9} + y^2 > 1</m>.
+          why: For points outside the boundary ellipse, <m>9 - x^2 - 9y^2 < 0</m>, producing an undefined logarithm of a negative number.
+        - text: The entire <m>xy</m>-plane except the points where <m>x = 0</m> or <m>y = 0</m>.
+          why: Coordinate axes are not the boundary; the constraint is governed by the elliptical relation <m>x^2 + 9y^2 < 9</m>.
+    why: The natural logarithm is defined only where its argument is strictly positive, giving the open ellipse interior.
+    authorId: quiz-015d2122-717
+  - type: Level curve geometry
+    concept: level-curve
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    q: For the function <m>f(x, y) = e^{x - 2y}</m>, what geometric shape do the level curves <m>f(x, y) = c</m> form for any constant <m>c > 0</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Parallel lines with slope <m>\frac{1}{2}</m>
+          why: Setting <m>e^{x - 2y} = c</m> gives <m>x - 2y = \ln c</m>, or <m>y = \frac{1}{2}x - \frac{1}{2}\ln c</m>, which is a family of parallel lines with slope <m>1/2</m>.
+        - text: Concentric circles centered at the origin
+          why: Circles require quadratic equations <m>x^2 + y^2 = c</m>, not linear relationships in the exponent.
+        - text: Parabolas opening along the positive <m>y</m>-axis
+          why: Parabolas require one quadratic variable and one linear variable.
+        - text: Parallel lines with slope <m>-2</m>
+          why: Solving <m>x - 2y = k</m> for <m>y</m> yields <m>y = \frac{1}{2}x - \frac{k}{2}</m>, so the slope is <m>+1/2</m>, not <m>-2</m>.
+    why: Taking the natural logarithm gives the linear equation x - 2y = ln(c), corresponding to parallel straight lines with slope 1/2.
+    authorId: quiz-ddccc584-6f3
+  - type: Level surface identification
+    concept: level-curve
+    objectives:
+      - obj-s3-1
+    family: family-level-curves
+    q: What quadric surface is represented by the level surface <m>f(x, y, z) = 4</m> for the function <m>f(x, y, z) = x^2 + y^2 - z^2</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: A hyperboloid of one sheet opening along the <m>z</m>-axis
+          why: Setting <m>x^2 + y^2 - z^2 = 4</m> gives <m>\frac{x^2}{4} + \frac{y^2}{4} - \frac{z^2}{4} = 1</m>, which has two positive square terms and one negative square term equal to +1, defining a hyperboloid of one sheet.
+        - text: A hyperboloid of two sheets opening along the <m>z</m>-axis
+          why: A hyperboloid of two sheets has two negative coefficients (or one positive equal to -1), such as <m>-x^2 - y^2 + z^2 = 4</m>.
+        - text: An elliptic cone
+          why: An elliptic cone corresponds to constant value <m>c = 0</m>, where <m>x^2 + y^2 = z^2</m>.
+        - text: An ellipsoid
+          why: An ellipsoid requires all three squared terms to have positive coefficients.
+    why: An equation with two positive squared terms and one negative squared term equal to a positive constant describes a hyperboloid of one sheet.
+    authorId: quiz-975e05f4-95b

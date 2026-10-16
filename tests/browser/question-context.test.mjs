@@ -36,10 +36,10 @@ test("the trend question keeps its scatterplot in subsection, Review, and Mixed 
     assert.match(await review.innerText(), /What does that slope difference mean\?/);
 
     await page.evaluate(() => { location.hash = "#/demo/review/mixed"; });
-    await page.locator(".pcfg > summary").click();
+    await page.getByRole("group", { name: "Practice settings" }).waitFor();
     await page.locator("#p-from").selectOption("s4-2");
     await page.locator("#p-to").selectOption("s4-2");
-    const available = parseInt(await page.locator(".pinfo").innerText(), 10);
+    const available = parseInt(await page.locator(".practice-settings .practice-stats strong").innerText(), 10);
     assert.ok(available <= Number(await page.locator("#p-count").inputValue()),
       "the run must include every question in the selected subsection");
     await page.locator("#p-start").click();

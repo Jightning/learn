@@ -1,0 +1,4 @@
+title: "Changing the order of integration"
+term: "Order Reversal"
+body: >-
+  <p>Changing the order of integration involves converting a Type I iterated integral into an equivalent Type II integral, or vice versa, by sketching the region of integration and re-expressing its boundary curves. For example, an integral with bounds <m>\int_0^1 \int_x^1 f(x, y)\, dy\, dx</m> has region <m>0 \le x \le y \le 1</m>, which reverses to <m>\int_0^1 \int_0^y f(x, y)\, dx\, dy</m>. This technique is essential when an antiderivative cannot be found in elementary functions in the original order, such as <m>\int e^{y^2}\, dy</m>. Reversal preserves the integrated domain while altering the order of slice accumulation.</p>

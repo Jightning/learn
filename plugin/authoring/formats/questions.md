@@ -18,7 +18,7 @@ response: {kind: number, value: 12, unit: 'cm²'}
 ```
 
 `tries` must be a positive integer and sits beside `response`, never inside it.
-It works for subsection quizzes and practice banks, including legacy questions.
+It works for inline lesson questions and bank questions.
 The button shows tries remaining. A wrong answer offers **Try again** until the
 limit is reached; success, the last try, or **Skip** completes the question.
 Correct answers and explanations stay hidden until completion, except `self`
@@ -127,8 +127,7 @@ both features automatically.
 Model answers also honor `formulaParsing`, including inline math in prose;
 authored HTML and existing `<m>` notation remain supported.
 
-Choice `why` explains why the tempting wrong choice fails. Legacy `q/a` remains readable but new
-work uses this shape. A question type identifies a skill surface; the concept
+Choice `why` explains why the tempting wrong choice fails. A question type identifies a skill surface; the concept
 routes retention and review.
 
 Questions can also carry `stimulus`: one attachment or an ordered list of prose,

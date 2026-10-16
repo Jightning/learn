@@ -1,0 +1,4 @@
+title: "Divergence theorem"
+term: "Divergence Theorem"
+body: >-
+  <p>The Divergence theorem (Gauss's theorem) equates the net outward flux of a vector field <m>\mathbf{F}</m> across a closed, positively oriented surface <m>S = \partial E</m> to the triple integral of its divergence over the enclosed solid <m>E</m>: <m>\iint_S \mathbf{F} \cdot d\mathbf{S} = \iiint_E (\text{div}\, \mathbf{F})\, dV</m>. The boundary surface <m>S</m> must be outward-oriented. This theorem converts difficult two-dimensional flux integrals over piecewise boundaries into a single volume integral. It forms the core mathematical principle behind conservation laws in fluid dynamics and electromagnetism.</p>

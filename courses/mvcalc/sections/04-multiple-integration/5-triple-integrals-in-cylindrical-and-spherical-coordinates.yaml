@@ -1,0 +1,141 @@
+title: Triple Integrals in Cylindrical and Spherical Coordinates
+blocks:
+  - t: p
+    h: <p>Many solids in physics and multivariable calculus possess rotational or central symmetry. Solids of revolution like pipes, parabolic antennas, and drill bits display axial symmetry around a line, while stars, planets, and electrostatic point potentials exhibit radial symmetry about a single point. Integrating over such objects in Cartesian coordinates produces unwieldy nested square root expressions. Transforming to cylindrical coordinates <m>(r, \theta, z)</m> or spherical coordinates <m>(\rho, \theta, \phi)</m> aligns the coordinate axes with the physical symmetry of the boundaries, simplifying the integration limits into constant intervals.</p>
+    authorId: block-3f27c1ef-8ba
+  - t: def
+    term: Cylindrical Coordinates and the Volume Differential
+    source: OpenStax Calculus Volume 3, Section 5.5
+    sourceReview: sourced
+    core: In cylindrical coordinates <m>(r, \theta, z)</m>, the volume differential is <m>dV = r\,dz\,dr\,d\theta</m>, combining planar polar coordinates with vertical height <m>z</m>.
+    introduces:
+      - obj-s4-5
+      - cylindrical-triple-integral
+    objectives:
+      - obj-s4-5
+    family: family-cylindrical-triple
+    h: <p>Cylindrical coordinates specify a spatial point via <m>(r, \theta, z)</m>, where <m>x = r\cos\theta</m>, <m>y = r\sin\theta</m>, <m>z = z</m>, and <m>r^2 = x^2 + y^2</m>. A cylindrical sub-box has radial thickness <m>\Delta r</m>, angular spread <m>\Delta\theta</m>, and vertical height <m>\Delta z</m>. Because the base area in the <m>xy</m>-plane is the polar area patch <m>\Delta A \approx r^*\,\Delta r\,\Delta\theta</m>, the volume of the column element is <m>\Delta V \approx r^*\,\Delta z\,\Delta r\,\Delta\theta</m>. In the limit as grid partition sizes approach zero, the volume differential becomes <m>dV = r\,dz\,dr\,d\theta</m>. Cylindrical coordinates are natural for solids bounded by cylinders <m>r = c</m>, paraboloids <m>z = cr^2</m>, or cones <m>z = cr</m>.</p>
+    authorId: block-97e19c37-8c2
+  - t: ex
+    title: Volume between a Paraboloid and a Plane via Cylindrical Coordinates
+    objectives:
+      - obj-s4-5
+    family: family-cylindrical-triple
+    h: <p>Find the volume of the solid <m>E</m> bounded below by the paraboloid <m>z = x^2 + y^2</m> and above by the plane <m>z = 4</m>.</p><p>In cylindrical coordinates, the paraboloid is <m>z = r^2</m> and the top surface is <m>z = 4</m>. Setting <m>r^2 = 4</m> identifies the intersection circle as <m>r = 2</m>. The shadow on the <m>xy</m>-plane is the disk <m>0 \le r \le 2</m>, <m>0 \le \theta \le 2\pi</m>. For each point in this disk, <m>z</m> extends from <m>r^2</m> up to <m>4</m>.</p><p>Set up the triple integral using <m>dV = r\,dz\,dr\,d\theta</m>:</p><p><m>V = \int_0^{2\pi} \int_0^2 \int_{r^2}^4 r\,dz\,dr\,d\theta = \left(\int_0^{2\pi} d\theta\right)\int_0^2 r(4 - r^2)\,dr</m></p><p>Evaluating the radial integral yields <m>2\pi \left[2r^2 - \frac{r^4}{4}\right]_0^2 = 2\pi (8 - 4) = 8\pi</m>.</p>
+    authorId: block-f1a77a24-ea7
+  - t: def
+    term: Spherical Coordinates and the Spherical Volume Element
+    source: OpenStax Calculus Volume 3, Section 5.5
+    sourceReview: sourced
+    core: In spherical coordinates <m>(\rho, \theta, \phi)</m>, the volume differential is <m>dV = \rho^2 \sin\phi\,d\rho\,d\phi\,d\theta</m>.
+    introduces:
+      - spherical-triple-integral
+    objectives:
+      - obj-s4-5
+    family: family-spherical-triple
+    h: '<p>Spherical coordinates locate points using radial distance <m>\rho \ge 0</m> from the origin, azimuthal angle <m>0 \le \theta \le 2\pi</m> in the <m>xy</m>-plane, and polar (zenith) angle <m>0 \le \phi \le \pi</m> measured down from the positive <m>z</m>-axis. The coordinate conversion identities are <m>x = \rho\sin\phi\cos\theta</m>, <m>y = \rho\sin\phi\sin\theta</m>, <m>z = \rho\cos\phi</m>, and <m>\rho^2 = x^2 + y^2 + z^2</m>. A spherical volume wedge has edge lengths <m>\Delta\rho</m> (radial), <m>\rho\,\Delta\phi</m> (along meridian arcs), and <m>\rho\sin\phi\,\Delta\theta</m> (along parallels of latitude). Multiplying these orthogonal infinitesimal dimensions yields the spherical volume differential: <m>dV = \rho^2 \sin\phi\,d\rho\,d\phi\,d\theta</m>.</p>'
+    authorId: block-f2d26b87-df9
+  - t: math
+    label: Volume Differentials for Cylindrical and Spherical Coordinates
+    tex: dV_{\text{cyl}} = r\,dz\,dr\,d\theta, \qquad dV_{\text{sph}} = \rho^2 \sin\phi\,d\rho\,d\phi\,d\theta
+    note: Cylindrical coordinates require the scale factor <m>r</m>; spherical coordinates require the scale factor <m>\rho^2 \sin\phi</m>.
+    objectives:
+      - obj-s4-5
+    family: family-choose-coordinates
+    authorId: block-ff497be8-0d1
+  - t: ex
+    title: Volume of an Ice-Cream Cone Solid
+    objectives:
+      - obj-s4-5
+    family: family-spherical-triple
+    h: <p>Find the volume of the solid <m>E</m> bounded above by the sphere <m>x^2 + y^2 + z^2 = 9</m> and below by the cone <m>z = \sqrt{x^2 + y^2}</m>.</p><p>In spherical coordinates, the bounding sphere is <m>\rho^2 = 9 \implies \rho = 3</m>, giving radial limits <m>0 \le \rho \le 3</m>. The cone is <m>\rho\cos\phi = \rho\sin\phi \implies \tan\phi = 1 \implies \phi = \pi/4</m>, so <m>\phi</m> ranges from the positive <m>z</m>-axis (<m>\phi = 0</m>) to the cone boundary (<m>\phi = \pi/4</m>). Full rotational symmetry provides azimuthal limits <m>0 \le \theta \le 2\pi</m>.</p><p>Because the limits are constants, the triple integral factors into three single integrals:</p><p><m>V = \int_0^{2\pi} d\theta \int_0^{\pi/4} \sin\phi\,d\phi \int_0^3 \rho^2\,d\rho = (2\pi)\left[-\cos\phi\right]_0^{\pi/4}\left[\frac{\rho^3}{3}\right]_0^3 = (2\pi)\left(1 - \frac{\sqrt{2}}{2}\right)(9) = 9\pi(2 - \sqrt{2})</m>.</p>
+    authorId: block-1afd90ed-313
+  - t: key
+    label: Strategic Selection of Coordinate Systems
+    source: OpenStax Calculus Volume 3, Section 5.5
+    sourceReview: sourced
+    core: Choose rectangular coordinates for flat planar boundaries, cylindrical for solids with axial symmetry, and spherical for solids with radial point symmetry.
+    objectives:
+      - obj-s4-5
+    family: family-choose-coordinates
+    h: <p>Selecting the optimal coordinate system dramatically simplifies 3D integration:</p>
+    items:
+      - 'Rectangular coordinates: Best for boxes, prisms, and pyramids bounded by coordinate or oblique planes.'
+      - 'Cylindrical coordinates: Best for cylinders <m>x^2 + y^2 = R^2</m>, paraboloids <m>z = a(x^2 + y^2)</m>, and regions where <m>z</m> is bounded between horizontal surfaces of revolution.'
+      - 'Spherical coordinates: Best for spheres <m>x^2 + y^2 + z^2 = R^2</m>, origin-based cones <m>\phi = \alpha</m>, and integrands containing <m>(x^2 + y^2 + z^2)^{p/2}</m>.'
+    ordered: true
+    authorId: block-9479254a-a29
+  - t: trap
+    label: Forgetting Metric Scale Factors in Cylindrical and Spherical Coordinates
+    source: OpenStax Calculus Volume 3, Section 5.5
+    sourceReview: sourced
+    core: Omitting the metric scaling factor <m>r</m> in cylindrical coordinates or <m>\rho^2 \sin\phi</m> in spherical coordinates invalidates volume dimensions.
+    objectives:
+      - obj-s4-5
+    family: family-choose-coordinates
+    h: <p>A recurring error is writing <m>dV = dz\,dr\,d\theta</m> or <m>dV = d\rho\,d\phi\,d\theta</m>. Angular differentials <m>d\theta</m> and <m>d\phi</m> represent dimensionless angles in radians; they must be converted into physical spatial lengths through multiplying by their corresponding radii of curvature. Always write <m>dV = r\,dz\,dr\,d\theta</m> in cylindrical coordinates and <m>dV = \rho^2 \sin\phi\,d\rho\,d\phi\,d\theta</m> in spherical coordinates.</p>
+    authorId: block-9d1fbe2f-022
+quiz:
+  - type: Cylindrical triple integral evaluation
+    concept: cylindrical-triple-integral
+    objectives:
+      - obj-s4-5
+    family: family-cylindrical-triple
+    q: Evaluate the triple integral <m>\iiint_E (x^2 + y^2)\,dV</m>, where <m>E</m> is the cylinder <m>x^2 + y^2 \le 4</m> with <m>0 \le z \le 3</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>24\pi</m>
+          why: In cylindrical coordinates, the integrand is <m>r^2</m> and the volume element is <m>r\,dz\,dr\,d\theta</m>. The integral factors as <m>\left(\int_0^{2\pi} d\theta\right)\left(\int_0^3 dz\right)\left(\int_0^2 r^3\,dr\right) = (2\pi)(3)\left[\frac{r^4}{4}\right]_0^2 = 6\pi(4) = 24\pi</m>.
+        - text: <m>12\pi</m>
+          why: Forgetting the factor of 2 from the angular integral yields 12pi.
+        - text: <m>48\pi</m>
+          why: 'Failing to divide by 4 when integrating <m>r^3</m> gives <m>48\pi</m>.'
+        - text: <m>16\pi</m>
+          why: Integrating only the surface boundaries instead of the solid cylinder volume gives an incorrect answer.
+    why: The cylindrical triple integral factors into <m>(2\pi)(3)(4) = 24\pi</m>.
+    authorId: quiz-f9c13d4d-f02
+  - type: Spherical triple integral evaluation
+    concept: spherical-triple-integral
+    objectives:
+      - obj-s4-5
+    family: family-spherical-triple
+    q: Evaluate <m>\iiint_B (x^2 + y^2 + z^2)^{3/2}\,dV</m>, where <m>B</m> is the solid unit ball <m>x^2 + y^2 + z^2 \le 1</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{2\pi}{3}</m>
+          why: In spherical coordinates, the integrand becomes <m>\rho^3</m> and <m>dV = \rho^2\sin\phi\,d\rho\,d\phi\,d\theta</m>. Factoring gives <m>\left(\int_0^{2\pi} d\theta\right)\left(\int_0^\pi \sin\phi\,d\phi\right)\left(\int_0^1 \rho^5\,d\rho\right) = (2\pi)(2)\left(\frac{1}{6}\right) = \frac{2\pi}{3}</m>.
+        - text: <m>\frac{4\pi}{3}</m>
+          why: 'Missing the factor of 1/6 when integrating <m>\rho^5</m> yields an incorrect coefficient.'
+        - text: <m>\frac{\pi}{3}</m>
+          why: Evaluating the zenith angle integral over [0, pi/2] instead of [0, pi] cuts the result in half.
+        - text: <m>2\pi</m>
+          why: Forgetting the radial integration entirely produces 2pi.
+    why: The spherical triple integral evaluates to <m>(2\pi)(2)(1/6) = \frac{2\pi}{3}</m>.
+    authorId: quiz-8c20ed11-0bc
+  - type: Coordinate system selection for conical solid
+    concept: cylindrical-triple-integral
+    objectives:
+      - obj-s4-5
+    family: family-choose-coordinates
+    q: Which coordinate system is most appropriate for evaluating the triple integral of <m>f(x, y, z) = z\sqrt{x^2 + y^2}</m> over the solid enclosed between the cone <m>z = \sqrt{x^2 + y^2}</m> and the horizontal plane <m>z = 3</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: Cylindrical coordinates, because the solid has axial symmetry about the <m>z</m>-axis and the upper boundary is a constant height plane <m>z = 3</m>.
+          why: In cylindrical coordinates, the cone is <m>z = r</m>, the top is <m>z = 3</m>, and the projection is the disk <m>r \le 3</m>, producing very simple polynomial bounds.
+        - text: Spherical coordinates, because every solid bounded by a cone must be integrated in spherical coordinates.
+          why: In spherical coordinates, the upper boundary plane <m>z = 3</m> becomes <m>\rho = 3\sec\phi</m>, making the radial integral more cumbersome.
+        - text: Rectangular coordinates, because algebraic equations are always simplest in Cartesian axes.
+          why: Cartesian bounds involve radicals <m>\sqrt{9 - x^2}</m> and <m>\sqrt{x^2 + y^2}</m>, complicating the evaluation.
+        - text: Parabolic coordinates, because cones are quadric surfaces.
+          why: Parabolic coordinates are not suited for standard circular cones.
+    why: 'Cylindrical coordinates handle the flat top plane <m>z = 3</m> and axial cone symmetry with simple polynomial limits.'
+    authorId: quiz-62a901c3-c9d

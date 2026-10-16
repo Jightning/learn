@@ -1,0 +1,4 @@
+title: "Orientation and flux (surface integrals of vector fields)"
+term: "Flux Integral"
+body: >-
+  <p>An orientable two-sided surface <m>S</m> has a continuous unit normal vector field <m>\mathbf{n}</m>. The flux of a vector field <m>\mathbf{F}</m> across <m>S</m> in the direction of <m>\mathbf{n}</m> is the surface integral <m>\iint_S \mathbf{F} \cdot d\mathbf{S} = \iint_S \mathbf{F} \cdot \mathbf{n}\, dS = \iint_D \mathbf{F}(\mathbf{r}(u, v)) \cdot (\mathbf{r}_u \times \mathbf{r}_v)\, dA</m>. Reversing the orientation of <m>S</m> changes the sign of the flux integral. Physically, this integral measures the net rate of volume fluid flow or electric/magnetic flux passing through the surface per unit time.</p>

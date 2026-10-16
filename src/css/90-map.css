@@ -1,6 +1,8 @@
 /* 90-map — Dependency map. */
 
 .mapwrap{margin:var(--sp-3) 0 var(--sp-3);padding:22px 10px}
+/* Grow with the SVG; very tall maps scroll inside the frame. */
+.mapwrap .figure-scroll{max-height:80vh;max-height:80dvh;overflow:auto}
 .fx-node{cursor:pointer}
 .fx-node:hover .fx-n{stroke-width:2.6}
 .maplist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}

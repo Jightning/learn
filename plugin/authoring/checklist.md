@@ -3,9 +3,11 @@
 - Requested goal, reader background and scope dispositions are explicit.
 - Required families have exact locators and genuine evidence; shared evidence
   may cover related families. Inventory entries are not lesson/question quotas.
-- Planned outcomes and necessary prerequisites are met without padding,
-  repeated definitions, forward references or unexplained terms.
-- Used claim blocks have one core/gist and a checked source disposition.
+- Planned outcomes and necessary prerequisites are addressed without padding,
+  forward references or unexplained terms; essential reasoning remains in the
+  full reading path.
+- Used claim blocks have a checked source disposition; optional `core`/`gist`
+  fields follow the schema semantics.
 - Used figures, tables, images, math, links, captions and YAML validate.
 - Writer answer checks are recorded; strong review covers uncertainty,
   high-risk claims and representative families with exact evidence.

@@ -1,0 +1,4 @@
+title: "Stokes' theorem"
+term: "Stokes' Theorem"
+body: >-
+  <p>Stokes' theorem states that the circulation of a vector field <m>\mathbf{F}</m> around the boundary curve <m>C = \partial S</m> equals the flux of its curl across the oriented surface <m>S</m>: <m>\oint_C \mathbf{F} \cdot d\mathbf{r} = \iint_S (\text{curl}\, \mathbf{F}) \cdot d\mathbf{S}</m>. The curve <m>C</m> must have positive orientation relative to the surface normal <m>\mathbf{n}</m> by the right-hand rule. This generalizes Green's theorem to curved two-dimensional surfaces in three dimensions. Stokes' theorem shows that flux of curl depends only on the boundary curve, allowing surface deformation.</p>

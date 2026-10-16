@@ -1,0 +1,4 @@
+title: "Dot product and the angle between vectors"
+term: "Dot Product"
+body: >-
+  <p>The dot product of two vectors <m>\mathbf{u} = \langle u_1, u_2, u_3 \rangle</m> and <m>\mathbf{v} = \langle v_1, v_2, v_3 \rangle</m> is the scalar <m>\mathbf{u} \cdot \mathbf{v} = u_1 v_1 + u_2 v_2 + u_3 v_3</m>. Geometrically, it satisfies <m>\mathbf{u} \cdot \mathbf{v} = \|\mathbf{u}\| \|\mathbf{v}\| \cos \theta</m>, where <m>\theta</m> is the angle between the vectors. Two nonzero vectors are orthogonal if and only if <m>\mathbf{u} \cdot \mathbf{v} = 0</m>. The dot product is essential for determining angles, computing projections, and calculating mechanical work.</p>

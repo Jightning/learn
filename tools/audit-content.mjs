@@ -25,7 +25,8 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { loadCourse } from "./lib/load.mjs";
-import { COURSES } from "./lib/paths.mjs";
+import { COURSES, STATE } from "./lib/paths.mjs";
+import { assessmentRequirementIssues } from "./lib/assessment-requirements.mjs";
 import { conceptOf } from "../src/lib/index.js";
 import { present } from "../src/lib/gist.js";
 import { pointsAtNothing } from "./lib/sequence.mjs";
@@ -60,8 +61,6 @@ const METRICS = [
   ["unsourced",  "claims name no source"],
   ["unverified", "answers lack a valid verification marker"],
   ["unrouted",   "questions resolve to no concept"],
-  ["unclaimed",  "claims declare neither core: nor gist:"],
-  ["repeat",     "claims restate themselves in a gist: rather than splitting a core:"],
   ["nameonly",   "blocks say nothing at notes depth until they are opened"]
 ];
 
@@ -100,8 +99,7 @@ function audit(id) {
     C.drills = {}; C.practice = {};
   }
   const n = { claims: 0, answers: 0, quiz: 0 };
-  const miss = { unsourced: 0, unverified: 0, unrouted: 0,
-                 unclaimed: 0, repeat: 0, nameonly: 0 };
+  const miss = { unsourced: 0, unverified: 0, unrouted: 0, nameonly: 0 };
   let blocks = 0;
   const sourceIssues = [];
 
@@ -130,18 +128,6 @@ function audit(id) {
         if (profile === "publish" && (kind === "missing" || b.sourceReview !== kind))
           sourceIssues.push(`${u.id} block ${i + 1}: sourceReview must be ${kind === "missing"
             ? "sourced or disclosed, with a source: value" : kind} after reviewing source: ${b.source || "(missing)"}`);
-        /* A claim with neither field states nothing at `notes` depth and
-           closes to its own label, so the reader gets a name where a claim
-           was promised. Counted rather than failed, because a course written
-           before depth existed has every block in this state and must keep
-           rendering. */
-        if (!String(b.core || "").trim() && !String(b.gist || "").trim()) miss.unclaimed++;
-        /* `gist:` is a second copy, permitted where claim-first would spoil the
-           first read and nowhere else. Left ungated it becomes the default,
-           because it is the easier of the two to write: no prose discipline,
-           just a summary. So it is a declared fraction with a ceiling, like
-           every other piece of content debt here. */
-        else if (String(b.gist || "").trim()) miss.repeat++;
       }
       for (const q of u.quiz || []) {
         n.quiz++; n.answers++;
@@ -163,7 +149,7 @@ function audit(id) {
     for (const it of file.items || []) { n.answers++; if (!verifiedAnswer(it.verified)) miss.unverified++; }
 
   const of = { unsourced: n.claims, unverified: n.answers, unrouted: n.quiz,
-               unclaimed: n.claims, repeat: n.claims, nameonly: blocks };
+               nameonly: blocks };
   const ceiling = C.audit || {};
   const rows = METRICS.map(([k, label]) => ({
     k, label, of: of[k],
@@ -188,6 +174,10 @@ if (wanted.some(id => !ids.includes(id))) {
 let failed = 0;
 for (const id of ids) {
   const { C, rows, over, sourceIssues, schemaIssues, details, points } = audit(id);
+  if (profile === "publish" && !subsection) {
+    try { sourceIssues.push(...assessmentRequirementIssues(join(COURSES, id), join(STATE, id))); }
+    catch (error) { sourceIssues.push(`assessment scope could not be verified: ${error.message}`); }
+  }
   let coverage = null, coverageError = null;
   if (profile === "publish" && !subsection) {
     try { coverage = coverageReport(id); }

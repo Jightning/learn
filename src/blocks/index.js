@@ -107,10 +107,10 @@ export const U = {
 
   /* The block's prose, claim first.
    *
-   * `core:` holds the block's opening claim and `h:` holds only what develops
-   * it, so the two are one paragraph split at a declared point rather than a
-   * statement and a copy of it. Composing them here is what lets `notes` depth
-   * show the claim alone without the renderer knowing depth exists.
+   * `core:` optionally holds the block's opening claim and `h:` holds what
+   * develops it. Without `core:`, `h:` is the complete passage. Composing them
+   * here lets `notes` depth show an authored claim without the renderer
+   * knowing depth exists.
    *
    * `gist:` is deliberately absent from this path. It is a summary *about* the
    * block, for a block whose prose withholds its claim on purpose, and showing
@@ -192,14 +192,17 @@ export const holdsOf = t => ((Blocks.get(t) || {}).holds === "structure" ? "stru
  *   closed   a one-line stub carrying its name                    (ex/note/code)
  *   hidden   not in the document at this depth                    (p)
  *
- * `p` is hidden because a `p` carries no claim: it sets up, bridges, or fades
- * an anchor. A `p` that asserts something is the wrong block type and wants to
- * be a `key`. That is the one registry entry named after an HTML tag rather
- * than a role, and this is where the role gets declared.
+ * Ordinary prose develops reasoning and connects ideas without requiring a
+ * callout. Compact review omits that development; full reading retains it.
  * -------------------------------------------------------------------------*/
 
 /* ---------- prose and callouts ---------- */
-R("p",    { notes: "hidden", render: b => `<p>${b.h}</p>` });
+R("p",    { notes: "hidden", render: b => {
+  const h = b.h || "";
+  // Rich prose already owns its paragraph boundaries. Nesting it in another
+  // paragraph makes the browser insert empty paragraphs and misleading gaps.
+  return /<(?:p|ol|ul|blockquote|div|pre|table|h[1-6])(?:\s|>)/i.test(h) ? h : `<p>${h}</p>`;
+} });
 R("def",  { apart: true, notes: "lead", defaultLabel: "Definition",
             name: b => b.term,
             render: (b, U2, env) => U.box("def", b.label || (b.term ? "" : "Definition"),

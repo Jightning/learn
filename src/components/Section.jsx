@@ -149,18 +149,8 @@ const press = fn => e => {
   fn();
 };
 
-/* One subsection's blocks, filtered by the lane and closed by the depth.
- *
- * The two compose in that order and only that order: the lane decides which
- * blocks are in the document at all, and the depth decides how much of each
- * surviving block is open.
- *
- * At a closed depth the blocks are grouped into topics before they are drawn.
- * A definition opens a topic and the rules, instances and traps that follow it
- * belong to that topic — the order M10 already fixes — so related claims sit
- * together instead of running down the page as one undifferentiated column.
- * That proximity is the whole mechanism the note-format evidence identifies.
- */
+/* Optional expansions can close without removing required teaching. At compact
+ * reading resolutions, related claims stay grouped under their topic. */
 /* The source declared by the block immediately above this one, or null.
  *
  * Read from the subsection's own block list rather than threaded through the
@@ -384,7 +374,7 @@ const nameOfHead = b => b.term || b.label || "";
    page can wear is a literal the stylesheet lint can find. */
 const depthClass = d => (d === "index" ? " depth-index" : d === "notes" ? " depth-notes" : "");
 
-export default function Section({ section, ctx, expandAll, lane, onLane, depth, onDepth, openBlock }) {
+export default function Section({ section, ctx, expandAll, lane, depth, openBlock }) {
   const { C, cid, idx } = ctx;
   const H = r => `#/${cid}/${r}`;
   const prereq = buildsOn(idx.SUBS, C.sections, section);

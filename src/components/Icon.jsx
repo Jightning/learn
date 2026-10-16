@@ -1,27 +1,32 @@
+/* Sidebar icons: Google Material Icons Outlined (Apache-2.0).
+ * https://github.com/google/material-design-icons/tree/master/src
+ * view_agenda, schedule, device_hub, explore, bookmark_border, bookmark.
+ * License: docs/material-icons-LICENSE.txt. */
+const M = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "currentColor",
+            "aria-hidden": "true", focusable: "false" };
+
 /* Inline SVG icons. The previous build used ◈ ↻ ⌗ as text, which fell back to
  * tofu in the monospace stack — these always render. */
 const P = { width: 13, height: 13, viewBox: "0 0 16 16", fill: "none",
             stroke: "currentColor", "stroke-width": 1.6,
             "stroke-linecap": "round", "stroke-linejoin": "round" };
 
-export function IconStart()    { return <svg {...P}><path d="M2 4h12M2 8h12M2 12h7"/></svg>; }
+export function IconStart() { return <svg {...M}><path d="M19,13H5c-1.1,0-2,0.9-2,2v4c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2v-4C21,13.9,20.1,13,19,13z M19,19H5v-4h14V19z" /><path d="M19,3H5C3.9,3,3,3.9,3,5v4c0,1.1,0.9,2,2,2h14c1.1,0,2-0.9,2-2V5C21,3.9,20.1,3,19,3z M19,9H5V5h14V9z" /></svg>; }
 export function IconPractice() { return <svg {...P}><path d="M13 8a5 5 0 1 1-1.6-3.7"/><path d="M13 2v3h-3"/></svg>; }
-export function IconMap()      { return <svg {...P}><circle cx="4" cy="4" r="1.8"/><circle cx="12" cy="4" r="1.8"/><circle cx="8" cy="12" r="1.8"/><path d="M5.4 5.2 7 10.4M10.6 5.2 9 10.4M5.8 4h4.4"/></svg>; }
+export function IconMap() { return <svg {...M}><path d="M17 16l-4-4V8.82C14.16 8.4 15 7.3 15 6c0-1.66-1.34-3-3-3S9 4.34 9 6c0 1.3.84 2.4 2 2.82V12l-4 4H3v5h5v-3.05l4-4.2 4 4.2V21h5v-5h-4z" /></svg>; }
 export function IconHome()     { return <svg {...P}><path d="M2.5 7 8 2.5 13.5 7"/><path d="M4 7.5V13h8V7.5"/></svg>; }
 export function IconSearch()   { return <svg {...P}><circle cx="7" cy="7" r="4.3"/><path d="M10.2 10.2 14 14"/></svg>; }
 /* Review leads with its scheduled queue; mixed practice lives inside it. */
-export function IconReview()   { return <svg {...P}><circle cx="8" cy="8" r="5.8"/><path d="M8 4.6V8l2.4 1.6"/></svg>; }
+export function IconReview() { return <svg {...M}><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" /></svg>; }
 /* The index: a page of entries with the thumb tab a back-of-book index is cut
    with. Replaces the separate concept and category marks, which were a diamond
    and a set of bins for two halves of one page. */
 export function IconIndex()    { return <svg {...P}><path d="M3 2.5h8.5v11H3z"/><path d="M11.5 5h2M11.5 8h2M11.5 11h2"/><path d="M5.2 5.4h4M5.2 8h4M5.2 10.6h2.4"/></svg>; }
-/* Explore: the search lens with a filter under it. */
-export function IconExplore()  { return <svg {...P}><circle cx="6.6" cy="6.6" r="4.1"/><path d="M9.6 9.6 14 14"/><path d="M3.4 13.6h4"/></svg>; }
+/* Explore uses the Material compass. */
+export function IconExplore() { return <svg {...M}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z" /></svg>; }
 /* Saved: a page tab/bookmark, kept intentionally quieter than a star. */
 export function IconSaved({ filled = false }) {
-  return <svg {...P} fill={filled ? "currentColor" : "none"}>
-    <path d="M4 2.3h8v11.4L8 11l-4 2.7z" />
-  </svg>;
+  return <svg {...M}>{filled ? <><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" /></> : <><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2zm0 15l-5-2.18L7 18V5h10v13z" /></>}</svg>;
 }
 
 /* The grab handle: the two columns of dots every reorderable row in every

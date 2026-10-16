@@ -6,7 +6,7 @@ import { buildIndex, labelOf, parseBlockId } from "./lib/index.js";
 import { stateFor } from "./lib/state.js";
 import { indexDrills } from "./lib/drills.js";
 import { dueCount } from "./lib/queue.js";
-import { laneFor, setLane, LANES } from "./lib/tiers.js";
+import { laneFor, setLane } from "./lib/tiers.js";
 import { depthFor, setDepth, nextDepth } from "./lib/depth.js";
 import { reset as resetRetention } from "./lib/retention.js";
 import { rebuild } from "./lib/replay.js";
@@ -369,9 +369,7 @@ export default function App() {
         location.hash = course && dueHere != null ? `#/${cid}/review` : "#/review";
         return;
       }
-      if (course && "123".includes(e.key)) { onLane(LANES[+e.key - 1].id); return; }
-      /* `d` rather than a fourth number: 1-3 belong to the lane, and depth is
-         usually stepped one way along rather than jumped to. */
+      /* Cycle the reading resolution without filtering the teaching path. */
       if (course && e.key === "d") { onDepth(nextDepth(depth)); return; }
       if (!course || !section) return;
       const i = course.sections.indexOf(section);
@@ -458,7 +456,7 @@ export default function App() {
      is the library's frame, and the library is what a cross-course page
      belongs to. It used to draw a full-bleed frame of its own with a Close
      button; see components/Review.jsx. */
-  else if (inReview) view = <Review mixed={rest === "mixed"} />;
+  else if (inReview) view = <Review mixed={rest === "mixed"} deadlines={rest === "deadlines"} />;
   else if (!course) view = cid
     ? <Library courses={INDEX} order={ORDER} loading={!loadError} error={loadError}
                onChange={() => forceRender(n => n + 1)} />
@@ -470,11 +468,11 @@ export default function App() {
   else if (rest === "index" || rest === "concepts" || rest === "cat")
     view = <IndexPage ctx={ctx} />;
   /* The old practice routes still open the mixed option for existing links. */
-  else if (rest === "review" || rest === "review/mixed" ||
+  else if (rest === "review" || rest === "review/mixed" || rest === "review/deadlines" ||
            rest.startsWith("review/mixed/") || rest === "practice" ||
            rest.startsWith("practice/"))
     view = <Review only={cid} ctx={ctx}
-                   mixed={rest !== "review"}
+                   mixed={rest !== "review" && rest !== "review/deadlines"} deadlines={rest === "review/deadlines"}
                    cat={rest.startsWith("review/mixed/") ? rest.slice(13)
                       : rest.startsWith("practice/") ? rest.slice(9) : null} />;
   else if (rest.startsWith("cat/")) view = <CatDetail ctx={ctx} k={rest.slice(4)} />;
@@ -495,8 +493,8 @@ export default function App() {
     view = target ? <Primer section={target} ctx={ctx} /> : <Desk ctx={ctx} />;
   }
   else if (section) view = <Section section={section} ctx={ctx} expandAll={expandAll}
-                                    lane={lane} onLane={onLane}
-                                    depth={depth} onDepth={onDepth} openBlock={openBlock} />;
+                                    lane={lane}
+                                    depth={depth} openBlock={openBlock} />;
   else view = <Desk ctx={ctx} />;
 
   /* T6: a keyboard reader should not traverse the whole rail to reach the
@@ -528,12 +526,11 @@ export default function App() {
     <>
       <PageContext C={course} cid={cid} idx={idx} rest={rest} section={section} />
       <a class="skip" href="#content" onClick={skip}>Skip to the material</a>
-      <div class={"shell" + (tucked ? " tucked" : "") + (course ? "" : " solo")}>
+      <div class={"shell" + (tucked ? " tucked" : "") + (course ? (section || rest.startsWith("primer/") ? "" : " utility") : " solo")}>
         {course && !tucked && (
           <Sidebar course={course} cid={cid} rest={rest} here={reading}
                    open={menuOpen} onNavigate={onSidebarNavigate}
                    onTuck={toggleTuck}
-                   lane={lane} onLane={onLane}
                    due={dueHere} zoom={zoom} onZoomReset={() => setZoom(1)}
                    speech={speech} onHue={() => setHueSet(n => n + 1)}
                    actions={{ expanded: expandAll,

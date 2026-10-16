@@ -1,0 +1,4 @@
+title: "Green's theorem (circulation and flux forms)"
+term: "Green's Theorem"
+body: >-
+  <p>Green's theorem relates a line integral around a positively oriented, piecewise-smooth, simple closed curve <m>C</m> to a double integral over the enclosed plane region <m>D</m>. In circulation (tangential) form, <m>\oint_C P\, dx + Q\, dy = \iint_D \left( \frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y} \right) dA</m>. In flux (normal) form, <m>\oint_C \mathbf{F} \cdot \mathbf{n}\, ds = \iint_D \left( \frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y} \right) dA</m>. Setting <m>\frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y} = 1</m> yields area formulas such as <m>\text{Area}(D) = \frac{1}{2} \oint_C x\, dy - y\, dx</m>.</p>

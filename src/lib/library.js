@@ -21,24 +21,29 @@ import { setBundledCourses } from "./bundled.js";
 
 setBundledCourses(BUILTIN);
 
-/* Built-in courses the reader has dismissed.
- *
- * A bundled course cannot be deleted the way an imported one can — it ships
- * with the site, so the next reload would bring it back — but the demo is an
- * introductory guide, and a guide you have read should not sit on the shelf
- * forever. Dismissing it hides the card and nothing else: the entry stays in
- * INDEX, so a link to it still opens and an import cannot silently collide
- * with its id or its code. It is a fact about the shelf rather than about the
- * browser, so it travels with the backup where there is one (lib/prefs.js): a
- * guide dismissed once should not come back on the next device.
- */
+/* DEMO starts on the shelf; the rest of the public catalog is opt-in.
+ * Remember additions separately from dismissals so newly published courses
+ * never appear just because the reader previously hid or restored a guide. */
 const HIDDEN = "hidden:v1";
+const ADDED = "added:v1";
+const readSet = key => {
+  try {
+    const value = JSON.parse(getItem(key));
+    return new Set(Array.isArray(value) ? value : []);
+  } catch { return new Set(); }
+};
 const readHidden = () => {
-  try { return new Set(JSON.parse(getItem(HIDDEN)) || []); } catch { return new Set(); }
+  const hidden = readSet(HIDDEN), added = readSet(ADDED), own = importedIndex();
+  for (const id of BUILTIN_ORDER)
+    if (id !== "demo" && !added.has(id) && !own[id]) hidden.add(id);
+  return hidden;
 };
 
-/** The bundled courses currently dismissed, in the order the site ships them. */
-export const dismissed = () => BUILTIN_ORDER.filter(id => readHidden().has(id));
+/** Catalog courses available to add, including previously dismissed courses. */
+export const dismissed = () => {
+  const hidden = readHidden();
+  return BUILTIN_ORDER.filter(id => hidden.has(id));
+};
 
 /** Public courses available in Add Course without fetching their bodies. */
 export const catalog = () => BUILTIN_ORDER.map(id => ({ id, ...BUILTIN[id] }));
@@ -60,6 +65,10 @@ export function setDismissed(cid, on) {
   if (!BUILTIN[cid]) throw new Error(`${cid} is not a bundled course`);
   const set = readHidden();
   on ? set.add(cid) : set.delete(cid);
+  if (!on) {
+    const added = readSet(ADDED); added.add(cid);
+    setPref(ADDED, JSON.stringify([...added]));
+  }
   setPref(HIDDEN, JSON.stringify([...set]));
   refresh();
 }
@@ -71,7 +80,7 @@ const inflight = Object.create(null);
    to these from module load, and store.init() has not read IndexedDB yet when
    this file is first evaluated. main.jsx calls refresh() once init resolves. */
 export const INDEX = { ...BUILTIN };
-export const ORDER = [...BUILTIN_ORDER];
+export const ORDER = BUILTIN_ORDER.filter(id => id === "demo");
 
 /** The course if it is already parsed, else null. Never fetches. */
 export const peek = cid => cache[cid] || null;

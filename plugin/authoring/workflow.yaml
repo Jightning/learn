@@ -5,7 +5,7 @@ stages:
   plan:
     phase: plan
     paired_role: planner
-    action: Inventory sources and problem families; write categorize definitions and the compact materials/plan.yaml schedule. Hand off paths to the writer in paired mode.
+    action: Inventory sources and problem families; plan prerequisite order, essential reasoning and representation jobs in lesson teaching briefs; write categorize definitions and the compact materials/plan.yaml schedule. Hand off paths to the writer in paired mode.
   migrate:
     phase: write
     paired_role: writer
@@ -17,7 +17,7 @@ stages:
   write:
     phase: write
     paired_role: writer
-    action: Run author batch; write assigned members with verified answers and checked done. Complete all course writing before review; batches only bound writer context.
+    action: Run author batch; write assigned members in prerequisite order with connected explanations, representations, practice, verified answers and checked done. Inspect assembled passages; smoke-check unfamiliar formats locally. Complete all course writing before review; batches only bound writer context.
   review:
     phase: review
     paired_role: reviewer

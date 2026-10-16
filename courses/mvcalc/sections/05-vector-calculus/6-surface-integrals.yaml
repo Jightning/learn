@@ -1,0 +1,166 @@
+title: Surface Integrals
+blocks:
+  - t: p
+    h: |
+      <p>Earlier, we extended single-variable integration over an interval to line integrals along curved 1D paths. In this section, we take the natural next step: extending double integrals over flat planar regions to <strong>surface integrals</strong> over curved two-dimensional surfaces embedded in three-dimensional space. Just as curves are parametrized by a single parameter <m>t</m>, surfaces are parametrized by two independent parameters <m>u</m> and <m>v</m>. We develop both scalar surface integrals (used to calculate surface area and mass of thin shells) and vector flux integrals (measuring fluid or field transfer across an oriented membrane).</p>
+    authorId: block-d907bd44-70a
+  - t: def
+    term: Parametric Surfaces and Tangent Normal Vectors
+    source: OpenStax Calculus Volume 3, Section 6.6
+    sourceReview: sourced
+    core: A parametric surface is defined by a vector function of two parameters whose partial tangents determine normal vectors and the differential area element.
+    introduces:
+      - obj-s5-6
+      - parametric-surface
+    objectives:
+      - obj-s5-6
+    family: family-parametrize-surface
+    h: |
+      <p>A <strong>parametric surface</strong> <m>S</m> is defined by a vector-valued function <m>\mathbf{r}(u, v) = \langle x(u, v), y(u, v), z(u, v) \rangle</m> for parameters <m>(u, v)</m> in a planar domain <m>D</m>. At any point, the partial derivative vectors <m>\mathbf{r}_u = \langle x_u, y_u, z_u \rangle</m> and <m>\mathbf{r}_v = \langle x_v, y_v, z_v \rangle</m> are tangent to the surface along the coordinate grid curves. Their cross product defines the standard <strong>normal vector</strong>: <m>\mathbf{N} = \mathbf{r}_u \times \mathbf{r}_v</m>. If <m>\mathbf{r}_u \times \mathbf{r}_v \ne \mathbf{0}</m> on <m>D</m>, the surface is smooth. For an explicit surface <m>z = g(x, y)</m>, parametrized by <m>\mathbf{r}(x, y) = \langle x, y, g(x, y) \rangle</m>, the normal vector pointing upward is <m>\mathbf{r}_x \times \mathbf{r}_y = \langle -g_x, -g_y, 1 \rangle</m>.</p>
+    authorId: block-1435ab34-da5
+  - t: def
+    term: Surface Area and Scalar Surface Integrals
+    source: OpenStax Calculus Volume 3, Section 6.6
+    sourceReview: sourced
+    core: Surface area and scalar surface integrals integrate a function over a parametric surface with respect to the differential area element dS.
+    introduces:
+      - scalar-surface-integral
+    objectives:
+      - obj-s5-6
+    family: family-surface-area
+    h: |
+      <p>An infinitesimal rectangular patch in parameter space with area <m>du\,dv</m> maps to an approximate parallelogram on <m>S</m> spanned by <m>\mathbf{r}_u\,du</m> and <m>\mathbf{r}_v\,dv</m>. The surface area element is given by <m>dS = \|\mathbf{r}_u \times \mathbf{r}_v\|\,du\,dv</m>. The <strong>surface area</strong> of <m>S</m> is <m>\text{Area}(S) = \iint_D \|\mathbf{r}_u \times \mathbf{r}_v\|\,dA</m>. If <m>f(x, y, z)</m> is a continuous scalar function on <m>S</m>, the <strong>scalar surface integral</strong> is defined by <m>\iint_S f(x, y, z)\,dS = \iint_D f(\mathbf{r}(u, v)) \|\mathbf{r}_u \times \mathbf{r}_v\|\,du\,dv</m>. When <m>f = \rho</m> is the area mass density, this integral yields the total mass of the surface shell.</p>
+    authorId: block-f25ec50d-941
+  - t: math
+    label: Parametric Area and Vector Flux Integral Formulas
+    tex: dS = \|\mathbf{r}_u \times \mathbf{r}_v\|\,du\,dv, \qquad \iint_S \mathbf{F} \cdot d\mathbf{S} = \iint_S (\mathbf{F} \cdot \mathbf{n})\,dS = \iint_D \mathbf{F}(\mathbf{r}(u, v)) \cdot (\mathbf{r}_u \times \mathbf{r}_v)\,du\,dv
+    note: The vector differential dS incorporates both the surface patch area and unit normal direction.
+    objectives:
+      - obj-s5-6
+    family: family-flux-integral
+    authorId: block-69e6b288-7a5
+  - t: ex
+    title: Computing the Surface Area of a Paraboloid
+    objectives:
+      - obj-s5-6
+    family: family-surface-area
+    h: |
+      <p><strong>Problem:</strong> Find the surface area of the portion of the paraboloid <m>z = 4 - x^2 - y^2</m> lying above the <m>xy</m>-plane (<m>z \ge 0</m>).</p><p><strong>Solution:</strong></p><p>1. The boundary at <m>z = 0</m> gives <m>x^2 + y^2 = 4</m>, so the projection onto the <m>xy</m>-plane is the disk <m>D = \{(x, y) \mid x^2 + y^2 \le 4\}</m>.</p><p>2. Compute partial derivatives of <m>g(x, y) = 4 - x^2 - y^2</m>: <m>g_x = -2x</m> and <m>g_y = -2y</m>.</p><p>3. The differential area element is <m>dS = \sqrt{1 + (-2x)^2 + (-2y)^2}\,dA = \sqrt{1 + 4(x^2 + y^2)}\,dA</m>.</p><p>4. Convert to polar coordinates: <m>\text{Area}(S) = \int_0^{2\pi} \int_0^2 \sqrt{1 + 4r^2}\,r\,dr\,d\theta</m>.</p><p>Substitute <m>u = 1 + 4r^2</m>, with <m>du = 8r\,dr</m>. As <m>r</m> ranges from 0 to 2, <m>u</m> goes from 1 to 17:</p><p><m>\int_0^2 r\sqrt{1 + 4r^2}\,dr = \frac{1}{8} \int_1^{17} u^{1/2}\,du = \frac{1}{8} \left[ \frac{2}{3}u^{3/2} \right]_1^{17} = \frac{1}{12}(17\sqrt{17} - 1)</m></p><p>Integrating over <m>\theta \in [0, 2\pi]</m> gives <m>\text{Area}(S) = 2\pi \cdot \frac{17\sqrt{17} - 1}{12} = \frac{\pi}{6}(17\sqrt{17} - 1)</m>.</p>
+    authorId: block-92a2aa03-6d4
+  - t: def
+    term: Oriented Surfaces and Flux of a Vector Field
+    source: OpenStax Calculus Volume 3, Section 6.6
+    sourceReview: sourced
+    core: The flux of a vector field across an oriented surface measures the net volume of fluid passing through the surface per unit time.
+    introduces:
+      - flux-integral
+    objectives:
+      - obj-s5-6
+    family: family-flux-integral
+    h: |
+      <p>A smooth surface <m>S</m> is <strong>orientable</strong> if it has two distinct sides and allows a continuous choice of unit normal vector field <m>\mathbf{n}</m> across all of <m>S</m>. Choosing a specific <m>\mathbf{n}</m> provides an <strong>orientation</strong>. For a closed surface (such as a sphere or ellipsoid enclosing a solid), the positive orientation is conventionally chosen pointing outward. If <m>\mathbf{F}</m> is a continuous vector field, the <strong>flux integral</strong> (or vector surface integral) of <m>\mathbf{F}</m> across <m>S</m> is defined as <m>\iint_S \mathbf{F} \cdot d\mathbf{S} = \iint_S (\mathbf{F} \cdot \mathbf{n})\,dS = \iint_D \mathbf{F}(\mathbf{r}(u, v)) \cdot (\mathbf{r}_u \times \mathbf{r}_v)\,du\,dv</m>, provided <m>\mathbf{r}_u \times \mathbf{r}_v</m> points in the direction of <m>\mathbf{n}</m>.</p>
+    authorId: block-9d1273ed-217
+  - t: ex
+    title: Evaluating Flux Through a Spherical Hemisphere
+    objectives:
+      - obj-s5-6
+    family: family-flux-integral
+    h: |
+      <p><strong>Problem:</strong> Compute the upward flux of <m>\mathbf{F}(x, y, z) = \langle 0, 0, z \rangle</m> across the hemisphere <m>S: z = \sqrt{4 - x^2 - y^2}</m>.</p><p><strong>Solution:</strong></p><p>1. Represent <m>S</m> as a graph <m>z = g(x, y) = \sqrt{4 - x^2 - y^2}</m> over the disk <m>D: x^2 + y^2 \le 4</m>.</p><p>2. The upward-pointing normal is <m>\mathbf{N} = \langle -g_x, -g_y, 1 \rangle = \left\langle \frac{x}{z}, \frac{y}{z}, 1 \right\rangle</m>.</p><p>3. Take the dot product with <m>\mathbf{F}</m>:</p><p><m>\mathbf{F} \cdot \mathbf{N} = \langle 0, 0, z \rangle \cdot \left\langle \frac{x}{z}, \frac{y}{z}, 1 \right\rangle = z = \sqrt{4 - x^2 - y^2}</m></p><p>4. Evaluate the double integral over <m>D</m> using polar coordinates:</p><p><m>\iint_S \mathbf{F} \cdot d\mathbf{S} = \int_0^{2\pi} \int_0^2 \sqrt{4 - r^2}\,r\,dr\,d\theta = 2\pi \left[ -\frac{1}{3}(4 - r^2)^{3/2} \right]_0^2 = 2\pi \left( 0 - \left(-\frac{8}{3}\right) \right) = \frac{16\pi}{3}</m>.</p>
+    authorId: block-ad52ab5b-279
+  - t: trap
+    label: Verifying Normal Orientation and Non-Orientable Surfaces
+    source: OpenStax Calculus Volume 3, Section 6.6
+    sourceReview: sourced
+    core: The cross product of partial tangents may point opposite to the desired orientation, requiring a sign correction; surfaces like Mobius strips cannot be oriented.
+    objectives:
+      - obj-s5-6
+    family: family-flux-integral
+    h: |
+      <p>Do not assume that <m>\mathbf{r}_u \times \mathbf{r}_v</m> automatically points in the desired orientation direction. Always check the sign of the components (such as checking whether the <m>z</m>-component is positive for an upward orientation, or whether the vector points away from the origin for an outward orientation). If <m>\mathbf{r}_u \times \mathbf{r}_v</m> points opposite to the required orientation, negate the vector or swap parameter order. Finally, remember that some surfaces (such as the Möbius strip) have only one side and cannot be oriented, rendering flux integrals undefined on them.</p>
+    authorId: block-08a88ba5-d64
+quiz:
+  - type: Parametrizing a surface and normal vector
+    concept: parametric-surface
+    objectives:
+      - obj-s5-6
+    family: family-parametrize-surface
+    q: For the parametric cylinder <m>\mathbf{r}(u, v) = \langle 3\cos(u), 3\sin(u), v \rangle</m> with <m>0 \le u \le 2\pi</m> and <m>0 \le v \le 5</m>, what is the outward normal vector <m>\mathbf{r}_u \times \mathbf{r}_v</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\langle 3\cos(u), 3\sin(u), 0 \rangle</m>
+          why: 'Compute partial tangents: <m>\mathbf{r}_u = \langle -3\sin u, 3\cos u, 0 \rangle</m> and <m>\mathbf{r}_v = \langle 0, 0, 1 \rangle</m>. Their cross product is <m>\mathbf{r}_u \times \mathbf{r}_v = (3\cos u)\mathbf{i} - (-3\sin u)\mathbf{j} + 0\mathbf{k} = \langle 3\cos u, 3\sin u, 0 \rangle</m>.'
+        - text: <m>\langle -3\cos(u), -3\sin(u), 0 \rangle</m>
+          why: Computed <m>\mathbf{r}_v \times \mathbf{r}_u</m> instead of <m>\mathbf{r}_u \times \mathbf{r}_v</m>, giving an inward-pointing normal.
+        - text: <m>\langle 0, 0, 3 \rangle</m>
+          why: Confused the normal vector with a vertical vector along the cylinder axis.
+        - text: <m>\langle 3\sin(u), -3\cos(u), 1 \rangle</m>
+          why: Incorrect determinant expansion.
+    why: The cross product of tangent vectors yields the radial normal vector <m>\langle 3\cos u, 3\sin u, 0 \rangle</m>.
+    authorId: quiz-2db8a10a-b3c
+  - type: Evaluating surface area
+    concept: scalar-surface-integral
+    objectives:
+      - obj-s5-6
+    family: family-surface-area
+    q: Find the surface area of the portion of the plane <m>z = 2x + 3y + 4</m> lying above the rectangle <m>R = [0, 2] \times [0, 5]</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>10\sqrt{14}</m>
+          why: The surface area element for <m>z = g(x, y)</m> is <m>dS = \sqrt{1 + g_x^2 + g_y^2}\,dA = \sqrt{1 + 2^2 + 3^2}\,dA = \sqrt{14}\,dA</m>. Integrating over the rectangle of area <m>2 \times 5 = 10</m> gives <m>10\sqrt{14}</m>.
+        - text: <m>140</m>
+          why: Squared the radical factor instead of multiplying by <m>\sqrt{14}</m>.
+        - text: <m>10\sqrt{13}</m>
+          why: 'Forgot the initial 1 under the square root: <m>\sqrt{1 + 4 + 9} = \sqrt{14}</m>, not <m>\sqrt{13}</m>.'
+        - text: <m>20\sqrt{14}</m>
+          why: Miscalculated the rectangular domain area as 20 instead of 10.
+    why: The surface area is <m>\iint_R \sqrt{14}\,dA = 10\sqrt{14}</m>.
+    authorId: quiz-d7e8f31b-955
+  - type: Evaluating scalar surface integral
+    concept: scalar-surface-integral
+    objectives:
+      - obj-s5-6
+    family: family-scalar-surface-integral
+    q: Evaluate the scalar surface integral <m>\iint_S z\,dS</m>, where <m>S</m> is the hemisphere <m>x^2 + y^2 + z^2 = 9</m> with <m>z \ge 0</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>27\pi</m>
+          why: In spherical coordinates with radius <m>\rho = 3</m>, <m>z = 3\cos\phi</m> and <m>dS = 3^2\sin\phi\,d\phi\,d\theta = 9\sin\phi\,d\phi\,d\theta</m>. Integrating over <m>0 \le \theta \le 2\pi</m> and <m>0 \le \phi \le \pi/2</m> yields <m>27(2\pi)\int_0^{\pi/2}\sin\phi\cos\phi\,d\phi = 54\pi \left[\frac{\sin^2\phi}{2}\right]_0^{\pi/2} = 27\pi</m>.
+        - text: <m>54\pi</m>
+          why: Forgot the factor of <m>\frac{1}{2}</m> from integrating <m>\sin\phi\cos\phi</m>.
+        - text: <m>18\pi</m>
+          why: Used <m>R = 2</m> instead of <m>R = 3</m>.
+        - text: <m>0</m>
+          why: Confused the upper hemisphere (<m>z \ge 0</m>) with the entire symmetric sphere, where positive and negative <m>z</m> cancel to zero.
+    why: Evaluating in spherical coordinates yields <m>27\pi</m>.
+    authorId: quiz-a040dcfc-001
+  - type: Evaluating flux integral
+    concept: flux-integral
+    objectives:
+      - obj-s5-6
+    family: family-flux-integral
+    q: Evaluate the outward flux <m>\iint_S \mathbf{F} \cdot d\mathbf{S}</m> of <m>\mathbf{F} = \langle 0, 0, 5 \rangle</m> across the disk <m>x^2 + y^2 \le 4</m> in the plane <m>z = 1</m>, oriented with upward normal <m>\mathbf{n} = \langle 0, 0, 1 \rangle</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>20\pi</m>
+          why: The upward unit normal is <m>\mathbf{n} = \langle 0, 0, 1 \rangle</m>, so <m>\mathbf{F} \cdot \mathbf{n} = 5</m>. The flux integral is <m>\iint_S 5\,dS = 5\,\text{Area}(S) = 5(\pi \cdot 2^2) = 20\pi</m>.
+        - text: <m>10\pi</m>
+          why: Used radius 2 instead of area <m>4\pi</m>.
+        - text: <m>-20\pi</m>
+          why: Used downward orientation instead of upward orientation.
+        - text: <m>0</m>
+          why: Assumed constant fields have zero flux.
+    why: The normal component is 5, integrating over the disk area <m>4\pi</m> to give <m>20\pi</m>.
+    authorId: quiz-01c52c46-79d

@@ -22,7 +22,9 @@ test("validation catches raw TeX in claims and model answers", () => {
     cpSync(join(ROOT, "courses/_template"), course, { recursive: true });
     const original = readFileSync(file, "utf8");
     const data = YAML.load(original);
-    data.blocks.find(b => b.core).core = "Growth is e^{2x}.";
+    const claim = data.blocks.find(b => b.t === "key");
+    assert.ok(claim, "template contains a claim-bearing block; core remains optional");
+    claim.core = "Growth is e^{2x}.";
     data.quiz.find(q => q.response?.kind === "self").response.model = "\\frac{1}{2}";
     writeFileSync(file, YAML.dump(data));
     const invalid = run();

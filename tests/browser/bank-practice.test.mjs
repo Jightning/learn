@@ -22,12 +22,12 @@ test('stable lesson attempt, reload retry, scoped mixed bank and delayed check f
     await page.route('**/courses/demo.json',r=>r.fulfill({json:files}));
     await page.goto(server.origin+'/#/demo/s1-1');
     let card=page.locator('.q:visible');await card.locator('input[type=number]').fill('9');
-    await card.getByRole('button',{name:/^Check answer/}).click();await card.getByRole('button',{name:/Try again/}).waitFor();
-    await page.reload();await card.getByRole('button',{name:/Try again/}).click();
+    await card.getByRole('button',{name:/^Check answer/}).click();await card.locator('.qresult').filter({hasText:'Wrong'}).waitFor();
+    await page.reload();await card.locator('.qresult').filter({hasText:'Wrong'}).waitFor();
     await card.locator('input[type=number]').fill('1');await card.getByRole('button',{name:/^Check answer/}).click();
     await card.locator('.qresult').filter({hasText:'Correct'}).waitFor();
     await page.goto(server.origin+'/#/demo/review/mixed');
-    await page.getByRole('button',{name:/^Start .*questions/}).click();
+    await page.getByRole('button',{name:'Start',exact:true}).click();
     assert.equal(await page.locator('.q[data-qid=fresh]').count(),0);
     await page.getByRole('button',{name:'Finish session',exact:true}).click();await page.getByRole('button',{name:'Another set'}).click();
     await page.getByText('Readiness check',{exact:true}).click();
@@ -62,5 +62,37 @@ test('self rubric check stores first response before revealing model and grades 
     await page.getByRole('button',{name:'Correct',exact:true}).click();await page.locator('.qresult').filter({hasText:'Correct'}).waitFor();
     const rows=await logRows(page);assert.equal(rows.filter(r=>r.event==='attempt'&&r.itemId==='fresh').length,1);
     assert.equal(rows.filter(r=>r.event==='rubric-score').length,1);
+  } finally {await browser.close();server.close();}
+});
+test('adaptive Mixed Practice is default and weighted fallback persists',async()=>{
+  const server=await serveDist('.'),browser=await chromium.launch();
+  try {
+    const page=await browser.newPage();page.setDefaultTimeout(7000);
+    await page.route('**/courses/demo.json',r=>r.fulfill({json:files}));
+    await page.goto(server.origin+'/#/demo/review/mixed');
+    await page.getByRole('group',{name:'Practice settings'}).waitFor();
+    const method=page.getByLabel('Method');
+    assert.equal(await method.inputValue(),'scored');
+    await method.selectOption('weighted');
+    await page.waitForTimeout(550); // The policy uses the store's 400 ms write debounce.
+    await page.reload();
+    await page.getByRole('group',{name:'Practice settings'}).waitFor();
+    assert.equal(await method.inputValue(),'weighted');
+    await method.selectOption('scored');
+    await page.getByRole('button',{name:'Start',exact:true}).click();
+    let card=page.locator('.q:visible');
+    const first=await card.getAttribute('data-qid');
+    assert.ok(['a','b'].includes(first));
+    await card.locator('.qreason').filter({hasText:'Broaden coverage'}).waitFor();
+    await card.locator('input[type=number]').fill('9');
+    await card.getByRole('button',{name:/^Check answer/}).click();
+    await card.locator('.qresult').filter({hasText:'Wrong'}).waitFor();
+    await card.locator('input[type=number]').fill(first==='a'?'1':'2');
+    await card.getByRole('button',{name:/^Check answer/}).click();
+    await card.locator('.qresult').filter({hasText:'Correct'}).waitFor();
+    await card.getByRole('button',{name:/Continue/}).click();
+    card=page.locator('.q:visible');
+    assert.ok(['a','b'].includes(await card.getAttribute('data-qid')));
+    assert.notEqual(await card.getAttribute('data-qid'),first);
   } finally {await browser.close();server.close();}
 });

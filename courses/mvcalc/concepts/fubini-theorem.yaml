@@ -1,0 +1,4 @@
+title: "Iterated integrals and Fubini's theorem"
+term: "Fubini's Theorem"
+body: >-
+  <p>Fubini's theorem states that if <m>f(x, y)</m> is continuous on the rectangular region <m>R = [a, b] \times [c, d]</m>, the double integral equals the iterated integrals evaluated in either order: <m>\iint_R f(x, y)\, dA = \int_a^b \left( \int_c^d f(x, y)\, dy \right) dx = \int_c^d \left( \int_a^b f(x, y)\, dx \right) dy</m>. Inner integration treats the outer variable as a constant. When <m>f(x, y) = g(x)h(y)</m>, the integral factors as the product <m>\left(\int_a^b g(x)\, dx\right)\left(\int_c^d h(y)\, dy\right)</m>. This theorem enables the practical evaluation of multiple integrals via single-variable calculus.</p>

@@ -16976,6 +16976,10 @@ function parseFile(path) {
 	return load(raw);
 }
 //#endregion
+//#region src/lib/tiers.js
+const isOptional = (b) => typeof b?.optional === "boolean" ? b.optional : b?.tier === "depth";
+const tierOf = (b) => isOptional(b) ? "depth" : "spine";
+//#endregion
 //#region tools/lib/digest.mjs
 const DATA = /* @__PURE__ */ new Set([
 	".yaml",
@@ -17049,9 +17053,9 @@ function digest(dir) {
 			file: join(path, f.file),
 			title: f.data.title || stem$1(f.file),
 			blocks: Array.isArray(f.data.blocks) ? f.data.blocks.length : 0,
-			spine: Array.isArray(f.data.blocks) ? f.data.blocks.filter((b) => b && (!b.tier || b.tier === "spine")).length : 0,
+			spine: Array.isArray(f.data.blocks) ? f.data.blocks.filter((b) => b && !isOptional(b)).length : 0,
 			quiz: Array.isArray(f.data.quiz) ? f.data.quiz.length : 0,
-			tiers: new Set((Array.isArray(f.data.blocks) ? f.data.blocks : []).map((b) => b?.tier || "spine")),
+			tiers: new Set((Array.isArray(f.data.blocks) ? f.data.blocks : []).map(tierOf)),
 			line: subLine(f.data, `${id}-${i + 1}`)
 		}));
 		sections.push({
@@ -17078,6 +17082,7 @@ function digest(dir) {
 		const c = read(join(dir, "concepts", f));
 		const key = c.id || c.key || stem$1(f);
 		if (!conceptMap.has(key)) conceptMap.set(key, c);
+		else Object.assign(conceptMap.get(key), c);
 	}
 	const concepts = [...conceptMap].map(([key, c]) => ({
 		key,

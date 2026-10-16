@@ -46,13 +46,7 @@ export function checkRunInLists(C, errs) {
       });
 }
 
-/* Follow-ups (src/lib/follows.js) keep the lane's promise.
- *
- * A follow-up hangs off its parent, so it has to have one, and the spine may
- * never need the tiers it can collapse (§6.3): a spine block following a
- * depth block would be spine content only reachable by opening depth. The
- * same holds between the two collapsible tiers, which the lane hides
- * independently, so a follow-up of a non-spine parent shares its tier. */
+/* Required teaching cannot depend on a parent that the reader may leave closed. */
 export function checkFollows(C, errs) {
   for (const s of C.sections)
     for (const u of s.subs) {
@@ -69,8 +63,8 @@ export function checkFollows(C, errs) {
         if (b.t === "attempt") errs.push(`${at}: an attempt cannot follow anything`);
         const pt = tierOf(bs[p]), t = tierOf(b);
         if (pt !== "spine" && t !== pt)
-          errs.push(`${at}: a ${t} block follows block ${p + 1}, which is ${pt} — ` +
-            `the lane hides ${pt} on its own, so a follow-up of it must be ${pt} too`);
+          errs.push(`${at}: required content follows optional block ${p + 1}; ` +
+            `keep the dependency in the main reading or make its follow-up optional`);
       });
     }
 }

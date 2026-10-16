@@ -1,0 +1,123 @@
+title: Mass, Centers of Mass and Moments of Inertia
+blocks:
+  - t: p
+    h: <p>In mechanics and engineering, physical components rarely consist of idealized point particles or uniform shapes. A flat metal plate is modeled as a two-dimensional lamina with area mass density <m>\rho(x, y)</m>, while a machine component or aerodynamic body is modeled as a three-dimensional solid with volume mass density <m>\rho(x, y, z)</m>. Multiple integrals provide the mathematical framework to calculate the total mass, the equilibrium balance point (center of mass), and the dynamic resistance to rotational acceleration (moment of inertia).</p>
+    authorId: block-2c2dc84d-550
+  - t: def
+    term: Mass and Center of Mass for a Planar Lamina
+    source: OpenStax Calculus Volume 3, Section 5.6
+    sourceReview: sourced
+    core: For a lamina with density <m>\rho(x, y)</m>, mass is <m>m = \iint_D \rho\,dA</m> and the center of mass is <m>(\bar{x}, \bar{y}) = (M_y/m, M_x/m)</m>, where <m>M_x = \iint_D y\rho\,dA</m> and <m>M_y = \iint_D x\rho\,dA</m>.
+    introduces:
+      - obj-s4-6
+      - center-of-mass
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-2d
+    h: '<p>A thin plate occupying region <m>D</m> with continuous density <m>\rho(x, y) \ge 0</m> has total mass <m>m = \iint_D \rho(x, y)\,dA</m>. The first moment of mass about the <m>x</m>-axis, <m>M_x</m>, measures torque about the <m>x</m>-axis and is weighted by the perpendicular distance <m>y</m>: <m>M_x = \iint_D y\rho(x, y)\,dA</m>. Similarly, the first moment about the <m>y</m>-axis is weighted by horizontal distance <m>x</m>: <m>M_y = \iint_D x\rho(x, y)\,dA</m>. The coordinates of the center of mass are <m>\bar{x} = \frac{M_y}{m}</m> and <m>\bar{y} = \frac{M_x}{m}</m>. When the density is constant throughout the plate, <m>(\bar{x}, \bar{y})</m> depends solely on region geometry and is termed the centroid of <m>D</m>.</p>'
+    authorId: block-1c3c0213-340
+  - t: math
+    label: First Moments and Coordinates of the Center of Mass
+    tex: m = \iint_D \rho\,dA, \quad \bar{x} = \frac{1}{m}\iint_D x\rho\,dA, \quad \bar{y} = \frac{1}{m}\iint_D y\rho\,dA; \qquad \bar{z} = \frac{1}{m}\iiint_E z\rho\,dV
+    note: The first moment <m>M_x</m> integrates <m>y\rho</m> because <m>y</m> is the perpendicular distance to the <m>x</m>-axis; <m>M_y</m> integrates <m>x\rho</m>.
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-2d
+    authorId: block-a7ec57b5-afa
+  - t: ex
+    title: Finding the Center of Mass of a Triangular Lamina
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-2d
+    h: <p>Find the center of mass of a triangular lamina with vertices <m>(0, 0)</m>, <m>(1, 0)</m>, and <m>(0, 1)</m> and density function <m>\rho(x, y) = 2x</m>.</p><p>The region is bounded by <m>0 \le x \le 1</m> and <m>0 \le y \le 1 - x</m>. Compute the mass:</p><p><m>m = \int_0^1 \int_0^{1 - x} 2x\,dy\,dx = \int_0^1 2x(1 - x)\,dx = 2\left[\frac{x^2}{2} - \frac{x^3}{3}\right]_0^1 = 2\left(\frac{1}{6}\right) = \frac{1}{3}</m>.</p><p>Next compute the first moments:</p><p><m>M_y = \int_0^1 \int_0^{1 - x} x(2x)\,dy\,dx = \int_0^1 2x^2(1 - x)\,dx = 2\left[\frac{x^3}{3} - \frac{x^4}{4}\right]_0^1 = 2\left(\frac{1}{12}\right) = \frac{1}{6}</m>.</p><p><m>M_x = \int_0^1 \int_0^{1 - x} y(2x)\,dy\,dx = \int_0^1 2x\left[\frac{y^2}{2}\right]_0^{1 - x} dx = \int_0^1 x(1 - x)^2\,dx = \left[\frac{x^2}{2} - \frac{2x^3}{3} + \frac{x^4}{4}\right]_0^1 = \frac{1}{12}</m>.</p><p>The coordinates of the center of mass are <m>\bar{x} = \frac{M_y}{m} = \frac{1/6}{1/3} = \frac{1}{2}</m> and <m>\bar{y} = \frac{M_x}{m} = \frac{1/12}{1/3} = \frac{1}{4}</m>. Thus <m>(\bar{x}, \bar{y}) = (1/2, 1/4)</m>.</p>
+    authorId: block-cb696c08-f76
+  - t: ex
+    title: Center of Mass of a Hemispherical Solid with Constant Density
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-3d
+    h: <p>Find the center of mass of the upper solid hemisphere <m>E = \{(x, y, z) \mid x^2 + y^2 + z^2 \le R^2, \, z \ge 0\}</m> with uniform density <m>\rho_0</m>.</p><p>By rotational symmetry about the <m>z</m>-axis, <m>\bar{x} = 0</m> and <m>\bar{y} = 0</m>. The total mass is <m>m = \rho_0 V(E) = \rho_0 \frac{2}{3}\pi R^3</m>. Using spherical coordinates where <m>z = \rho\cos\phi</m> and <m>dV = \rho^2 \sin\phi\,d\rho\,d\phi\,d\theta</m>:</p><p><m>M_{xy} = \rho_0 \int_0^{2\pi} d\theta \int_0^{\pi/2} \cos\phi\sin\phi\,d\phi \int_0^R \rho^3\,d\rho = \rho_0 (2\pi)\left[\frac{\sin^2\phi}{2}\right]_0^{\pi/2}\left[\frac{R^4}{4}\right] = \rho_0 \frac{\pi R^4}{4}</m>.</p><p>The vertical coordinate is <m>\bar{z} = \frac{M_{xy}}{m} = \frac{\rho_0 \pi R^4 / 4}{\rho_0 2\pi R^3 / 3} = \frac{3}{8}R</m>. The center of mass is <m>(0, 0, \frac{3}{8}R)</m>.</p>
+    authorId: block-d163f16a-d41
+  - t: def
+    term: Moments of Inertia and Radius of Gyration
+    source: OpenStax Calculus Volume 3, Section 5.6
+    sourceReview: sourced
+    core: 'The moment of inertia weights mass density by the square of distance from an axis: <m>I_x = \iint_D y^2 \rho\,dA</m>, <m>I_y = \iint_D x^2 \rho\,dA</m>, and polar moment <m>I_0 = I_x + I_y</m>.'
+    introduces:
+      - moment-of-inertia
+    objectives:
+      - obj-s4-6
+    family: family-moment-inertia
+    h: <p>The moment of inertia (second moment) characterizes the rotational inertia of a rigid body about a specified line. For a planar lamina <m>D</m>, the squared distance from <m>(x, y)</m> to the <m>x</m>-axis is <m>y^2</m>, giving <m>I_x = \iint_D y^2 \rho(x, y)\,dA</m>. Similarly, the squared distance to the <m>y</m>-axis is <m>x^2</m>, yielding <m>I_y = \iint_D x^2 \rho(x, y)\,dA</m>. The polar moment of inertia about the origin is <m>I_0 = \iint_D (x^2 + y^2)\rho(x, y)\,dA = I_x + I_y</m>. The radius of gyration <m>\bar{\bar{y}} = \sqrt{I_x/m}</m> defines the radial distance from the axis at which the entire mass could be concentrated without altering its moment of inertia.</p>
+    authorId: block-4b96a224-f1c
+  - t: key
+    label: Exploiting Geometric and Density Symmetry
+    source: OpenStax Calculus Volume 3, Section 5.6
+    sourceReview: sourced
+    core: When a body and its mass density are symmetric across a coordinate plane, the corresponding first moment is zero and the center of mass lies on that plane.
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-3d
+    h: <p>Applying symmetry principles eliminates lengthy integration steps:</p>
+    items:
+      - 'Reflection symmetry: If region <m>D</m> and density <m>\rho</m> are even with respect to <m>x</m>, then <m>M_y = \iint_D x\rho\,dA = 0</m>, immediately giving <m>\bar{x} = 0</m>.'
+      - 'Centroid equivalence: For homogeneous bodies with constant density <m>\rho = c</m>, the center of mass coincides with the geometric centroid.'
+      - 'Polar moment identity: <m>I_0 = I_x + I_y</m> holds identically for all two-dimensional planar laminas.'
+    ordered: true
+    authorId: block-e39b1a84-056
+  - t: trap
+    label: Confusing Moment Subscripts with Integration Distance Variables
+    source: OpenStax Calculus Volume 3, Section 5.6
+    sourceReview: sourced
+    core: <m>M_x</m> integrates <m>y\rho</m> and <m>I_x</m> integrates <m>y^2\rho</m> because <m>y</m> is the perpendicular distance to the <m>x</m>-axis.
+    objectives:
+      - obj-s4-6
+    family: family-moment-inertia
+    h: '<p>A frequent error is assuming <m>M_x</m> integrates <m>x</m> and <m>M_y</m> integrates <m>y</m>. Moments are defined relative to the axis of rotation: distance to the horizontal <m>x</m>-axis is the vertical coordinate <m>|y|</m>, whereas distance to the vertical <m>y</m>-axis is <m>|x|</m>. Consequently, <m>M_x</m> integrates <m>y</m>, <m>M_y</m> integrates <m>x</m>, <m>I_x</m> integrates <m>y^2</m>, and <m>I_y</m> integrates <m>x^2</m>.'
+    authorId: block-375dd002-932
+quiz:
+  - type: Center of mass of planar lamina
+    concept: center-of-mass
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-2d
+    q: A rectangular lamina occupies <m>[0, 2] \times [0, 4]</m> with density <m>\rho(x, y) = y</m>. What is the <m>y</m>-coordinate of its center of mass, <m>\bar{y}</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{8}{3}</m>
+          why: The mass is <m>m = \int_0^2 \int_0^4 y\,dy\,dx = 2\left[\frac{y^2}{2}\right]_0^4 = 16</m>. The first moment about the <m>x</m>-axis is <m>M_x = \int_0^2 \int_0^4 y^2\,dy\,dx = 2\left[\frac{y^3}{3}\right]_0^4 = \frac{128}{3}</m>. The center of mass coordinate is <m>\bar{y} = \frac{M_x}{m} = \frac{128/3}{16} = \frac{8}{3}</m>.
+        - text: <m>2</m>
+          why: 2 is the geometric midpoint of [0, 4], which would be the centroid if density were constant.
+        - text: <m>\frac{4}{3}</m>
+          why: Inverting the ratio or dividing by the wrong dimension yields 4/3.
+        - text: <m>\frac{16}{3}</m>
+          why: Forgetting to divide by the total mass gives 16/3.
+    why: The first moment is <m>M_x = 128/3</m> and mass is <m>m = 16</m>, giving <m>\bar{y} = \frac{8}{3}</m>.
+    authorId: quiz-10254a17-859
+  - type: Center of mass of solid cone
+    concept: center-of-mass
+    objectives:
+      - obj-s4-6
+    family: family-mass-center-3d
+    q: A solid cone of height <m>h = 4</m> and base radius <m>R = 2</m> has its vertex at the origin and opens along the positive <m>z</m>-axis up to <m>z = 4</m>, with uniform density <m>\rho_0</m>. What is the <m>z</m>-coordinate of its center of mass, <m>\bar{z}</m>?
+    verified: true
+    response:
+      kind: number
+      value: 3
+    why: For any homogeneous solid cone opening from its vertex at the origin to a base at height <m>h</m>, the center of mass lies along the central axis at <m>\bar{z} = \frac{3}{4}h</m>. With <m>h = 4</m>, <m>\bar{z} = \frac{3}{4}(4) = 3</m>.
+    authorId: quiz-76a0bf95-22e
+  - type: Moment of inertia of rectangle
+    concept: moment-of-inertia
+    objectives:
+      - obj-s4-6
+    family: family-moment-inertia
+    q: What is the moment of inertia <m>I_x</m> of a homogeneous rectangular lamina with constant density <m>\rho_0 = 1</m> occupying <m>[0, 3] \times [0, 2]</m>?
+    verified: true
+    response:
+      kind: number
+      value: 8
+    why: The moment of inertia about the <m>x</m>-axis weights by <m>y^2</m>. Evaluating gives <m>I_x = \int_0^3 \int_0^2 y^2\,dy\,dx = 3\left[\frac{y^3}{3}\right]_0^2 = 3\left(\frac{8}{3}\right) = 8</m>.
+    authorId: quiz-11c3c0d9-6cb

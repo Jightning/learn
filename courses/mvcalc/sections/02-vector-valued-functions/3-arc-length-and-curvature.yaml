@@ -1,0 +1,140 @@
+title: Arc Length and Curvature
+blocks:
+  - t: p
+    h: <p>A space curve possesses intrinsic geometric properties that depend solely on the trajectory itself, independent of the particular parametrization chosen to trace it. The two most fundamental intrinsic quantities are its arc length (the distance measured along the curve) and its curvature (how sharply the curve bends at each point). Together with the Frenet-Serret orthonormal frame, they completely characterize the local geometry of curves in space.</p>
+    authorId: block-0c0155c9-165
+  - t: def
+    term: Arc Length and Arc-Length Parametrization
+    source: OpenStax Calculus Volume 3, Section 3.3
+    sourceReview: sourced
+    core: Arc length is the definite integral of speed over a parameter interval; reparametrizing by arc length yields a unit-speed curve.
+    introduces:
+      - obj-s2-3
+      - arc-length
+    objectives:
+      - obj-s2-3
+    family: family-arc-length
+    h: '<p>Let <m>\mathbf{r}(t) = \langle x(t), y(t), z(t) \rangle</m> be a smooth curve on <m>[a, b]</m>. Its arc length <m>L</m> is obtained by integrating scalar speed: <m>L = \int_a^b |\mathbf{r}''(t)|\,dt = \int_a^b \sqrt{[x''(t)]^2 + [y''(t)]^2 + [z''(t)]^2}\,dt</m>. The arc-length function measured from base point <m>t = a</m> is <m>s(t) = \int_a^t |\mathbf{r}''(u)|\,du</m>, with derivative <m>\frac{ds}{dt} = |\mathbf{r}''(t)|</m>. Inverting <m>s(t)</m> to express <m>t = t(s)</m> produces the arc-length parametrization <m>\mathbf{r}(s)</m>, which moves along the curve with constant unit speed: <m>|\frac{d\mathbf{r}}{ds}| = 1</m>.</p>'
+    authorId: block-e2d9a94a-fb2
+  - t: ex
+    title: Arc Length and Arc-Length Parametrization of a Helix
+    objectives:
+      - obj-s2-3
+    family: family-arc-length
+    h: '<p>Compute the arc length of the circular helix <m>\mathbf{r}(t) = \langle 3\cos t, 3\sin t, 4t \rangle</m> for <m>0 \le t \le 2\pi</m>, and reparametrize <m>\mathbf{r}</m> with respect to arc length.</p><p>First compute velocity and speed: <m>\mathbf{r}''(t) = \langle -3\sin t, 3\cos t, 4 \rangle</m>, so <m>|\mathbf{r}''(t)| = \sqrt{(-3\sin t)^2 + (3\cos t)^2 + 4^2} = \sqrt{9 + 16} = 5</m>. The speed is constant. The arc length over <m>[0, 2\pi]</m> is <m>L = \int_0^{2\pi} 5\,dt = 10\pi</m>.</p><p>Choosing base point <m>t = 0</m>, the arc-length function is <m>s(t) = \int_0^t 5\,du = 5t</m>. Inverting yields <m>t(s) = \frac{s}{5}</m>. Substituting into <m>\mathbf{r}(t)</m> gives the arc-length parametrization <m>\mathbf{r}(s) = \langle 3\cos(s/5), 3\sin(s/5), \frac{4s}{5} \rangle</m>.</p>'
+    authorId: block-0b3ae3e2-6db
+  - t: def
+    term: Curvature
+    source: OpenStax Calculus Volume 3, Section 3.3
+    sourceReview: sourced
+    core: Curvature measures the magnitude of the rate of change of the unit tangent vector with respect to arc length.
+    introduces:
+      - curvature
+    objectives:
+      - obj-s2-3
+    family: family-curvature
+    h: '<p>Curvature <m>\kappa</m> (kappa) measures how rapidly a curve turns per unit distance traveled along the curve: <m>\kappa = \left|\frac{d\mathbf{T}}{ds}\right| = \frac{|\mathbf{T}''(t)|}{|\mathbf{r}''(t)|}</m>. Because <m>\mathbf{T}</m> is already normalized to unit length, changes in <m>\mathbf{T}</m> reflect purely the directional bending of the path, not variations in speed. A straight line has constant <m>\mathbf{T}</m> and thus <m>\kappa = 0</m>, whereas a circle of radius <m>R</m> bends uniformly with constant curvature <m>\kappa = \frac{1}{R}</m>.</p>'
+    authorId: block-5cda0246-17d
+  - t: math
+    label: Curvature Formula for Space Curves
+    tex: \kappa(t) = \frac{|\mathbf{r}'(t) \times \mathbf{r}''(t)|}{|\mathbf{r}'(t)|^3}
+    note: Computes curvature directly from any smooth parametrization without differentiating unit tangent vectors.
+    objectives:
+      - obj-s2-3
+    family: family-curvature
+    authorId: block-0bca7013-8b4
+  - t: key
+    label: Curvature Formulas for Space and Plane Curves
+    source: OpenStax Calculus Volume 3, Section 3.3
+    sourceReview: sourced
+    core: Curvature is evaluated via the cross-product formula for space curves or via the second-derivative formula for plane curves.
+    objectives:
+      - obj-s2-3
+    family: family-curvature
+    h: <p>Depending on the representation of the curve, standard formulas avoid tedious arc-length conversions:</p>
+    items:
+      - 'General space curve: <m>\kappa(t) = \frac{|\mathbf{r}''(t) \times \mathbf{r}''''(t)|}{|\mathbf{r}''(t)|^3}</m>.'
+      - 'Plane curve <m>y = f(x)</m>: Parametrizing as <m>\mathbf{r}(x) = \langle x, f(x), 0 \rangle</m> gives <m>\kappa(x) = \frac{|f''''(x)|}{[1 + (f''(x))^2]^{3/2}}</m>.'
+      - 'Radius of curvature: <m>\rho = \frac{1}{\kappa}</m> is the radius of the best-fitting local circle at that point.'
+    ordered: true
+    authorId: block-07a4bc9a-afe
+  - t: def
+    term: The TNB Frame and Osculating Circle
+    source: OpenStax Calculus Volume 3, Section 3.3
+    sourceReview: sourced
+    core: The unit tangent, principal normal, and binormal vectors form a right-handed orthonormal frame defining the osculating plane and osculating circle.
+    introduces:
+      - tnb-frame
+    objectives:
+      - obj-s2-3
+    family: family-tnb-osculating
+    h: <p>At each point on a smooth curve where <m>\kappa > 0</m>, three mutually perpendicular unit vectors define the Frenet-Serret (TNB) frame:</p>
+    items:
+      - 'Principal unit normal vector: <m>\mathbf{N}(t) = \frac{\mathbf{T}''(t)}{|\mathbf{T}''(t)|}</m>. Because <m>|\mathbf{T}(t)| = 1</m>, <m>\mathbf{T}''(t) \cdot \mathbf{T}(t) = 0</m>; <m>\mathbf{N}</m> points in the direction the curve bends.'
+      - 'Binormal vector: <m>\mathbf{B}(t) = \mathbf{T}(t) \times \mathbf{N}(t)</m>, completing a right-handed orthonormal triad.'
+      - 'Osculating plane: The plane containing <m>\mathbf{T}</m> and <m>\mathbf{N}</m> with normal vector <m>\mathbf{B}</m>. It contains the osculating circle (circle of curvature), having radius <m>\rho = \frac{1}{\kappa}</m> and center <m>\mathbf{r} + \rho\mathbf{N}</m>.'
+    ordered: true
+    authorId: block-b8940b96-dc3
+  - t: ex
+    title: Curvature and Osculating Circle of a Parabola
+    objectives:
+      - obj-s2-3
+    family: family-tnb-osculating
+    h: '<p>Find the curvature and the equation of the osculating circle of <m>y = x^2</m> at the vertex <m>(0, 0)</m>.</p><p>Compute derivatives: <m>f''(x) = 2x</m> and <m>f''''(x) = 2</m>. At <m>x = 0</m>, <m>f''(0) = 0</m> and <m>f''''(0) = 2</m>. The curvature is <m>\kappa(0) = \frac{|2|}{[1 + 0^2]^{3/2}} = 2</m>. The radius of curvature is <m>\rho = \frac{1}{\kappa} = \frac{1}{2}</m>.</p><p>Because the parabola opens upward, the principal normal points in the positive <m>y</m>-direction: <m>\mathbf{N} = \langle 0, 1 \rangle</m>. The center of the osculating circle is <m>(0, 0) + \frac{1}{2}\langle 0, 1 \rangle = (0, \frac{1}{2})</m>. Its equation is <m>x^2 + (y - \frac{1}{2})^2 = \frac{1}{4}</m>.</p>'
+    authorId: block-7d46d165-530
+  - t: trap
+    label: Normalizing the Second Derivative Instead of the Unit Tangent
+    source: OpenStax Calculus Volume 3, Section 3.3
+    sourceReview: sourced
+    core: The principal normal vector is the normalized derivative of the unit tangent vector, not the normalized second derivative of position.
+    objectives:
+      - obj-s2-3
+    family: family-tnb-osculating
+    h: '<p>A common error is computing <m>\mathbf{N}</m> as <m>\frac{\mathbf{r}''''(t)}{|\mathbf{r}''''(t)|}</m>. Unless the curve is traversed at constant speed, <m>\mathbf{r}''''(t)</m> contains a tangential component of acceleration and is not orthogonal to <m>\mathbf{T}(t)</m>. The principal unit normal is always obtained by differentiating the unit tangent vector: <m>\mathbf{N}(t) = \frac{\mathbf{T}''(t)}{|\mathbf{T}''(t)|}</m>.'
+    authorId: block-8eaacbc8-65e
+quiz:
+  - type: Arc length calculation
+    concept: arc-length
+    objectives:
+      - obj-s2-3
+    family: family-arc-length
+    q: What is the arc length of the space curve <m>\mathbf{r}(t) = \langle 2t, t^2, \frac{1}{3}t^3 \rangle</m> for <m>0 \le t \le 3</m>?
+    verified: true
+    response:
+      kind: number
+      value: 15
+    why: The derivative is <m>\mathbf{r}'(t) = \langle 2, 2t, t^2 \rangle</m>. The speed is <m>|\mathbf{r}'(t)| = \sqrt{4 + 4t^2 + t^4} = \sqrt{(t^2 + 2)^2} = t^2 + 2</m>. Integrating gives <m>\int_0^3 (t^2 + 2)\,dt = \left[\frac{t^3}{3} + 2t\right]_0^3 = 9 + 6 = 15</m>.
+    authorId: quiz-4a0ee812-505
+  - type: Curvature of plane curve
+    concept: curvature
+    objectives:
+      - obj-s2-3
+    family: family-curvature
+    q: Find the curvature <m>\kappa</m> of the curve <m>y = \ln(\cos x)</m> at <m>x = 0</m>.
+    verified: true
+    response:
+      kind: number
+      value: 1
+    why: Differentiating yields <m>y' = -\tan x</m> and <m>y'' = -\sec^2 x</m>. At <m>x = 0</m>, <m>y'(0) = 0</m> and <m>y''(0) = -1</m>. Thus <m>\kappa(0) = \frac{|-1|}{[1 + 0^2]^{3/2}} = 1</m>.
+    authorId: quiz-c96104c6-6cb
+  - type: Binormal vector computation
+    concept: tnb-frame
+    objectives:
+      - obj-s2-3
+    family: family-tnb-osculating
+    q: For a smooth space curve, suppose at a given point the unit tangent vector is <m>\mathbf{T} = \langle 1, 0, 0 \rangle</m> and the principal unit normal vector is <m>\mathbf{N} = \langle 0, 0, 1 \rangle</m>. What is the binormal vector <m>\mathbf{B} = \mathbf{T} \times \mathbf{N}</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\langle 0, -1, 0 \rangle</m>
+          why: 'Computing the cross product: <m>\mathbf{i} \times \mathbf{k} = -\mathbf{j} = \langle 0, -1, 0 \rangle</m>.'
+        - text: <m>\langle 0, 1, 0 \rangle</m>
+          why: This reverses the orientation of the cross product; <m>\mathbf{i} \times \mathbf{k} = -\mathbf{j}</m>, not <m>+\mathbf{j}</m>.
+        - text: <m>\langle 1, 0, 1 \rangle</m>
+          why: The binormal vector is orthogonal to both <m>\mathbf{T}</m> and <m>\mathbf{N}</m> and must have unit magnitude.
+        - text: <m>\langle 0, 0, 0 \rangle</m>
+          why: Because <m>\mathbf{T}</m> and <m>\mathbf{N}</m> are orthogonal unit vectors, their cross product is a unit vector, not zero.
+    why: The binormal vector is defined by <m>\mathbf{B} = \mathbf{T} \times \mathbf{N}</m>.
+    authorId: quiz-2c1bbc9f-12b

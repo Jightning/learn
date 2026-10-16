@@ -1,0 +1,4 @@
+title: "Triple integrals in spherical coordinates"
+term: "Spherical Triple Integral"
+body: >-
+  <p>In spherical coordinates, a triple integral transforms via <m>\iiint_E f(x, y, z)\, dV = \int_\alpha^\beta \int_c^d \int_{g_1(\theta, \phi)}^{g_2(\theta, \phi)} f(\rho, \theta, \phi)\, \rho^2 \sin \phi\, d\rho\, d\phi\, d\theta</m>. The volume differential includes the Jacobian factor <m>dV = \rho^2 \sin \phi\, d\rho\, d\phi\, d\theta</m>. Spherical coordinates are preferred for regions bounded by spheres <m>\rho = a</m>, cones <m>\phi = \alpha</m>, and half-planes <m>\theta = \beta</m>, and integrands with <m>x^2 + y^2 + z^2 = \rho^2</m>. They are fundamental to gravitational and electrostatic field calculations.</p>

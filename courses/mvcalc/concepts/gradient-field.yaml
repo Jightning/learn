@@ -1,0 +1,4 @@
+title: "Gradient fields and potential functions"
+term: "Gradient Field"
+body: >-
+  <p>A vector field <m>\mathbf{F}</m> is a gradient field (or conservative field) if there exists a differentiable scalar potential function <m>f</m> such that <m>\mathbf{F} = \nabla f</m>. In components, this requires <m>P = f_x</m>, <m>Q = f_y</m>, and <m>R = f_z</m>. A potential function is recovered by successively integrating the component equations and reconciling the functions of integration. In physics, conservative force fields satisfy <m>\mathbf{F} = -\nabla V</m>, where <m>V</m> is potential energy.</p>

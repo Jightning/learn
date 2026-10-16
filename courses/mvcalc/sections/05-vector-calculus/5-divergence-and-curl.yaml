@@ -1,0 +1,140 @@
+title: Divergence and Curl
+blocks:
+  - t: p
+    h: |
+      <p>In our study of partial differentiation, we defined the del operator <m>\nabla = \langle \frac{\partial}{\partial x}, \frac{\partial}{\partial y}, \frac{\partial}{\partial z} \rangle</m>. When applied to a scalar function <m>f</m>, it produces the gradient vector field <m>\nabla f</m>. In this section, we study the two fundamental spatial derivatives of vector fields: the <strong>divergence</strong>, formed by the formal dot product <m>\nabla \cdot \mathbf{F}</m>, and the <strong>curl</strong>, formed by the formal cross product <m>\nabla \times \mathbf{F}</m>. Together, they govern fluid dynamics, electromagnetism, and the higher-dimensional fundamental theorems of calculus.</p>
+    authorId: block-1a23b5f4-d40
+  - t: def
+    term: Divergence of a Vector Field
+    source: OpenStax Calculus Volume 3, Section 6.5
+    sourceReview: sourced
+    core: Divergence measures the net rate of outward flux or expansion of a vector field per unit volume at a given point.
+    introduces:
+      - obj-s5-5
+      - divergence
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-compute
+    h: |
+      <p>Let <m>\mathbf{F}(x, y, z) = P\mathbf{i} + Q\mathbf{j} + R\mathbf{k}</m> be a vector field in <m>\mathbb{R}^3</m> whose component functions possess first partial derivatives. The <strong>divergence</strong> of <m>\mathbf{F}</m> is the scalar field defined by <m>\operatorname{div}\mathbf{F} = \nabla \cdot \mathbf{F} = \frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y} + \frac{\partial R}{\partial z}</m>. Physically, <m>\operatorname{div}\mathbf{F}(x_0, y_0, z_0)</m> measures the net rate at which fluid leaves an infinitesimal volume surrounding <m>(x_0, y_0, z_0)</m> per unit volume. If <m>\operatorname{div}\mathbf{F} > 0</m>, the point acts as a <strong>source</strong>; if <m>\operatorname{div}\mathbf{F} < 0</m>, it acts as a <strong>sink</strong>. A vector field satisfying <m>\operatorname{div}\mathbf{F} = 0</m> everywhere is said to be <strong>incompressible</strong> (or solenoidal).</p>
+    authorId: block-bdb79e89-815
+  - t: def
+    term: Curl of a Vector Field
+    source: OpenStax Calculus Volume 3, Section 6.5
+    sourceReview: sourced
+    core: Curl measures the infinitesimal circulation or rotational tendency of a vector field about an axis at a point.
+    introduces:
+      - curl
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-compute
+    h: |
+      <p>Let <m>\mathbf{F} = \langle P, Q, R \rangle</m> be a vector field in <m>\mathbb{R}^3</m> with differentiable components. The <strong>curl</strong> of <m>\mathbf{F}</m> is the vector field defined by the symbolic cross product:</p><p><m>\operatorname{curl}\mathbf{F} = \nabla \times \mathbf{F} = \begin{vmatrix} \mathbf{i} & \mathbf{j} & \mathbf{k} \\ \frac{\partial}{\partial x} & \frac{\partial}{\partial y} & \frac{\partial}{\partial z} \\ P & Q & R \end{vmatrix} = \left(\frac{\partial R}{\partial y} - \frac{\partial Q}{\partial z}\right)\mathbf{i} + \left(\frac{\partial P}{\partial z} - \frac{\partial R}{\partial x}\right)\mathbf{j} + \left(\frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y}\right)\mathbf{k}</m></p><p>If a tiny paddle wheel is placed in a fluid with velocity field <m>\mathbf{F}</m>, it spins most rapidly when its axis is aligned with <m>\operatorname{curl}\mathbf{F}</m>, with angular speed proportional to <m>\|\operatorname{curl}\mathbf{F}\|</m>. If <m>\operatorname{curl}\mathbf{F} = \mathbf{0}</m> everywhere, the field is called <strong>irrotational</strong>.</p>
+    authorId: block-d22077c3-49c
+  - t: math
+    label: Coordinate Formulas for Divergence and Curl
+    tex: \operatorname{div}\mathbf{F} = \frac{\partial P}{\partial x} + \frac{\partial Q}{\partial y} + \frac{\partial R}{\partial z}, \qquad \operatorname{curl}\mathbf{F} = \left(\frac{\partial R}{\partial y} - \frac{\partial Q}{\partial z}\right)\mathbf{i} + \left(\frac{\partial P}{\partial z} - \frac{\partial R}{\partial x}\right)\mathbf{j} + \left(\frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y}\right)\mathbf{k}
+    note: Divergence produces a scalar field measuring local expansion, while curl produces a vector field measuring local rotation.
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-compute
+    authorId: block-82135ac1-e69
+  - t: ex
+    title: Calculating Divergence and Curl for Spatial Fields
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-compute
+    h: |
+      <p><strong>Problem:</strong> For <m>\mathbf{F}(x, y, z) = \langle x^2 y, y^2 z, x z^2 \rangle</m>, compute <m>\operatorname{div}\mathbf{F}</m> and <m>\operatorname{curl}\mathbf{F}</m>, and evaluate both quantities at <m>(1, 2, 3)</m>.</p><p><strong>Solution:</strong></p><p>1. Divergence: Compute the sum of pure partial derivatives:</p><p><m>\operatorname{div}\mathbf{F} = \frac{\partial}{\partial x}(x^2 y) + \frac{\partial}{\partial y}(y^2 z) + \frac{\partial}{\partial z}(x z^2) = 2xy + 2yz + 2xz</m></p><p>At <m>(1, 2, 3)</m>: <m>\operatorname{div}\mathbf{F}(1, 2, 3) = 2(1)(2) + 2(2)(3) + 2(1)(3) = 4 + 12 + 6 = 22</m>.</p><p>2. Curl: Evaluate the determinant components:</p><ul><li><m>(\operatorname{curl}\mathbf{F})_x = \frac{\partial}{\partial y}(x z^2) - \frac{\partial}{\partial z}(y^2 z) = 0 - y^2 = -y^2</m></li><li><m>(\operatorname{curl}\mathbf{F})_y = \frac{\partial}{\partial z}(x^2 y) - \frac{\partial}{\partial x}(x z^2) = 0 - z^2 = -z^2</m></li><li><m>(\operatorname{curl}\mathbf{F})_z = \frac{\partial}{\partial x}(y^2 z) - \frac{\partial}{\partial y}(x^2 y) = 0 - x^2 = -x^2</m></li></ul><p>Thus, <m>\operatorname{curl}\mathbf{F} = \langle -y^2, -z^2, -x^2 \rangle</m>. At <m>(1, 2, 3)</m>, this evaluates to <m>\langle -4, -9, -1 \rangle</m>.</p>
+    authorId: block-ee908192-888
+  - t: key
+    label: Fundamental Vector Differential Identities
+    source: OpenStax Calculus Volume 3, Section 6.5
+    sourceReview: sourced
+    core: The curl of any gradient field vanishes, and the divergence of any curl vanishes; irrotational fields on simply connected domains are conservative.
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-identities
+    h: |
+      <p>Two fundamental identities connect the differential operators of multivariable calculus:</p>
+    items:
+      - 'Curl of a gradient is zero: For any scalar function <m>f</m> with continuous second partial derivatives, <m>\operatorname{curl}(\nabla f) = \nabla \times (\nabla f) = \mathbf{0}</m>.'
+      - 'Divergence of a curl is zero: For any vector field <m>\mathbf{F}</m> with continuous second partial derivatives, <m>\operatorname{div}(\operatorname{curl}\mathbf{F}) = \nabla \cdot (\nabla \times \mathbf{F}) = 0</m>.'
+      - 'Conservative criterion in 3D: If <m>\mathbf{F}</m> is defined on an open simply connected 3D domain and <m>\operatorname{curl}\mathbf{F} = \mathbf{0}</m>, then <m>\mathbf{F}</m> is conservative, meaning <m>\mathbf{F} = \nabla f</m> for some potential function <m>f</m>.'
+      - 'Testing whether a field is a curl: If <m>\operatorname{div}\mathbf{G} \ne 0</m>, then <m>\mathbf{G}</m> cannot be the curl of any vector field.'
+    ordered: true
+    authorId: block-40b89393-c21
+  - t: ex
+    title: Testing for Conservativeness and Solenoidal Fields
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-identities
+    h: |
+      <p><strong>Problem:</strong> (a) Determine whether <m>\mathbf{F} = \langle yz, xz, xy \rangle</m> is conservative on <m>\mathbb{R}^3</m>. (b) Determine whether <m>\mathbf{G} = \langle x^2, y^2, z^2 \rangle</m> can be expressed as <m>\mathbf{G} = \operatorname{curl}\mathbf{A}</m> for some vector field <m>\mathbf{A}</m>.</p><p><strong>Solution:</strong></p><p>(a) Compute <m>\operatorname{curl}\mathbf{F}</m>:</p><p><m>\operatorname{curl}\mathbf{F} = \left\langle \frac{\partial}{\partial y}(xy) - \frac{\partial}{\partial z}(xz), \, \frac{\partial}{\partial z}(yz) - \frac{\partial}{\partial x}(xy), \, \frac{\partial}{\partial x}(xz) - \frac{\partial}{\partial y}(yz) \right\rangle = \langle x - x, y - y, z - z \rangle = \mathbf{0}</m></p><p>Since <m>\operatorname{curl}\mathbf{F} = \mathbf{0}</m> throughout simply connected <m>\mathbb{R}^3</m>, <m>\mathbf{F}</m> is conservative (with potential <m>f(x, y, z) = xyz + C</m>).</p><p>(b) Compute the divergence of <m>\mathbf{G}</m>:</p><p><m>\operatorname{div}\mathbf{G} = \frac{\partial}{\partial x}(x^2) + \frac{\partial}{\partial y}(y^2) + \frac{\partial}{\partial z}(z^2) = 2x + 2y + 2z</m></p><p>Because <m>\operatorname{div}\mathbf{G} \ne 0</m> (it is nonzero for points where <m>x + y + z \ne 0</m>), and <m>\operatorname{div}(\operatorname{curl}\mathbf{A}) = 0</m> holds identically for all smooth vector fields, <m>\mathbf{G}</m> cannot be the curl of any vector field.</p>
+    authorId: block-a6e8d119-0a6
+  - t: trap
+    label: Mismatched Vector Operations and Domain Topology
+    source: OpenStax Calculus Volume 3, Section 6.5
+    sourceReview: sourced
+    core: Divergence applies to vector fields producing a scalar, while curl applies to vector fields producing a vector; vanishing curl requires simply connected domains to guarantee conservativeness.
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-interpret
+    h: |
+      <p>Remember that divergence and curl apply only to vector fields, while gradient applies to scalar fields. Writing <m>\operatorname{div} f</m> for a scalar <m>f</m> or <m>\operatorname{curl} f</m> is mathematically undefined. Furthermore, the property <m>\operatorname{curl}\mathbf{F} = \mathbf{0}</m> guarantees a global potential only if the domain has no holes (is simply connected). If the domain contains a punctured axis or cavity, a field with vanishing curl may still fail to be conservative, as seen with the 2D vortex field.</p>
+    authorId: block-0d4892de-36b
+quiz:
+  - type: Computing divergence and curl
+    concept: divergence
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-compute
+    q: For the vector field <m>\mathbf{F}(x, y, z) = \langle x y^2, y z^2, z x^2 \rangle</m>, what is <m>\operatorname{div}\mathbf{F}(2, 1, 3)</m>?
+    verified: true
+    response:
+      kind: number
+      value: 14
+    why: The divergence is <m>\nabla \cdot \mathbf{F} = \frac{\partial}{\partial x}(x y^2) + \frac{\partial}{\partial y}(y z^2) + \frac{\partial}{\partial z}(z x^2) = y^2 + z^2 + x^2</m>. Evaluating at <m>(2, 1, 3)</m> gives <m>1^2 + 3^2 + 2^2 = 1 + 9 + 4 = 14</m>.
+    authorId: quiz-2a153338-d89
+  - type: Applying curl identity to test conservative field
+    concept: curl
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-identities
+    q: Which of the following conditions proves that a smooth vector field <m>\mathbf{F}</m> cannot be expressed as the curl of another vector field, <m>\mathbf{F} \ne \operatorname{curl}\mathbf{A}</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\operatorname{div}\mathbf{F} \ne 0</m>
+          why: Because <m>\operatorname{div}(\operatorname{curl}\mathbf{A}) = 0</m> holds identically for all smooth vector fields <m>\mathbf{A}</m>, any field whose divergence is nonzero cannot be the curl of another vector field.
+        - text: <m>\operatorname{curl}\mathbf{F} \ne \mathbf{0}</m>
+          why: A field can have nonzero curl while still being the curl of another field (for example, magnetic fields in electromagnetic waves).
+        - text: <m>\mathbf{F} \cdot \mathbf{r} = 0</m>
+          why: Orthogonality to the position vector does not prevent a field from being expressed as a curl.
+        - text: <m>\operatorname{div}\mathbf{F} = 0</m>
+          why: Having zero divergence is a necessary condition for being a curl, not a proof that it cannot be one.
+    why: Since the divergence of any curl is identically zero, a nonzero divergence proves that <m>\mathbf{F}</m> cannot be a curl.
+    authorId: quiz-8bd869a8-f4b
+  - type: Physical interpretation of divergence and curl
+    concept: curl
+    objectives:
+      - obj-s5-5
+    family: family-div-curl-interpret
+    q: A fluid flow velocity field satisfies <m>\operatorname{div}\mathbf{F}(P) = 0</m> and <m>\operatorname{curl}\mathbf{F}(P) = \mathbf{0}</m> at point <m>P</m>. What does this indicate about the fluid behavior near <m>P</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: The fluid is incompressible (no net source or sink) and irrotational (a paddle wheel placed at <m>P</m> will not rotate).
+          why: <m>\operatorname{div}\mathbf{F} = 0</m> indicates incompressibility (zero net volumetric outflow), and <m>\operatorname{curl}\mathbf{F} = \mathbf{0}</m> indicates the flow is irrotational (zero microscopic circulation around the point).
+        - text: The fluid is expanding outward radially with constant clockwise swirl.
+          why: Expanding fluid requires positive divergence, and swirl requires nonzero curl.
+        - text: The fluid is stationary with velocity vector <m>\mathbf{F}(P) = \mathbf{0}</m>.
+          why: Divergence and curl measure spatial derivatives, not the velocity vector itself; the fluid can move uniformly at high velocity while having zero divergence and curl.
+        - text: The fluid has a sink at <m>P</m> and rotates counterclockwise around the <m>z</m>-axis.
+          why: A sink requires negative divergence and rotation requires nonzero curl.
+    why: Zero divergence corresponds to incompressibility and zero curl corresponds to irrotational flow.
+    authorId: quiz-660ecf6e-958

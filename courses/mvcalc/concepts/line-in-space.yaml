@@ -1,0 +1,4 @@
+title: "Vector, parametric and symmetric equations of a line"
+term: "Line in Space"
+body: >-
+  <p>A line passing through a point <m>P_0(x_0, y_0, z_0)</m> with direction vector <m>\mathbf{v} = \langle a, b, c \rangle</m> has vector equation <m>\mathbf{r}(t) = \mathbf{r}_0 + t\mathbf{v}</m>. In coordinate form, its parametric equations are <m>x = x_0 + at</m>, <m>y = y_0 + bt</m>, <m>z = z_0 + ct</m>, and its symmetric equations are <m>\frac{x - x_0}{a} = \frac{y - y_0}{b} = \frac{z - z_0}{c}</m> (for nonzero direction numbers). Lines in space can intersect, be parallel, or be skew (non-parallel and non-intersecting). These equations describe spatial trajectories and rays.</p>

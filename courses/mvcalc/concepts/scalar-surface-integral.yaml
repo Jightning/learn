@@ -1,0 +1,4 @@
+title: "Surface integrals of scalar functions"
+term: "Scalar Surface Integral"
+body: >-
+  <p>The surface integral of a continuous scalar function <m>f(x, y, z)</m> over a smooth parametric surface <m>S</m> parameterized by <m>\mathbf{r}(u, v)</m> over <m>D</m> is <m>\iint_S f\, dS = \iint_D f(\mathbf{r}(u, v)) \|\mathbf{r}_u \times \mathbf{r}_v\|\, dA</m>. Here <m>dS = \|\mathbf{r}_u \times \mathbf{r}_v\|\, dA</m> represents the surface area differential. For a graph <m>z = g(x, y)</m>, this reduces to <m>\iint_D f(x, y, g(x, y)) \sqrt{1 + g_x^2 + g_y^2}\, dA</m>. Scalar surface integrals compute total mass of curved thin shells, surface charge, and average values on surfaces.</p>

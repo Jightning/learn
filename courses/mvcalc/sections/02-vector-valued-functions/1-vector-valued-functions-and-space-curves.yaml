@@ -1,0 +1,134 @@
+title: Vector-Valued Functions and Space Curves
+blocks:
+  - t: p
+    h: <p>When an object moves through space, its position at any instant <m>t</m> is given by three coordinates <m>(x(t), y(t), z(t))</m>. Rather than tracking three disconnected scalar functions, we combine them into a single mathematical object—a vector-valued function. As parameter <m>t</m> varies over an interval, the terminal point of the position vector traces a one-dimensional path through two- or three-dimensional space known as a space curve.</p>
+    authorId: block-60384450-408
+  - t: def
+    term: Vector-Valued Function and Domain
+    source: OpenStax Calculus Volume 3, Section 3.1
+    sourceReview: sourced
+    core: A vector-valued function assigns a vector to each real number in its domain; its domain is the intersection of the domains of its scalar component functions.
+    introduces:
+      - obj-s2-1
+      - vector-valued-function
+    objectives:
+      - obj-s2-1
+    family: family-vvf-domain-limit
+    h: '<p>A vector-valued function in <m>\mathbb{R}^3</m> is a mapping of the form <m>\mathbf{r}(t) = \langle f(t), g(t), h(t) \rangle = f(t)\mathbf{i} + g(t)\mathbf{j} + h(t)\mathbf{k}</m>, where <m>f</m>, <m>g</m>, and <m>h</m> are real-valued component functions of the parameter <m>t</m>. The natural domain of <m>\mathbf{r}</m> is the set of all real numbers <m>t</m> for which all three component functions are simultaneously defined: <m>\text{Dom}(\mathbf{r}) = \text{Dom}(f) \cap \text{Dom}(g) \cap \text{Dom}(h)</m>.</p>'
+    authorId: block-ae66124b-bde
+  - t: key
+    label: Limits and Continuity of Vector-Valued Functions
+    source: OpenStax Calculus Volume 3, Section 3.1
+    sourceReview: sourced
+    core: Limits and continuity of vector-valued functions are evaluated componentwise; r(t) is continuous at a point if and only if each component function is continuous there.
+    objectives:
+      - obj-s2-1
+    family: family-vvf-domain-limit
+    h: <p>The calculus of vector-valued functions reduces directly to single-variable calculus applied to each component coordinate:</p>
+    items:
+      - 'Componentwise limit: <m>\lim_{t \to a}\mathbf{r}(t) = \langle \lim_{t \to a}f(t),\, \lim_{t \to a}g(t),\, \lim_{t \to a}h(t) \rangle</m>, provided all three scalar limits exist.'
+      - 'Nonexistence criterion: If any single component limit fails to exist, then <m>\lim_{t \to a}\mathbf{r}(t)</m> does not exist.'
+      - 'Continuity: A vector function <m>\mathbf{r}</m> is continuous at <m>t = a</m> if <m>\lim_{t \to a}\mathbf{r}(t) = \mathbf{r}(a)</m>, which occurs if and only if <m>f</m>, <m>g</m>, and <m>h</m> are continuous at <m>a</m>.'
+    ordered: true
+    authorId: block-dc8b2a4c-ae0
+  - t: math
+    label: Componentwise Limit Formula
+    tex: \lim_{t \to a} \mathbf{r}(t) = \left\langle \lim_{t \to a} f(t),\, \lim_{t \to a} g(t),\, \lim_{t \to a} h(t) \right\rangle
+    note: The vector limit exists if and only if every component limit exists independently.
+    objectives:
+      - obj-s2-1
+    family: family-vvf-domain-limit
+    authorId: block-b9d1a801-405
+  - t: ex
+    title: Domain and Componentwise Limit
+    objectives:
+      - obj-s2-1
+    family: family-vvf-domain-limit
+    h: '<p>Find the domain of <m>\mathbf{r}(t) = \langle \sqrt{9 - t^2}, \frac{\sin t}{t}, \ln(t + 1) \rangle</m>, and evaluate <m>\lim_{t \to 0}\mathbf{r}(t)</m>.</p><p>For the domain, require all three components to be defined: <m>9 - t^2 \ge 0 \implies -3 \le t \le 3</m>; denominator <m>t \ne 0</m>; and argument <m>t + 1 > 0 \implies t > -1</m>. Taking the intersection gives <m>\text{Dom}(\mathbf{r}) = (-1, 0) \cup (0, 3]</m>.</p><p>For the limit as <m>t \to 0</m>, compute each component: <m>\lim_{t \to 0}\sqrt{9 - t^2} = 3</m>, <m>\lim_{t \to 0}\frac{\sin t}{t} = 1</m>, and <m>\lim_{t \to 0}\ln(t + 1) = \ln 1 = 0</m>. Thus <m>\lim_{t \to 0}\mathbf{r}(t) = \langle 3, 1, 0 \rangle</m>. Notice that the limit exists even though <m>t = 0</m> is excluded from the domain.</p>'
+    authorId: block-3841b1a6-efe
+  - t: key
+    label: Space Curves and Parametrizing Intersections
+    source: OpenStax Calculus Volume 3, Section 3.1
+    sourceReview: sourced
+    core: The terminal points of r(t) sweep out a space curve C; curves formed by intersecting surfaces are parametrized by choosing a coordinate parameter or angle.
+    objectives:
+      - obj-s2-1
+    family: family-space-curve
+    h: <p>A vector-valued function <m>\mathbf{r}(t) = \langle x(t), y(t), z(t) \rangle</m> provides parametric equations <m>x = x(t)</m>, <m>y = y(t)</m>, <m>z = z(t)</m> for a space curve <m>C</m>:</p>
+    items:
+      - 'Circular helix: <m>\mathbf{r}(t) = \langle a\cos t, a\sin t, c t \rangle</m> lies on the cylinder <m>x^2 + y^2 = a^2</m> and climbs at constant vertical rate <m>c</m>.'
+      - 'Surface intersections: When a curve is defined implicitly as the intersection of two surfaces <m>F(x,y,z)=0</m> and <m>G(x,y,z)=0</m>, parametrize by setting one variable to <m>t</m> or using polar coordinates for circular cross-sections.'
+    ordered: true
+    authorId: block-fba05a2b-9c2
+  - t: ex
+    title: Parametrizing the Intersection of a Cylinder and a Plane
+    objectives:
+      - obj-s2-1
+    family: family-space-curve
+    h: '<p>Find a vector-valued function parametrizing the intersection of the cylinder <m>x^2 + y^2 = 4</m> and the plane <m>z = x + 2y</m>.</p><p>Because the projection onto the <m>xy</m>-plane is the circle <m>x^2 + y^2 = 4</m>, parametrize <m>x</m> and <m>y</m> using polar angle <m>t \in [0, 2\pi)</m>: <m>x(t) = 2\cos t</m> and <m>y(t) = 2\sin t</m>. Substitute these into the plane equation for <m>z</m>: <m>z(t) = 2\cos t + 2(2\sin t) = 2\cos t + 4\sin t</m>. Hence, the curve of intersection is parametrized by <m>\mathbf{r}(t) = \langle 2\cos t, 2\sin t, 2\cos t + 4\sin t \rangle</m> for <m>0 \le t < 2\pi</m>.</p>'
+    authorId: block-363c1037-65d
+  - t: trap
+    label: Conflating the Geometric Curve with Its Parametrization
+    source: OpenStax Calculus Volume 3, Section 3.1
+    sourceReview: sourced
+    core: A space curve is a set of geometric points in space, whereas a vector-valued function is a specific motion tracing that set with a particular speed and direction.
+    objectives:
+      - obj-s2-1
+    family: family-space-curve
+    h: '<p>The vector functions <m>\mathbf{r}_1(t) = \langle \cos t, \sin t, t \rangle</m> and <m>\mathbf{r}_2(t) = \langle \cos(2t), \sin(2t), 2t \rangle</m> trace the identical spiral path in <m>\mathbb{R}^3</m>, but <m>\mathbf{r}_2</m> traverses the path with twice the speed. Orientation also matters: <m>\mathbf{r}_3(t) = \langle \cos(-t), \sin(-t), -t \rangle</m> traces the curve in reverse. Never confuse the geometric curve (the trajectory) with its parametrization (the timetable of motion along that trajectory).</p>'
+    authorId: block-141d5eb2-ca5
+quiz:
+  - type: Domain intersection
+    concept: vector-valued-function
+    objectives:
+      - obj-s2-1
+    family: family-vvf-domain-limit
+    q: What is the domain of the vector-valued function <m>\mathbf{r}(t) = \left\langle \sqrt{16 - t^2}, \ln(t - 1), \frac{1}{t - 3} \right\rangle</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>(1, 3) \cup (3, 4]</m>
+          why: We require <m>16 - t^2 \ge 0 \implies -4 \le t \le 4</m>, <m>t - 1 > 0 \implies t > 1</m>, and <m>t - 3 \ne 0 \implies t \ne 3</m>. The intersection is <m>(1, 3) \cup (3, 4]</m>.
+        - text: <m>[1, 4]</m>
+          why: <m>t = 1</m> makes the logarithm undefined and <m>t = 3</m> creates division by zero.
+        - text: <m>(-4, 4)</m>
+          why: This ignores the constraints from the logarithm and the rational component.
+        - text: <m>(1, 4]</m>
+          why: This fails to exclude <m>t = 3</m>, where the third component has a vertical asymptote.
+    why: The natural domain of a vector-valued function is the intersection of the domains of all its scalar components.
+    authorId: quiz-31f6b83c-21f
+  - type: Componentwise limit evaluation
+    concept: vector-valued-function
+    objectives:
+      - obj-s2-1
+    family: family-vvf-domain-limit
+    q: Evaluate the limit <m>\lim_{t \to 0} \left\langle \frac{e^{2t} - 1}{t}, \cos(3t), \frac{t^2 + 4t}{t} \right\rangle</m>. What is the <m>x</m>-component of the resulting vector?
+    verified: true
+    response:
+      kind: number
+      value: 2
+    why: By L'Hôpital's rule or definition of the derivative of <m>e^{2t}</m> at <m>t = 0</m>, <m>\lim_{t \to 0}\frac{e^{2t} - 1}{t} = \lim_{t \to 0}\frac{2e^{2t}}{1} = 2</m>. The full vector limit is <m>\langle 2, 1, 4 \rangle</m>.
+    authorId: quiz-1535b998-1e4
+  - type: Parametrizing curve intersection
+    concept: vector-valued-function
+    objectives:
+      - obj-s2-1
+    family: family-space-curve
+    q: Which vector-valued function parametrizes the curve formed by the intersection of the parabolic cylinder <m>y = x^2</m> and the plane <m>z = 3x - 1</m>, using parameter <m>x = t</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\mathbf{r}(t) = \langle t, t^2, 3t - 1 \rangle</m>
+          why: Setting <m>x = t</m> gives <m>y = x^2 = t^2</m> and <m>z = 3x - 1 = 3t - 1</m>.
+        - text: <m>\mathbf{r}(t) = \langle t^2, t, 3t - 1 \rangle</m>
+          why: This swaps the roles of <m>x</m> and <m>y</m>.
+        - text: <m>\mathbf{r}(t) = \langle t, 2t, 3t - 1 \rangle</m>
+          why: The cylinder equation is <m>y = x^2</m>, not <m>y = 2x</m>.
+        - text: <m>\mathbf{r}(t) = \langle t, t^2, 3t^2 - 1 \rangle</m>
+          why: The plane equation is <m>z = 3x - 1 = 3t - 1</m>, not <m>3t^2 - 1</m>.
+    why: Substitute the parameter <m>x = t</m> directly into the defining equations of both surfaces to determine <m>y(t)</m> and <m>z(t)</m>.
+    authorId: quiz-cac9ea54-f90

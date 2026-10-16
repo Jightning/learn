@@ -1,0 +1,102 @@
+title: Lagrange Multipliers
+blocks:
+  - t: p
+    h: '<p>Many real-world optimization problems involve constraints that restrict the allowable domain: maximizing industrial output under a strict financial budget, or minimizing container surface area for a specified interior volume. While some constraints allow solving for one variable and substituting directly into the objective function, doing so can be algebraically arduous or impossible. The method of Lagrange multipliers circumvents direct elimination by using the geometry of gradient vectors.</p>'
+    authorId: block-9bc0e6b0-955
+  - t: def
+    term: Method of Lagrange Multipliers with One Constraint
+    source: OpenStax Calculus Volume 3, Section 4.8
+    sourceReview: sourced
+    core: To optimize <m>f(x, y, z)</m> subject to constraint <m>g(x, y, z) = k</m> where <m>\nabla g \ne \mathbf{0}</m>, solve <m>\nabla f = \lambda \nabla g</m> and <m>g = k</m> for candidate points.
+    introduces:
+      - obj-s3-8
+      - lagrange-multiplier
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-one-constraint
+    h: '<p>Suppose <m>f</m> and <m>g</m> are differentiable functions and <m>\nabla g \ne \mathbf{0}</m> along the constraint surface <m>g(x, y, z) = k</m>. At an extreme value of <m>f</m> restricted to the constraint, the level surface of <m>f</m> must be tangent to the constraint surface. Because gradients are normal to their respective level sets, <m>\nabla f</m> and <m>\nabla g</m> must be parallel. This leads to the Lagrange multiplier equations: <m>\nabla f = \lambda \nabla g</m> subject to <m>g(x, y, z) = k</m>, where the scalar parameter <m>\lambda</m> is the Lagrange multiplier.</p>'
+    authorId: block-8196ab27-7c6
+  - t: math
+    label: One-Constraint Lagrange Multiplier System
+    tex: \nabla f(x, y, z) = \lambda \nabla g(x, y, z), \qquad g(x, y, z) = k
+    note: Candidate points occur where the gradient of f is a scalar multiple of the gradient of the constraint g.
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-one-constraint
+    authorId: block-ba270069-6fb
+  - t: ex
+    title: Maximizing and Minimizing a Function on a Circle
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-one-constraint
+    h: '<p>Find the maximum and minimum values of <m>f(x, y) = 3x + 4y</m> subject to the constraint <m>x^2 + y^2 = 25</m>.</p><p>Set <m>g(x, y) = x^2 + y^2 = 25</m>. Gradients are <m>\nabla f = \langle 3, 4 \rangle</m> and <m>\nabla g = \langle 2x, 2y \rangle</m>.</p><p>The Lagrange system <m>\nabla f = \lambda \nabla g</m> gives two scalar equations: <m>3 = 2\lambda x</m> and <m>4 = 2\lambda y</m>. Since <m>\lambda \ne 0</m>, solve for <m>x</m> and <m>y</m>: <m>x = \frac{3}{2\lambda}</m> and <m>y = \frac{4}{2\lambda} = \frac{2}{\lambda}</m>.</p><p>Substitute into the constraint: <m>\left(\frac{3}{2\lambda}\right)^2 + \left(\frac{4}{2\lambda}\right)^2 = \frac{9 + 16}{4\lambda^2} = \frac{25}{4\lambda^2} = 25 \implies 4\lambda^2 = 1 \implies \lambda = \pm \frac{1}{2}</m>.</p><p>If <m>\lambda = \frac{1}{2}</m>, <m>(x, y) = (3, 4)</m> and <m>f(3, 4) = 3(3) + 4(4) = 25</m>. If <m>\lambda = -\frac{1}{2}</m>, <m>(x, y) = (-3, -4)</m> and <m>f(-3, -4) = -25</m>. Because the circle is closed and bounded, the absolute maximum value is <m>25</m> and the absolute minimum value is <m>-25</m>.</p>'
+    authorId: block-3b256c00-ff7
+  - t: def
+    term: Lagrange Multipliers with Two Constraints
+    source: OpenStax Calculus Volume 3, Section 4.8
+    sourceReview: sourced
+    core: To optimize <m>f(x, y, z)</m> subject to two constraints <m>g(x, y, z) = k</m> and <m>h(x, y, z) = c</m>, solve <m>\nabla f = \lambda \nabla g + \mu \nabla h</m> along with both constraints.
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-two-constraints
+    h: <p>When optimizing <m>f(x, y, z)</m> along the space curve formed by the intersection of two surfaces <m>g(x, y, z) = k</m> and <m>h(x, y, z) = c</m>, the tangent direction to the curve is perpendicular to both <m>\nabla g</m> and <m>\nabla h</m>. At an extremum, <m>\nabla f</m> must also be perpendicular to the curve, meaning <m>\nabla f</m> must lie in the plane spanned by <m>\nabla g</m> and <m>\nabla h</m>. This requires <m>\nabla f = \lambda \nabla g + \mu \nabla h</m>, where <m>\lambda</m> and <m>\mu</m> are two independent Lagrange multipliers.</p>
+    authorId: block-10caa28f-ca8
+  - t: math
+    label: Two-Constraint Lagrange Multiplier System
+    tex: \nabla f(x, y, z) = \lambda \nabla g(x, y, z) + \mu \nabla h(x, y, z), \qquad g(x, y, z) = k, \quad h(x, y, z) = c
+    note: The gradient of f must be expressed as a linear combination of the gradients of both constraint functions.
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-two-constraints
+    authorId: block-8333ddf3-ca0
+  - t: ex
+    title: Optimizing Subject to a Cylinder and a Plane
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-two-constraints
+    h: '<p>Find the maximum value of <m>f(x, y, z) = z</m> along the intersection of the cylinder <m>x^2 + y^2 = 1</m> and the plane <m>x + y + z = 1</m>.</p><p>Define constraints <m>g(x, y, z) = x^2 + y^2 = 1</m> and <m>h(x, y, z) = x + y + z = 1</m>. Gradients are <m>\nabla f = \langle 0, 0, 1 \rangle</m>, <m>\nabla g = \langle 2x, 2y, 0 \rangle</m>, and <m>\nabla h = \langle 1, 1, 1 \rangle</m>.</p><p>The vector equation <m>\nabla f = \lambda \nabla g + \mu \nabla h</m> gives: <m>0 = 2\lambda x + \mu</m>, <m>0 = 2\lambda y + \mu</m>, and <m>1 = \mu</m>. Substituting <m>\mu = 1</m> yields <m>2\lambda x = -1</m> and <m>2\lambda y = -1</m>, so <m>x = y = -\frac{1}{2\lambda}</m>.</p><p>From <m>x^2 + y^2 = 1</m>, we have <m>2x^2 = 1 \implies x = y = \pm \frac{\sqrt{2}}{2}</m>.</p><p>From <m>x + y + z = 1</m>, <m>z = 1 - x - y = 1 - 2x</m>. For <m>x = y = -\frac{\sqrt{2}}{2}</m>, <m>z = 1 - 2\left(-\frac{\sqrt{2}}{2}\right) = 1 + \sqrt{2}</m>. For <m>x = y = \frac{\sqrt{2}}{2}</m>, <m>z = 1 - \sqrt{2}</m>. Therefore, the maximum value of <m>f</m> is <m>1 + \sqrt{2}</m>.</p>'
+    authorId: block-05a27eba-93c
+  - t: trap
+    label: Lagrange Multipliers Do Not Distinguish Maxima from Minima
+    source: OpenStax Calculus Volume 3, Section 4.8
+    sourceReview: sourced
+    core: The method of Lagrange multipliers identifies candidate critical points on the constraint; it does not classify them as maxima or minima.
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-one-constraint
+    h: '<p>Solving <m>\nabla f = \lambda \nabla g</m> produces a set of candidate points that satisfy the geometric tangency condition. Neither the algebraic sign nor the magnitude of <m>\lambda</m> indicates whether a candidate is a maximum or a minimum. Provided the constraint set is closed and bounded, you must evaluate <m>f</m> at every candidate point found: the largest resulting value is the absolute maximum, and the smallest is the absolute minimum.</p>'
+    authorId: block-1b1540d8-14e
+quiz:
+  - type: One-constraint Lagrange optimization
+    concept: lagrange-multiplier
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-one-constraint
+    q: What is the maximum value of <m>f(x, y) = 3x + 4y</m> subject to the constraint <m>x^2 + y^2 = 25</m>?
+    verified: true
+    response:
+      kind: number
+      value: 25
+    why: Gradients are <m>\nabla f = \langle 3, 4 \rangle</m> and <m>\nabla g = \langle 2x, 2y \rangle</m>. Solving <m>\langle 3, 4 \rangle = \lambda \langle 2x, 2y \rangle</m> yields <m>x = \frac{3}{2\lambda}</m> and <m>y = \frac{4}{2\lambda}</m>. Substituting into <m>x^2 + y^2 = 25</m> gives <m>\frac{25}{4\lambda^2} = 25 \implies \lambda = \pm \frac{1}{2}</m>. For <m>\lambda = \frac{1}{2}</m>, <m>(x, y) = (3, 4)</m> producing <m>f(3, 4) = 3(3) + 4(4) = 25</m>. For <m>\lambda = -\frac{1}{2}</m>, <m>(x, y) = (-3, -4)</m> producing <m>f(-3, -4) = -25</m>. The maximum value is <m>25</m>.
+    authorId: quiz-a3850e95-67e
+  - type: Two-constraint Lagrange formulation
+    concept: lagrange-multiplier
+    objectives:
+      - obj-s3-8
+    family: family-lagrange-two-constraints
+    q: To optimize a function <m>f(x, y, z)</m> subject to two constraints <m>g(x, y, z) = k</m> and <m>h(x, y, z) = c</m>, which vector equation must hold at an extreme point?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\nabla f = \lambda \nabla g + \mu \nabla h</m>
+          why: 'At a constrained extremum on the intersection curve of two surfaces, the objective gradient <m>\nabla f</m> must be orthogonal to the tangent vector of the intersection curve. Since the curve is orthogonal to both <m>\nabla g</m> and <m>\nabla h</m>, <m>\nabla f</m> must lie in the plane spanned by both normals: <m>\nabla f = \lambda \nabla g + \mu \nabla h</m>.'
+        - text: <m>\nabla f = \lambda (\nabla g \times \nabla h)</m>
+          why: <m>\nabla g \times \nabla h</m> is tangent to the constraint curve, whereas <m>\nabla f</m> must be orthogonal to the curve.
+        - text: <m>\nabla f \cdot \nabla g = \nabla f \cdot \nabla h = 1</m>
+          why: The conditions require normal plane containment, not fixed dot product values of 1.
+        - text: <m>\nabla f + \nabla g + \nabla h = \mathbf{0}</m>
+          why: The multipliers <m>\lambda</m> and <m>\mu</m> are independent scalar variables, not fixed constants of 1.
+    why: The gradient of the objective function must be a linear combination of the gradients of both constraint functions.
+    authorId: quiz-5c35956f-848

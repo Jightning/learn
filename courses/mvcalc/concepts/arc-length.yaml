@@ -1,0 +1,4 @@
+title: "Arc length and arc-length parameterization"
+term: "Arc Length"
+body: >-
+  <p>The arc length of a smooth space curve traced by <m>\mathbf{r}(t)</m> on <m>[a, b]</m> is given by <m>L = \int_a^b \|\mathbf{r}'(t)\|\, dt = \int_a^b \sqrt{[f'(t)]^2 + [g'(t)]^2 + [h'(t)]^2}\, dt</m>. The arc-length function <m>s(t) = \int_a^t \|\mathbf{r}'(u)\|\, du</m> measures distance traversed along the curve from a base point, satisfying <m>ds/dt = \|\mathbf{r}'(t)\|</m>. Reparameterizing a curve in terms of arc length <m>s</m> yields unit-speed parameterization <m>\|\mathbf{r}'(s)\| = 1</m>. It provides an intrinsic geometric measurement of path distance independent of speed.</p>

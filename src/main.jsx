@@ -30,6 +30,7 @@ import "./css/44-image.css";
 import "./css/45-figures.css";
 import "./css/46-slides.css";
 import "./css/47-math.css";
+import "./css/48-block-options.css";
 import "./css/50-refs.css";
 import "./css/52-asides.css";
 import "./css/53-follows.css";

@@ -95,15 +95,9 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
     if (!delayed && !correct && progress.current.used < tries) {
       if (response.kind === "single") progress.current.rejected = [...progress.current.rejected, Number(value)];
       if (response.kind === "multi") progress.current.combinations = [...progress.current.combinations, [...value].sort((a, b) => a - b).join(",")];
+      progress.current.wrongAnswers = [...(progress.current.wrongAnswers || []), String(value).trim()];
       showFeedback({ correct: false, skipped: false });
     } else record(correct);
-  };
-  const retry = async () => {
-    if (committing.current) return;
-    const nextValue = response.kind === "single" ? "" : value;
-    setValue(nextValue); setSelfCheck(false); setCheckError("");
-    await showFeedback(null, nextValue);
-    requestAnimationFrame(() => form.current?.querySelector("input:not(:disabled), textarea, math-field")?.focus());
   };
 
   const record = (correct, skipped = false, selfChecked = response.kind === "self") => {
@@ -125,7 +119,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
       });
       append({ id: `${attempt.current.attemptId}:complete`, event: "attempt", course: cid, loop: "Q", concept: item.concept, itemId: item.id,
         contentVersion: item.contentVersion || signature, attemptId: attempt.current.attemptId, typeId: item.typeId, group: item.group,
-        demonstrates: item.demonstrates || [], methodCued: context === "lesson" || (!delayed && !!item.subTitle), use: item.use || "practice", sessionId: attempt.current.sessionId, context, assessmentVersion,
+        demonstrates: item.demonstrates || [], methodCued: context === "lesson" || (context === "practice" && !delayed && !!item.subTitle), use: item.use || "practice", sessionId: attempt.current.sessionId, context, assessmentVersion,
         firstUnaided: progress.current.firstUnaided ?? null, triesUsed: progress.current.used,
         assisted: progress.current.firstUnaided == null, feedbackExposure: !delayed,
         wallMs: Date.now() - started.current, feedbackMs: feedbackClock.current?.stop().activeMs || 0, ...(firstTiming.current || (progress.current.used && attempt.current.activeMs ?
@@ -144,14 +138,14 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
 
   const submit = async e => {
     e.preventDefault();
-    if (feedback || checking || committing.current || recorded.current || !canSubmit) return;
+    if ((feedback && !retryable) || checking || committing.current || recorded.current || !canSubmit) return;
     if (response.kind === "self" && delayed) {
       attempt.current.submittedAt ||= Date.now();
       firstTiming.current = clock.current.stop(); Object.assign(attempt.current, firstTiming.current);
       progress.current = { ...progress.current, used: 1, firstUnaided: null };
       record(null, false, true); return;
     }
-    if (response.kind === "self") { attempt.current.firstResponseSubmitted = true;
+    if (response.kind === "self") { setSelfCheck(false); attempt.current.firstResponseSubmitted = true;
       firstTiming.current ||= clock.current.stop(); Object.assign(attempt.current, firstTiming.current); expose(); showFeedback({ correct: null, skipped: false }); return; }
     if (response.kind === "formula") {
       setChecking(true); setCheckError("");
@@ -181,13 +175,17 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
   const skip = () => { if (!committing.current && !checking) record(false, true); };
   const toggle = i => setValue(value.includes(i) ? value.filter(x => x !== i) : [...value, i]);
   const repeatedSet = response.kind === "multi" && progress.current.combinations.includes([...value].sort((a, b) => a - b).join(","));
+  const repeatedAnswer = !["single", "multi"].includes(response.kind) &&
+    (progress.current.wrongAnswers || []).includes(String(value).trim());
+  const editable = !feedback || retryable;
   const canSubmit = response.kind === "multi" ? value.length > 0 && !repeatedSet
-    : String(value).trim() !== "" && !(response.kind === "single" && progress.current.rejected.includes(Number(value)));
+    : String(value).trim() !== "" && !repeatedAnswer && !(response.kind === "single" && progress.current.rejected.includes(Number(value)));
 
   return (
     <article class="q" data-qid={item.id}>
       <div class="qhead">
         <div class="qmeta">{!delayed && <span class="qtype">{item.type}</span>}{!delayed && reason && <span class="qreason">{reason}</span>}</div>
+        {tries > 1 && <span class="qtries" aria-label={`${remaining} of ${tries} tries remaining`}>{remaining}/{tries}</span>}
       </div>
       {questionStimuli(item.stimulus).map((part, i) => <Stimulus value={part} key={i} />)}
       <div class="qtext" dangerouslySetInnerHTML={{ __html: M(item.prompt) }} />
@@ -204,7 +202,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
                 return <label class={"qchoice" + (reveal ? right ? " is-right" : selected ? " is-selected" : "" : rejected ? " is-selected" : "")} key={i}>
                   <input type={response.kind === "multi" ? "checkbox" : "radio"}
                     name={response.kind === "single" ? `answer-${item.id}` : undefined}
-                    checked={selected} disabled={!!feedback || rejected}
+                    checked={selected} disabled={!editable || rejected}
                     onChange={() => response.kind === "multi" ? toggle(i) : setValue(i)} />
                   <span class="qchoice-content">
                     <span class="qchoice-text" dangerouslySetInnerHTML={{ __html: M(choice.text) }} />
@@ -219,21 +217,23 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
             </fieldset>
           )}
           {response.kind === "number" && <label class="qentry">Your answer
-            <span><input type="number" step="any" inputMode="decimal" value={value} readOnly={!!feedback}
+            <span><input type="number" step="any" inputMode="decimal" value={value} readOnly={!editable}
               onInput={e => setValue(e.currentTarget.value)} /> {response.unit || ""}</span>
           </label>}
           {(response.kind === "self" || response.kind === "formula") && <AnswerInput response={response}
-            value={value} readOnly={!!feedback || checking} onInput={next => { setValue(next); setCheckError(""); }} />}
+            value={value} readOnly={!editable || checking} onInput={next => { setValue(next); setCheckError(""); }} />}
           {checkError && <p class="qcheck-error" role="status">{checkError}</p>}
-          {!feedback && <div class="qactions">
-            <button class="dbtn primary" type="submit" disabled={!canSubmit || checking}>{checking ? "Checking…" : "Check answer"}{!checking && tries > 1 && <small> · {remaining} {remaining === 1 ? "try" : "tries"} left</small>}</button>
+          {retryable && <strong class="qresult is-miss" role="status">Wrong</strong>}
+          {editable && <div class="qactions">
+            <button class="dbtn primary" type="submit" disabled={!canSubmit || checking}>{checking ? "Checking…" : "Check answer"}</button>
             <button class="dbtn ghost" type="button" disabled={checking} onClick={skip}>Skip</button>
           </div>}
-          {!feedback && repeatedSet && <p class="qcheck-error" role="status">That combination was incorrect. Change your selection.</p>}
+          {editable && repeatedSet && <p class="qcheck-error" role="status">That combination was incorrect. Change your selection.</p>}
+          {editable && repeatedAnswer && <p class="qcheck-error" role="status">That answer was incorrect. Change your answer.</p>}
       </form>
       {feedback && delayed && <div class="qbody" aria-live="polite"><strong>Response saved</strong>
         {onContinue && <button class="dbtn primary qnext" onClick={onContinue}>Continue →</button>}</div>}
-      {feedback && !delayed && (
+      {feedback && !delayed && !retryable && (
         <div class="qbody" aria-live="polite">
           <strong class={"qresult " + (feedback.correct ? "is-right" : "is-miss")}>
             {feedback.skipped ? "Skipped" : feedback.correct == null ? "Compare your answer" :
@@ -246,7 +246,6 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           {reveal && response.kind === "formula" && <div class="ans"><FormulaPreview value={response.answer} variables={response.variables} independentVariable={response.independentVariable} /></div>}
           {reveal && item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)}>Review the relevant lesson</a>}
           {reveal && item.why && <div class="qexplain" dangerouslySetInnerHTML={{ __html: M(item.why) }} />}
-          {retryable && <button class="dbtn primary" onClick={retry}>Try again<small> · {remaining} {remaining === 1 ? "try" : "tries"} left</small></button>}
           {feedback.correct == null && !selfCheck && !feedback.skipped && <div class="qactions">
             <span>Compared with your answer:</span>
             <button class="dbtn" onClick={() => feedback.recorded ? gradeReservedSelf(true) : checkSelf(true)}>Correct</button>

@@ -1,24 +1,12 @@
-/* Block tiers, and the lane the reader is in.
- *
- * The spine is the whole course, stated once: definition, rule, mechanism, one
- * canonical instance. `depth` answers "why" and "what if"; `apply` instantiates
- * a concept the spine already states. The spine alone is complete — depth and
- * apply may lean on it, never the other way round — so collapsing them removes
- * repetition rather than material.
- */
+/* The main reading is complete; only explicitly optional material collapses.
+ * Old tier and lane values remain readable without filtering examples out of
+ * the teaching path. New courses use optional: true, independent of block type. */
 import { getItem, setItem, removeItem } from "./store.js";
 import { isFollow } from "./follows.js";
 export const TIERS = ["spine", "depth", "apply"];
 
-export const LANES = [
-  { id: "spine", label: "Spine" },
-  { id: "apply", label: "Spine + Apply" },
-  { id: "all",   label: "All" }
-];
-
-const SHOWN = { spine: ["spine"], apply: ["spine", "apply"], all: TIERS };
-
-export const tierOf = b => (TIERS.includes(b.tier) ? b.tier : "spine");
+export const isOptional = b => typeof b?.optional === "boolean" ? b.optional : b?.tier === "depth";
+export const tierOf = b => isOptional(b) ? "depth" : "spine";
 
 /* One line, one count per tier. The count is the signal, and it is text, so a
  * reader knows what they skipped instead of meeting an invisible hole. */
@@ -45,10 +33,9 @@ export function attachedLabel(items, nameOf) {
  * it, so it ends where the follow-ups do: a hidden block that follows nothing
  * is a separate idea and gets a stub of its own. `attached` records that. */
 export function runsOf(blocks, lane) {
-  const shown = SHOWN[lane] || SHOWN.apply;
   const runs = [];
   blocks.forEach((b, i) => {
-    const hidden = !shown.includes(tierOf(b));
+    const hidden = isOptional(b) && lane !== "all";
     const last = runs[runs.length - 1];
     const ends = last && last.attached && !isFollow(b);
     if (last && last.hidden === hidden && !ends) last.items.push({ b, i });
@@ -59,9 +46,7 @@ export function runsOf(blocks, lane) {
 
 const KEY = cid => `lane:${cid}`;
 
-/* Spine + Apply, not Spine, is the default: a first read without worked
-   instances is the wrong trade for a novice, and the fast pass is one key away
-   and persists per course. */
+/* Retain stored "all" for readers who had expanded optional material. */
 export function laneFor(cid) { return getItem(KEY(cid)) || "apply"; }
 export function setLane(cid, lane) { setItem(KEY(cid), lane); }
 

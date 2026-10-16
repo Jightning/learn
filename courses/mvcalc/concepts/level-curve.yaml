@@ -1,0 +1,4 @@
+title: "Level curves, contour maps and level surfaces"
+term: "Level Curve"
+body: >-
+  <p>A level curve of a function <m>z = f(x, y)</m> is the set of points in the <m>xy</m>-plane satisfying <m>f(x, y) = c</m> for a constant <m>c</m>. A collection of level curves plotted for evenly spaced values of <m>c</m> forms a contour map, where closely spaced curves indicate steep slopes. For functions of three variables <m>w = f(x, y, z)</m>, the solution sets <m>f(x, y, z) = c</m> are two-dimensional level surfaces in <m>\mathbb{R}^3</m>. Level sets visualize multi-dimensional functions on lower-dimensional displays.</p>

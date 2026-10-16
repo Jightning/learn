@@ -1,0 +1,4 @@
+title: "Implicit differentiation with partial derivatives"
+term: "Implicit Differentiation"
+body: >-
+  <p>When an equation <m>F(x, y) = 0</m> defines <m>y</m> implicitly as a differentiable function of <m>x</m>, the chain rule yields <m>\frac{dy}{dx} = -\frac{F_x}{F_y}</m>, provided <m>F_y \ne 0</m>. Similarly, for a surface defined implicitly by <m>F(x, y, z) = 0</m>, the partial derivatives of <m>z</m> with respect to <m>x</m> and <m>y</m> are <m>\frac{\partial z}{\partial x} = -\frac{F_x}{F_z}</m> and <m>\frac{\partial z}{\partial y} = -\frac{F_y}{F_z}</m> (where <m>F_z \ne 0</m>). This technique bypasses the need to solve explicitly for dependent variables.</p>

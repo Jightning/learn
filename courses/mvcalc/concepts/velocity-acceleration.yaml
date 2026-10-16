@@ -1,0 +1,4 @@
+title: "Velocity, acceleration and speed"
+term: "Velocity and Acceleration"
+body: >-
+  <p>For a particle with position vector <m>\mathbf{r}(t)</m>, the velocity vector is the first derivative <m>\mathbf{v}(t) = \mathbf{r}'(t)</m>, representing instantaneous rate of change of position. Speed is the scalar magnitude of velocity, <m>v(t) = \|\mathbf{v}(t)\| = ds/dt</m>. The acceleration vector is the second derivative <m>\mathbf{a}(t) = \mathbf{v}'(t) = \mathbf{r}''(t)</m>. These kinematic vectors model motion in space, Newton's second law <m>\mathbf{F} = m\mathbf{a}</m>, and projectile trajectories under gravity.</p>

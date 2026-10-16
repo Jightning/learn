@@ -1,6 +1,6 @@
-term: Tier
+term: Optional expansion
 body: |-
-  <p>Every block declares one of three: <b>spine</b> (definition, rule, mechanism, one canonical instance; removing it breaks the argument), <b>depth</b> (why and what-if; nothing examinable), <b>apply</b> (another instance; teaches nothing new).</p>
-  <p>The lane selector shows spine, spine+apply, or all. A collapsed tier renders as a stub with a count in text, so a skipped run is visible rather than an invisible hole.</p>
+  <p>Required reading contains every concept, premise, and reasoning step learners need. An optional expansion adds context or another perspective that can be skipped without leaving a gap in the main explanation.</p>
+  <p>Study, Review, and Names present the same complete course in different forms. Optional blocks remain at their place in the reading and can be opened or closed there.</p>
 src: Defined in §1.4
 review: true

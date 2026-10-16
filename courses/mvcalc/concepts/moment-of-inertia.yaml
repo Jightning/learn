@@ -1,0 +1,4 @@
+title: "Moments of inertia and radius of gyration"
+term: "Moment of Inertia"
+body: >-
+  <p>The moment of inertia measures a body's resistance to rotational acceleration about an axis. For a planar lamina with density <m>\rho(x, y)</m>, moments of inertia about the coordinate axes are <m>I_x = \iint_D y^2 \rho\, dA</m> and <m>I_y = \iint_D x^2 \rho\, dA</m>, with polar moment <m>I_0 = I_x + I_y = \iint_D (x^2 + y^2)\rho\, dA</m>. For a three-dimensional solid, <m>I_z = \iiint_E (x^2 + y^2)\rho\, dV</m>. The radius of gyration <m>R_g = \sqrt{I/m}</m> gives the distance at which total mass could be concentrated with equivalent inertia.</p>

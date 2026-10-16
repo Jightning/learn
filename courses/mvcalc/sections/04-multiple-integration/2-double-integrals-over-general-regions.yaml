@@ -1,0 +1,158 @@
+title: Double Integrals over General Regions
+blocks:
+  - t: p
+    h: <p>Most geometric and physical regions of interest are not rectangular. Bounded domains in the <m>xy</m>-plane are commonly bordered by intersecting curves such as lines, parabolas, or circles. To define the double integral of a function <m>f(x, y)</m> over a general bounded region <m>D</m>, we enclose <m>D</m> within a large rectangular bounding box <m>R</m> and extend <m>f</m> so that it vanishes outside <m>D</m>. Fubini's theorem generalizes naturally to such regions, allowing integration via iterated single-variable integrals once boundary curves are expressed as functions of either <m>x</m> or <m>y</m>.</p>
+    authorId: block-562142f8-c37
+  - t: def
+    term: General Regions of Type I and Type II
+    source: OpenStax Calculus Volume 3, Section 5.2
+    sourceReview: sourced
+    core: A Type I region lies between constant vertical boundaries and two continuous boundary curves of x, while a Type II region lies between constant horizontal boundaries and two continuous boundary curves of y.
+    introduces:
+      - obj-s4-2
+      - general-region
+    objectives:
+      - obj-s4-2
+    family: family-general-region-setup
+    h: <p>Planar regions are classified according to the orientation of cross-sections used to describe their boundaries:</p>
+    items:
+      - 'Type I (vertically simple): The domain is defined by <m>D = \{(x, y) \mid a \le x \le b, \, g_1(x) \le y \le g_2(x)\}</m>, where <m>g_1</m> and <m>g_2</m> are continuous on <m>[a, b]</m>. A vertical test line enters <m>D</m> through the lower curve <m>y = g_1(x)</m> and exits through the upper curve <m>y = g_2(x)</m>.'
+      - 'Type II (horizontally simple): The domain is defined by <m>D = \{(x, y) \mid c \le y \le d, \, h_1(y) \le x \le h_2(y)\}</m>, where <m>h_1</m> and <m>h_2</m> are continuous on <m>[c, d]</m>. A horizontal test line enters <m>D</m> through the left curve <m>x = h_1(y)</m> and exits through the right curve <m>x = h_2(y)</m>.'
+      - 'Compound regions: Regions that are neither Type I nor Type II can be partitioned into a finite union of non-overlapping subregions of either type.'
+    ordered: true
+    authorId: block-f9998cc3-b32
+  - t: math
+    label: Iterated Integral Formulations for Type I and Type II Domains
+    tex: \iint_D f(x, y)\,dA = \int_a^b \left[ \int_{g_1(x)}^{g_2(x)} f(x, y)\,dy \right] dx = \int_c^d \left[ \int_{h_1(y)}^{h_2(y)} f(x, y)\,dx \right] dy
+    note: The outer limits must always be numerical constants, while the inner limits represent boundary curves.
+    objectives:
+      - obj-s4-2
+    family: family-general-region-setup
+    authorId: block-2bc45aec-2d7
+  - t: ex
+    title: Evaluating a Double Integral between Parabola and Line
+    objectives:
+      - obj-s4-2
+    family: family-general-region-setup
+    h: '<p>Evaluate <m>\iint_D xy\,dA</m>, where <m>D</m> is the region bounded by <m>y = x^2</m> and <m>y = 2x</m>.</p><p>First find the intersection points by setting <m>x^2 = 2x \implies x(x - 2) = 0</m>, giving <m>x = 0</m> and <m>x = 2</m>. On the interval <m>[0, 2]</m>, the parabola lies below the straight line: <m>x^2 \le 2x</m>. Thus <m>D</m> is a Type I region with <m>g_1(x) = x^2</m> and <m>g_2(x) = 2x</m>.</p><p>Set up the iterated integral:</p><p><m>\iint_D xy\,dA = \int_0^2 \left[ \int_{x^2}^{2x} xy\,dy \right] dx = \int_0^2 \left[ \frac{xy^2}{2} \right]_{y=x^2}^{2x} dx</m></p><p>Evaluating the inner limits yields <m>\frac{x(4x^2) - x(x^4)}{2} = 2x^3 - \frac{x^5}{2}</m>. Integrating with respect to <m>x</m>:</p><p><m>\int_0^2 \left( 2x^3 - \frac{x^5}{2} \right) dx = \left[ \frac{x^4}{2} - \frac{x^6}{12} \right]_0^2 = \frac{16}{2} - \frac{64}{12} = 8 - \frac{16}{3} = \frac{8}{3}</m>.</p>'
+    authorId: block-d3f2e774-d02
+  - t: def
+    term: Reversing the Order of Integration
+    source: OpenStax Calculus Volume 3, Section 5.2
+    sourceReview: sourced
+    core: Reversing the order of integration requires redescribing the same planar domain by converting horizontal cross-sections to vertical cross-sections or vice versa.
+    introduces:
+      - order-reversal
+    objectives:
+      - obj-s4-2
+    family: family-reverse-order
+    h: <p>Some iterated integrals cannot be evaluated analytically in their given order because the inner antiderivative has no elementary closed form (such as <m>\int e^{x^2}\,dx</m> or <m>\int \sin(y^2)\,dy</m>). Reversing the integration order frequently produces an inner integrand with an additional polynomial factor that enables straightforward substitution. To reverse order, one must sketch the geometry of <m>D</m> from the original inner and outer bounds, identify the alternative boundary relations, and formulate new integration limits.</p>
+    authorId: block-5d31ccce-b5a
+  - t: ex
+    title: Evaluating an Integral by Reversing the Order
+    objectives:
+      - obj-s4-2
+    family: family-reverse-order
+    h: '<p>Evaluate <m>\int_0^1 \int_{3y}^3 e^{x^2}\,dx\,dy</m>.</p><p>The inner integral <m>\int e^{x^2}\,dx</m> has no elementary antiderivative. To reverse the order, extract the domain description: <m>3y \le x \le 3</m> for <m>0 \le y \le 1</m>. The boundary lines are <m>x = 3y</m> (or <m>y = x/3</m>), <m>x = 3</m>, and <m>y = 0</m>.</p><p>Viewing <m>D</m> as a Type I region, <m>x</m> ranges from <m>0</m> to <m>3</m>, and for each fixed <m>x</m>, <m>y</m> ranges from the line <m>y = 0</m> up to <m>y = x/3</m>:</p><p><m>\int_0^3 \int_0^{x/3} e^{x^2}\,dy\,dx = \int_0^3 e^{x^2} \left[ y \right]_0^{x/3} dx = \int_0^3 \frac{x}{3} e^{x^2}\,dx</m></p><p>Substitute <m>u = x^2</m>, so <m>du = 2x\,dx \implies \frac{x}{3}\,dx = \frac{1}{6}\,du</m>. As <m>x</m> goes from 0 to 3, <m>u</m> goes from 0 to 9:</p><p><m>\int_0^9 \frac{1}{6} e^u\,du = \frac{1}{6}(e^9 - 1)</m>.</p>'
+    authorId: block-ace7812c-e0e
+  - t: key
+    label: Geometric and Probabilistic Applications of Double Integrals
+    source: OpenStax Calculus Volume 3, Section 5.2
+    sourceReview: sourced
+    core: Double integrals determine planar area through integrating unity, volume between surfaces by integrating height differences, and probabilities by integrating joint density functions.
+    objectives:
+      - obj-s4-2
+    family: family-area-volume-general
+    h: <p>Double integrals apply broadly across geometry, physics, and probability theory:</p>
+    items:
+      - 'Planar area: Setting <m>f(x, y) = 1</m> computes the area of the region: <m>\text{Area}(D) = \iint_D 1\,dA</m>.'
+      - 'Volume between surfaces: If <m>z = z_2(x, y)</m> lies above <m>z = z_1(x, y)</m> over <m>D</m>, the enclosed volume is <m>V = \iint_D [z_2(x, y) - z_1(x, y)]\,dA</m>.'
+      - 'Joint probability: If continuous random variables <m>(X, Y)</m> have joint density <m>f(x, y)</m>, the probability of falling in <m>D</m> is <m>P((X, Y) \in D) = \iint_D f(x, y)\,dA</m>.'
+    ordered: true
+    authorId: block-aa951c44-144
+  - t: trap
+    label: Placing Variable Limits in Outer Integrals
+    source: OpenStax Calculus Volume 3, Section 5.2
+    sourceReview: sourced
+    core: The outer integration limits of an iterated integral must strictly be constant numbers.
+    objectives:
+      - obj-s4-2
+    family: family-general-region-setup
+    h: <p>A common error is writing variable expressions in the outer limits of an iterated integral, such as <m>\int_{g_1(x)}^{g_2(x)} \int_a^b f(x, y)\,dx\,dy</m>. Outer limits define the extreme spatial extent of the projection of <m>D</m> and must always evaluate to numerical constants. If variable terms appear in the outer limits, the final expression remains a function of that variable rather than a numerical scalar.</p>
+    authorId: block-47356b53-bb8
+quiz:
+  - type: General region setup and evaluation
+    concept: general-region
+    objectives:
+      - obj-s4-2
+    family: family-general-region-setup
+    q: Evaluate the double integral <m>\iint_D 6y\,dA</m>, where <m>D</m> is the triangular region bounded by <m>y = 0</m>, <m>x = 2</m>, and <m>y = 2x</m>.
+    verified: true
+    response:
+      kind: number
+      value: 32
+    why: Describing <m>D</m> as a Type I region gives bounds <m>0 \le x \le 2</m> and <m>0 \le y \le 2x</m>. Evaluating the iterated integral yields <m>\int_0^2 \int_0^{2x} 6y\,dy\,dx = \int_0^2 \left[3y^2\right]_0^{2x}\,dx = \int_0^2 12x^2\,dx = \left[4x^3\right]_0^2 = 4(8) = 32</m>.
+    authorId: quiz-70e362d0-672
+  - type: Order reversal for non-elementary integrand
+    concept: order-reversal
+    objectives:
+      - obj-s4-2
+    family: family-reverse-order
+    q: 'Evaluate the iterated integral by reversing the order of integration: <m>\int_0^4 \int_{\sqrt{x}}^2 \frac{1}{y^3 + 1}\,dy\,dx</m>.'
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{1}{3}\ln 9</m>
+          why: The domain is bounded by <m>y = \sqrt{x}</m> (or <m>x = y^2</m>), <m>y = 2</m>, and <m>x = 0</m>. In Type II order, <m>0 \le y \le 2</m> and <m>0 \le x \le y^2</m>. The integral becomes <m>\int_0^2 \int_0^{y^2} \frac{1}{y^3 + 1}\,dx\,dy = \int_0^2 \frac{y^2}{y^3 + 1}\,dy = \left[\frac{1}{3}\ln(y^3 + 1)\right]_0^2 = \frac{1}{3}\ln 9</m>.
+        - text: <m>\ln 9</m>
+          why: Missing the factor of <m>\frac{1}{3}</m> from the substitution <m>u = y^3 + 1</m> yields <m>\ln 9</m>.
+        - text: <m>\frac{1}{2}\ln 5</m>
+          why: Incorrect upper limit on <m>u</m> produces an incorrect logarithm argument.
+        - text: <m>\frac{1}{9}</m>
+          why: Anti-differentiating requires a logarithmic form, not a polynomial power rule.
+    why: 'Reversing the order yields an inner integral with respect to <m>x</m> that produces <m>\frac{y^2}{y^3 + 1}</m>, integrating to <m>\frac{1}{3}\ln 9</m>.'
+    authorId: quiz-afcbad33-533
+  - type: Volume under plane over triangle
+    concept: general-region
+    objectives:
+      - obj-s4-2
+    family: family-area-volume-general
+    q: Find the volume of the solid lying under the plane <m>z = 6 - x - y</m> and above the triangular region <m>D</m> in the <m>xy</m>-plane with vertices <m>(0, 0)</m>, <m>(1, 0)</m>, and <m>(0, 1)</m>.
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{8}{3}</m>
+          why: The region has bounds <m>0 \le x \le 1</m> and <m>0 \le y \le 1 - x</m>. Integrating <m>\int_0^1 \int_0^{1-x} (6 - x - y)\,dy\,dx = \int_0^1 \left[(6-x)(1-x) - \frac{(1-x)^2}{2}\right] dx = \int_0^1 \left(\frac{11}{2} - 6x + \frac{x^2}{2}\right) dx = \frac{11}{2} - 3 + \frac{1}{6} = \frac{8}{3}</m>.
+        - text: <m>\frac{16}{3}</m>
+          why: Failing to divide the triangular area by 2 doubles the volume to 16/3.
+        - text: <m>3</m>
+          why: Approximation error from rounding fractional evaluations.
+        - text: <m>\frac{5}{2}</m>
+          why: Integrating only the constant 6 minus average values gives an incorrect result.
+    why: The volume under the plane over the triangle evaluates to 8/3.
+    authorId: quiz-d4735e0d-dfd
+  - type: Joint density probability
+    concept: general-region
+    objectives:
+      - obj-s4-2
+    family: family-improper-probability
+    q: A pair of continuous random variables <m>(X, Y)</m> has joint probability density function <m>f(x, y) = 4xy</m> for <m>0 \le x \le 1</m> and <m>0 \le y \le 1</m> (and 0 elsewhere). What is the probability <m>P(X + Y \le 1)</m>?
+    verified: true
+    response:
+      kind: single
+      correct: 1
+      choices:
+        - text: <m>\frac{1}{6}</m>
+          why: The event region is bounded by <m>0 \le x \le 1</m> and <m>0 \le y \le 1 - x</m>. Integrating yields <m>P(X + Y \le 1) = \int_0^1 \int_0^{1-x} 4xy\,dy\,dx = 2\int_0^1 x(1-x)^2\,dx = 2\left[\frac{x^2}{2} - \frac{2x^3}{3} + \frac{x^4}{4}\right]_0^1 = 2\left(\frac{1}{12}\right) = \frac{1}{6}</m>.
+        - text: <m>\frac{1}{4}</m>
+          why: Evaluating the integral over a triangle without weighting the quadratic integrand gives 1/4.
+        - text: <m>\frac{1}{12}</m>
+          why: Omitting the factor of 2 in front of the integral gives 1/12.
+        - text: <m>\frac{1}{2}</m>
+          why: 1/2 is the area of the triangular event region, not the integrated probability mass.
+    why: 'Integrating the joint density over the lower triangle <m>0 \le y \le 1 - x</m> yields <m>1/6</m>.'
+    authorId: quiz-9469ee42-b7e

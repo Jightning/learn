@@ -1,0 +1,130 @@
+title: Motion in Space
+blocks:
+  - t: p
+    h: <p>The physical motion of an object along a spatial path is modeled by vector calculus. The position vector <m>\mathbf{r}(t)</m> determines velocity <m>\mathbf{v}(t) = \mathbf{r}'(t)</m> and acceleration <m>\mathbf{a}(t) = \mathbf{r}''(t)</m>. By Newton's second law <m>\mathbf{F} = m\mathbf{a}</m>, physical forces dictate acceleration, allowing position and velocity to be reconstructed through successive integration with initial conditions.</p>
+    authorId: block-d034df8b-642
+  - t: def
+    term: Velocity, Speed, and Acceleration
+    source: OpenStax Calculus Volume 3, Section 3.4
+    sourceReview: sourced
+    core: Velocity is the derivative of position, speed is the magnitude of velocity, and acceleration is the derivative of velocity.
+    introduces:
+      - obj-s2-4
+      - velocity-acceleration
+    objectives:
+      - obj-s2-4
+    family: family-motion-vectors
+    h: <p>For an object moving in space with position vector <m>\mathbf{r}(t)</m> at time <m>t</m>:</p>
+    items:
+      - 'Velocity: <m>\mathbf{v}(t) = \mathbf{r}''(t) = \frac{d\mathbf{r}}{dt}</m>, pointing tangent to the trajectory in the direction of motion.'
+      - 'Speed: <m>v(t) = |\mathbf{v}(t)| = |\mathbf{r}''(t)| = \frac{ds}{dt}</m>, the scalar rate of distance traveled.'
+      - 'Acceleration: <m>\mathbf{a}(t) = \mathbf{v}''(t) = \mathbf{r}''''(t) = \frac{d^2\mathbf{r}}{dt^2}</m>, measuring the rate of change of the velocity vector.'
+    ordered: true
+    authorId: block-aae10fd1-f0c
+  - t: ex
+    title: Reconstructing Position from Acceleration
+    objectives:
+      - obj-s2-4
+    family: family-motion-vectors
+    h: '<p>A particle moves with acceleration <m>\mathbf{a}(t) = \langle 0, -32, 6t \rangle</m>, initial velocity <m>\mathbf{v}(0) = \langle 10, 20, 0 \rangle</m>, and initial position <m>\mathbf{r}(0) = \langle 0, 0, 5 \rangle</m>. Find its position <m>\mathbf{r}(t)</m>.</p><p>Integrate acceleration to find velocity: <m>\mathbf{v}(t) = \int \langle 0, -32, 6t \rangle\,dt = \langle 0, -32t, 3t^2 \rangle + \mathbf{C}_1</m>. Using <m>\mathbf{v}(0) = \langle 10, 20, 0 \rangle</m> gives <m>\mathbf{C}_1 = \langle 10, 20, 0 \rangle</m>, so <m>\mathbf{v}(t) = \langle 10, 20 - 32t, 3t^2 \rangle</m>.</p><p>Integrate velocity to find position: <m>\mathbf{r}(t) = \int \langle 10, 20 - 32t, 3t^2 \rangle\,dt = \langle 10t, 20t - 16t^2, t^3 \rangle + \mathbf{C}_2</m>. Using <m>\mathbf{r}(0) = \langle 0, 0, 5 \rangle</m> gives <m>\mathbf{C}_2 = \langle 0, 0, 5 \rangle</m>. Thus, the position vector is <m>\mathbf{r}(t) = \langle 10t, 20t - 16t^2, t^3 + 5 \rangle</m>.</p>'
+    authorId: block-93fa334f-b66
+  - t: key
+    label: Ideal Projectile Motion
+    source: OpenStax Calculus Volume 3, Section 3.4
+    sourceReview: sourced
+    core: Under constant downward gravity without air resistance, projectile motion separates into constant horizontal velocity and constant vertical acceleration.
+    objectives:
+      - obj-s2-4
+    family: family-projectile
+    h: <p>When gravity is the sole force acting on a projectile launched from initial height <m>h_0</m> with launch speed <m>v_0</m> at angle <m>\alpha</m> above the horizontal, acceleration is <m>\mathbf{a}(t) = \langle 0, -g \rangle</m>. Integrating with <m>\mathbf{v}_0 = \langle v_0\cos\alpha, v_0\sin\alpha \rangle</m> yields:</p>
+    items:
+      - 'Position vector: <m>\mathbf{r}(t) = \langle (v_0\cos\alpha)t,\, h_0 + (v_0\sin\alpha)t - \frac{1}{2}gt^2 \rangle</m>.'
+      - 'Time of flight (from ground level <m>h_0 = 0</m>): Setting <m>y(t) = 0</m> gives <m>t_{\text{flight}} = \frac{2v_0\sin\alpha}{g}</m>.'
+      - 'Horizontal range: <m>R = x(t_{\text{flight}}) = \frac{v_0^2\sin(2\alpha)}{g}</m>, maximized at launch angle <m>\alpha = 45^\circ</m>.'
+      - 'Maximum height: Occurs when vertical velocity vanishes at <m>t = \frac{v_0\sin\alpha}{g}</m>, reaching <m>H_{\text{max}} = h_0 + \frac{v_0^2\sin^2\alpha}{2g}</m>.'
+    ordered: true
+    authorId: block-18aac322-b3f
+  - t: math
+    label: Tangential and Normal Components of Acceleration
+    tex: \mathbf{a} = a_T \mathbf{T} + a_N \mathbf{N}
+    note: Decomposes acceleration into components parallel to the path and perpendicular toward the center of curvature.
+    objectives:
+      - obj-s2-4
+    family: family-acceleration-components
+    authorId: block-7839f567-1df
+  - t: def
+    term: Tangential and Normal Components of Acceleration
+    source: OpenStax Calculus Volume 3, Section 3.4
+    sourceReview: sourced
+    core: Acceleration decomposes into a tangential component altering speed and a normal component altering direction.
+    introduces:
+      - acceleration-components
+    objectives:
+      - obj-s2-4
+    family: family-acceleration-components
+    h: <p>Because acceleration lies entirely within the osculating plane spanned by <m>\mathbf{T}</m> and <m>\mathbf{N}</m>, it decomposes as <m>\mathbf{a} = a_T \mathbf{T} + a_N \mathbf{N}</m> with zero binormal component. The scalar components are:</p>
+    items:
+      - 'Tangential component: <m>a_T = \frac{dv}{dt} = \frac{\mathbf{v} \cdot \mathbf{a}}{|\mathbf{v}|}</m>, which changes the magnitude of velocity (speed).'
+      - 'Normal component: <m>a_N = \kappa v^2 = \frac{|\mathbf{v} \times \mathbf{a}|}{|\mathbf{v}|} = \sqrt{|\mathbf{a}|^2 - a_T^2}</m>, which changes the direction of velocity (always non-negative).'
+    ordered: true
+    authorId: block-e96d8270-021
+  - t: ex
+    title: Computing Acceleration Components
+    objectives:
+      - obj-s2-4
+    family: family-acceleration-components
+    h: '<p>Find <m>a_T</m> and <m>a_N</m> for <m>\mathbf{r}(t) = \langle t, t^2, \frac{2}{3}t^3 \rangle</m> at <m>t = 1</m>.</p><p>Compute velocity and acceleration: <m>\mathbf{v}(t) = \langle 1, 2t, 2t^2 \rangle</m> and <m>\mathbf{a}(t) = \langle 0, 2, 4t \rangle</m>. At <m>t = 1</m>, <m>\mathbf{v}(1) = \langle 1, 2, 2 \rangle</m> and <m>\mathbf{a}(1) = \langle 0, 2, 4 \rangle</m>. The speed is <m>|\mathbf{v}| = \sqrt{1^2 + 2^2 + 2^2} = 3</m>.</p><p>For the tangential component, compute the dot product: <m>\mathbf{v} \cdot \mathbf{a} = 1(0) + 2(2) + 2(4) = 12</m>. Thus <m>a_T = \frac{12}{3} = 4</m>.</p><p>For the normal component, <m>|\mathbf{a}|^2 = 0^2 + 2^2 + 4^2 = 20</m>. Using the relation <m>|\mathbf{a}|^2 = a_T^2 + a_N^2</m>, we find <m>a_N = \sqrt{20 - 4^2} = \sqrt{4} = 2</m>.</p>'
+    authorId: block-287335f4-fb4
+  - t: trap
+    label: Assuming Acceleration Points Purely Inward Along the Normal Vector
+    source: OpenStax Calculus Volume 3, Section 3.4
+    sourceReview: sourced
+    core: Acceleration points purely along the normal vector only when speed is constant; any change in speed introduces a nonzero tangential component.
+    objectives:
+      - obj-s2-4
+    family: family-acceleration-components
+    h: <p>A frequent misconception is assuming acceleration is always directed toward the center of curvature along <m>\mathbf{N}</m>. This holds only for uniform speed motion where <m>\frac{dv}{dt} = 0</m>, meaning <m>a_T = 0</m>. Whenever a particle speeds up or slows down along its path, <m>a_T \ne 0</m>, tilting the total acceleration vector away from the principal normal toward the forward or backward tangent direction.</p>
+    authorId: block-149f4dda-d81
+  - t: note
+    tier: depth
+    label: Kepler's Laws and Planetary Orbits
+    h: <p>Johannes Kepler established that planets follow elliptical orbits with the Sun at one focus, sweep out equal areas in equal times, and have orbital periods whose squares are proportional to the cubes of their semi-major axes. Using calculus, Isaac Newton showed that Kepler's three laws are direct mathematical consequences of an inverse-square central gravitational force <m>\mathbf{F} = -\frac{G M m}{r^2}\hat{\mathbf{r}}</m>.</p>
+    authorId: block-b19f8c66-4cf
+quiz:
+  - type: Speed computation from position
+    concept: velocity-acceleration
+    objectives:
+      - obj-s2-4
+    family: family-motion-vectors
+    q: A particle moves with position vector <m>\mathbf{r}(t) = \langle 2t, t^3, 3t^2 \rangle</m>. What is the speed of the particle at time <m>t = 1</m>?
+    verified: true
+    response:
+      kind: number
+      value: 7
+    why: The velocity is <m>\mathbf{v}(t) = \mathbf{r}'(t) = \langle 2, 3t^2, 6t \rangle</m>. At <m>t = 1</m>, <m>\mathbf{v}(1) = \langle 2, 3, 6 \rangle</m>. The scalar speed is <m>|\mathbf{v}(1)| = \sqrt{2^2 + 3^2 + 6^2} = \sqrt{4 + 9 + 36} = \sqrt{49} = 7</m>.
+    authorId: quiz-0a367c8b-461
+  - type: Projectile range calculation
+    concept: velocity-acceleration
+    objectives:
+      - obj-s2-4
+    family: family-projectile
+    q: A projectile is launched from ground level with initial speed <m>v_0 = 98\text{ m/s}</m> at a launch angle of <m>\alpha = 45^\circ</m>. Using <m>g = 9.8\text{ m/s}^2</m>, what is the horizontal range in meters?
+    verified: true
+    response:
+      kind: number
+      value: 980
+      unit: m
+    why: The range from ground level is <m>R = \frac{v_0^2\sin(2\alpha)}{g} = \frac{98^2\sin(90^\circ)}{9.8} = \frac{9604(1)}{9.8} = 980\text{ m}</m>.
+    authorId: quiz-fa291112-a97
+  - type: Tangential acceleration calculation
+    concept: acceleration-components
+    objectives:
+      - obj-s2-4
+    family: family-acceleration-components
+    q: A particle moves with position <m>\mathbf{r}(t) = \langle t, t^2, \frac{2}{3}t^3 \rangle</m>. What is the tangential component of acceleration <m>a_T</m> at time <m>t = 1</m>?
+    verified: true
+    response:
+      kind: number
+      value: 4
+    why: Velocity is <m>\mathbf{v}(1) = \langle 1, 2, 2 \rangle</m> with speed <m>|\mathbf{v}| = 3</m>, and acceleration is <m>\mathbf{a}(1) = \langle 0, 2, 4 \rangle</m>. The tangential component is <m>a_T = \frac{\mathbf{v} \cdot \mathbf{a}}{|\mathbf{v}|} = \frac{1(0) + 2(2) + 2(4)}{3} = \frac{12}{3} = 4</m>.
+    authorId: quiz-fd38480b-842

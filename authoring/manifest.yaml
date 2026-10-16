@@ -23,6 +23,11 @@ modules:
     file: plan.md
     phases: [plan]
     roles: [planner, single]
+  representations:
+    file: representations.md
+    phases: [plan]
+    needs: [representations]
+    roles: [planner, writer, single]
   sources:
     file: sources.md
     phases: [plan, write, review]
@@ -46,6 +51,7 @@ modules:
     phases: []
     needs: [practice, variants]
     roles: [writer, single]
+    requires: [question-bank-format, question-bank]
   figures:
     file: figures.md
     phases: []
@@ -113,7 +119,7 @@ modules:
   formats-concepts:
     file: formats/concepts.md
     phases: []
-    needs: [concepts, variants]
+    needs: [concepts]
     roles: [writer, single]
   formats-figure-graph:
     file: formats/figure-graph.md
@@ -203,6 +209,6 @@ profiles:
     handoff: auto
 
 phases:
-  plan: [core, plan, sources, trust]
+  plan: [core, plan, representations, sources, trust]
   write: [core, sources, schema, prose, trust]
   review: [core, sources, review, trust]

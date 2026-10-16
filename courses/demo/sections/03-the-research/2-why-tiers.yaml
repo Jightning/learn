@@ -1,132 +1,136 @@
-title: Why tiers, and what the evidence says
+title: Optional content and the evidence
 blocks:
   - t: p
     source: docs/code_truth.md §3c
     h: |-
-      <a href="#s1-4">§1.4</a> said what the three lanes do for a reader. This subsection is the other half: how an author decides which tier a block belongs in, and how far the evidence for splitting a page actually reaches. The <c k="tier">tier</c> card in the margin carries the definition.
+      <a href="#s1-4">§1.4</a> showed how reading modes present the complete required material. This subsection looks at the evidence for removing nonessential detail and asks what that evidence does, and does not, establish about optional explanations.
 
   - t: def
     source: docs/code_truth.md Trade-offs
     term: The coherence principle
-    label: The finding tiers are built on
+    label: The finding behind concise explanations
     core: |-
-      Removing interesting-but-nonessential material from a lesson improves what a learner takes from it.
+      Removing interesting but nonessential material from a lesson can improve what a learner takes from it.
     h: |-
-      <p>That is the effect that says a page should carry less. Tiers are an attempt to have it both ways: the nonessential material is removed from the default read and kept one click away, rather than deleted.</p>
+      <p>This finding supports careful editing of the required explanation. It does not by itself show that an optional expansion is better than presenting all the same information in one continuous reading.</p>
 
   - t: key
     source: docs/material_truth.md M23–M25
-    label: Three tests that decide every block
+    label: Keep necessary reasoning in the main reading
     cat: reading-controls
     core:
-      - Removing it breaks the argument → <b>spine</b>.
-      - It answers "why" or "what if", and nothing examinable rides on it → <b>depth</b>.
-      - It teaches nothing new and only builds fluency → <b>apply</b>.
+      - State every result the learner needs in the required reading.
+      - Keep its necessary premises and reasoning with it.
+      - Mark only context that can be skipped without creating a gap as optional.
     h: |-
-      <p>Ambiguous between spine and depth → choose depth. Read speed ranks last, so available-but-collapsed beats deleted.</p>
+      <p>When two ideas depend on each other, teach them together. An optional expansion may explain a motivation, historical detail, or alternate perspective, but it should not carry a needed premise or step.</p>
 
   - t: table
     mono: true
-    cap: How each tier answers the three tests
-    head: [tier, examinable, breaks argument if cut, collapsible]
+    cap: Required teaching and optional explanation
+    head: [question, required teaching, optional expansion]
     split: 2
     rows:
-      - [spine, yes, yes, no]
-      - [depth, no, no, yes]
-      - [apply, no, no, yes]
+      - [Needed for a later result, yes, no]
+      - [Part of the stated learning outcome, yes, no]
+      - [Adds context without a needed step, no, possible]
 
   - t: ex
     source: docs/create_course.md §7.3
-    title: Classifying one block
+    title: Separate a result from its background
     core: |-
-      The result is examinable and the derivation is not, so they take different tiers.
+      The learner needs the result and the steps that support it; a longer derivation may be supplementary only if it is not needed to understand or use that result.
     h: |-
       <ol>
-        <li>A paragraph derives the integrating factor from <m>\rho' = P\rho</m>.</li>
-        <li>Is it examinable? The <em>result</em> is, but the derivation is not, since you can use the factor without reproducing it.</li>
-        <li>So the derivation is <b>depth</b>; the factor itself is spine.</li>
+        <li>A lesson states a result learners are expected to use and explains the reasoning needed to apply it.</li>
+        <li>A longer derivation adds background about where the result came from.</li>
+        <li>Keep the result and application reasoning in the main reading. The background derivation can be optional only if the main explanation remains coherent without it.</li>
       </ol>
 
   - t: note
-    tier: depth
+    optional: true
     source: docs/code_truth.md Trade-offs
-    label: The evidence, and its limit
+    label: What the evidence does not settle
     core: |-
-      Coherence was measured on material the learner cannot avoid, so opt-in depth is untested.
+      The reported coherence effect was measured on material learners could not avoid; optional expansions have not been tested against a single-density reading.
     h: |-
-      <p>The coherence principle, which says removing nonessential detail helps learning at <m>g = 0.37</m> to <m>0.41</m>, is measured on material the learner cannot avoid. Opt-in collapsed detail has not been tested against a single-density alternative, so tiering is a defensible default, not a proven one.</p>
+      <p>The coherence principle reports an effect of <m>g = 0.37</m> to <m>0.41</m> for removing nonessential detail. Because that evidence concerns unavoidable material, it does not directly establish that optional presentation improves learning. Treat the format as a reader choice, not a proven learning intervention.</p>
 
   - t: p
-    tier: depth
     source: docs/material_truth.md M25
     h: |-
-      The one hard constraint: nothing examinable may live in depth. A depth block is a promise that collapsing it costs the reader nothing on the exam. The mechanical check is that no concept with an exam-format drill has its only spine coverage inside a collapsed block.
+      The authoring rule is about completeness: if closing an expansion would hide an examinable fact, a premise, or a necessary step, that material belongs in the main reading. Content may be optional only when the surrounding explanation still works without it.
 
   - t: ex
-    tier: apply
     source: docs/create_course.md §7.3
-    title: A second classification, for fluency
+    title: Test an optional expansion
     core: |-
-      Three worked variations of a rule the spine already states are apply, by definition.
+      A reader should be able to close the expansion and continue without encountering a gap.
     h: |-
       <ol>
-        <li>A block lists three worked variations of a substitution already defined in the spine.</li>
-        <li>It states no new rule and removing it breaks no argument.</li>
-        <li>It is <b>apply</b>. By budget, a concept gets one or two of these across the whole course.</li>
+        <li>Read the required passage without the optional explanation.</li>
+        <li>Check whether every later claim still has its premises and every stated outcome is still taught.</li>
+        <li>If something is missing, move that needed material into the main reading. Keep only context that can be skipped safely.</li>
       </ol>
 
 quiz:
-  - type: Assign a tier
+  - type: Separate result and explanation
     concept: tier
     q: |-
-      A block proves that a method's answer is unique. The proof is not on any past exam, but "the solution is unique" is a stated result students must know. Spine or depth?
-    a: |-
-      The statement "the solution is unique" is spine; the proof is depth.
+      A method's uniqueness is a stated result learners must know. A proof explains why it is unique, but the proof is not part of the learning outcome. What belongs in the required reading?
+    response:
+      kind: self
+      model: |-
+        The uniqueness result and any reasoning needed to understand or use it belong in the required reading. The proof may be optional only if the main explanation remains complete without it.
     why: |-
-      <p>Split the block. The examinable claim cannot sit in a collapsible tier; the argument for it can. If they cannot be separated, the whole block is spine.</p>
+      <p>Optional content cannot carry a result or necessary reasoning that the lesson promises to teach.</p>
     verified: 2026-09-02
 
-  - type: Predict the lane behaviour
+  - type: Predict what optional means
     concept: tier
     q: |-
-      A subsection has 4 spine blocks, 2 depth, 1 apply. In the "Spine" lane, what does the reader see where the depth and apply blocks were?
-    a: |-
-      One stub reading "2 in depth, 1 more application".
+      A subsection has a required explanation and an optional historical note. The reader closes the note. What should the page still teach?
+    response:
+      kind: self
+      model: |-
+        The complete required explanation and every concept needed by later material. Closing the historical note should leave no gap in the lesson.
     why: |-
-      <p>Collapsed runs become a single stub whose count is text, so the reader knows exactly what was skipped rather than meeting an invisible gap. Expanding it restores the blocks in place.</p>
+      <p>Optional status means supplementary, not part of the required chain of reasoning.</p>
     verified: 2026-09-02
 
-  - type: Apply the depth constraint
+  - type: Apply the completeness rule
     concept: tier
     q: |-
-      An author puts a boundary case that appeared on last year's final into a depth block to keep the spine short. Allowed?
-    a: |-
-      No. Anything examinable must be spine, regardless of length.
+      An author marks a boundary case from a past final as optional to shorten the lesson. Is that appropriate?
+    response:
+      kind: self
+      model: |-
+        No. A result or case included in the learning outcome must remain in the required reading, even if it makes the lesson longer.
     why: |-
-      <p>Depth is a promise that collapsing it is free on the exam. A tested boundary case breaks that promise, and a reader in the Spine lane would miss it entirely.</p>
+      <p>Optional content cannot remove material the course expects learners to know.</p>
     verified: 2026-09-02
 
   - type: Synthesis
     concept: tier
     q: |-
-      <p>This subsection concedes that tiering is a defensible default rather
-      than a proven one: the coherence effect is measured on material a learner
-      cannot skip, and collapsed opt-in detail has never been tested against a
-      single-density page.</p>
-      <p>Design the experiment that would settle it. Say what result would make
-      you delete tiers from this site.</p>
-    a: |-
-      <p>A good answer names the comparison the literature is missing: the same
-      material at one density against the same material tiered, with the reader
-      free to expand. It picks an outcome measure that is not immediate recall,
-      because the claim is about attention over a whole course. It commits to a
-      result in advance. Tiered readers scoring no better than single-density
-      readers, on spine content, would end it.</p>
-      <p>The strong answers notice that the reader chooses whether to expand,
-      so the comparison is confounded by who expands and why.</p>
+      <p>The coherence effect is measured on material a learner cannot skip.
+      It does not establish whether optional expansions help compared with a
+      single-density reading.</p>
+      <p>Design an experiment that would test optional presentation. State what
+      result would make you remove optional expansions from the site.</p>
+    response:
+      kind: self
+      model: |-
+        <p>A good answer compares the same material presented continuously with
+        the same material divided into a required explanation and an expansion
+        readers may open. It names outcomes relevant to learning, states how
+        long-term understanding will be measured, and commits to a threshold
+        in advance. If optional presentation produces no benefit or harms
+        understanding on the required concepts, that would support removing
+        the feature.</p>
+        <p>Strong answers also note that readers choose whether to expand,
+        which can make results hard to interpret unless the study accounts for
+        who opened the material and why.</p>
     why: |-
-      <p>Every other rule in this course is derived from a measured effect. This
-      one is an inference from a nearby effect, and the section says so. A
-      reader who can design the missing study is a reader who can tell the two
-      apart everywhere else.</p>
+      <p>The current evidence supports careful editing of required teaching. The experiment should test optional presentation directly rather than assume that the nearby coherence finding proves it.</p>
     verified: 2026-09-08

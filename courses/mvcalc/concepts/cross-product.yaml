@@ -1,0 +1,4 @@
+title: "Cross product: determinant formula, orthogonality and right-hand rule"
+term: "Cross Product"
+body: >-
+  <p>The cross product of two vectors <m>\mathbf{u}</m> and <m>\mathbf{v}</m> in <m>\mathbb{R}^3</m> produces an orthogonal vector computed via the formal determinant <m>\mathbf{u} \times \mathbf{v} = \begin{vmatrix} \mathbf{i} & \mathbf{j} & \mathbf{k} \\ u_1 & u_2 & u_3 \\ v_1 & v_2 & v_3 \end{vmatrix}</m>. Its magnitude is <m>\|\mathbf{u} \times \mathbf{v}\| = \|\mathbf{u}\| \|\mathbf{v}\| \sin \theta</m>, which equals the area of the parallelogram spanned by the two vectors, with direction given by the right-hand rule. Two nonzero vectors are parallel if and only if <m>\mathbf{u} \times \mathbf{v} = \mathbf{0}</m>. The cross product is used to find normal vectors to planes and compute torque and angular momentum.</p>

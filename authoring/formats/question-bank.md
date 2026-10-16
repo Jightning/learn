@@ -2,7 +2,8 @@
 
 Keep definitions in `questions/types.yaml`, items in `questions/bank.yaml`
 (or additional bank files), sparse requirements in `questions/assessment.yaml`.
-Each file is a sequence. Existing inline quizzes/practice remain readable.
+Each file is a sequence. Small courses may keep typed questions inline with
+lessons; reusable or repeated questions belong in the central bank.
 
 ```yaml
 # types.yaml

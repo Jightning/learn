@@ -9,8 +9,8 @@ primer:
     why: |-
       <p>A link keeps §4 complete, because you can reach the idea from where you are, while adding no second copy of the explanation. The reference system is exactly how the two rules coexist.</p>
   - ask: |-
-      Promoting an idea to a <c k="tier">concept</c> and marking it for spaced review: are these the same decision?
+      Marking an explanation optional and recording its concept for spaced Review: are these the same decision?
     answer: |-
       No, they are separate decisions
     why: |-
-      <p>Promotion is forced by non-redundancy once an idea is used in three or more places, and costs one file and a link. Review is a scope choice over answered concepts. A course can promote widely and review narrowly.</p>
+      <p>No. Optional status controls whether supplementary explanation is open in the reading. Answering an item creates the retrieval record used to schedule a concept for Review.</p>

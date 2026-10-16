@@ -1,0 +1,4 @@
+title: "Three-dimensional coordinates, distance and spheres"
+term: "Three-Dimensional Coordinates"
+body: >-
+  <p>Points in space are represented by ordered triples <m>(x, y, z)</m> relative to three mutually perpendicular coordinate axes satisfying the right-hand rule. The distance between two points <m>P_1(x_1, y_1, z_1)</m> and <m>P_2(x_2, y_2, z_2)</m> is <m>d = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2 + (z_2 - z_1)^2}</m>. A sphere centered at <m>(x_0, y_0, z_0)</m> with radius <m>r</m> has standard equation <m>(x - x_0)^2 + (y - y_0)^2 + (z - z_0)^2 = r^2</m>. These coordinate relations define the geometric foundation for spatial regions and boundaries.</p>

@@ -1,41 +1,40 @@
 # Questions
 
-Each subsection question represents a distinct skill surface. Give it one
-`type`, a resolvable `concept`, a typed `response`, and a checked answer. The
-question should make the reader retrieve or discriminate something taught in
-the subsection. Include a `why` when it helps transfer; explain why the
-tempting wrong answer looks plausible, not only why the key is right.
+Use inline typed questions when a course is small and each check belongs to one
+lesson. When questions need stable identities for repeated practice, reuse, or
+shared history across lessons, define types in `questions/types.yaml`, store
+each item once in `questions/bank.yaml`, and record sparse assessment criteria
+in `questions/assessment.yaml`. Lesson quiz lists reference bank IDs. Keep type
+metadata and assessment criteria in their owning files; do not copy them into
+each question.
 
-Prefer a checked answer whenever it fits the skill: `single`/`multi` for selection,
-`number` for numeric results, and `formula` for supported symbolic results.
-Use `self` for explanations, proofs, and unsupported answer forms rather than
-as the default. See `formats/questions.md` for formula syntax and limits.
-`self.model` is the displayed answer, including the reasoning needed to judge
-an attempt; `formula.answer` is the automatically checked key. Write model
-answers as direct responses to the prompt. The card supplies comparison framing
-and controls, so answer content should focus on the result and its justification.
-For open-ended prompts, make the essential ideas clear while allowing other
-valid wording or examples.
-For `multi`, key the complete set
-of 1-based choice numbers. For `number`, set the checked `value` and an
-absolute `tolerance` when needed; omitted tolerance defaults to `0`.
+Every question has a distinct `type`, `q`, a resolvable `concept`, a typed
+`response`, and an independently checked answer. The current response kinds
+are `single`, `multi`, `number`, `formula`, and `self`. Prefer checked responses
+when they fit; reserve `self` for reasoning, proofs, or answer forms without a
+supported checker. `self.model` answers the prompt directly. Include `why`
+when it helps explain a tempting error or supports transfer.
 
-Use a section synthesis item when the section composes several ideas. A
-subsection's question count is a floor for coverage, not a target to pad. A
-second application belongs in practice when it adds a useful surface,
-context, or difficulty. Do not create three numerical copies of one question
-type and call them variety.
+For `multi`, key the complete set of 1-based choice numbers. For `number`, set
+the checked `value` and an absolute `tolerance` when needed; omitted tolerance
+defaults to zero. Formula syntax and limits are in
+[`formats/questions.md`](formats/questions.md). Questions may carry a positive
+integer `tries` beside `q` and `response`; it counts total attempts including
+the first and defaults to one.
 
-Question prompts and answers are reader-facing content. Apply the same closure,
-source, math, HTML, and uncertainty rules as prose. Work every answer out
-independently before writing it; a source citation or `verified:` marker records
-the check and never substitutes for it.
+When a question needs a passage, figure, code listing, table, equation, image,
+or supporting card, attach it through `stimulus`. An ordered stimulus can put
+prose before, between, or after attachments; `q` remains the final prompt. See
+[`formats/stimulus.md`](formats/stimulus.md).
 
-For a diagram, code listing, image, table, equation, or supporting card, attach
-`stimulus` to the question. An ordered list lets prose appear before, between,
-and after attachments; `q` remains the final question. See `formats/stimulus.md`.
+Question prompts, attachments, and answers are reader-facing content. Apply
+the same source, math, HTML, and uncertainty rules as lesson prose. Work out
+every answer independently; a source citation or `verified` marker records the
+check but never substitutes for it. Questions should retrieve, distinguish,
+apply, or connect capabilities already taught. When the goal combines methods,
+ask for the decision and reasoning rather than changing only the numbers.
 
-Questions allow one try by default. To allow more, add `tries: 3` beside
-`q:` and `response:` (not inside `response`). This means three total tries,
-including the first; use a positive integer. The same field works in quiz,
-practice, and legacy question items. See `formats/questions.md` for retry behavior.
+An explicitly assessment-required family needs an actual, non-diagnostic task
+attached to its mapped type. Test the declared method or decision; a type name,
+source tag, or family label without a usable prompt does not satisfy the
+requirement.

@@ -78,6 +78,8 @@ export async function testCourseShell(ctx, cid) {
   /* T7 must hold at the reader's text size too, not only the default. A px-locked
      body once made the UI scale while the prose did not. */
   const cplLarge = await page.evaluate(() => {
+    const previous = document.documentElement.style.fontSize;
+    try {
     document.documentElement.style.fontSize = "22px";
     const para = [...document.querySelectorAll(".bmain p")].find(e => e.textContent.length > 200);
     if (!para) return null;
@@ -88,8 +90,10 @@ export async function testCourseShell(ctx, cid) {
     document.body.appendChild(s);
     const w = para.getBoundingClientRect().width / (s.getBoundingClientRect().width / 52);
     s.remove();
-    document.documentElement.style.fontSize = "";
     return Math.round(w);
+    } finally {
+      document.documentElement.style.fontSize = previous;
+    }
   });
   if (cplLarge) ck(P("measure holds at 22px text"), cplLarge >= 50 && cplLarge <= 75, cplLarge + " CPL");
 

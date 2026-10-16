@@ -1,0 +1,4 @@
+title: "Curvature"
+term: "Curvature"
+body: >-
+  <p>Curvature <m>\kappa</m> measures how rapidly a curve turns per unit change in arc length: <m>\kappa = \left\|\frac{d\mathbf{T}}{ds}\right\| = \frac{\|\mathbf{T}'(t)\|}{\|\mathbf{r}'(t)\|}</m>. In three dimensions, it can be computed directly without arc-length reparameterization via the formula <m>\kappa = \frac{\|\mathbf{r}'(t) \times \mathbf{r}''(t)\|}{\|\mathbf{r}'(t)\|^3}</m>. For a plane curve <m>y = f(x)</m>, the curvature simplifies to <m>\kappa = \frac{|f''(x)|}{(1 + [f'(x)]^2)^{3/2}}</m>. Curvature quantifies the sharpness of turns along trajectories and specifies the radius of the osculating circle, <m>R = 1/\kappa</m>.</p>

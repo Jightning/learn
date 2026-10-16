@@ -42,6 +42,13 @@ check("a list block still renders its items after its intro",
 check("a callout with no items renders no empty list",
       !renderBlock({ t: "key", h: "<p>x</p>" }, {}).includes("bitems"));
 
+const corePassage = renderBlock({ t: "key", core: "Opening claim.", h: "<p>Development.</p>" }, {});
+const gistPassage = renderBlock({ t: "key", gist: "Notes summary.", h: "<p>Complete passage.</p>" }, {});
+check("full reading keeps core before its development",
+      /Opening claim\.[\s\S]*Development\./.test(corePassage), corePassage);
+check("full reading leaves a gist out and preserves the complete passage",
+      !gistPassage.includes("Notes summary.") && gistPassage.includes("Complete passage."), gistPassage);
+
 check("Review depth keeps a callout's steps open",
       present(steps, "notes").mode === "full", present(steps, "notes").mode);
 check("…even when it carries a claim",

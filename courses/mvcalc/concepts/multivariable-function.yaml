@@ -1,0 +1,4 @@
+title: "Functions of two and three variables: domain and range"
+term: "Multivariable Function"
+body: >-
+  <p>A function of two variables <m>z = f(x, y)</m> assigns a unique real output to each ordered pair <m>(x, y)</m> in a domain <m>D \subseteq \mathbb{R}^2</m>. The graph of <m>f</m> is the surface <m>z = f(x, y)</m> in <m>\mathbb{R}^3</m>. The domain represents allowable inputs (often restricted by radicals, denominators, or logarithms), and the range is the set of achieved real values. Multivariable functions model physical fields such as temperature, pressure, and potential energy across space.</p>
