@@ -9,7 +9,8 @@
  * column alone. At either end of the scale the key is left to the browser, so
  * page zoom is still reachable rather than swallowed.
  */
-import { getItem, setItem } from "./store.js";
+import { getItem } from "./store.js";
+import { setPref } from "./prefs.js";
 const STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.4, 1.6, 1.8, 2];
 const KEY = "contentZoom";
 
@@ -20,7 +21,7 @@ export const readZoom = () => {
   } catch { return 1; }
 };
 
-const store = z => setItem(KEY, String(z));
+const store = z => setPref(KEY, String(z));
 
 /** the next step in `dir`, or null when there is none left to take */
 function stepZoom(current, dir) {

@@ -18,7 +18,7 @@
  * Pruning still exists, but only behind a checkpoint that already covers the
  * rows being dropped. That is `prune`, and replay.js is the only caller.
  */
-import { logRows, appendRow, clearLog, mergeRows, dropRows } from "./store.js";
+import { logRows, appendRow, clearLog, mergeRows, dropRows, getItem } from "./store.js";
 import { migrateLegacyRows } from "./question-aliases.js";
 import { deviceId } from "./device.js";
 
@@ -34,7 +34,8 @@ export function append(row) {
 }
 
 export const all = () => logRows().slice();
-export const forCourse = (cid, course) => migrateLegacyRows(logRows().filter(r => r.course === cid), course?.legacyQuestionAliases);
+export const forCourse = (cid, course) => migrateLegacyRows(logRows().filter(r =>
+  r.course === cid && r.ts > (Number(getItem(`reset:${cid}`)) || 0)), course?.legacyQuestionAliases);
 export const usage = () => ({ n: logRows().length });
 export const toJSON = () => JSON.stringify(logRows(), null, 1);
 
@@ -53,7 +54,7 @@ export function fromJSON(text) {
   if (!Array.isArray(rows)) throw new Error("expected a list of answer rows");
   const good = rows.filter(r => r && typeof r.id === "string" && Number.isFinite(r.ts));
   if (!good.length) throw new Error("no answer rows in that file");
-  return { merged: mergeRows(good), skipped: rows.length - good.length };
+  return { merged: mergeRows(good.map(r => ({ ...r, sent: 0 }))), skipped: rows.length - good.length };
 }
 export const clear = () => clearLog();
 

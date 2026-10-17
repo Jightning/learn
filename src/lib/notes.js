@@ -5,7 +5,7 @@
  * rather than passive, and gives a place to record what a lecture said that the
  * text does not. Notes are the learner's, so they are visually distinct from
  * course content and never mixed into it. */
-import { getItem, setItem, removeItem, keys } from "./store.js";
+import { getItem, keys } from "./store.js";
 import { setPref, dropPref } from "./prefs.js";
 
 /** `anchor` is a subsection id, optionally suffixed with #<block index> */
@@ -50,8 +50,22 @@ export const noteText = item => typeof item === "string" ? item
 export function readNote(cid, anchor) { return getItem(key(cid, anchor)) || ""; }
 
 export function writeNote(cid, anchor, text) {
-  if (text && text.trim()) setItem(key(cid, anchor), text);
-  else removeItem(key(cid, anchor));
+  if (text && text.trim()) setPref(key(cid, anchor), text);
+  else dropPref(key(cid, anchor));
+}
+
+/* Preserve old submitted strings while distinguishing new unsubmitted drafts. */
+export function readTryFirst(cid, anchor) {
+  const raw = readNote(cid, anchor);
+  try {
+    const value = JSON.parse(raw);
+    if (value?.kind === 'try-first' && typeof value.text === 'string') return value;
+  } catch {}
+  return { text: raw, submitted: !!raw };
+}
+
+export function writeTryFirst(cid, anchor, text, submitted) {
+  writeNote(cid, anchor, JSON.stringify({ kind: 'try-first', text, submitted }));
 }
 
 /* A block can carry several notes: a lecture adds one thing, a past paper
@@ -100,8 +114,8 @@ export const isFolded = (cid, anchor) => folds(cid).has(anchor);
 export function setFolded(cid, anchor, on) {
   const set = folds(cid);
   if (on) set.add(anchor); else set.delete(anchor);
-  if (set.size) setItem(FOLD(cid), JSON.stringify([...set]));
-  else removeItem(FOLD(cid));
+  if (set.size) setPref(FOLD(cid), JSON.stringify([...set]));
+  else dropPref(FOLD(cid));
 }
 
 /** Erase every note on one course. A note is one key per anchor, so the bodies
@@ -110,9 +124,8 @@ export function setFolded(cid, anchor, on) {
 export function dropNotes(cid) {
   const pre = key(cid, "");
   for (const k of keys()) if (k.startsWith(pre)) {
-    /* Attempt drafts are device-local and are not valid synced preferences. */
-    if (k.includes("@attempt")) removeItem(k); else dropPref(k);
+    dropPref(k);
   }
-  removeItem(FOLD(cid));
+  dropPref(FOLD(cid));
   if (getItem(LEGACY_SAVED(cid)) != null) dropPref(LEGACY_SAVED(cid));
 }

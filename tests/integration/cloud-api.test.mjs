@@ -51,6 +51,18 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
   return { status: res.status, body: await res.json() };
 };
 
+{
+  const db = fresh(), counter = { n: 0 };
+  for (const payload of [
+    { rows: Array.from({length:2001}, (_, i) => ({id:`a:${i}`, enc:'x'})) },
+    { prefs: Array.from({length:2001}, (_, i) => ({k:`hue:${i}`, enc:'x'})) },
+    { prefs: [{k:'note:a:s1-1', enc:'x'.repeat(128 * 1024 + 1)}] }
+  ]) {
+    const result = await call(syncRoute, {device:'a', ...payload}, {db, counter});
+    check('an oversized backup fails before any partial write', result.status === 400 && counter.n === 0);
+  }
+}
+
 /* ------------------------------------------------------- the gate comes first */
 {
   const db = fresh(), counter = { n: 0 };

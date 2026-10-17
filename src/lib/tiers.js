@@ -1,7 +1,8 @@
 /* The main reading is complete; only explicitly optional material collapses.
  * Old tier and lane values remain readable without filtering examples out of
  * the teaching path. New courses use optional: true, independent of block type. */
-import { getItem, setItem, removeItem } from "./store.js";
+import { getItem } from "./store.js";
+import { setPref, dropPref } from "./prefs.js";
 import { isFollow } from "./follows.js";
 export const TIERS = ["spine", "depth", "apply"];
 
@@ -48,7 +49,7 @@ const KEY = cid => `lane:${cid}`;
 
 /* Retain stored "all" for readers who had expanded optional material. */
 export function laneFor(cid) { return getItem(KEY(cid)) || "apply"; }
-export function setLane(cid, lane) { setItem(KEY(cid), lane); }
+export function setLane(cid, lane) { setPref(KEY(cid), lane); }
 
 /** Forget which lane a course was being read in. lib/purge.js is the caller. */
-export function dropLane(cid) { removeItem(KEY(cid)); }
+export function dropLane(cid) { dropPref(KEY(cid)); }

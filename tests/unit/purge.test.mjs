@@ -79,6 +79,7 @@ const held = C => ({
 });
 
 const beforeA = held(A), beforeB = held(B);
+const oldRows = logRows().filter(r => r.course === A.id);
 check("the fixture actually wrote something",
       beforeA.study && beforeA.retain && beforeA.note && beforeA.saved && beforeA.why &&
       beforeA.fold && beforeA.lane === "all" && beforeA.hue === 135 &&
@@ -109,10 +110,9 @@ check("the other course keeps everything",
       JSON.stringify(afterB) === JSON.stringify(beforeB),
       `${JSON.stringify(beforeB)} -> ${JSON.stringify(afterB)}`);
 
-/* No keys anywhere still name the purged course. Catches a store this file
-   does not know about yet. */
-const leftover = keys().filter(k => k.includes(A.id) ||
-                                    k === "study:" + A.code.replace(/\s+/g, ""));
+/* Only the synced deletion cutoff remains; learner content is gone. */
+const leftover = keys().filter(k => k !== `reset:${A.id}` && (k.includes(A.id) ||
+                                    k === "study:" + A.code.replace(/\s+/g, "")));
 check("no key still names the removed course", leftover.length === 0, leftover.join(", "));
 check("the log has only the other course's rows",
       logRows().every(r => r.course === B.id), String(logRows().length));
@@ -121,10 +121,12 @@ check("the log has only the other course's rows",
    verbatim, so the reader sees the schedule of a course they deleted. This runs
    last because a rebuild writes an empty checkpoint back, which is fine but
    would show up in the leftover sweep above. */
+store.mergeRows(oldRows);
 rebuild(A.id, A);
 forget();
 check("a rebuild after the purge finds nothing to fold",
       held(A).study === false && held(A).retain === false);
+check("old rows arriving again cannot restore deleted history", forCourse(A.id).length === 0);
 
 /* Purging a course that was never lived in is a no-op, not a throw: the sync
    path calls it for a tombstone this device may never have opened. */

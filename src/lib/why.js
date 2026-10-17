@@ -6,7 +6,8 @@
  * same row in state. This is where the reader's half is kept — learner content,
  * stored and styled apart from the material, like a note.
  */
-import { getItem, setItem, removeItem, keys } from "./store.js";
+import { getItem, keys } from "./store.js";
+import { setPref, dropPref } from "./prefs.js";
 const key = (cid, itemId) => `why:${cid}:${itemId}`;
 const KEEP = 5;
 
@@ -22,7 +23,7 @@ export function lastWhy(cid, itemId) {
 export function pushWhy(cid, itemId, entry) {
   const k = key(cid, itemId);
   const h = read(k).concat({ ts: Date.now(), ...entry }).slice(-KEEP);
-  setItem(k, JSON.stringify(h));
+  setPref(k, JSON.stringify(h));
 }
 
 /** every reason the reader has given for a set of item ids, newest first */
@@ -37,5 +38,5 @@ export function whyFor(cid, itemIds) {
  *  prefix sweep. lib/purge.js is the caller. */
 export function dropWhy(cid) {
   const pre = key(cid, "");
-  for (const k of keys()) if (k.startsWith(pre)) removeItem(k);
+  for (const k of keys()) if (k.startsWith(pre)) dropPref(k);
 }

@@ -45,6 +45,9 @@ test('lesson answers and math fields survive reload without another rating', asy
     await card.locator('.qresult').waitFor();
     await page.reload();
     await card.locator('.qresult').waitFor();
+    assert.equal(await quiz.locator('.qposition').innerText(), 'Question 3 of 3');
+    await quiz.getByRole('button', {name:'Previous question', exact:true}).click();
+    await quiz.getByRole('button', {name:'Previous question', exact:true}).click();
     assert.equal(await card.getByRole('radio').nth(1).isChecked(), true);
     assert.equal(await quiz.locator('.qstat').innerText(), '2 answered');
     await next();

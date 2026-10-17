@@ -1,11 +1,9 @@
 /* ============================================================================
  * src/lib/prefs.js — editable state that follows the reader between devices
  *
- * Almost everything the browser holds about a reader is per device on purpose:
- * where they were in a course, how deep they read it, which lane they are in.
- * Shelf choices and learner notes are not. A reader who arranges their shelf
- * or annotates a block on a laptop and then opens a phone is looking at the
- * same shelf and the same notes.
+ * Saved learner changes follow the account: answers, notes, practice runs,
+ * reading position and display choices. Credentials, device identity and
+ * derived scheduling caches remain local.
  *
  * Two devices can both set the same thing, so there has to be a rule. The rule
  * is the latest write wins, per key: each change is stamped when it is made and
@@ -28,18 +26,22 @@ import { getItem, setItem, removeItem, keys } from "./store.js";
    never travels: it is this device's account of what it did. */
 const STAMPS = "pref:stamps";
 
-/* What travels. Attempt drafts deliberately do not: they share the note prefix
-   for historical reasons, but `@attempt` is not a learner note. The saved key
-   is the compatibility shape used by the first saved-block implementation. */
-const NOTE = /^note:[\w-]{1,64}:s\d+(?:-\d+)?(?:#\d+)?$/;
+/* Explicit families prevent credentials and internal caches entering backup. */
+const NOTE = /^note:[\w-]{1,64}:s\d+(?:-\d+)?(?:#\d+)?(?:@attempt)?$/;
 const SAVED = /^saved:[\w-]{1,64}$/;
-const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/, /^added:v1$/, /^learnby:[\w-]+$/, NOTE, SAVED];
+const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/, /^added:v1$/, /^learnby:[\w-]+$/, NOTE, SAVED,
+  /^(?:depth|lane|nfold|reset):[\w-]{1,64}$/, /^why:[\w-]{1,64}:.+$/,
+  /^quiz:[\w-]{1,64}:s\d+-\d+$/,
+  /^learner:[^:]+:(?:answer|rating|policy|session):.*$/, /^place:v1$/,
+  /^(?:contentZoom|tuckSidebar)$/, /^speech:(?:rate|voice|quiz)$/];
 
 export const isPref = k => typeof k === "string" && SYNCED.some(re => re.test(k));
 export const isNotePref = k => typeof k === "string" && (NOTE.test(k) || SAVED.test(k));
 
 const stamps = () => { try { return JSON.parse(getItem(STAMPS)) || {}; } catch { return {}; } };
 const write = s => setItem(STAMPS, JSON.stringify(s));
+export const hasPref = k => getItem(k) != null || Object.hasOwn(stamps(), k);
+export const prefTimestamp = k => tsOf(stamps(), k);
 
 /* How old this device's opinion is.
  *
@@ -54,15 +56,16 @@ const tsOf = (s, k) => (s[k] != null ? Number(s[k]) : (getItem(k) != null ? 1 : 
  *  rather than store.setItem, so a change cannot be made without a stamp. */
 export function setPref(k, v) {
   if (!isPref(k)) throw new Error(`${k} is not a synced preference`);
+  if (getItem(k) === String(v)) return;
   setItem(k, v);
-  const s = stamps(); s[k] = Date.now(); write(s);
+  const s = stamps(); s[k] = Math.max(Date.now(), (Number(s[k]) || 0) + 1); write(s);
 }
 
 /** Clear one. A tombstone, not an absence — see the header. */
 export function dropPref(k) {
   if (!isPref(k)) throw new Error(`${k} is not a synced preference`);
   removeItem(k);
-  const s = stamps(); s[k] = Date.now(); write(s);
+  const s = stamps(); s[k] = Math.max(Date.now(), (Number(s[k]) || 0) + 1); write(s);
 }
 
 /** Everything this device has an opinion about, cleared ones included. */
@@ -82,7 +85,10 @@ export function apply(incoming) {
   for (const p of incoming || []) {
     if (!p || !isPref(p.k)) continue;
     const ts = Number(p.ts) || 0;
-    if (ts <= tsOf(s, p.k)) continue;
+    const local = tsOf(s, p.k);
+    if (!ts || ts < local || (ts === local && (p.v == null ? getItem(p.k) == null : String(p.v) === getItem(p.k)))) continue;
+    // Equal-clock writes use the account's accepted value. Otherwise devices
+    // that edited in the same millisecond would disagree indefinitely.
     if (p.v == null) removeItem(p.k); else setItem(p.k, String(p.v));
     s[p.k] = ts; n++;
   }

@@ -86,11 +86,15 @@ const browser = await chromium.launch();
 {
   const context = await browser.newContext();
   const page = await context.newPage();
+  page.on("pageerror", e => console.error("PAGEERROR:", e.message));
   await page.route("**/api/sync", () => new Promise(() => {}));
   await page.goto(ORIGIN + "/#/sync");
   await page.locator("#cloud-secret").fill(SECRET);
   await page.locator("#cloud-sync").click();
-  await page.locator(".sync-msg").filter({ hasText: "timed out" }).waitFor({ timeout: 25_000 });
+  await page.locator(".sync-msg").filter({ hasText: "timed out" }).waitFor({ timeout: 25_000 }).catch(async e => {
+    console.error("Timeout panel:", await page.locator(".sync-msg").allTextContents());
+    throw e;
+  });
   check("a stalled backup request reports a retryable timeout",
         /try again/i.test(await page.locator(".sync-msg").innerText()));
   check("a stalled backup request re-enables the button",
@@ -110,15 +114,28 @@ const enrol = async page => {
   await page.locator("#cloud-sync").click();
   await page.waitForTimeout(1200);
 };
+// Boot on an explicit non-course route, then navigate to the library. A cold
+// #/ launch intentionally resumes the saved lesson instead.
+const openLibrary = async page => {
+  await page.goto(ORIGIN + "/#/sync");
+  await page.reload();
+  // load fires before IndexedDB initialization and the router's first paint.
+  // Changing the hash before that paint lets cold-launch restoration win.
+  await page.locator('#cloud-sync').waitFor();
+  await page.waitForTimeout(100);
+  await page.goto(ORIGIN + "/#/");
+  await page.locator('#lib-add').waitFor();
+};
 const backUp = async page => {
-  await page.goto(ORIGIN + "/");
+  await page.goto(ORIGIN + "/#/sync");
+  await page.reload();
   await page.waitForTimeout(500);
   await page.locator("#cloud-sync").click();
   await page.waitForTimeout(2500);
   return page.locator(".sync-msg").innerText().catch(() => "");
 };
 const shelf = async page => {
-  await page.goto(ORIGIN + "/");
+  await openLibrary(page);
   await page.waitForTimeout(600);
   return page.evaluate(() =>
     [...document.querySelectorAll(".lcard .lhit")].map(a => a.getAttribute("href").slice(2)));
@@ -127,9 +144,9 @@ const shelf = async page => {
 /* A course that exists only on the laptop, installed the way a reader installs
    one — the same path a course pulled from anywhere else would land on. */
 const course = {
-  "course.yaml": "code: E2E 1\ntitle: Only On The Laptop\ntagline: one\n",
+  "course.yaml": "code: E2E 1\ntitle: Only On The Laptop\ntagline: one\nstate:\n  enabled: true\n",
   "sections/01-a/_section.yaml": "title: A\n",
-  "sections/01-a/1-b.yaml": "title: B\nblocks:\n  - t: p\n    h: hello\nquiz: []\n"
+  "sections/01-a/1-b.yaml": "title: B\nblocks:\n  - t: p\n    h: hello\n  - t: attempt\n    h: Try explaining this before reading.\nquiz:\n  - id: backup-number\n    type: Number\n    q: What is two plus two?\n    tries: 3\n    response:\n      kind: number\n      value: 4\n  - id: backup-self\n    type: Explain\n    q: Explain your reasoning.\n    response:\n      kind: self\n      model: Add two and two.\n"
 };
 /* Both devices join the account first, while there is nothing to move: the
    scenario under test is "one device has everything, the other has nothing",
@@ -142,7 +159,7 @@ check("the phone starts with only the bundled course",
 
 /* Installed through the UI, because that is how a course actually arrives. */
 const install = async (page, files = course) => {
-  await page.goto(ORIGIN + "/");
+  await openLibrary(page);
   await page.waitForTimeout(500);
   await page.locator("#lib-add").click();
   await page.waitForTimeout(300);
@@ -152,6 +169,7 @@ const install = async (page, files = course) => {
     buffer: Buffer.from(JSON.stringify(files))
   }]);
   await page.waitForTimeout(1500);
+  await page.getByRole('dialog', {name:'Add Course',exact:true}).getByRole('button', {name:'Close',exact:true}).click();
 };
 await install(A);
 
@@ -187,7 +205,7 @@ async function binCourse(P, cid) {
 }
 
 /* Deleting on one device reaches the other, and the bin offers it back. */
-await A.goto(ORIGIN + "/");
+await openLibrary(A);
 await A.waitForTimeout(500);
 await binCourse(A, "onlylaptop");
 await A.waitForTimeout(300);
@@ -199,7 +217,7 @@ const afterDelete = await shelf(B);
 check("a deletion on one device removes it on the other",
       !afterDelete.includes("onlylaptop"), afterDelete.join(", "));
 
-await A.goto(ORIGIN + "/");
+await openLibrary(A);
 await A.waitForTimeout(600);
 const binButton = await A.locator("[data-restore='onlylaptop']").count();
 check("the deleted course is offered back from the bin", binButton === 1);
@@ -222,7 +240,7 @@ if (binButton) {
  * name". This is the one path where the two had to agree. */
 {
   /* Bin it again, so the account is holding a tombstone for this id. */
-  await A.goto(ORIGIN + "/");
+  await openLibrary(A);
   await A.waitForTimeout(500);
   await binCourse(A, "onlylaptop");
   await A.waitForTimeout(300);
@@ -265,7 +283,7 @@ if (binButton) {
  * it is asked here: the phone's copy still hashes to what the account gave it. */
 {
   const edited = { ...course,
-    "course.yaml": "code: E2E 1\ntitle: Only On The Laptop\ntagline: edited on the laptop\n" };
+    "course.yaml": "code: E2E 1\ntitle: Only On The Laptop\ntagline: edited on the laptop\nstate:\n  enabled: true\n" };
   const newer = await versionOfFiles(edited);
 
   await install(A, edited);
@@ -325,6 +343,63 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
         await B.locator(".saved-section .note-blank").count() === 1);
 }
 
+/* Saved answers and retry progress survive a real encrypted round trip. */
+{
+  await A.goto(ORIGIN + "/#/onlylaptop/s1-1");
+  await A.locator('.attempt-in').fill('unfinished try-first response');
+  await A.locator('.quiz input[type="number"]').first().fill('3');
+  await A.locator('.quiz button[type="submit"]').first().click();
+  await A.waitForTimeout(500);
+  await backUp(A); await backUp(B);
+  await B.goto(ORIGIN + "/#/onlylaptop/s1-1");
+  const answer = B.locator('.quiz input[type="number"]').first();
+  await answer.waitFor();
+  check("an unsubmitted try-first draft reaches the phone without being submitted",
+    await B.locator('.attempt-in').inputValue() === 'unfinished try-first response' &&
+    await B.locator('[data-attempt-go]').count() === 1);
+  await B.locator('[data-attempt-go]').click();
+  check("the wrong answer and remaining retries reach the phone",
+    await answer.inputValue() === '3' && /Wrong/.test(await B.locator('.quiz').innerText()));
+  await answer.fill('4');
+  await B.locator('.quiz button[type="submit"]').first().click();
+  await B.waitForTimeout(500);
+  await B.getByRole('button', {name:'Next question',exact:true}).click();
+  await B.locator('.quiz .qanswer textarea').first().fill('unfinished reasoning on the phone');
+  await backUp(B); await backUp(A);
+  await A.goto(ORIGIN + "/#/onlylaptop/s1-1");
+  await A.locator('.qposition').waitFor();
+  check("the lesson question position returns to the laptop",
+    /Question 2 of 2/.test(await A.locator('.qposition').innerText()));
+  await A.getByRole('button', {name:'Previous question',exact:true}).click();
+  check("try-first submission status returns to the laptop",
+    await A.locator('.attempt-done').count() === 1);
+  check("the corrected answer and completion return to the laptop",
+    await A.locator('.quiz input[type="number"]').first().inputValue() === '4' &&
+    /Correct/.test(await A.locator('.quiz').innerText()));
+  await A.getByRole('button', {name:'Next question',exact:true}).click();
+  check("an unfinished written answer returns too",
+    await A.locator('.quiz .qanswer textarea').first().inputValue() === 'unfinished reasoning on the phone');
+
+  const fresh = await browser.newContext();
+  const C = await fresh.newPage();
+  await enrol(C);
+  await C.goto(ORIGIN + "/#/onlylaptop/s1-1");
+  await C.locator('.qposition').waitFor();
+  check("a fresh browser restores the lesson question position",
+    /Question 2 of 2/.test(await C.locator('.qposition').innerText()));
+  await C.getByRole('button', {name:'Previous question',exact:true}).click();
+  check("a fresh browser restores completed answers and course progress",
+    await C.locator('.quiz input[type="number"]').first().inputValue() === '4' &&
+    /1 answered/.test(await C.locator('.quiz').innerText()));
+  await C.getByRole('button', {name:'Next question',exact:true}).click();
+  check("a fresh browser restores try-first responses and submission status",
+    await C.locator('.attempt-in').inputValue() === 'unfinished try-first response' &&
+    await C.locator('.attempt-done').count() === 1);
+  check("a fresh browser restores unfinished answers",
+    await C.locator('.quiz .qanswer textarea').first().inputValue() === 'unfinished reasoning on the phone');
+  await fresh.close();
+}
+
 /* ----------------------------------------------------------- the settings --
  * Three settings belong to the shelf rather than to the device:
  * the colour a course wears, the order of the cards, and which bundled ones
@@ -344,7 +419,7 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
   if (reachable) { await swatch.click(); await A.waitForTimeout(400); }
 
   /* And dismiss the bundled course, which is the other kind of shelf setting. */
-  await A.goto(ORIGIN + "/");
+  await openLibrary(A);
   await A.waitForTimeout(500);
   await binCourse(A, "demo");
   await A.waitForTimeout(300);

@@ -19,11 +19,11 @@
  * slow, so the result is snapshotted with a watermark and later replays start
  * from there.
  * ==========================================================================*/
-import { getItem, setItem, removeItem, logRows } from "./store.js";
+import { getItem, setItem, removeItem } from "./store.js";
 import { step as retentionStep, install as installRetention, configOf } from "./retention.js";
-import { migrateLegacyRows } from "./question-aliases.js";
 import { orderEvents, scoredEvents } from "./evidence.js";
 import { rateStep, forget, keyFor } from "./state.js";
+import { forCourse } from "./log.js";
 
 const DAY = 864e5;
 const ckptKey = cid => `ckpt:${cid}`;
@@ -90,7 +90,9 @@ const blankish = () =>
 export function rebuild(cid, course) {
   const cfg = configOf(course);
   let prior = readCkpt(cid);
-  const allRows = migrateLegacyRows(logRows().filter(r => r.course === cid), course.legacyQuestionAliases);
+  const allRows = forCourse(cid, course);
+  const resetAt = Number(getItem(`reset:${cid}`)) || 0;
+  if (prior?.resetAt !== resetAt) prior = null;
   const mappingVersion = JSON.stringify(course.legacyQuestionAliases || {});
   const covered = new Set(prior?.eventIds || []);
   let rows = allRows.filter(r=>!covered.has(r.id));
@@ -100,11 +102,13 @@ export function rebuild(cid, course) {
   const next = rows.length || !prior ? fold(rows, cfg, prior || undefined) : prior;
   next.eventIds = allRows.map(r=>r.id);
   next.mappingVersion = mappingVersion;
+  next.resetAt = resetAt;
   installRetention(cid, next.retain);
 
-  // Local lesson answers are not scheduling data and never enter the sync log.
+  // Editable answers sync separately from the append-only scheduling log.
   let answers, policy, legacy, session;
   try { const stored = JSON.parse(getItem(keyFor(cid, course.code))); answers = stored?.answers; policy = stored?.policy; legacy = stored?.q; session = stored?.session; } catch {}
+  if (resetAt) legacy = Object.fromEntries(Object.entries(legacy || {}).filter(([, r]) => r.last > resetAt));
   for (const [oldId, newId] of Object.entries(course.legacyQuestionAliases || {})) {
     if (legacy?.[oldId] && !legacy[newId]) legacy[newId] = legacy[oldId];
     if (answers?.[oldId] && !answers[newId]) answers[newId] = answers[oldId];

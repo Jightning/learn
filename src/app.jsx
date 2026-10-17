@@ -15,7 +15,8 @@ import { setBlockConfig } from "./blocks/index.js";
 import { applyHue } from "./lib/theme.js";
 import { safeCourseStyles } from "./lib/course-styles.js";
 import { readZoom, applyZoom, zoomFromKey } from "./lib/zoom.js";
-import { getItem, setItem } from "./lib/store.js";
+import { getItem } from "./lib/store.js";
+import { setPref } from "./lib/prefs.js";
 import { land, resume, track, repin } from "./lib/place.js";
 import { warm as warmSearch } from "./lib/search.js";
 import { swipeIntent, opensSidebar, ownsHorizontalSwipe } from "./lib/swipe.js";
@@ -60,7 +61,7 @@ export default function App() {
     return getItem("tuckSidebar") === "1";
   });
   const toggleTuck = () => setTuckPref(v => {
-    setItem("tuckSidebar", v ? "0" : "1");
+    setPref("tuckSidebar", v ? "0" : "1");
     return !v;
   });
   /* Tucking removes the sidebar from the document, and below the drawer
@@ -75,6 +76,7 @@ export default function App() {
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
+  const [syncRevision, setSyncRevision] = useState(0);
   const [, forceRender] = useState(0);
   const [zoom, setZoom] = useState(readZoom);
   /* A repaint the course did not cause. The accent is written to the document
@@ -221,7 +223,13 @@ export default function App() {
       /* Settings from another device are about the shelf itself — its order,
          what is dismissed from it, what colour this course wears — so both the
          listing and the accent have to be re-derived rather than repainted. */
-      if (e.detail.settings) { refreshLibrary(); applyHue(course, cid); }
+      if (e.detail.settings) {
+        refreshLibrary(); applyHue(course, cid);
+        setTuckPref(getItem("tuckSidebar") === "1"); setZoom(readZoom());
+        if (cid) { setLaneFor(laneFor(cid)); setDepthFor(depthFor(cid)); }
+        if (course && cid) rebuild(cid, course);
+      }
+      if (cid && course) setSyncRevision(n => n + 1);
       forceRender(n => n + 1);
     };
     addEventListener("learn:synced", onSync);
@@ -258,7 +266,7 @@ export default function App() {
       ? cancelIdleCallback(id) : clearTimeout(id));
   }, [idx]);
   const drills = useMemo(() => indexDrills(course || {}), [course]);
-  const state = useMemo(() => (course ? stateFor(cid, course) : { on: false, stats: () => ({}) }), [course, cid]);
+  const state = useMemo(() => (course ? stateFor(cid, course) : { on: false, stats: () => ({}) }), [course, cid, syncRevision]);
 
   /* During render, not in the effect below. Blocks read this config *while*
      they render, and an effect runs after that render has painted — so a deep
@@ -549,7 +557,7 @@ export default function App() {
             <div class="viewport" key={inReview || (course && (
               rest === "review" || rest.startsWith("review/mixed") ||
               rest === "practice" || rest.startsWith("practice/")))
-              ? `${cid}:review` : hash}>{view}</div>
+              ? `${cid}:review:${syncRevision}` : `${hash}:${syncRevision}`}>{view}</div>
           </div>
           {/* Outside `.wrap`, which carries the content zoom: the bar is chrome
               and magnifying the material should not magnify its controls. */}

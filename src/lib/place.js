@@ -26,7 +26,8 @@
  * is held *across a reflow* is a character in the visible line, with a block
  * fallback for graphics. `land` reapplies it as layout finishes arriving.
  * ==========================================================================*/
-import { getItem, setItem, flush } from "./store.js";
+import { getItem, flush } from "./store.js";
+import { setPref } from "./prefs.js";
 
 const KEY = "place:v1";
 /* Older than this and resuming is a surprise rather than a convenience. Well
@@ -283,7 +284,7 @@ export function track() {
     at = readingAnchor();
   };
 
-  const remember = () => { setItem(KEY, JSON.stringify(capture())); };
+  const remember = () => { setPref(KEY, JSON.stringify(capture())); };
 
   const onScroll = () => {
     if (!raf) raf = requestAnimationFrame(sample);

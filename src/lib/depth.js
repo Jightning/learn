@@ -20,7 +20,8 @@
  * `full` remains what a first read means — which is why `full` is the default
  * and nothing nudges a reader off it.
  */
-import { getItem, setItem, removeItem } from "./store.js";
+import { getItem } from "./store.js";
+import { setPref, dropPref } from "./prefs.js";
 
 export const DEPTHS = [
   { id: "full",  label: "Full",  hint: "every word" },
@@ -41,7 +42,7 @@ export function depthFor(cid) {
 }
 
 export function setDepth(cid, d) {
-  if (DEPTH_IDS.includes(d)) setItem(KEY(cid), d);
+  if (DEPTH_IDS.includes(d)) setPref(KEY(cid), d);
 }
 
 /** the next depth in the cycle, for the single-key binding and the narrow control */
@@ -51,4 +52,4 @@ export function nextDepth(d) {
 }
 
 /** Forget the depth a course was being read at. lib/purge.js is the caller. */
-export function dropDepth(cid) { removeItem(KEY(cid)); }
+export function dropDepth(cid) { dropPref(KEY(cid)); }

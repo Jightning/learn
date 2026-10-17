@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import { readNote, writeNote } from "../lib/notes.js";
+import { readTryFirst, writeTryFirst } from "../lib/notes.js";
 import { authored as M } from "../lib/safe-markup.js";
 import Inline from "./Inline.jsx";
 
@@ -12,18 +12,18 @@ import Inline from "./Inline.jsx";
  *
  * What they wrote is learner content, so it is stored and styled as a note. */
 export default function Attempt({ b, cid, anchor }) {
-  const stored = readNote(cid, anchor);
-  const [text, setText] = useState(stored);
-  const [done, setDone] = useState(!!stored);
+  const [stored] = useState(() => readTryFirst(cid, anchor));
+  const [text, setText] = useState(stored.text);
+  const [done, setDone] = useState(stored.submitted);
 
-  const submit = () => { writeNote(cid, anchor, text); setDone(true); };
+  const submit = () => { writeTryFirst(cid, anchor, text, true); setDone(true); };
 
   return (
     <div class="attempt" data-attempt={anchor}>
       <span class="blabel"><Inline text={b.label || "Try it first"} /></span>
       <div dangerouslySetInnerHTML={{ __html: M(b.h) }} />
       <textarea class="attempt-in" rows="3" value={text} placeholder="However far you get."
-                onInput={e => setText(e.currentTarget.value)} />
+                onInput={e => { const value = e.currentTarget.value; setText(value); writeTryFirst(cid, anchor, value, done); }} />
       {done
         ? <p class="attempt-done">Compare this with what you will now learn.</p>
         : <button class="dbtn" data-attempt-go onClick={submit} disabled={!text.trim()}>Submit and read on →</button>}

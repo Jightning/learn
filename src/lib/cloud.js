@@ -4,8 +4,7 @@
  * The site is public and works entirely offline: everything a reader does lives
  * in IndexedDB, and that is the whole product for everyone except the person
  * holding the secret. This file is what that one person gets — a copy of the
- * log, the courses, learner notes and the settings that belong to the shelf
- * rather than to a device (src/lib/prefs.js), on the account's own backend, so
+ * log, courses and saved learner state (src/lib/prefs.js), on the account's own backend, so
  * a wiped browser is a download rather than a loss.
  *
  * Three properties, in the order they mattered:
@@ -37,6 +36,9 @@ import { invalidate } from "./replay.js";
 import { purge } from "./purge.js";
 import { deriveKey, seal as sealBytes, open as openBytes, versionOfFiles } from "./seal.js";
 import { mine as myPrefs, apply as applyPrefs, isNotePref } from "./prefs.js";
+import { syncBatches } from "./sync-batches.js";
+import { migrateLearnerPrefs } from "./learner-prefs.js";
+import { forget } from "./state.js";
 
 const SECRET = "cloud:secret";
 const CURSOR = "cloud:cursor";      /* server-assigned seq, never a clock */
@@ -75,7 +77,9 @@ export function configure(secret) {
    deliberately slow (lib/seal.js), so it must not happen per row. */
 let key = null;
 const sealer = async () => {
-  if (!key) key = await deriveKey(getItem(SECRET));
+  // Cache the pending derivation too: a full course encrypts many answers in
+  // parallel, and must not run the expensive password derivation per answer.
+  if (!key) key = deriveKey(getItem(SECRET)).catch(e => { key = null; throw e; });
   return key;
 };
 const seal = async value => sealBytes(await sealer(), value);
@@ -258,7 +262,7 @@ let running = false;
 export async function sync({ manual = false } = {}) {
   if (running || !configured() || !navigator.onLine) return null;
 
-  const pending = logRows().filter(r => !r.sent && String(r.id).startsWith(deviceId() + ":"));
+  const pending = logRows().filter(r => !r.sent);
   const dropped = queued();
   const due = Date.now() - lastSync() > AUTO_MS;
   /* The cheapest request is the one not made. Automatic syncs run when the day
@@ -269,15 +273,23 @@ export async function sync({ manual = false } = {}) {
   try {
     await flush();
     const dev = deviceId();
-    const sealed = await Promise.all(
-      pending.map(async r => ({ id: r.id, ts: r.ts, enc: await seal(r) })));
+    const originals = new Map();
+    const sealed = await Promise.all(pending.map(async r => {
+      // Imported/legacy logs retain their event identity inside the envelope.
+      // The transport record belongs to the device backing up that import.
+      const id = r.id.startsWith(dev + ':') ? r.id : `${dev}:import:${r.id}`;
+      originals.set(id, r.id);
+      return { id, ts: r.ts, enc: await seal(r) };
+    }));
 
     /* Notes and settings ride along with the rows. Each note anchor is its own
        key, so editing one block cannot overwrite a note edited elsewhere. The
        account keeps whichever stamp is later per key; deleted notes travel as
        encrypted null tombstones so an offline device cannot resurrect them. */
+    migrateLearnerPrefs();
     const sealedPrefs = await Promise.all(
       myPrefs().map(async p => ({ k: p.k, ts: p.ts, enc: await seal(p.v ?? null) })));
+    const batches = syncBatches(sealed, sealedPrefs);
 
     let cursor = Number(getItem(CURSOR)) || 0;
     let merged = 0, listing = [], pages = 0, wrote = 0, settings = 0, notes = false;
@@ -286,27 +298,31 @@ export async function sync({ manual = false } = {}) {
        until the reader navigates away and back. */
     const touched = new Set();
 
-    /* A backlog drains over pages; everything else rides the first one. */
+    /* Upload and download backlogs drain independently. Only acknowledge the
+       batch that succeeded, so a later failure leaves the rest retryable. */
     for (;;) {
+      const batch = batches[pages] || { rows: [], prefs: [] };
       const res = await call("/api/sync", {
         device: dev, since: cursor,
-        rows: pages === 0 ? sealed : [],
+        rows: batch.rows,
         deletes: pages === 0 ? dropped : [],
-        prefs: pages === 0 ? sealedPrefs : [],
+        prefs: batch.prefs,
         restores: []
       });
+      wrote += res.written || 0;
+      if (batch.rows.length) markSent(batch.rows.map(r => originals.get(r.id)));
       if (pages === 0) {
-        wrote = res.written || 0;
-        if (sealed.length) markSent(pending.map(r => r.id));
         if (dropped.length) removeItem(BIN);
-        listing = res.courses || [];
-        const accountPrefs = await opened(res.prefs);
-        settings = applyPrefs(accountPrefs);
-        notes = settings > 0 && accountPrefs.some(p => isNotePref(p.k));
       }
+      listing = res.courses || [];
+      const accountPrefs = await opened(res.prefs);
+      const changed = applyPrefs(accountPrefs);
+      settings += changed;
+      if (changed) forget();
+      notes ||= changed > 0 && accountPrefs.some(p => isNotePref(p.k));
       const plain = [];
       for (const r of res.rows || []) {
-        try { plain.push(await open(r.enc)); }
+        try { plain.push({ ...await open(r.enc), sent: 1 }); }
         catch { console.warn(`row ${r.id}: could not be decrypted with this secret`); }
       }
       if (plain.length) {
@@ -315,7 +331,8 @@ export async function sync({ manual = false } = {}) {
       }
       cursor = Number(res.cursor) || cursor;
       setItem(CURSOR, String(cursor));
-      if (!res.more || ++pages > 100) break;
+      pages++;
+      if (!res.more && pages >= batches.length) break;
     }
 
     const uploaded = await pushCourses(listing);
@@ -326,6 +343,7 @@ export async function sync({ manual = false } = {}) {
 
     setItem(LAST, String(Date.now()));
     setItem(SEEN, JSON.stringify(listing.filter(c => c.deleted)));
+    await flush();
     if (merged || installed.length || removed.length || settings)
       dispatchEvent(new CustomEvent("learn:synced", {
         detail: { merged, installed, removed, settings, notes, courses: [...touched] } }));

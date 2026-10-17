@@ -1,5 +1,7 @@
 /* Per-question outcomes for coverage and later practice. */
-import { getItem, setItem, removeItem, flush } from "./store.js";
+import { getItem, setItem, removeItem, flush, keys } from "./store.js";
+import { readLearner, writeLearner, learnerRatings, dropLearner } from "./learner-prefs.js";
+import { setPref, dropPref } from "./prefs.js";
 const DAY = 864e5;
 const cache = {};
 
@@ -33,7 +35,7 @@ export function rateStep(prev, conf, got, now = Date.now()) {
 export const forget = id => { if (id) delete cache[id]; else for (const k in cache) delete cache[k]; };
 
 /** Erase one course's Loop A rows. lib/purge.js is the caller. */
-export function drop(id, code) { removeItem(keyFor(id, code)); forget(id); }
+export function drop(id, code) { dropLearner(keyFor(id, code)); removeItem(keyFor(id, code)); forget(id); }
 
 export function stateFor(id, course) {
   if (cache[id]) return cache[id];
@@ -43,22 +45,30 @@ export function stateFor(id, course) {
   const raw = on && getItem(KEY);
   if (raw) { try { d = JSON.parse(raw) || d; } catch {} }
   if (!d.q) d.q = {};
+  d.q = { ...learnerRatings(KEY), ...d.q };
+  const resetAt = Number(getItem(`reset:${id}`)) || 0;
+  if (resetAt) d.q = Object.fromEntries(Object.entries(d.q).filter(([, r]) => r?.last > resetAt));
   const save = () => { if (on) setItem(KEY, JSON.stringify(d)); };
 
   return (cache[id] = {
     on,
     get: qi => d.q[qi],
-    getPolicy: () => d.policy || {},
-    getSession: () => d.session || null,
-    saveSession(session) { d.session = session; save(); return flush().catch(() => {}); },
-    savePolicy(policy) { d.policy = policy; save(); },
-    getAttempt: (qi, signature) => d.answers?.[qi]?.signature === signature ? d.answers[qi] : null,
+    getPolicy: () => readLearner(KEY, 'policy', '', resetAt ? null : d.policy, resetAt) || {},
+    getSession: () => readLearner(KEY, 'session', '', resetAt ? null : d.session, resetAt) || null,
+    saveSession(session) { if (!on) return; d.session = session; writeLearner(KEY, 'session', '', session); save(); return flush(); },
+    savePolicy(policy) { if (!on) return; d.policy = policy; writeLearner(KEY, 'policy', '', policy); save(); },
+    getAttempt(qi, signature) {
+      const value = readLearner(KEY, 'answer', qi, d.answers?.[qi]);
+      if (resetAt && !(value?.started > resetAt)) return null;
+      return value?.signature === signature ? value : null;
+    },
     saveAttempt(qi, attempt) {
       if (!on) return;
       (d.answers ||= {})[qi] = attempt;
+      writeLearner(KEY, 'answer', qi, attempt);
       save();
       // Start the transaction now so an immediate reload retains the answer.
-      return flush().catch(() => {});
+      return flush();
     },
     /* `conf` is accepted only for replaying legacy rows. */
     rate(qi, conf, got) {
@@ -91,6 +101,11 @@ export function stateFor(id, course) {
       });
       return s;
     },
-    reset() { d = { q: {} }; save(); }
+    reset() {
+      dropLearner(KEY);
+      for (const key of keys()) if (key.startsWith(`quiz:${id}:`)) dropPref(key);
+      setPref(`reset:${id}`, String(Date.now()));
+      d = { q: {} }; save();
+    }
   });
 }

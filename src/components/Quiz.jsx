@@ -3,11 +3,15 @@ import { qid } from "../lib/util.js";
 import { normalizeQuestion, questionSignature } from "../lib/questions.js";
 import QuestionCard from "./QuestionCard.jsx";
 import { sessionId } from "../lib/attempt.js";
+import { getItem } from "../lib/store.js";
+import { setPref } from "../lib/prefs.js";
 
 /* One coverage question per distinct skill, shown one at a time. Cards remain
  * mounted while navigating so each question records one final outcome per run. */
 export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
-  const [at, setAt] = useState(0);
+  const positionKey = `quiz:${ctx.cid}:${sub.id}`;
+  const [at, setAt] = useState(() => Math.max(0, Math.min((sub.quiz || []).length, Number(getItem(positionKey)) || 0)));
+  const moveTo = n => { setPref(positionKey, String(n)); setAt(n); };
   const [open, setOpen] = useState(false);
   const [session] = useState(sessionId);
   const raw = sub.quiz || [];
@@ -37,19 +41,19 @@ export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
       style={{ display: at === i ? "" : "none" }}>
       <QuestionCard item={item} ctx={ctx} restore sessionId={session}
         onResult={r => setResults(prev => ({ ...prev, [item.id]: r }))}
-        onContinue={() => setAt(i + 1 < total ? i + 1 : total)} />
+        onContinue={() => moveTo(i + 1 < total ? i + 1 : total)} />
     </div>)}
     {at >= total && <div class="qsummary">
       <h3>Questions complete</h3>
       <p>{answered} of {total} answered. {Object.values(results).filter(r => !r.correct).length} to revisit.</p>
-      <button class="dbtn" onClick={() => setAt(0)}>Look through answers</button>
+      <button class="dbtn" onClick={() => moveTo(0)}>Look through answers</button>
     </div>}
     <nav class="qslides" aria-label="Switch questions">
       <button class="qslide" type="button" aria-label="Previous question"
-        disabled={at === 0} onClick={() => setAt(Math.max(0, at - 1))}>←</button>
+        disabled={at === 0} onClick={() => moveTo(Math.max(0, at - 1))}>←</button>
       <span class="qposition" aria-live="polite">{at < total ? `Question ${at + 1} of ${total}` : "Questions complete"}</span>
       <button class="qslide" type="button" aria-label="Next question"
-        disabled={at >= total - 1} onClick={() => setAt(Math.min(total - 1, at + 1))}>→</button>
+        disabled={at >= total - 1} onClick={() => moveTo(Math.min(total - 1, at + 1))}>→</button>
     </nav>
   </section>;
 }

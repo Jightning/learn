@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "preact/hooks";
 import { createSpeech, RATES, DEFAULT_RATE, rankVoices, bestVoice } from "../lib/speech.js";
 import { cuesFrom, startAt, readable, QUIZ } from "../lib/readaloud.js";
-import { getItem, setItem } from "../lib/store.js";
+import { getItem } from "../lib/store.js";
+import { setPref } from "../lib/prefs.js";
 import Dropdown, { Item } from "./Dropdown.jsx";
 
 /* Listening to a page.
@@ -43,6 +44,15 @@ export function useSpeaker(rootRef, route) {
   const e = engine.current;
 
   useEffect(() => e.subscribe(setSt), [e]);
+  useEffect(() => {
+    const refresh = () => {
+      e.setRate(num(getItem(K.rate), DEFAULT_RATE));
+      e.setVoice(getItem(K.voice) || '');
+      setQuizState(getItem(K.quiz) === QUIZ.ASK ? QUIZ.ASK : QUIZ.SKIP);
+    };
+    addEventListener('learn:synced', refresh);
+    return () => removeEventListener('learn:synced', refresh);
+  }, [e]);
 
   /* Leaving the page ends the session. The queue describes a page that is no
      longer on screen, and speech that outlives its page is speech the reader
@@ -110,9 +120,9 @@ export function useSpeaker(rootRef, route) {
     e.play();
   }, [e, rootRef, quiz]);
 
-  const setRate = r => { setItem(K.rate, String(r)); e.setRate(r); };
-  const setVoice = v => { setItem(K.voice, v || ""); e.setVoice(v); };
-  const setQuiz = q => { setItem(K.quiz, q); setQuizState(q); };
+  const setRate = r => { setPref(K.rate, String(r)); e.setRate(r); };
+  const setVoice = v => { setPref(K.voice, v || ""); e.setVoice(v); };
+  const setQuiz = q => { setPref(K.quiz, q); setQuizState(q); };
 
   return {
     supported: e.supported, st, quiz, start, setRate, setVoice, setQuiz,

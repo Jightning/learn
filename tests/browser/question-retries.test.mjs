@@ -81,7 +81,7 @@ for (const width of [1440, 390]) test(`question retries, final results and reloa
     assert.equal(await card.locator(".ans,.qexplain").count(), 0);
     await retry(); assert.equal(await card.locator('input[type="number"]').inputValue(), "11");
     assert.equal(await card.getByRole("button", { name: /^Check answer/ }).isDisabled(), true);
-    await page.reload(); await next(); await next(); await result("Wrong");
+    await page.reload(); await result("Wrong");
     assert.equal(await card.getByRole("button", { name: /^Check answer/ }).isDisabled(), true);
     await card.locator('input[type="number"]').fill("10");
     assert.equal(await card.getByRole("button", { name: /^Check answer/ }).isEnabled(), true);

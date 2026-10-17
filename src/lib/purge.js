@@ -37,8 +37,9 @@ import { dropHue } from "./theme.js";
 import { dropLane } from "./tiers.js";
 import { invalidate } from "./replay.js";
 import { dropCourse } from "./log.js";
-import { flush } from "./store.js";
+import { flush, keys } from "./store.js";
 import { deleteCourseGoals } from "./learn-by.js";
+import { setPref, dropPref } from "./prefs.js";
 
 /**
  * Erase everything this device holds about one course except the course
@@ -50,6 +51,8 @@ import { deleteCourseGoals } from "./learn-by.js";
  */
 export async function purge(cid, code) {
   const dropped = await dropCourse(cid);
+  // The server's immutable log can still deliver old rows after a re-import.
+  setPref(`reset:${cid}`, String(Date.now()));
   dropStudy(cid, code);
   resetRetention(cid);
   dropNotes(cid);
@@ -59,6 +62,7 @@ export async function purge(cid, code) {
   dropHue(cid);
   invalidate(cid);
   deleteCourseGoals(cid);
+  for (const key of keys()) if (key.startsWith(`quiz:${cid}:`)) dropPref(key);
   await flush();
   return dropped;
 }

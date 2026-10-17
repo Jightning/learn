@@ -27,7 +27,7 @@ const MAX_PREF_BYTES = 128 * 1024;
 
 /* `#` identifies a block within a subsection note. The key is still data from
    the network, so path separators and every other punctuation mark stay out. */
-const okKey = k => typeof k === "string" && /^[\w:.#-]{1,160}$/.test(k);
+const okKey = k => typeof k === "string" && /^[\w:.#@%!'()*-]{1,2048}$/.test(k);
 
 export async function onRequestPost(context) {
   const stop = guard(context.request, context.env);
@@ -46,6 +46,15 @@ export async function onRequestPost(context) {
   const since = Number(payload.since) || 0;
   const now = Date.now();
   const writes = [];
+
+  // Refuse an incomplete backup before writing anything. Older clients sent
+  // whole backlogs and marked even the silently truncated records as sent.
+  if (Array.isArray(payload.rows) && payload.rows.length > MAX_ROWS)
+    return json({ error: "too many rows; split the backup into batches" }, 400);
+  if (Array.isArray(payload.prefs) && payload.prefs.length > MAX_PREFS)
+    return json({ error: "too many preferences; split the backup into batches" }, 400);
+  if ((Array.isArray(payload.prefs) ? payload.prefs : []).some(p => p && typeof p.enc === "string" && p.enc.length > MAX_PREF_BYTES))
+    return json({ error: "a saved value is too large to back up" }, 400);
 
   /* ---------------------------------------------------------------- rows --
      A device may only write rows whose id it owns. That is what makes a merge

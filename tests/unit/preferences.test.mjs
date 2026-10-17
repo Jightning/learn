@@ -28,11 +28,11 @@ check("so are the shelf's order and its dismissals",
       isPref("order:v1") && isPref("hidden:v1") && isPref("added:v1"));
 check("written notes and blank saved markers are synced per anchor",
       isPref("note:ma26600:s1-2") && isPref("note:ma26600:s1-2#3"));
-check("an answer attempt that happens to use the note prefix stays local",
-      !isPref("note:ma26600:s1-2#3@attempt"));
-/* Everything else about a device stays on it: where the reader was, how deep
-   they read, which lane they are in, and above all the secret itself. */
-check("a reading position is not", !isPref("study:ma26600"));
+check("pre-question answer drafts sync too",
+      isPref("note:ma26600:s1-2#3@attempt"));
+/* Derived study caches and credentials stay local. Editable answers travel
+   through independent learner keys rather than the whole study snapshot. */
+check("derived study caches do not sync directly", !isPref("study:ma26600"));
 check("nor the secret", !isPref("cloud:secret"));
 
 let refused = false;
