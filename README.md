@@ -23,6 +23,7 @@ A course is the specific thing you want to learn/study (like a class, or certain
     - You can click/drag down on the horizontal tabs on the bottom of the block to save a **note** (notes will appear in *Saved*).
     - Blank notes act as simple bookmarks that still appear in *Saved*.
 5. The top right allows the user to switch between 3 different modes (**Study**, **Review**, **Names**) corresponding to the verbosity of information.
+6. **References** previews course diagrams, tables, slides, and concepts while keeping your place. Section-end question links return to each lesson's existing questions and answers.
 
 ## Writing a course
 

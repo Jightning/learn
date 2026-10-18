@@ -212,7 +212,7 @@ export function loadCourse(dir) {
     const review = parseFile(reviewPath);
     if (review?.status === "accepted" && review.exceptions && typeof review.exceptions === "object") {
       questionSource.reviewExceptions = Object.create(null);
-      for (const type of questionSource.types) {
+      for (const type of [...questionSource.types, ...questionSource.skills]) {
         const entry = review.accepted?.entries?.find(e => e.id === `type-${type.id}` && e.kind === "question-type");
         const { authorId, ...content } = type;
         if (entry && typeof entry.hash === "string" && review.exceptionVersions && Object.hasOwn(review.exceptionVersions, type.id) && review.exceptionVersions[type.id] === entry.hash && bankSignature(entry.content) === bankSignature(content) && Object.hasOwn(review.exceptions, type.id))

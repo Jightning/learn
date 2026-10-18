@@ -4,7 +4,7 @@ import { collect, textOf, strip, qid } from "./util.js";
 import { numberFigures } from "./figures.js";
 import { nameOf, leadOf, present } from "./gist.js";
 import { indexCats } from "./cats.js";
-import { normalizeQuestion, practiceItems } from "./questions.js";
+import { normalizeQuestion, practiceItems, questionMetadata } from "./questions.js";
 
 /* A block's address. Positional, like every other id in the system, so an
    author never writes one. `~` rather than `#` because the router splits a
@@ -32,7 +32,7 @@ export function conceptOf(C, q, sub) {
   return seen.length === 1 ? seen[0] : null;
 }
 
-const bankMetadata = q => Object.fromEntries(["typeId", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "authorId"].filter(k => q[k] !== undefined).map(k => [k, q[k]]));
+const bankMetadata = questionMetadata;
 
 export function buildIndex(C) {
   const SUBS = {}, CUSE = {}, XIN = {}, QALL = [], SEARCH = [], CQ = {}, BLOCKS = {};
@@ -108,7 +108,7 @@ export function buildIndex(C) {
   const placed = new Set(QALL.map(q => q.id));
   const PALL = [...practiceItems(C), ...bankItems.filter(q => q.use === "practice" && !placed.has(q.id))].map(q => ({ ...q, subId: q.subId || null }));
   return { SUBS, CUSE, XIN, QALL, PALL, SEARCH, CQ, BLOCKS, ANNOTATIONS,
-           TYPES: C.questionTypes || {}, BANK: C.questionBank || {}, BLUEPRINTS: C.assessmentBlueprints || {},
+           TYPES: C.questionSkills || C.questionTypes || {}, SKILLS: C.questionSkills || C.questionTypes || {}, BANK: C.questionBank || {}, BLUEPRINTS: C.assessmentBlueprints || {},
            CHECK: bankItems.filter(q => q.use === "check"), DIAGNOSTIC: bankItems.filter(q => q.use === "diagnostic"),
            CAT: indexCats(C), FIG: numberFigures(C) };
 }

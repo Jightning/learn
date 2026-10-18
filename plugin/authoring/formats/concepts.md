@@ -45,5 +45,5 @@ siblings: [acid-base-reactions, redox-reactions]
 Use a concept ID consistently where it is taught and assessed. Categories need a
 boundary, declared siblings, and members; `cat` is one principal kind and tags
 are secondary slugs. Repeated practice and reusable variants belong in
-`questions/bank.yaml` and use type definitions from `questions/types.yaml`.
+`questions/bank.yaml` and use type definitions from `questions/skills.yaml` (legacy `types.yaml` remains readable).
 Keep small, self-contained checks inline with the lesson.

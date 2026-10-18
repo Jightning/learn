@@ -420,7 +420,7 @@ export default function Section({ section, ctx, expandAll, lane, depth, openBloc
                     expandAll={expandAll} openAt={openAt} />
 
             {(sub.quiz || []).length > 0 && (
-              <ReadingRow ctx={ctx}
+              <ReadingRow ctx={ctx} id={`${sub.id}-questions`}
                 notes={depth === "full" ? <MarginRefs refs={refsOf(sub.quiz)} ctx={ctx} /> : null}>
                 <Quiz sub={sub} num={num} ctx={ctx} expandAll={expandAll} depth={depth} />
               </ReadingRow>
@@ -428,6 +428,21 @@ export default function Section({ section, ctx, expandAll, lane, depth, openBloc
           </div>
         );
       })}
+
+      {section.subs.some(sub => sub.quiz?.length) && <nav class="section-questions" aria-label="Section questions">
+        <h3>Section questions</h3>
+        {section.subs.filter(sub => sub.quiz?.length).map(sub => <a key={sub.id}
+          href={H(sub.id)} onClick={e => {
+            // Reuse the mounted quiz so answers and the current question stay put.
+            e.preventDefault(); e.stopPropagation();
+            const target = document.getElementById(`${sub.id}-questions`);
+            target?.scrollIntoView({ block: "start", behavior: "instant" });
+            const controls = target?.querySelectorAll("textarea, input, button:not(:disabled)") || [];
+            [...controls].find(el => el.getClientRects().length)?.focus({ preventScroll: true });
+          }}>
+          <Inline text={sub.title} /><span>{sub.quiz.length} {sub.quiz.length === 1 ? "question" : "questions"}</span>
+        </a>)}
+      </nav>}
 
       <div class="pager">
         {prev

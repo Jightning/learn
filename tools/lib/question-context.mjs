@@ -11,3 +11,23 @@ export function questionContextWarning(item, where) {
   if (!REFERENCE.test(prompt) || DESCRIBED.test(prompt)) return null;
   return `${where}: refers to a figure, table, or passage without stimulus — attach it, or make the prompt self-contained`;
 }
+
+/** A compact author view of judgments that cannot be safely inferred from text. */
+export function skillAuthorContext(skill, items = []) {
+  const siblings = items.filter(q => (q.skills || [q.typeId]).includes(skill.id));
+  return {
+    standard: skill.standard || null,
+    teaching: skill.teach || [],
+    derived: skill.derived || {},
+    siblings: siblings.map(q => ({ id: q.id, skills: q.skills || [q.typeId], demand: q.demand || "standard",
+      support: q.support || [], group: q.group || null, representation: q.representation || null,
+      routes: q.routes || [], steps: (q.steps || []).map(s => ({ id: s.id, skills: s.skills })) })),
+    reviewQuestions: [
+      "Which capabilities must the learner exercise independently?",
+      "Does the wording or placement supply a method or intermediate result?",
+      "Can a different valid solution route avoid any declared skill?",
+      "Do siblings change the reasoning context or only the numbers?",
+      "Which steps can be observed separately without supplying later answers?",
+    ],
+  };
+}

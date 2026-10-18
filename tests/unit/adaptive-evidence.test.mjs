@@ -11,12 +11,12 @@ test('feedback exposure preserves its own first answer; preanswer hints and exac
   const rows=[event(1),{id:'ex',event:'exposure',ts:0,itemId:'q1',beforeSubmission:false}, event(2,{itemId:'q1'}),
     {id:'hint',event:'exposure',ts:2,itemId:'q3',beforeSubmission:true},event(3)];
   assert.deepEqual(observations(rows,'t').map(r=>r.id),['e1']);
-  assert.equal(recentPerformance([event(1,{firstUnaided:false}),event(2,{sessionId:'s1',group:'g1'})],'t').fraction,0);
+  assert.equal(recentPerformance([event(1,{firstUnaided:false}),event(2,{sessionId:'s1',group:'g1'})],'t').fraction,5/9);
 });
 test('recent window recovers and mismatched content has no eligible evidence',()=>{
   const rows=Array.from({length:30},(_,i)=>event(i,{firstUnaided:i>=22}));
   assert.equal(recentPerformance(rows,'t').fraction,1);
-  assert.equal(recentPerformance(rows,'t',{q29:'edited'}).fraction,null);
+  assert.equal(recentPerformance(rows,'t',Object.fromEntries(rows.map(r=>[r.itemId,'edited']))).fraction,null);
 });
 test('skip is not failure and legacy final-only results remain unknown',()=>{
   assert.equal(recentPerformance([event(1,{skipped:true}),event(2,{firstUnaided:null})],'t').fraction,null);
@@ -30,7 +30,7 @@ test('coverage rotates unresolved outcomes across saved state and has no prerequ
   const pool=[{id:'a',typeId:'advanced',use:'practice'},{id:'b',typeId:'base',use:'practice'}];
   const blueprint={outcomes:{oa:{types:['advanced']},ob:{types:['base']}}};
   const a=selectAdaptive(pool,[],{actions:0},new Set(),[],blueprint);
-  const b=selectAdaptive(pool,[],{...a.policy,actions:3},new Set(),[],blueprint);
+  const b=selectAdaptive(pool,[event(1,{typeId:a.item.typeId})],{...a.policy,actions:3},new Set(),[],blueprint);
   assert.notEqual(a.item.typeId,b.item.typeId); assert.equal(a.policy.actions,0);
   assert.equal(selectAdaptive(pool,[],{},new Set(['a','b'])).item,null);
 });
@@ -45,12 +45,14 @@ test('fluency needs comparable batches and ignores interruptions, without changi
   assert.ok(fluencyTrend(rows,'t','g','number'));
   assert.equal(fluencyTrend(rows.map(r=>({...r,timingFlags:['interrupted']})),'t','g','number'),null);
 });
-test('readiness keeps missing components unknown, enforces floors, expires, and requires human evidence sufficiency',()=>{
+test('readiness requires independent evidence, ignores sufficiency clicks, enforces floors and freshness',()=>{
   const b={version:'bp',target:.9,types:['t','u'],typeWeights:{t:.5,u:.5},outcomes:{o:{types:['t','u'],weight:1,essential:true,floor:.8}}};
   const rows=[event(100,{context:'check',assessmentVersion:'bp'}),event(101,{typeId:'u',context:'check',assessmentVersion:'bp'})];
   const opts={confirmedVersion:'bp',now:102};
   const first=readiness(b,rows,opts);assert.equal(first.ready,false);
-  assert.equal(readiness(b,rows,{...opts,sufficientEvidence:first.evidenceKey}).ready,true);
+  assert.equal(readiness(b,rows,{...opts,sufficientEvidence:first.evidenceKey}).ready,false);
+  const sufficient=[...rows,event(102,{context:'check',assessmentVersion:'bp'}),event(103,{typeId:'u',context:'check',assessmentVersion:'bp'})];
+  assert.equal(readiness(b,sufficient,{...opts,now:104}).ready,true);
   assert.equal(readiness(b,rows.slice(0,1),opts).outcomes.o.score,null);
   assert.equal(readiness(b,rows,{...opts,now:40*864e5}).ready,false);
   assert.equal(readiness(b,[...rows,event(103,{firstUnaided:false})],{...opts,now:104,sufficientEvidence:first.evidenceKey}).ready,false);
@@ -68,7 +70,7 @@ test('post-block rubric grade augments the saved first response, without a secon
   const rows=[event(1,{attemptId:'attempt',firstUnaided:null,assisted:true,selfChecked:true}),
     {id:'rubric',ts:3,event:'rubric-score',attemptId:'attempt',correct:true},
     {id:'exposure',ts:2,event:'exposure',itemId:'q1',beforeSubmission:false}];
-  const evidence=observations(rows,'t');assert.equal(evidence.length,1);assert.equal(evidence[0].weight,.5);
+  const evidence=observations(rows,'t');assert.equal(evidence.length,1);assert.equal(evidence[0].weight,1);
   assert.equal(evidence[0].firstUnaided,true);
   const replayed=fold(rows,{target:.9});assert.equal(replayed.study.q1.got,1);assert.equal(replayed.retain['type:t'].reps,1);
 });
@@ -102,6 +104,6 @@ test('mixed practice includes encountered due types in its alternating review tu
   const dueTypes=duePracticeTypes(pool,'course',(_,key)=>histories[key],20);
   assert.deepEqual(dueTypes,['advanced']);
   const selected=selectAdaptive(pool,[],{actions:1},new Set(),dueTypes);
-  assert.equal(selected.item.typeId,'advanced');assert.equal(selected.reason,'Due for review');
+  assert.equal(selected.item.typeId,'advanced');assert.equal(selected.reason,'Broaden coverage');
   assert.deepEqual(duePracticeTypes(pool,'course',(_,key)=>histories[key],5),[]);
 });

@@ -7,6 +7,7 @@ import { dueKeys } from "../lib/retention.js";
 import { buildQueue } from "../lib/queue.js";
 import { retryVariant } from "../lib/practice-pool.js";
 import QuestionCard from "./QuestionCard.jsx";
+import LearningGuidance from "./LearningGuidance.jsx";
 import Practice from "./Practice.jsx";
 import Deadlines from "./Deadlines.jsx";
 import { activeGoals } from "../lib/learn-by.js";
@@ -117,8 +118,10 @@ function DueReview({ only }) {
   return <>
     <div class="review-bar"><span class="review-t">{focused ? 'Learn by practice' : 'Scheduled questions'}</span>
       <span class="review-n">{run.at + 1} of {run.items.length}</span></div>
+    <LearningGuidance help={row.help} item={row.item} ctx={book} />
     <QuestionCard key={`${run.at}:${row.item.id}`} item={row.item}
       ctx={{ ...book, state: book.state }} sessionId={run.sessionId} context="review" reason={row.reason}
+      selection={row.decision}
       onResult={result} onContinue={advance} />
   </>;
 }

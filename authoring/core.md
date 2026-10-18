@@ -12,11 +12,11 @@ never absolute local paths or usernames.
 
 Teach the promised capability from the reader's established starting point.
 Connect new ideas to their purpose, prerequisites, and neighboring ideas.
-Explain the reasoning and conditions needed to reconstruct or apply a claim.
-Show unfamiliar decisions and intermediate states; fade steps already
-established. Choose representations that make relevant relationships
-inspectable, and connect them to the prose. Keep essential reasoning in the
-main reading path; place optional elaboration beside the passage it supports.
+Establish unfamiliar parts and notation before use. Explain transferable
+reasoning, relevant conditions, and, where applicable, how to check a result or
+know when a procedure is complete. Show unfamiliar decisions, then fade
+established steps. Connect useful representations to the prose. Keep essential
+reasoning in the main path; place optional elaboration beside its passage.
 Write the full reading path as continuous teaching, then derive any review
 summary from it. Use ordinary prose between cards to connect premises, reasons,
 and changes in representation wherever those links help understanding.
@@ -32,17 +32,21 @@ sequence, visual quota, word ceiling, or sentence count is required.
 
 Calibrate the reader, inventory sources and problem families, plan the
 dependency order, write data, then review coverage, answers, reader-visible
-output, and publish checks. The default reading teaches required material;
-`optional: true` marks a supplementary explanation or extension. Establish an
+output, and publish checks. The default reading teaches required material, and
+section-end questions must support its outcome even without a separate Practice
+area. Mark supplementary explanations and extensions `optional: true`. Establish an
 explanation where first needed; reactivate it briefly when useful and develop
 it further when a later use requires more. An application may revisit a skill
 without repeating its full explanation.
 
 Required capabilities need suitable teaching and assessment evidence; one
-item may cover related families. Inventory is not a production quota. Record
-why other source material is background, moved, or excluded from this goal.
-Assessment demands can come from tests, reviews, and problems as well as exposition.
-Plan missing required teaching as a normal supplementary family with explicit provenance.
+item may cover related families. Inventory is not a quota. Record why other
+material is background, moved, or excluded. For source analysis, use the rules
+in `sources.md`; give missing teaching explicit provenance. Require learner
+research only when outside evidence is needed and benefits the goal. Bound it
+in section-end questions with starting sources and evaluation; consolidate
+findings before later reliance.
+Do not outsource foundations.
 A course may teach one small subject or a large curriculum. Use a structure
 that achieves the reader goal without padding or omitting necessary
 prerequisites and distinct problem families.

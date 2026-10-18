@@ -2,7 +2,7 @@
 
 For a small course, keep lesson checks as inline typed questions. When learners
 need repeated practice, reuse across lessons, or shared history, use the course
-question bank: define each task type in `questions/types.yaml`, store each
+question bank: define each task type in `questions/skills.yaml` (legacy `types.yaml` remains readable), store each
 question once in `questions/bank.yaml`, and add its stable ID where it should
 appear. Ordinary bank items default to practice. Keep reserved checks separate.
 

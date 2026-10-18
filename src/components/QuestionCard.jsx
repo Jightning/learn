@@ -4,7 +4,7 @@ import { checkFormula } from "../lib/formula-check.js";
 import { authored as M, safeMarkup } from "../lib/safe-markup.js";
 import { sourceReference } from "../lib/source-label.js";
 import { renderBlock } from "../blocks/index.js";
-import { gradeQuestion, questionStimuli, questionSignature, questionTries, questionHelpHref } from "../lib/questions.js";
+import { gradeQuestion, questionStimuli, questionSignature, questionTries, questionHelpHref, normalizeQuestion, questionSkills, retentionKeyFor, questionErrorHypotheses } from "../lib/questions.js";
 import { newAttempt, activeClock } from "../lib/attempt.js";
 import { scoredEvents } from "../lib/evidence.js";
 import { forCourse } from "../lib/log.js";
@@ -27,8 +27,34 @@ function Stimulus({ value }) {
 
 /* A question run. All three routes supply the same card and record the same
  * outcome; only their queue and progress chrome differ. */
-export default function QuestionCard({ item, ctx, onContinue, onResult, reason = null, restore = false, sessionId = null, context = "lesson", assessmentVersion = null, delayed = false }) {
+function SteppedQuestion(props) {
+  const { item, ctx } = props;
+  const [at, setAt] = useState(0);
+  const steps = item.steps.filter(s => s && typeof s === "object");
+  const current = steps[at];
+  if (!current) return <QuestionCard {...props} stepMode item={{ ...item, steps: [], parentId: item.id, dependent: true,
+    support: [...new Set([...(item.support || []), "supplied-result"])] }} />;
+  const child = normalizeQuestion({ ...item, ...current, id: `${item.id}:step:${current.id}`, steps: [],
+    skills: current.skills, typeId: current.skills?.[0], parentId: item.id, stepId: current.id,
+    dependent: at > 0, support: [...new Set([...(current.support || []), ...(at > 0 ? ["supplied-result"] : [])])],
+    contentVersion: `${item.contentVersion}:step:${current.id}`, evidenceVersion: item.evidenceVersion,
+    use: item.use, group: item.group || item.id });
+  return <section aria-label="Question steps">
+    <div class="qtext" dangerouslySetInnerHTML={{ __html: M(item.prompt) }} />
+    <p>Step {at + 1} of {steps.length}</p>
+    <QuestionCard {...props} key={child.id} item={child} stepMode ctx={ctx} onResult={null} onContinue={() => setAt(at + 1)} />
+  </section>;
+}
+
+export default function QuestionCard({ item, ctx, onContinue, onResult, reason = null, restore = false, sessionId = null, context = "lesson", assessmentVersion = null, delayed = false, stepMode = false, selection = null }) {
+  if (item.quarantined) return <p role="status">This question is unavailable while its answer or wording is reviewed.</p>;
+  if (!stepMode && item.steps?.some(s => s && typeof s === "object"))
+    return <SteppedQuestion {...{ item, ctx, onContinue, onResult, reason, restore, sessionId, context, assessmentVersion, delayed }} />;
   const { cid, C, idx, state } = ctx;
+  useEffect(() => {
+    if (state.on && selection) append({ ...selection, id: `${sessionId}:decision:${item.id}`, course: cid,
+      itemId: item.id, event: 'policy-decision' });
+  }, [sessionId, item.id]);
   const signature = questionSignature(item);
   const tries = questionTries(item);
   const [saved] = useState(() => { const prior = state.getAttempt(item.id, signature);
@@ -86,6 +112,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
 
   const completeTry = correct => {
     if (!progress.current.used) {
+      attempt.current.firstResponse = value;
       attempt.current.submittedAt ||= Date.now();
       firstTiming.current = clock.current.stop();
       Object.assign(attempt.current, firstTiming.current);
@@ -105,24 +132,29 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
     if (recorded.current) return;
     recorded.current = true;
     const cfg = retention.configOf(C);
-    const retentionKey = item.typeId ? `type:${item.typeId}` : item.concept;
+    const retentionKey = retentionKeyFor(item);
     const before = retentionKey && retention.get(cid, retentionKey);
     const predictedR = before?.reps ? retrievability(before, Date.now(), cfg.target) : null;
-    const criterion = item.concept ? Math.min(3, Math.max(1,
-      [...(idx?.QALL || []), ...(idx?.PALL || [])].filter(q => q.concept === item.concept).length)) : 0;
+    const criterion = retentionKey ? Math.min(3, Math.max(1,
+      [...(idx?.QALL || []), ...(idx?.PALL || [])].filter(q => retentionKeyFor(q) === retentionKey).length)) : 0;
     if (state.on) {
       state.rate(item.id, null, correct);
-      const priorSession = forCourse(cid, C).some(r => r.event === "attempt" && r.typeId === item.typeId &&
+      const priorSession = forCourse(cid, C).some(r => r.event === "attempt" && retentionKeyFor({ ...r, id: r.itemId }) === retentionKey &&
         r.sessionId === attempt.current.sessionId && r.firstUnaided != null && !r.assisted && !r.skipped);
-      const eligible = !item.typeId || (!priorSession && progress.current.firstUnaided != null && !skipped);
+      const eligible = (!item.typeId || (!priorSession && progress.current.firstUnaided != null && !skipped)) && !item.support?.length && !item.dependent;
       if (retentionKey && eligible) retention.answer(cid, retentionKey, {
         itemId: item.id, correct: item.typeId ? progress.current.firstUnaided : correct, conf: null, criterion, ...cfg
       });
       append({ id: `${attempt.current.attemptId}:complete`, event: "attempt", course: cid, loop: "Q", concept: item.concept, itemId: item.id,
         contentVersion: item.contentVersion || signature, attemptId: attempt.current.attemptId, typeId: item.typeId, group: item.group,
+        skills: questionSkills(item), routes: item.routes || [], evidenceVersion: item.evidenceVersion, schemaVersion: item.schemaVersion,
+        demand: item.demand || "standard", support: item.support || [], representation: item.representation,
+        parentId: item.parentId, stepId: item.stepId, dependent: !!item.dependent,
+        submittedResponse: attempt.current.firstResponse ?? value, checkerVersion: "typed-v2", policyVersion: 2,
+        errorHypotheses: progress.current.firstUnaided === false ? questionErrorHypotheses(item, attempt.current.firstResponse ?? value).map(e => e.id) : [],
         demonstrates: item.demonstrates || [], methodCued: context === "lesson" || (context === "practice" && !delayed && !!item.subTitle), use: item.use || "practice", sessionId: attempt.current.sessionId, context, assessmentVersion,
         firstUnaided: progress.current.firstUnaided ?? null, triesUsed: progress.current.used,
-        assisted: progress.current.firstUnaided == null, feedbackExposure: !delayed,
+        assisted: progress.current.firstUnaided == null || !!item.support?.length || !!item.dependent, feedbackExposure: !delayed,
         wallMs: Date.now() - started.current, feedbackMs: feedbackClock.current?.stop().activeMs || 0, ...(firstTiming.current || (progress.current.used && attempt.current.activeMs ?
           { activeMs: attempt.current.activeMs, timingFlags: [...(attempt.current.timingFlags || []), "resumed"] } : clock.current.stop())),
         type: item.type, format: response.kind, correct, skipped,
@@ -141,12 +173,13 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
     e.preventDefault();
     if ((feedback && !retryable) || checking || committing.current || recorded.current || !canSubmit) return;
     if (response.kind === "self" && delayed) {
+      attempt.current.firstResponse = value;
       attempt.current.submittedAt ||= Date.now();
       firstTiming.current = clock.current.stop(); Object.assign(attempt.current, firstTiming.current);
       progress.current = { ...progress.current, used: 1, firstUnaided: null };
       record(null, false, true); return;
     }
-    if (response.kind === "self") { setSelfCheck(false); attempt.current.firstResponseSubmitted = true;
+    if (response.kind === "self") { setSelfCheck(false); attempt.current.firstResponse = value; attempt.current.firstResponseSubmitted = true;
       firstTiming.current ||= clock.current.stop(); Object.assign(attempt.current, firstTiming.current); expose(); showFeedback({ correct: null, skipped: false }); return; }
     if (response.kind === "formula") {
       setChecking(true); setCheckError("");
@@ -228,6 +261,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           {editable && <div class="qactions">
             <button class="dbtn primary" type="submit" disabled={!canSubmit || checking}>{checking ? "Checking…" : "Check answer"}</button>
             <button class="dbtn ghost" type="button" disabled={checking} onClick={skip}>Skip</button>
+            {item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)} onClick={expose}>Need help</a>}
           </div>}
           {editable && repeatedSet && <p class="qcheck-error" role="status">That combination was incorrect. Change your selection.</p>}
           {editable && repeatedAnswer && <p class="qcheck-error" role="status">That answer was incorrect. Change your answer.</p>}
@@ -247,6 +281,8 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           {reveal && response.kind === "formula" && <div class="ans"><FormulaPreview value={response.answer} variables={response.variables} independentVariable={response.independentVariable} /></div>}
           {reveal && item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)}>Review the relevant lesson</a>}
           {reveal && item.why && <div class="qexplain" dangerouslySetInnerHTML={{ __html: M(item.why) }} />}
+          {reveal && feedback.correct === false && questionErrorHypotheses(item, attempt.current.firstResponse ?? value).map(error =>
+            <p key={error.id}>Possible issue: <span dangerouslySetInnerHTML={{ __html: M(error.description) }} /></p>)}
           {feedback.correct == null && !selfCheck && !feedback.skipped && <div class="qactions">
             <span>Compared with your answer:</span>
             <button class="dbtn" onClick={() => feedback.recorded ? gradeReservedSelf(true) : checkSelf(true)}>Correct</button>

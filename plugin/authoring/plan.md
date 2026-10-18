@@ -74,12 +74,10 @@ links are not a judgment that the teaching or question is good, and they cannot
 discover an unseen or undeclared exam topic; review the routed source and the
 original teaching and task before accepting the plan.
 
-Inventory source families, not just topics: definitions, mechanisms,
-procedures, exceptions, diagrams, values, and the distinct problem surfaces
-that require retrieval. Record exact locators. Inventory every relevant candidate, then select the
-required capabilities for this goal. Do not turn the inventory into one lesson
-or question per family: related families can share teaching and assessment
-when that evidence actually tests each. Exclusions/background need a reason;
+Inventory candidates from exposition and representative questions, solutions,
+and diagrams; use `sources.md` to infer task demands. Record locators and uncertainty,
+then select needed capabilities. Related families may share evidence when it
+actually tests each; exclusions/background need a reason;
 required families cannot disappear merely to shorten the course. An active
 objective is incomplete if it has no teaching and question evidence, or if its
 prerequisite is not planned earlier or declared in the reader background.
@@ -89,14 +87,9 @@ outline. When the plan conflicts with the requested goal, flag the mismatch and
 propose the smallest complete outline before production; never silently drop
 required capabilities.
 
-The planner decides scope, order, reader calibration, objective outcomes,
-family coverage, and difficult judgment. It writes only keys and requirements,
-scope, and source-family judgments; it does not draft teaching prose or
-normalize source wording. It may leave an explicit open choice for the writer,
-with the condition that resolves it. The writer owns concept bodies, examples,
-sentence shape, HTML, and block arrangement inside approved scope. A single
-role keeps the same artifacts and writes directly; paired mode hands the
-packet to a writer and then a reviewer.
+Allow writers open choices only when the condition that resolves each is
+explicit. Single mode edits the same artifacts; paired mode passes them from
+planner to writer to reviewer.
 
 Assign lesson-local families and sources even when lessons share an objective.
 
@@ -118,9 +111,16 @@ Earlier lessons assigned in the same writing batch remain planned until written.
 `written` means the content exists, not that a learner has mastered it. Missing
 anchors remain visible as planned evidence with a warning, never as mastery.
 
-For bank courses, define `questions/types.yaml` alongside lesson planning: one
-task/method per type, exact existing concept/objective/family IDs, teaching
-anchors, and only genuine prerequisite judgments. Record sparse assessment
+Use the existing `reasoning`, `practice`, and `boundary` fields to connect
+required reading and section-end questions to the lesson outcome, including
+without separate Practice. Capture decisions, conditions, applicable stopping criteria,
+variation, and limits without fixed word, visual, or question counts. Bound
+any needed research and consolidate findings before later reliance.
+
+For bank courses, define `questions/skills.yaml` (legacy `types.yaml` remains readable) alongside lesson planning: one
+capability and independent performance standard per skill, a canonical family
+link, and only genuine prerequisite judgments. Inherit unique curriculum and
+teaching links; supply explicit links when ambiguous. Record sparse assessment
 criteria/weight exceptions in `questions/assessment.yaml`; tools derive
 bookkeeping. Ambiguous mappings stay explicit for review. Approve the expanded
 blueprint and source-to-type/type-to-source coverage before claiming readiness.

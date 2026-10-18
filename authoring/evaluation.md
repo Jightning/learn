@@ -34,6 +34,31 @@ writer packets. Relevant foundations: [IES instruction guide](https://ies.ed.gov
 [NSW cognitive-load guidance](https://education.nsw.gov.au/about-us/education-data-and-research/cese/publications/practical-guides-for-educators/cognitive-load-theory-in-practice),
 and [Chi et al. on self-explanation](https://doi.org/10.1207/s15516709cog1302_1).
 
+## Source-to-task teaching regression
+
+`tests/fixtures/teaching-review/` supplies synthetic raw sources, original source
+questions, mixed-quality candidates, and a separate evaluator key. Its README
+describes bounded review using the existing workflow; none of this corpus is
+loaded into ordinary creator packets. The integrity test checks source/case
+routing only. It does not award teaching quality by matching prose or counting
+diagrams.
+
+A blind reviewer using the revised rules identified the missing ordering and
+exhaustion decisions and weak practice in the procedural candidate, accepted
+adequate prose-only mechanism/interpretation cases, and rejected unnecessary
+learner research. A separate cheap-writer pilot drafted those three subjects
+from the raw sources and their questions. Independent review accepted the
+procedure and mechanism and requested removal of one repeated interpretation
+paragraph; the writer removed it and the reviewer accepted that correction.
+This is bounded evidence about author/reviewer behavior, not learner mastery.
+Local pilot artifacts and context measurements are under
+`.scratch/course-creator-pilot/`.
+
+Default instruction estimates changed from 3710 to 3856 tokens for planners,
+3114 to 3257 for writers, and 3534 to 3709 for reviewers. A writer packet selecting
+grid, self-response, and bank formats changed from 7269 to 7487. These are rule
+selection estimates, not total run usage or demonstrated subscription savings.
+
 ## Earlier context work
 
 The ECE36800 audit found excessive coordination, broad objective-derived

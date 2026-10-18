@@ -2,16 +2,25 @@
    inventory; review warnings are leads, never independence certificates. */
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseFile } from './load.mjs';
+import { loadCourse, parseFile } from './load.mjs';
+import { skillAuthorContext } from './question-context.mjs';
 
 export function readAuthorBank(dir) {
   const root = join(dir, 'questions');
   const records = { types: [], items: [], assessments: [] };
   for (const name of existsSync(root) ? readdirSync(root).filter(n => /\.(yaml|yml|json)$/.test(n) && !/^aliases\./.test(n)).sort() : []) {
-    const key = /^types\./.test(name) ? 'types' : /^assessment\./.test(name) ? 'assessments' : 'items';
+    const key = /^(types|skills)\./.test(name) ? 'types' : /^assessment\./.test(name) ? 'assessments' : 'items';
     const file = join(root, name), data = parseFile(file);
     if (!Array.isArray(data)) throw new Error(`${file}: expected a sequence`);
     records[key].push(...data.map((content, position) => ({ content, file, position: position + 1 })));
+  }
+  if (records.types.some(r => /[/\\]skills\./.test(r.file))) {
+    const { course, errors } = loadCourse(dir);
+    const invalid = errors.filter(e => e.startsWith('questions'));
+    if (invalid.length) throw new Error(invalid.join('\n'));
+    records.blueprints = course.assessmentBlueprints;
+    for (const record of records.types) { record.rawContent = record.content; record.content = course.questionTypes[record.content.id] || record.content; }
+    for (const record of records.items) { record.rawContent = record.content; record.content = course.questionBank[record.content.id] || record.content; }
   }
   return records;
 }
@@ -31,7 +40,7 @@ export function resolveAuthorQuiz(dir, unit, bank = readAuthorBank(dir)) {
 
 export function bankMatrix(bank, families = [], placements = []) {
   const rows = bank.types.map(({ content: type }) => {
-    const items = bank.items.filter(r => r.content.typeId === type.id).map(r => r.content);
+    const items = bank.items.filter(r => (r.content.skills || [r.content.typeId]).includes(type.id)).map(r => r.content);
     const practice = items.filter(q => !q.use || q.use === 'practice');
     const checks = items.filter(q => q.use === 'check');
     const warnings = [];
@@ -50,7 +59,9 @@ export function bankMatrix(bank, families = [], placements = []) {
       if (prompts.has(normalized)) warnings.push(`suspected template duplicate ${prompts.get(normalized)},${item.id}`);
       else prompts.set(normalized, item.id);
     }
-    return { type: type.id, teach, lessonChecks, practice: practice.map(q => q.id), check: checks.map(q => q.id),
+    return { type: type.id, teach, lessonChecks,
+      ...(type.schemaVersion === 2 ? { context: skillAuthorContext(type, items),
+        contributions: Object.fromEntries(Object.entries(bank.blueprints || {}).filter(([, b]) => Object.hasOwn(b.typeWeights, type.id)).map(([scope, b]) => [scope, b.typeWeights[type.id]])) } : {}), practice: practice.map(q => q.id), check: checks.map(q => q.id),
       diagnostic: items.filter(q => q.use === 'diagnostic').map(q => q.id), groups, ...(warnings.length ? { warnings } : {}) };
   });
   const represented = new Set(bank.types.flatMap(r => r.content.families || []));

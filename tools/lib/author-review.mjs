@@ -52,7 +52,7 @@ export function reviewIndex(dir, state, { assign = true, persist = true } = {}) 
   const bank = readAuthorBank(dir);
   // Read through the document cache so one-time IDs are persisted in source.
   for (const r of bank.items) add("bank", doc(r.file).data[r.position - 1], r.file, { typeId: r.content.typeId, position: r.position }, r.content.id || r.content.authorId);
-  for (const r of bank.types) add("question-type", r.content, r.file, {}, `type-${r.content.id}`);
+  for (const r of bank.types) add("question-type", r.rawContent || r.content, r.file, {}, `type-${r.content.id}`);
   for (const r of bank.assessments) add("assessment", r.content, r.file, {}, `assessment-${r.content.scope}`);
   const d = digest(dir);
   for (const sub of d.subs) {
@@ -129,10 +129,11 @@ const references = entry => {
   const c = entry.content;
   return [...list(c.objectives ?? c.objective), ...list(c.families ?? c.family),
     ...list(c.prerequisites), ...list(c.requires).map(id => `type-${id}`),
-    ...(c.typeId ? [`type-${c.typeId}`] : []), ...list(c.diagnose),
+    ...list(c.skills).map(id => `type-${id}`), ...(c.typeId ? [`type-${c.typeId}`] : []), ...list(c.diagnose),
+    ...(entry.kind === "family" ? list(c.questions).map(id => `type-${id}`) : []),
     ...list(c.demonstrates).map(id => `type-${id}`),
     ...(entry.kind === "placement" ? list(c.quiz) : []),
-    ...(entry.kind === "assessment" ? [...Object.keys(c.typeWeights || {}).map(id => `type-${id}`), ...Object.keys(c.outcomes || {})] : []), ...list(c.concept ?? entry.concept), ...list(c.related), ...list(c.confusable_with),
+    ...(entry.kind === "assessment" ? [...Object.keys(c.skillWeights || c.typeWeights || {}).map(id => `type-${id}`), ...Object.keys(c.outcomes || {})] : []), ...list(c.concepts ?? c.concept ?? entry.concept), ...list(c.related), ...list(c.confusable_with),
     ...Array.from(JSON.stringify(c).matchAll(/<c\s+k=\\?"([^"\\]+)/g), m => m[1])]
     .map(x => typeof x === "string" ? x : x?.id).filter(Boolean);
 };
@@ -302,15 +303,19 @@ export function fullItems(index, ids) {
   const placementIds = seeds.filter(e => e.kind === "placement").flatMap(e => list(e.content.quiz));
   const selected = findItems(index, [...ids, ...placementIds]), related = new Set([...ids, ...placementIds]);
   for (const e of selected) {
-    const type = e.kind === "bank" ? e.content.typeId : e.kind === "question-type" ? e.content.id : null;
-    if (!type) continue;
-    const questionIds = new Set(index.entries.filter(e => e.kind === "bank" && e.content.typeId === type).map(e => e.id));
-    const anchors = new Set([...list(index.entries.find(t => t.id === `type-${type}`)?.content.teach),
+    const skills = e.kind === "bank" ? e.content.skills || [e.content.typeId] : e.kind === "question-type" ? [e.content.id] : [];
+    for (const type of skills.filter(Boolean)) {
+    const questionIds = new Set(index.entries.filter(e => e.kind === "bank" && (e.content.skills || [e.content.typeId]).includes(type)).map(e => e.id));
+    const definition = index.entries.find(t => t.id === `type-${type}`)?.content;
+    const families = list(definition?.families ?? definition?.family);
+    const anchors = new Set([...list(definition?.teach),
+      ...index.entries.filter(t => t.kind === "family" && families.includes(t.id)).flatMap(t => list(t.content.teach)),
       ...index.entries.filter(e => e.kind === "placement" && list(e.content.quiz).some(id => questionIds.has(id))).map(e => e.sub)]);
     for (const sibling of index.entries)
-      if (sibling.id === `type-${type}` || sibling.kind === "bank" && sibling.content.typeId === type ||
+      if (sibling.id === `type-${type}` || sibling.kind === "bank" && (sibling.content.skills || [sibling.content.typeId]).includes(type) ||
           sibling.kind === "block" && (anchors.has(sibling.sub) || anchors.has(sibling.content.cat))) related.add(sibling.id);
   }
+    }
   return index.entries.filter(e => related.has(e.id)).map(publicItem);
 }
 
@@ -391,7 +396,7 @@ export function acceptReview(state, index, report = null) {
     const currentTypes = index.entries.filter(e => e.kind === "question-type");
     for (const id of Object.keys(suppliedInventory || {})) if (!currentTypes.some(e => e.content.id === id)) throw new Error(`unknown inventory exception type ${id}`);
     for (const type of currentTypes) {
-      const items = index.entries.filter(e => e.kind === "bank" && e.content.typeId === type.content.id);
+      const items = index.entries.filter(e => e.kind === "bank" && (e.content.skills || [e.content.typeId]).includes(type.content.id));
       const version = fingerprint(JSON.stringify([type.hash, ...items.map(e => [e.id, e.hash]).sort((a, b) => a[0].localeCompare(b[0]))]));
       const value = suppliedInventory?.[type.content.id] ?? (review?.inventoryExceptionVersions?.[type.content.id] === version ? review.inventoryExceptions?.[type.content.id] : null);
       const reason = typeof value === "string" ? value.trim() : value?.reason?.trim();

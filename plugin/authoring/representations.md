@@ -13,8 +13,13 @@ The jobs below are examples, not subject requirements or a visual quota.
 | Relate magnitude or variation | Plot or bar figure | `figure:plot` or `figure:bar` |
 
 Record `representation: {job: <what the reader should infer>, needs: [...]}`
-in the lesson's teaching brief. Use the format's minimal valid example before
-custom code. Label unfamiliar parts and place their explanation nearby. Keep
+in the lesson's teaching brief: name the specific inference, not a generic
+promise to visualize relationships. Use the format's minimal valid example before
+custom code. Label unfamiliar parts and connect labels, cases, or intermediate
+states to the explanation and any equation. Keep
 the essential conclusion in accessible prose. Prefer a static representation
 when it exposes the relationship clearly; add interaction only when it helps
 the task. Existing format modules contain the executable recipes.
+Reusable lesson figures, tables, slides, and concepts appear in References;
+use stable figure IDs for citations. The panel recalls teaching, never replaces
+the explanation or working material needed at first use.

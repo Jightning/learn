@@ -1,6 +1,7 @@
 import { IconSearch, IconHome } from "./Icon.jsx";
 import CourseActions from "./CourseActions.jsx";
 import ModeSwitch from "./ModeSwitch.jsx";
+import References from "./References.jsx";
 import { authored as M } from "../lib/safe-markup.js";
 
 /* The toolbar carries three things and no more: where you are, what you are
@@ -22,7 +23,7 @@ import { authored as M } from "../lib/safe-markup.js";
  * toolbar is a control with nowhere to live — and the queue in particular is
  * cross-course, which is exactly what the library is. */
 export default function Topbar({ crumb, courseId, inCourse, home, onSearch, onMenu, zoom, onZoomReset,
-                                 due, onReview, reading, lane, depth, onMode }) {
+                                 due, onReview, reading, lane, depth, onMode, ctx, referenceSub, route }) {
   return (
     <div class="topbar">
       {/* Only where there is a sidebar to open. The library is `shell.solo` and
@@ -69,6 +70,7 @@ export default function Topbar({ crumb, courseId, inCourse, home, onSearch, onMe
           and the Desk in particular is about what to do next, not how to draw
           it. */}
       {reading && <ModeSwitch lane={lane} depth={depth} onMode={onMode} />}
+      {ctx && <References key={ctx.cid} ctx={ctx} subId={referenceSub} route={route} />}
       {inCourse && (
         <button class="tbtn" onClick={onSearch} aria-label="Search">
           <IconSearch /><span class="tb-word">Search /</span>

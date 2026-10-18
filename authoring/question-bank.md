@@ -1,13 +1,14 @@
 # Bank inventory and review
 
-Types define distinct methods/decisions once, using approved concept, objective
-and family IDs. Teaching/prerequisite links serve help and diagnosis without
+Skills define observable capabilities and independent performance standards once.
+Use `questions/skills.yaml` and one canonical family link; inherit unique concept,
+objective, and teaching links. Legacy `types.yaml` remains readable. Teaching/prerequisite links serve help and diagnosis without
 locking advanced work. Sparse assessment requirements derive the full blueprint;
 review scoring ownership, representativeness and source coverage explicitly.
 Never infer exam weight from item counts or duplicate inherited item metadata.
 
 When a canonical family has `assessmentRequired: true`, its `questions` field
-must name the type IDs that assess that skill. Each mapped type repeats the
+must name the type IDs that assess that skill. Each mapped skill resolves the
 canonical family and linked objective/concept, and at least one real
 non-diagnostic bank item must carry its prompt and typed response. A type
 definition or a label alone is not task evidence. Include the related

@@ -22,18 +22,23 @@ include original excerpts for deleted items. Deleted IDs remain available via
 spans; source references within a packet are deduplicated, and batch reviewers
 can reuse the shared context and packet artifacts.
 
-Review the plan against raw sources, then the rendered course against the plan.
-For each required objective/family, mark shared or distinct teaching/assessment
-evidence, exact
-source locator, answer check, and reader-visible subsection. The writer verifies every answer with explicit derivation/calculation. The
-strong reviewer checks flagged uncertainty, high-risk claims and a representative
-family sample using exact item/span packets; widen only when insufficient.
-Rereading or a verified flag alone is not verification.
+Review the plan against raw sources and the rendered course against the plan.
+Map each required objective/family to teaching and assessment evidence, exact
+locator, and reader-visible subsection. Verify answers by derivation or
+calculation; sample flagged uncertainty, high-risk claims, and representative
+families with exact packets. Widen only when needed; rereading or a verified
+flag alone is not verification.
 
-Check that the teaching path follows the reader background, introduces what it
-relies on, and makes its reasoning reconstructable. Check forward references,
-required-reading coherence, definitions, claim fields, category boundaries, question
-routes, figure captions and alt text, YAML scalar safety, math, and source dispositions.
+Check reader background, prerequisites, and reconstructable reasoning; review
+forward references, coherence, claims/categories, questions, figures, YAML,
+math, and source dispositions. For representative outcomes, trace prerequisite,
+explanation, unfamiliar task, and feedback. Ensure the reading teaches needed
+decisions and conditions (and stopping criteria where applicable); section-end
+questions support the outcome without separate Practice. Explain supplied
+representations when construction is not the target. Compare with source
+questions and solutions; expertise or repeated elementary cases are not
+transfer evidence. Confirm research need and benefit. These remain judgments,
+not mechanical guarantees.
 Inspect the packed reader once, sampling supported depths and unusual shapes;
 fully inspect changed or flagged content. Do not reread every lesson at every
 depth merely to repeat the writer's checks. Coverage scores identify leads; they do not prove pedagogical or

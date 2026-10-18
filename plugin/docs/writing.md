@@ -22,6 +22,12 @@ make decisions and intermediate states visible, then fade guidance as the
 learner gains the needed method. Revisit earlier ideas when a later step depends
 on them, without repeating their entire introduction.
 
+Teach when and why to use a method, including its conditions and stopping
+criteria. Required reading and section-end questions together support the
+lesson outcome; questions should test decisions on unfamiliar in-scope tasks
+and give explanatory feedback. Provide a working representation when
+constructing it is not the target.
+
 Write equations in the same flow as the surrounding explanation. Inline math
 uses `<m>...</m>`. When an equation is important enough to pause the reading,
 keep it in the same block and paragraph flow:

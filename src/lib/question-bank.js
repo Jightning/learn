@@ -2,6 +2,7 @@
  * Derived membership never changes ordered lesson placement or proves review. */
 import { checkStimulusShape } from "./question-stimulus.js";
 import { checkResponse } from "./question-schema.js";
+import { compileSkills, validateItemEvidence, validateEvidenceRequirements } from "./skill-schema.js";
 
 const own = (map, id) => map && Object.hasOwn(map, id);
 const dict = () => Object.create(null);
@@ -15,7 +16,9 @@ export function bankVersion(value) {
   return `bank-v1-${(h >>> 0).toString(16)}`;
 }
 export function readQuestionCollections(files, read, errors = []) {
-  const result = { types: [], items: [], assessments: [], aliases: {} };
+  const result = { types: [], skills: [], items: [], assessments: [], aliases: {} };
+  const catalogs = Object.keys(files).filter(p => /^questions\/(skills|types)\.(ya?ml|json)$/.test(p));
+  if (catalogs.length > 1) errors.push("questions: use one skills or legacy types catalog");
   for (const p of Object.keys(files).sort()) {
     const match = /^questions\/([^_][^.]*)\.(ya?ml|json)$/.exec(p);
     if (!match) continue;
@@ -28,7 +31,7 @@ export function readQuestionCollections(files, read, errors = []) {
       }
       continue;
     }
-    const key = match[1] === "types" ? "types" : match[1] === "assessment" ? "assessments" : "items";
+    const key = match[1] === "skills" ? "skills" : match[1] === "types" ? "types" : match[1] === "assessment" ? "assessments" : "items";
     const data = read(p);
     if (!Array.isArray(data)) { errors.push(`${p}: must be a list`); continue; }
     result[key].push(...data);
@@ -51,10 +54,11 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
     for (const sub of section.subs || []) subs[sub.id] = { sub, section };
   }
   const scopes = new Set(["course", ...sections, ...Object.keys(subs), ...Object.keys(C.cats || {})]);
-  for (const raw of source.types || []) {
+  for (const raw of compileSkills(C, source, errors)) {
     if (!mapping(raw) || typeof raw.id !== "string" || !raw.id.trim()) { fail("types", "type needs a stable id"); continue; }
     const at = `types ${raw.id}`;
     if (types[raw.id]) { fail(at, "duplicate type ID"); continue; }
+    if (raw.importance !== undefined && (typeof raw.importance !== "number" || !Number.isFinite(raw.importance) || raw.importance <= 0)) fail(at, "importance must be positive finite weight");
     if (typeof raw.task !== "string" || !raw.task.trim()) fail(at, "task is required");
     if (typeof raw.concept !== "string" || !own(C.concepts, raw.concept)) fail(at, `unknown concept ${raw.concept}`);
     const objectives = list(raw.objectives, `${at} objectives`, true);
@@ -72,7 +76,12 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
   }
   for (const raw of source.items || []) {
     if (!mapping(raw) || typeof raw.id !== "string" || !raw.id.trim()) { fail("bank", "item needs a stable id"); continue; }
-    const at = `bank ${raw.id}`, type = types[raw.typeId];
+    const at = `bank ${raw.id}`;
+    for (const key of Object.keys(raw)) if (!["id", "authorId", "typeId", "type", "skills", "q", "response", "why", "verified", "quarantined", "source", "sourceRefs", "sourceReview", "tries", "stimulus", "use", "group", "demonstrates", "demand", "support", "representation", "steps", "routes", "errors", "difficulty", "concept", "objectives", "families", "scoreFor"].includes(key)) fail(at, `unknown item key ${key}`);
+    if (raw.quarantined !== undefined && typeof raw.quarantined !== "boolean") fail(at, "quarantined must be boolean");
+    if (raw.skills && raw.difficulty !== undefined) fail(at, "difficulty is model-owned; author demand and support instead");
+    const evidence = validateItemEvidence(raw, types, errors, `questions/${at}`);
+    const type = types[evidence.skills[0]];
     if (bank[raw.id]) { fail(at, "duplicate item ID"); continue; }
     if (!type) { fail(at, `unknown typeId ${raw.typeId}`); continue; }
     for (const key of ["concept", "objectives", "families", "scoreFor"])
@@ -83,14 +92,19 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
     checkResponse(raw, `questions/${at}`, errors);
     const responseKeys = { single: ["choices", "correct"], multi: ["choices", "correct"], number: ["value", "tolerance"], formula: ["answer", "variables", "solveFor", "independentVariable"], self: ["model", "mathSymbols", "formulaParsing"] };
     for (const key of Object.keys(raw.response || {})) if (key !== "kind" && !(responseKeys[raw.response?.kind] || []).includes(key)) fail(at, `unknown response key ${key}`);
+    for (const step of evidence.steps) {
+      checkStimulusShape(step, `questions/${at} step ${step.id}`, errors);
+      checkResponse(step, `questions/${at} step ${step.id}`, errors);
+      for (const key of Object.keys(step.response || {})) if (key !== "kind" && !(responseKeys[step.response?.kind] || []).includes(key)) fail(at, `unknown step response key ${key}`);
+    }
     const use = raw.use || "practice";
     if (!["practice", "diagnostic", "check"].includes(use)) fail(at, "use must be practice, diagnostic, or check");
     if (raw.group !== undefined && (typeof raw.group !== "string" || !raw.group.trim())) fail(at, "group must be nonempty text");
     const demonstrates = list(raw.demonstrates, `${at} demonstrates`);
     for (const id of demonstrates) if (!types[id] || id === type.id) fail(at, `invalid demonstrates type ${id}`);
-    bank[raw.id] = { ...raw, type: raw.type || type.task, typeId: type.id, concept: type.concept,
-      objectives: type.objectives, families: type.families, scoreFor: type.scoreFor,
-      use, group: raw.group || `${type.id}:default`, demonstrates, contentVersion: bankVersion(raw) };
+    bank[raw.id] = { ...raw, ...evidence, type: raw.type || type.task, typeId: type.id, concept: type.concept,
+      objectives: [...new Set(evidence.skills.flatMap(id => types[id].objectives))], families: [...new Set(evidence.skills.flatMap(id => types[id].families))], scoreFor: type.scoreFor,
+      use, group: raw.group || `${type.id}:default`, independence: raw.group ? "declared" : "unknown", demonstrates, contentVersion: bankVersion(raw) };
   }
   for (const { sub } of Object.values(subs)) sub.quiz = (sub.quiz || []).flatMap(raw => {
     if (typeof raw !== "string") return [raw];
@@ -98,9 +112,10 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
     if ((sub.quiz || []).filter(q => q === raw).length > 1) fail(`lesson ${sub.id}`, `duplicate quiz reference ${raw}`);
     if (!item) { fail(`lesson ${sub.id}`, `unknown quiz reference ${raw}`); return []; }
     if (item.use !== "practice") { fail(`lesson ${sub.id}`, `${raw} is reserved ${item.use}; cannot appear in quiz`); return []; }
+    for (const skill of item.skills) if (!types[skill].scopes.includes(sub.id)) types[skill].scopes.push(sub.id);
     const type = types[item.typeId];
     if (!type.scopes.includes(sub.id)) type.scopes.push(sub.id);
-    if (!type.teach.length && !type.derivedTeach) type.derivedTeach = [];
+    if (type.schemaVersion !== 2 && !type.teach.length && !type.derivedTeach) type.derivedTeach = [];
     if (type.derivedTeach && !type.derivedTeach.includes(sub.id)) type.derivedTeach.push(sub.id);
     return [item];
   });
@@ -131,21 +146,33 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
   }
   for (const item of Object.values(bank)) {
     const type = types[item.typeId];
-    item.help = type.teach[0] || null; item.scopes = [...type.scopes];
-    item.contentVersion = bankVersion({ item: source.items.find(q => q.id === item.id), type });
+    item.help = type.teach[0] || null; item.scopes = [...new Set(item.skills.flatMap(id => types[id].scopes))];
+    const raw = source.items.find(q => q.id === item.id);
+    if (item.schemaVersion === 1) item.legacyContentVersion = bankVersion({ item: raw, type });
+    const semantic = ({ q, response, stimulus, steps, why }) => ({ q, response, stimulus, why,
+      steps: steps?.map(({ id, q, response, stimulus }) => ({ id, q, response, stimulus })) });
+    item.skillVersions = Object.fromEntries(item.skills.map(id => [id, bankVersion({ task: types[id].task, standard: types[id].standard })]));
+    item.contentVersion = bankVersion({ ...semantic(raw), skillVersions: item.skillVersions });
+    item.evidenceVersion = bankVersion({ skills: item.skills, skillVersions: item.skillVersions, demand: item.demand, support: item.support,
+      routes: item.routes, steps: item.steps.map(s => ({ id: s.id, skills: s.skills, support: s.support })), representation: item.representation,
+      group: item.group, use: item.use, quarantined: item.quarantined === true, demonstrates: item.demonstrates });
+    item.organizationVersion = bankVersion({ scopes: item.scopes, help: item.help, objectives: item.objectives, families: item.families });
     if (item.use === "diagnostic" && !Object.values(types).some(t => t.diagnose.includes(item.id))) fail(`bank ${item.id}`, "diagnostic has no diagnostic link");
   }
   for (const raw of source.assessments || []) {
     if (!mapping(raw) || !scopes.has(raw.scope)) { fail("assessment", `unknown scope ${raw?.scope}`); continue; }
     const at = `assessment ${raw.scope}`;
-    for (const key of Object.keys(raw)) if (!["scope", "criteria", "outcomes", "typeWeights", "target"].includes(key)) fail(at, `unknown assessment key ${key}`);
+    for (const key of Object.keys(raw)) if (!["scope", "criteria", "outcomes", "typeWeights", "skillWeights", "target", "requirements"].includes(key)) fail(at, `unknown assessment key ${key}`);
     if (blueprints[raw.scope]) { fail(at, "duplicate scope record"); continue; }
     if (typeof raw.criteria !== "string" || !raw.criteria.trim()) fail(at, "criteria is required");
     const candidates = Object.values(types).filter(t => t.assess && t.scopes.includes(raw.scope));
     const outcomeIds = [...new Set(candidates.map(t => t.scoreFor).filter(Boolean))];
     const overrides = mapping(raw.outcomes) ? raw.outcomes : {};
     if (raw.outcomes !== undefined && !mapping(raw.outcomes)) fail(at, "outcomes must be a sparse mapping");
-    const weights = mapping(raw.typeWeights) ? raw.typeWeights : {};
+    if (raw.typeWeights && raw.skillWeights) fail(at, "use skillWeights or legacy typeWeights, not both");
+    const suppliedWeights = raw.skillWeights ?? raw.typeWeights;
+    const weights = mapping(suppliedWeights) ? suppliedWeights : {};
+    if (raw.skillWeights !== undefined && !mapping(raw.skillWeights)) fail(at, "skillWeights must be a mapping");
     if (raw.typeWeights !== undefined && !mapping(raw.typeWeights)) fail(at, "typeWeights must be a mapping");
     for (const id of Object.keys(overrides)) if (!outcomeIds.includes(id)) fail(at, `unknown or unassessed outcome ${id}`);
     for (const id of Object.keys(weights)) if (!candidates.some(t => t.id === id)) fail(at, `unknown assessed type ${id}`);
@@ -158,21 +185,23 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
       for (const key of Object.keys(o)) if (!["weight", "essential", "floor", "criteria"].includes(key)) fail(at, `unknown outcome override ${key}`);
       if (o.criteria !== undefined && (typeof o.criteria !== "string" || !o.criteria.trim())) fail(at, `${id} criteria must be nonempty text`);
       if (o.essential !== undefined && typeof o.essential !== "boolean") fail(at, `${id} essential must be boolean`);
-      return [id, { id, weight: weight(o.weight ?? 1, id), essential: o.essential !== false,
+      return [id, { id, weight: weight(o.weight ?? C.objectives?.[id]?.importance ?? 1, id), essential: o.essential !== false,
         floor: fraction(o.floor ?? 0.80, `${id} floor`), criteria: o.criteria || raw.criteria, types: candidates.filter(t => t.scoreFor === id).map(t => t.id) }];
     }));
     const total = Object.values(outcomes).reduce((n, o) => n + o.weight, 0);
     const typeWeights = dict();
     for (const o of Object.values(outcomes)) {
-      const values = o.types.map(id => weight(own(weights, id) ? weights[id] : 1, id));
+      const values = o.types.map(id => weight(own(weights, id) ? weights[id] : types[id].importance ?? 1, id));
       const sum = values.reduce((a, b) => a + b, 0);
       o.weight /= total;
       o.types.forEach((id, i) => { typeWeights[id] = o.weight * values[i] / sum; });
     }
     if (!candidates.length) fail(at, "no usable assessed types");
-    for (const t of candidates) if (!Object.values(bank).some(q => q.typeId === t.id && q.use !== "diagnostic")) warnings.push(`questions/${at}: assessed type ${t.id} has no usable items`);
-    const blueprint = { scope: raw.scope, criteria: raw.criteria, target: fraction(raw.target ?? 0.90, "target"), outcomes, typeWeights, types: candidates.map(t => t.id) };
-    blueprint.version = bankVersion({ blueprint, types: candidates, items: Object.values(bank).filter(q => blueprint.types.includes(q.typeId)) });
+    for (const t of candidates) if (!Object.values(bank).some(q => q.skills.includes(t.id) && q.use !== "diagnostic" && !q.quarantined)) warnings.push(`questions/${at}: assessed type ${t.id} has no usable items`);
+    const requirements = validateEvidenceRequirements(raw.requirements, candidates.map(t => t.id), errors, `questions/${at}`);
+    for (const t of candidates) if (t.representations?.length && !Object.hasOwn(requirements.representations, t.id)) Object.defineProperty(requirements.representations, t.id, { value: [...t.representations], enumerable: true });
+    const blueprint = { requirements, scope: raw.scope, criteria: raw.criteria, target: fraction(raw.target ?? 0.90, "target"), outcomes, typeWeights, types: candidates.map(t => t.id) };
+    blueprint.version = bankVersion({ blueprint, skills: candidates.map(t => ({ id: t.id, standard: t.standard, task: t.task })), items: Object.values(bank).filter(q => q.skills.some(id => blueprint.types.includes(id))).map(q => ({ id: q.id, contentVersion: q.contentVersion, evidenceVersion: q.evidenceVersion })) });
     blueprints[raw.scope] = blueprint;
   }
   C.legacyQuestionAliases = dict();
@@ -186,7 +215,7 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
   if (Object.keys(C.questionAliases).length !== Object.values(bank).filter(q => q.authorId).length) fail("bank", "duplicate authorId alias");
   for (const item of Object.values(bank)) if (item.authorId && bank[item.authorId] && item.authorId !== item.id) fail(`bank ${item.id}`, "authorId conflicts with bank ID");
   C.questionBankWarnings = warnings;
-  C.questionTypes = types; C.questionBank = bank; C.assessmentBlueprints = blueprints;
+  C.questionSkills = types; C.questionTypes = types; C.questionBank = bank; C.assessmentBlueprints = blueprints;
   return { types, bank, blueprints, errors, warnings };
 }
 
@@ -195,7 +224,7 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
 export function checkBankPublication(C, errors = []) {
   for (const type of Object.values(C.questionTypes || {})) {
     if (type.teachingStatus === "unreviewed-exception") errors.push(`questions/types ${type.id}: missing teaching destination requires a current reviewed exception`);
-    if (type.assess && !Object.values(C.questionBank || {}).some(q => q.typeId === type.id && q.use !== "diagnostic")) errors.push(`questions/types ${type.id}: assessed type has no usable ordinary or check items`);
+    if (type.assess && !Object.values(C.questionBank || {}).some(q => (q.skills || [q.typeId]).includes(type.id) && q.use !== "diagnostic" && !q.quarantined)) errors.push(`questions/types ${type.id}: assessed type has no usable ordinary or check items`);
   }
   return errors;
 }

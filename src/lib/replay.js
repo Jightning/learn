@@ -24,6 +24,7 @@ import { step as retentionStep, install as installRetention, configOf } from "./
 import { orderEvents, scoredEvents } from "./evidence.js";
 import { rateStep, forget, keyFor } from "./state.js";
 import { forCourse } from "./log.js";
+import { retentionKeyFor } from "./questions.js";
 
 const DAY = 864e5;
 const ckptKey = cid => `ckpt:${cid}`;
@@ -46,12 +47,12 @@ export function fold(rows, cfg, start = { retain: {}, study: {} }) {
     if (r.ts < last) continue;
     last = r.ts;
 
-    if (r.event === "exposure") continue;
+    if (r.event === "exposure" || r.voided) continue;
     if (r.loop === "Q") {
       if (r.itemId) study[r.itemId] = rateStep(study[r.itemId] || null, null, r.correct, r.ts);
-      const key = r.typeId ? `type:${r.typeId}` : r.concept;
+      const key = retentionKeyFor({ ...r, id: r.itemId });
       const session = `${key}:${r.sessionId}`;
-      const eligible = !r.typeId || (r.firstUnaided != null && !r.assisted && !r.skipped && !sessions.has(session));
+      const eligible = (!r.typeId || (r.firstUnaided != null && !r.assisted && !r.skipped && !sessions.has(session))) && !r.support?.length && !r.dependent;
       if (key && eligible) retain[key] = retentionStep(retain[key] || null, {
         itemId: r.itemId, correct: r.typeId ? r.firstUnaided : r.correct, conf: null, criterion: r.criterion,
         target: cfg.target, deadline: cfg.deadline, now: r.ts
@@ -90,6 +91,7 @@ const blankish = () =>
 export function rebuild(cid, course) {
   const cfg = configOf(course);
   let prior = readCkpt(cid);
+  if (prior?.replayVersion !== 2) prior = null;
   const allRows = forCourse(cid, course);
   const resetAt = Number(getItem(`reset:${cid}`)) || 0;
   if (prior?.resetAt !== resetAt) prior = null;
@@ -97,11 +99,12 @@ export function rebuild(cid, course) {
   const covered = new Set(prior?.eventIds || []);
   let rows = allRows.filter(r=>!covered.has(r.id));
   if (prior && (prior.mappingVersion !== mappingVersion || !prior.eventIds ||
-    rows.some(r=>r.ts <= prior.ts || r.event === 'rubric-score'))) { prior = null; rows = allRows; }
+    rows.some(r=>r.ts <= prior.ts || ['rubric-score', 'grade-revision', 'attempt-void'].includes(r.event)))) { prior = null; rows = allRows; }
   // An imported older row, tied timestamp or new alias needs a complete fold.
   const next = rows.length || !prior ? fold(rows, cfg, prior || undefined) : prior;
   next.eventIds = allRows.map(r=>r.id);
   next.mappingVersion = mappingVersion;
+  next.replayVersion = 2;
   next.resetAt = resetAt;
   installRetention(cid, next.retain);
 
@@ -113,6 +116,10 @@ export function rebuild(cid, course) {
     if (legacy?.[oldId] && !legacy[newId]) legacy[newId] = legacy[oldId];
     if (answers?.[oldId] && !answers[newId]) answers[newId] = answers[oldId];
   }
+  // Raw-log items are authoritative. Otherwise an invalidated answer removed
+  // by a full replay would be resurrected from yesterday's derived q cache.
+  const managed = new Set(allRows.filter(r => r.loop === 'Q' || r.loop === 'A').flatMap(r => [r.itemId, r.legacyItemId]).filter(Boolean));
+  legacy = Object.fromEntries(Object.entries(legacy || {}).filter(([id]) => !managed.has(id)));
   setItem(keyFor(cid, course.code), JSON.stringify({ q: { ...legacy, ...next.study }, ...(answers && { answers }), ...(policy && { policy }), ...(session && { session }) }));
   setItem(ckptKey(cid), JSON.stringify(next));
   forget(cid);

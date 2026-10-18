@@ -2,13 +2,13 @@
 
 Use inline typed questions when a course is small and each check belongs to one
 lesson. When questions need stable identities for repeated practice, reuse, or
-shared history across lessons, define types in `questions/types.yaml`, store
+shared history across lessons, define types in `questions/skills.yaml` (legacy `types.yaml` remains readable), store
 each item once in `questions/bank.yaml`, and record sparse assessment criteria
 in `questions/assessment.yaml`. Lesson quiz lists reference bank IDs. Keep type
 metadata and assessment criteria in their owning files; do not copy them into
 each question.
 
-Every question has a distinct `type`, `q`, a resolvable `concept`, a typed
+Every bank question has `skills` (or legacy `typeId`), `q`, inherited curriculum links, a typed
 `response`, and an independently checked answer. The current response kinds
 are `single`, `multi`, `number`, `formula`, and `self`. Prefer checked responses
 when they fit; reserve `self` for reasoning, proofs, or answer forms without a
@@ -30,9 +30,13 @@ prose before, between, or after attachments; `q` remains the final prompt. See
 Question prompts, attachments, and answers are reader-facing content. Apply
 the same source, math, HTML, and uncertainty rules as lesson prose. Work out
 every answer independently; a source citation or `verified` marker records the
-check but never substitutes for it. Questions should retrieve, distinguish,
-apply, or connect capabilities already taught. When the goal combines methods,
-ask for the decision and reasoning rather than changing only the numbers.
+check but never substitutes for it. Section-end questions must support the
+promised capability even when there is no separate Practice area. Assess
+whether learners can discover the needed decision on an unfamiliar in-scope
+task, then retrieve, distinguish, apply, or connect what the reading taught.
+When methods combine, ask for the decision and reasoning rather than changing
+only numbers. Explain why the answer follows and address likely errors in
+feedback. Supply working representations when construction is not the target.
 
 An explicitly assessment-required family needs an actual, non-diagnostic task
 attached to its mapped type. Test the declared method or decision; a type name,

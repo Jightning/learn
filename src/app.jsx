@@ -546,6 +546,7 @@ export default function App() {
         )}
         <main>
           <Topbar crumb={crumb} courseId={course ? cid : null}
+                  ctx={ctx} referenceSub={reading || subId} route={rest}
                   inCourse={!!course} home={!!course || inReview}
                   reading={!!section || rest === "saved" || rest === "explore/saved"}
                   lane={lane} depth={depth} onMode={onMode}

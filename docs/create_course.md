@@ -32,9 +32,20 @@ stays in the default reading. Review the assembled passage with
 `node tools/author.mjs preview <id> --sub <subsection-id>` and judge it as a
 whole for missing links, repeated explanation, and misplaced emphasis.
 
+Calibrate the teaching against actual source questions and solutions, including
+their figures and combined methods. Required reading and section-end questions
+must support unfamiliar in-scope applications without separate Practice.
+Learner research belongs only where consulting evidence is needed and useful,
+in a bounded question with a starting source and a way to assess the findings.
+
+The reader's References control previews existing lesson figures, tables, slides,
+and concepts without leaving the question. Captions and figure IDs make these
+findable; no separate reference inventory is needed. Keep first explanations
+and essential task diagrams local rather than relying on the panel.
+
 For a small course whose checks are local to their lessons, write typed
 questions inline in each subsection's `quiz` list. For repeated practice,
-cross-lesson reuse, or shared question history, use `questions/types.yaml`,
+cross-lesson reuse, or shared question history, use `questions/skills.yaml` (legacy `types.yaml` remains readable),
 `questions/bank.yaml`, and `questions/assessment.yaml`; store each question
 once and reference its stable ID from lessons. Do not duplicate type metadata,
 assessment rules, or question content across those files. Both forms use the

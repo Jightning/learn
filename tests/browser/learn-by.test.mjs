@@ -35,7 +35,7 @@ test('a saved learn-by goal introduces untouched scoped material in Review and M
     await page.getByRole('button', { name: 'Add goal' }).click();
     await page.getByText('Sunday objectives', { exact: true }).waitFor();
     assert.equal(await page.locator('.deadline-card .practice-stats strong').first().textContent(), '0 / 1');
-    assert.match(await page.locator('.deadline-card .practice-stats').textContent(), /Estimated practice/);
+    assert.match(await page.locator('.deadline-card .practice-stats').textContent(), /Estimated remaining work/);
     assert.doesNotMatch(await page.locator('.deadline-card time').textContent(), /\d{1,2}:\d{2}:\d{2}/, 'deadline omits seconds');
     assert.doesNotMatch(await page.locator('.deadlines-page').textContent(), /types ready|cover current gaps|Focus gives|Set when you| · /);
 

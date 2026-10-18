@@ -2,6 +2,30 @@
  * Legacy text questions are adapted here, so every route uses one renderer. */
 import { qid } from "./util.js";
 
+export const QUESTION_METADATA = ["typeId", "skills", "routes", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "legacyContentVersion", "evidenceVersion", "organizationVersion", "schemaVersion", "standard", "demand", "support", "representation", "errors", "steps", "parentId", "stepId", "dependent", "quarantined", "authorId"];
+export const questionMetadata = raw => Object.fromEntries(QUESTION_METADATA.filter(k => raw[k] !== undefined).map(k => [k, raw[k]]));
+export const questionSkills = item => item.skills?.length ? item.skills : item.typeId ? [item.typeId] : [];
+export const retentionKeyFor = item => questionSkills(item).length > 1 || item.routes?.length
+  ? `joint:${item.id || item.itemId}` : item.typeId ? `type:${item.typeId}` : item.concept;
+// Literal reviewed signatures are hints for feedback, never automatic diagnoses.
+export const questionErrorHypotheses = (item, value) => (item.errors || []).filter(error =>
+  typeof error.match === 'string' && String(value).trim() === error.match.trim());
+export const questionSessionCurrent = (item, bank) => !item.typeId || !!bank?.[item.id] &&
+  !bank[item.id].quarantined && bank[item.id].contentVersion === item.contentVersion &&
+  (!item.evidenceVersion || bank[item.id].evidenceVersion === item.evidenceVersion);
+
+// Selection protects variations needed by any active goal; each goal still
+// computes readiness against its own complete assessment standard.
+export function practiceRequirements(standards) {
+  const representations = {}, integrations = new Map();
+  for (const standard of standards.filter(Boolean)) {
+    for (const [id, reps] of Object.entries(standard.requirements?.representations || {}))
+      representations[id] = [...new Set([...(representations[id] || []), ...reps])];
+    for (const skills of standard.requirements?.integrations || []) integrations.set([...skills].sort().join('|'), skills);
+  }
+  return { requirements: { representations, integrations: [...integrations.values()] } };
+}
+
 /* One attachment or an ordered sequence; old courses keep the same shape. */
 export const questionStimuli = value => value == null ? [] : Array.isArray(value) ? value : [value];
 
@@ -31,11 +55,11 @@ export function normalizeQuestion(raw, { subId = null, concept = null, id = null
     prompt: raw.q || raw.stem || "",
     response: answer,
     tries: questionTries(raw),
-    why: raw.why || (raw.steps || []).map(s => `<p>${s}</p>`).join(""),
+    why: raw.why || (raw.steps || []).filter(s => typeof s === "string").map(s => `<p>${s}</p>`).join(""),
     stimulus: raw.stimulus || null,
     difficulty: raw.difficulty || null,
     verified: raw.verified || null,
-    ...Object.fromEntries(["typeId", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "authorId"].filter(k => raw[k] !== undefined).map(k => [k, raw[k]]))
+    ...questionMetadata(raw)
   };
 }
 

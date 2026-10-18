@@ -1,5 +1,5 @@
 import { sessionId } from "../lib/attempt.js";
-import { forCourse } from "../lib/log.js";
+import { forCourse, append } from "../lib/log.js";
 import { selectAdaptive, duePracticeTypes } from "../lib/practice-policy.js";
 import { selectScored, placeSelection } from "../lib/practice-score.js";
 import { checkCandidates, readiness } from "../lib/assessment.js";
@@ -7,6 +7,8 @@ import { useState, useLayoutEffect } from "preact/hooks";
 import { rangePool, categoryPool, selectMixed, retryVariant } from "../lib/practice-pool.js";
 import { get as retentionGet } from "../lib/retention.js";
 import QuestionCard from "./QuestionCard.jsx";
+import LearningGuidance from "./LearningGuidance.jsx";
+import { questionSessionCurrent, practiceRequirements } from '../lib/questions.js';
 import { strip } from "../lib/util.js";
 import { activeGoals, deadlinePlan } from "../lib/learn-by.js";
 
@@ -17,11 +19,12 @@ export default function Practice({ ctx, cat, embedded = false }) {
   const [to, setTo] = useState(state.getSession()?.to || subs.at(-1)?.[0] || "");
   const [count, setCount] = useState(10);
   const [selector, setSelector] = useState(() => state.getPolicy().practiceSelector === "weighted" ? "weighted" : "scored");
+  const [demand, setDemand] = useState(state.getPolicy().demandPreference || 'standard');
   const currentGoals = !cat ? activeGoals(cid) : [];
   const [useGoals, setUseGoals] = useState(currentGoals.length > 0);
   const [evidenceRevision, refreshEvidence] = useState(0);
   const [run, setRun] = useState(() => { const saved = state.getSession();
-    return saved && (saved.cat !== (cat || null) || (saved.blueprintVersion && idx.BLUEPRINTS?.[saved.scope]?.version !== saved.blueprintVersion)) ? null : saved?.items?.some(q=>q.typeId && idx.BANK?.[q.id]?.contentVersion !== q.contentVersion) ? null : saved; });
+    return saved && (saved.cat !== (cat || null) || (saved.blueprintVersion && idx.BLUEPRINTS?.[saved.scope]?.version !== saved.blueprintVersion)) ? null : saved?.items?.some(q=>!questionSessionCurrent(q, idx.BANK)) ? null : saved; });
   useLayoutEffect(() => { state.saveSession(run); }, [run]);
   const [starting, setStarting] = useState(false);
   const startSession = async next => {
@@ -36,17 +39,29 @@ export default function Practice({ ctx, cat, embedded = false }) {
   const goalMode = useGoals && currentGoals.length > 0;
   const goalPlan = goalMode ? deadlinePlan(idx, currentGoals, forCourse(cid, ctx.C)) : null;
   const pool = goalMode ? goalPlan.pool : categoryPool(rangePool(idx, from, to), idx, cat);
+  const selectionOptions = () => ({ bank: idx.BANK, diagnostics: idx.DIAGNOSTIC, inventory: idx.TYPES,
+    standard: goalMode ? practiceRequirements(goalPlan.details.map(d => d.standard)) : blueprint,
+    demandPreference: demand, types: idx.TYPES || {} });
+  const recordDecision = choice => {
+    if (state.on && choice.item) append({ course: cid, event: 'policy-decision', policyVersion: 2,
+      itemId: choice.item.id, action: choice.action, probability: 1, deterministic: true,
+      eligibleActions: [...new Set([...choice.scores.map(q => q.id), choice.item.id])], reason: choice.reason });
+  };
   const start = () => {
     let items = selectMixed(pool, cid, state, Number(count));
-    const reasons = {};
+    const reasons = {}, guidance = {};
+    let recommendedStop = false;
     if (selector === "scored" && items.length) {
-      const choice = selectScored(pool, forCourse(cid, ctx.C), { types: idx.TYPES || {}, dueTypes: duePracticeTypes(pool, cid),
+      const choice = selectScored(pool, forCourse(cid, ctx.C), { ...selectionOptions(), dueTypes: duePracticeTypes(pool, cid),
         goalPriorities: goalPlan?.priorities, goalReasons: goalPlan?.reasons,
         remaining: items.length, versions: Object.fromEntries(Object.values(idx.BANK || {}).map(q => [q.id, q.contentVersion])) });
       items = placeSelection(items, 0, choice.item);
       if (choice.item?.id === items[0].id) reasons[items[0].id] = choice.reason;
+      if (choice.help) guidance[choice.item.id] = choice.help;
+      recordDecision(choice);
+      recommendedStop = choice.recommendedStop;
     }
-    startSession({ sessionId: sessionId(), mode: "practice", selector, reasons, from, to, goalMode, cat: cat || null, items, at: 0,
+    startSession({ sessionId: sessionId(), mode: "practice", selector, reasons, guidance, recommendedStop, from, to, goalMode, cat: cat || null, items, at: 0,
       retries: [], retryIds: [], results: [] });
   };
   const selectedSubs = subs.slice(Math.min(subs.findIndex(([id])=>id===from), subs.findIndex(([id])=>id===to)),
@@ -71,7 +86,7 @@ export default function Practice({ ctx, cat, embedded = false }) {
     state.savePolicy(shadow.policy);
     if (prev.selector === "scored" && prev.at+1 < prev.items.length) {
       const freshPlan = prev.goalMode ? deadlinePlan(idx, activeGoals(cid), forCourse(cid, ctx.C)) : null;
-      const selected = selectScored(pool, forCourse(cid, ctx.C), { types: idx.TYPES || {}, dueTypes,
+      const selected = selectScored(pool, forCourse(cid, ctx.C), { ...selectionOptions(), dueTypes,
         goalPriorities: freshPlan?.priorities, goalReasons: freshPlan?.reasons,
         remaining: prev.items.length - prev.at - 1,
         versions: Object.fromEntries(Object.values(idx.BANK || {}).map(q=>[q.id,q.contentVersion])),
@@ -79,9 +94,11 @@ export default function Practice({ ctx, cat, embedded = false }) {
         lastType: prev.items[prev.at].typeId || prev.items[prev.at].concept });
       const items = placeSelection(prev.items, prev.at+1, selected.item, new Set(prev.retryIds || []));
       const current = items[prev.at+1];
+      recordDecision(selected);
       const reason = (prev.retryIds || []).includes(current.id) ? 'Another version after difficulty' :
         selected.item?.id === current.id ? selected.reason : null;
-      return { ...prev, items, reasons: reason ? { ...prev.reasons, [current.id]: reason } : prev.reasons, at: prev.at+1 };
+      return { ...prev, items, recommendedStop: selected.recommendedStop, guidance: selected.help ? { ...prev.guidance, [current.id]: selected.help } : prev.guidance,
+        reasons: reason ? { ...prev.reasons, [current.id]: reason } : prev.reasons, at: prev.at+1 };
     }
     return { ...prev, at: prev.at+1 };
   });
@@ -117,7 +134,7 @@ export default function Practice({ ctx, cat, embedded = false }) {
           state.savePolicy({ ...state.getPolicy(), confirmedVersion: blueprint.version }); refreshEvidence(n=>n+1);
         }}>Confirm this standard applies to my goal</button>}
         {checkPool.reason && <p>{checkPool.reason}</p>}
-        <button class="dbtn" disabled={starting || !checkPool.items.length || checkPool.missing.length > 0} onClick={startCheck}>Start fresh check</button>
+        <button class="dbtn" disabled={starting || !checkPool.items.length} onClick={startCheck}>Start fresh check</button>
       </details>}
       <div class="pcfg practice-settings" role="group" aria-label="Practice settings">
       {!!currentGoals.length && <label class="deadline-practice-switch"><input type="checkbox" checked={useGoals} onChange={e => setUseGoals(e.currentTarget.checked)} /> Focus on deadlines</label>}
@@ -140,6 +157,9 @@ export default function Practice({ ctx, cat, embedded = false }) {
           <option value="scored">Adaptive</option>
           <option value="weighted">Weighted fallback</option>
         </select></label>
+          <label>Challenge <select value={demand} onChange={e => {
+            setDemand(e.currentTarget.value); state.savePolicy({ ...state.getPolicy(), demandPreference: e.currentTarget.value });
+          }}><option value="foundation">Easier</option><option value="standard">Standard</option><option value="extension">Harder</option></select></label>
         </div>
         <div class="practice-stats">
           <div><strong>{pool.length}</strong><span>Available questions</span></div>
@@ -151,10 +171,12 @@ export default function Practice({ ctx, cat, embedded = false }) {
     {run && <div id="p-run">
       {run.at < run.items.length ? <>
         <button class="dbtn ghost" onClick={() => setRun(prev=>({ ...prev, at: prev.items.length }))}>Finish session</button>
+        {run.recommendedStop && <p>Today's requirements are supported and no review is due. You can finish or continue practising.</p>}
         <div class="pbar"><i style={`width:${Math.round(run.at / run.items.length * 100)}%`} /></div>
         <div class="pmeta">Question {run.at + 1} of {run.items.length}
           {run.mode !== "check" && run.items[run.at].subId && <span class="pfrom">{run.items[run.at].num} {run.items[run.at].subTitle}</span>}
         </div>
+        <LearningGuidance help={run.guidance?.[run.items[run.at].id]} item={run.items[run.at]} ctx={ctx} />
         <QuestionCard key={`${run.at}:${run.items[run.at].id}`} item={run.items[run.at]} ctx={ctx}
           restore sessionId={run.sessionId} context={run.mode === "check" ? "check" : "practice"}
           delayed={run.mode === "check"} assessmentVersion={blueprint?.version || null}
@@ -167,10 +189,6 @@ export default function Practice({ ctx, cat, embedded = false }) {
       </> : <div class="pdone">
         <h3>{run.mode === "check" ? "Check complete" : "Set complete"}</h3>
         {run.mode === "check" && <><p>{evidence.label}</p>
-          {!evidence.gaps.length && !evidence.contradictions?.length && !evidence.confirmed && <>
-            <p>Compare the results with the standard: {blueprint.criteria}. Confirmation is your assessment of the evidence; it cannot independently verify skills outside these tasks.</p>
-            <button class="dbtn" onClick={() => { state.savePolicy({ ...state.getPolicy(), sufficientEvidence: evidence.evidenceKey }); refreshEvidence(n=>n+1); }}>I confirm this evidence meets the standard</button>
-          </>}
         </>}
         <p>{run.results.filter(r => r.correct).length} right, {run.results.filter(r => !r.correct).length} to revisit.</p>
         {run.mode === "check" && run.items.map(q => <details key={q.id}><summary>Answer and feedback</summary>

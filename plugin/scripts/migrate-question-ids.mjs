@@ -3382,6 +3382,36 @@ const textOf = (v) => {
 };
 //#endregion
 //#region src/lib/questions.js
+const QUESTION_METADATA = [
+	"typeId",
+	"skills",
+	"routes",
+	"scoreFor",
+	"objectives",
+	"families",
+	"use",
+	"group",
+	"demonstrates",
+	"help",
+	"scopes",
+	"contentVersion",
+	"legacyContentVersion",
+	"evidenceVersion",
+	"organizationVersion",
+	"schemaVersion",
+	"standard",
+	"demand",
+	"support",
+	"representation",
+	"errors",
+	"steps",
+	"parentId",
+	"stepId",
+	"dependent",
+	"quarantined",
+	"authorId"
+];
+const questionMetadata = (raw) => Object.fromEntries(QUESTION_METADATA.filter((k) => raw[k] !== void 0).map((k) => [k, raw[k]]));
 const questionStimuli = (value) => value == null ? [] : Array.isArray(value) ? value : [value];
 function questionTries(item) {
 	const tries = item.tries === void 0 ? 1 : item.tries;
@@ -3404,23 +3434,11 @@ function normalizeQuestion(raw, { subId = null, concept = null, id = null } = {}
 		prompt: raw.q || raw.stem || "",
 		response: answer,
 		tries: questionTries(raw),
-		why: raw.why || (raw.steps || []).map((s) => `<p>${s}</p>`).join(""),
+		why: raw.why || (raw.steps || []).filter((s) => typeof s === "string").map((s) => `<p>${s}</p>`).join(""),
 		stimulus: raw.stimulus || null,
 		difficulty: raw.difficulty || null,
 		verified: raw.verified || null,
-		...Object.fromEntries([
-			"typeId",
-			"scoreFor",
-			"objectives",
-			"families",
-			"use",
-			"group",
-			"demonstrates",
-			"help",
-			"scopes",
-			"contentVersion",
-			"authorId"
-		].filter((k) => raw[k] !== void 0).map((k) => [k, raw[k]]))
+		...questionMetadata(raw)
 	};
 }
 function practiceItems(C) {
@@ -10458,7 +10476,7 @@ function arraySize(x) {
 * @param {Array} array
 * @param {function} callback
 */
-function map(array, callback) {
+function map$1(array, callback) {
 	return Array.prototype.map.call(array, callback);
 }
 /**
@@ -11350,18 +11368,18 @@ var createArrayNode = /* #__PURE__ */ factory(name$20, ["Node"], (_ref) => {
 		*                        evalNode(scope: Object, args: Object, context: *)
 		*/
 		_compile(math, argNames) {
-			var evalItems = map(this.items, function(item) {
+			var evalItems = map$1(this.items, function(item) {
 				return item._compile(math, argNames);
 			});
 			if (math.config.matrix !== "Array") {
 				var matrix = math.matrix;
 				return function evalArrayNode(scope, args, context) {
-					return matrix(map(evalItems, function(evalItem) {
+					return matrix(map$1(evalItems, function(evalItem) {
 						return evalItem(scope, args, context);
 					}));
 				};
 			} else return function evalArrayNode(scope, args, context) {
-				return map(evalItems, function(evalItem) {
+				return map$1(evalItems, function(evalItem) {
 					return evalItem(scope, args, context);
 				});
 			};
@@ -11779,7 +11797,7 @@ var createBlockNode = /* #__PURE__ */ factory(name$18, ["ResultSet", "Node"], (_
 		*                        evalNode(scope: Object, args: Object, context: *)
 		*/
 		_compile(math, argNames) {
-			var evalBlocks = map(this.blocks, function(block) {
+			var evalBlocks = map$1(this.blocks, function(block) {
 				return {
 					evaluate: block.node._compile(math, argNames),
 					visible: block.visible
@@ -12783,7 +12801,7 @@ var createIndexNode = /* #__PURE__ */ factory(name$14, ["Node", "size"], (_ref) 
 		*                        evalNode(scope: Object, args: Object, context: *)
 		*/
 		_compile(math, argNames) {
-			var evalDimensions = map(this.dimensions, function(dimension, i) {
+			var evalDimensions = map$1(this.dimensions, function(dimension, i) {
 				if (dimension.filter((node) => node.isSymbolNode && node.name === "end").length > 0) {
 					var childArgNames = Object.create(argNames);
 					childArgNames.end = true;
@@ -12799,7 +12817,7 @@ var createIndexNode = /* #__PURE__ */ factory(name$14, ["Node", "size"], (_ref) 
 			});
 			var index = getSafeProperty(math, "index");
 			return function evalIndexNode(scope, args, context) {
-				return index(...map(evalDimensions, function(evalDimension) {
+				return index(...map$1(evalDimensions, function(evalDimension) {
 					return evalDimension(scope, args, context);
 				}));
 			};
@@ -13242,7 +13260,7 @@ var createOperatorNode = /* #__PURE__ */ factory(name$12, ["Node"], (_ref) => {
 				else throw new Error("No access to function \"" + this.fn + "\"");
 			}
 			var fn = getSafeProperty(math, this.fn);
-			var evalArgs = map(this.args, function(arg) {
+			var evalArgs = map$1(this.args, function(arg) {
 				return arg._compile(math, argNames);
 			});
 			if (typeof fn === "function" && fn.rawArgs === true) {
@@ -13262,7 +13280,7 @@ var createOperatorNode = /* #__PURE__ */ factory(name$12, ["Node"], (_ref) => {
 					return fn(_evalArg(scope, args, context), evalArg1(scope, args, context));
 				};
 			} else return function evalOperatorNode(scope, args, context) {
-				return fn.apply(null, map(evalArgs, function(evalArg) {
+				return fn.apply(null, map$1(evalArgs, function(evalArg) {
 					return evalArg(scope, args, context);
 				}));
 			};
@@ -17366,6 +17384,171 @@ function checkResponse(item, where, errs) {
 	if (r.kind === "self" && !String(r.model || "").trim()) errs.push(`${where}: self-check response needs a model answer`);
 }
 //#endregion
+//#region src/lib/skill-schema.js
+const map = (x) => x && typeof x === "object" && !Array.isArray(x);
+const asList = (x) => x == null ? [] : Array.isArray(x) ? x : [x];
+const unique = (xs) => [...new Set(xs)];
+function compileSkills(C, source, errors) {
+	if (source.skills?.length && source.types?.length) errors.push("questions: use skills or legacy types, not competing catalogs");
+	if (!source.skills?.length) return source.types || [];
+	return source.skills.map((raw) => {
+		if (!map(raw)) return raw;
+		const fail = (message) => errors.push(`questions/skills ${raw.id}: ${message}`);
+		for (const key of Object.keys(raw)) if (![
+			"id",
+			"authorId",
+			"task",
+			"standard",
+			"family",
+			"families",
+			"concept",
+			"concepts",
+			"objectives",
+			"scoreFor",
+			"teach",
+			"requires",
+			"diagnose",
+			"importance",
+			"membership",
+			"assess",
+			"representations"
+		].includes(key)) fail(`unknown skill key ${key}`);
+		if (typeof raw.standard !== "string" || !raw.standard.trim()) fail("standard is required");
+		if (raw.family !== void 0 && raw.families !== void 0) fail("use family or families, not both");
+		const families = asList(raw.families ?? raw.family);
+		const familyDefs = families.map((id) => C.families?.[id]).filter(Boolean);
+		const linkedObjectives = unique(Object.entries(C.objectives || {}).filter(([, o]) => asList(o.families ?? o.family).some((id) => families.includes(id))).map(([id]) => id));
+		const objectives = raw.objectives ?? linkedObjectives;
+		if (!raw.objectives && linkedObjectives.length !== 1) fail("ambiguous objective inheritance; declare objectives and scoring owner");
+		const inheritedConcepts = unique(familyDefs.flatMap((f) => asList(f.concepts ?? f.concept)));
+		if (!raw.concepts && !raw.concept && inheritedConcepts.length > 1) fail("ambiguous concept inheritance; declare concepts");
+		const concepts = raw.concepts ?? (raw.concept ? [raw.concept] : inheritedConcepts.length ? inheritedConcepts : C.concepts?.[raw.id] ? [raw.id] : []);
+		if (!Array.isArray(concepts) || !concepts.length) fail("no concept link; declare concepts or a family concept");
+		for (const id of asList(concepts)) if (typeof id !== "string" || !Object.hasOwn(C.concepts || {}, id)) fail(`unknown concept ${id}`);
+		if (raw.concept && Array.isArray(raw.concepts) && !raw.concepts.includes(raw.concept)) fail("concept conflicts with concepts");
+		const teach = raw.teach ?? unique(familyDefs.flatMap((f) => asList(f.teach)));
+		if (raw.importance !== void 0 && (typeof raw.importance !== "number" || !Number.isFinite(raw.importance) || raw.importance <= 0)) fail("importance must be positive finite weight");
+		for (const key of ["membership", "representations"]) if (raw[key] !== void 0 && (!Array.isArray(raw[key]) || raw[key].some((id) => typeof id !== "string" || !id.trim()) || new Set(raw[key]).size !== raw[key].length)) fail(`${key} must list distinct nonempty IDs`);
+		return {
+			...raw,
+			schemaVersion: 2,
+			families,
+			objectives,
+			concepts,
+			concept: concepts?.[0],
+			teach,
+			scope: raw.membership ?? [],
+			importance: raw.importance ?? 1,
+			derived: {
+				objectives: raw.objectives ? "explicit" : "objective family link",
+				concepts: raw.concepts || raw.concept ? "explicit" : "family/shared identity",
+				teach: raw.teach ? "explicit" : "family teaching declaration",
+				membership: "teaching and practice placement"
+			}
+		};
+	});
+}
+function validateItemEvidence(raw, types, errors, where) {
+	const fail = (message) => errors.push(`${where}: ${message}`);
+	const ids = (xs, name) => {
+		if (!Array.isArray(xs) || !xs.length || xs.some((id) => typeof id !== "string" || !Object.hasOwn(types, id)) || new Set(xs).size !== xs.length) {
+			fail(`${name} must list distinct known skills`);
+			return [];
+		}
+		return xs;
+	};
+	const skills = ids(raw.skills ?? [raw.typeId], "skills");
+	if (raw.skills && raw.typeId && raw.typeId !== skills[0]) fail("typeId conflicts with first skill");
+	const demand = raw.demand ?? "standard";
+	if (![
+		"foundation",
+		"standard",
+		"extension"
+	].includes(demand)) fail("demand must be foundation, standard, or extension");
+	const support = (value) => {
+		if (value === void 0) return [];
+		if (!Array.isArray(value) || value.some((s) => ![
+			"supplied-method",
+			"supplied-result",
+			"worked-example"
+		].includes(s)) || new Set(value).size !== value.length) {
+			fail("support must list distinct supplied-method, supplied-result, or worked-example");
+			return [];
+		}
+		return value;
+	};
+	if (raw.representation !== void 0 && (typeof raw.representation !== "string" || !raw.representation.trim())) fail("representation must be a nonempty ID");
+	if (raw.routes !== void 0 && (!Array.isArray(raw.routes) || raw.routes.length < 2)) fail("routes must contain at least two alternative skill lists");
+	const routes = Array.isArray(raw.routes) ? raw.routes.map((r, i) => ids(r, `route ${i + 1}`)) : [];
+	if (routes.some((route) => route.some((id) => !skills.includes(id)))) fail("route skills must be declared in item skills");
+	if (routes.length && skills.some((id) => !routes.some((route) => route.includes(id)))) fail("every declared skill must occur in a route");
+	if (new Set(routes.map((r) => [...r].sort().join("|"))).size !== routes.length) fail("duplicate alternative route");
+	const steps = [];
+	if (raw.steps !== void 0 && (!Array.isArray(raw.steps) || !raw.steps.length)) fail("steps must be a nonempty list");
+	for (const step of Array.isArray(raw.steps) ? raw.steps : []) {
+		if (!map(step)) {
+			fail("step must be a mapping");
+			continue;
+		}
+		for (const key of Object.keys(step)) if (![
+			"id",
+			"skills",
+			"q",
+			"response",
+			"support",
+			"why",
+			"tries",
+			"stimulus"
+		].includes(key)) fail(`unknown step key ${key}`);
+		if (typeof step.id !== "string" || !step.id.trim() || steps.some((s) => s.id === step.id)) fail("step needs a distinct stable id");
+		const stepSkills = ids(step.skills, "step skills");
+		if (stepSkills.some((id) => !skills.includes(id))) fail("step skills must belong to parent skills");
+		if (typeof step.q !== "string" || !step.q.trim() || !map(step.response)) fail("step q and response are required");
+		steps.push({
+			...step,
+			skills: stepSkills,
+			support: support(step.support)
+		});
+	}
+	if (raw.errors !== void 0 && (!Array.isArray(raw.errors) || raw.errors.some((e) => !map(e) || typeof e.id !== "string" || !e.id.trim() || typeof e.description !== "string" || !e.description.trim() || Object.keys(e).some((k) => ![
+		"id",
+		"description",
+		"match"
+	].includes(k)) || e.match !== void 0 && typeof e.match !== "string"))) fail("errors must list reviewed {id, description, match?} hypotheses");
+	if (Array.isArray(raw.errors) && new Set(raw.errors.map((e) => e?.id)).size !== raw.errors.length) fail("duplicate error ID");
+	return {
+		skills,
+		demand,
+		support: support(raw.support),
+		routes,
+		steps,
+		schemaVersion: raw.skills ? 2 : 1
+	};
+}
+function validateEvidenceRequirements(value, types, errors, where) {
+	const fail = (message) => errors.push(`${where}: ${message}`);
+	if (value === void 0) return {
+		representations: {},
+		integrations: []
+	};
+	if (!map(value)) {
+		fail("requirements must be a mapping");
+		return {
+			representations: {},
+			integrations: []
+		};
+	}
+	for (const key of Object.keys(value)) if (!["representations", "integrations"].includes(key)) fail(`unknown requirement ${key}`);
+	const representations = value.representations ?? {}, integrations = value.integrations ?? [];
+	if (!map(representations)) fail("representations must map skills to required representation IDs");
+	else for (const [skill, reps] of Object.entries(representations)) if (!types.includes(skill) || !Array.isArray(reps) || !reps.length || reps.some((r) => typeof r !== "string" || !r.trim()) || new Set(reps).size !== reps.length) fail(`invalid representations for ${skill}`);
+	if (!Array.isArray(integrations) || integrations.some((ids) => !Array.isArray(ids) || ids.length < 2 || ids.some((id) => !types.includes(id)) || new Set(ids).size !== ids.length)) fail("integrations must list distinct assessed skill combinations");
+	return {
+		representations: map(representations) ? representations : {},
+		integrations: Array.isArray(integrations) ? integrations : []
+	};
+}
+//#endregion
 //#region src/lib/question-bank.js
 const own = (map, id) => map && Object.hasOwn(map, id);
 const dict = () => Object.create(null);
@@ -17380,10 +17563,12 @@ function bankVersion(value) {
 function readQuestionCollections(files, read, errors = []) {
 	const result = {
 		types: [],
+		skills: [],
 		items: [],
 		assessments: [],
 		aliases: {}
 	};
+	if (Object.keys(files).filter((p) => /^questions\/(skills|types)\.(ya?ml|json)$/.test(p)).length > 1) errors.push("questions: use one skills or legacy types catalog");
 	for (const p of Object.keys(files).sort()) {
 		const match = /^questions\/([^_][^.]*)\.(ya?ml|json)$/.exec(p);
 		if (!match) continue;
@@ -17397,7 +17582,7 @@ function readQuestionCollections(files, read, errors = []) {
 			});
 			continue;
 		}
-		const key = match[1] === "types" ? "types" : match[1] === "assessment" ? "assessments" : "items";
+		const key = match[1] === "skills" ? "skills" : match[1] === "types" ? "types" : match[1] === "assessment" ? "assessments" : "items";
 		const data = read(p);
 		if (!Array.isArray(data)) {
 			errors.push(`${p}: must be a list`);
@@ -17432,7 +17617,7 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 		...Object.keys(subs),
 		...Object.keys(C.cats || {})
 	]);
-	for (const raw of source.types || []) {
+	for (const raw of compileSkills(C, source, errors)) {
 		if (!mapping$1(raw) || typeof raw.id !== "string" || !raw.id.trim()) {
 			fail("types", "type needs a stable id");
 			continue;
@@ -17442,6 +17627,7 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			fail(at, "duplicate type ID");
 			continue;
 		}
+		if (raw.importance !== void 0 && (typeof raw.importance !== "number" || !Number.isFinite(raw.importance) || raw.importance <= 0)) fail(at, "importance must be positive finite weight");
 		if (typeof raw.task !== "string" || !raw.task.trim()) fail(at, "task is required");
 		if (typeof raw.concept !== "string" || !own(C.concepts, raw.concept)) fail(at, `unknown concept ${raw.concept}`);
 		const objectives = list(raw.objectives, `${at} objectives`, true);
@@ -17478,7 +17664,42 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			fail("bank", "item needs a stable id");
 			continue;
 		}
-		const at = `bank ${raw.id}`, type = types[raw.typeId];
+		const at = `bank ${raw.id}`;
+		for (const key of Object.keys(raw)) if (![
+			"id",
+			"authorId",
+			"typeId",
+			"type",
+			"skills",
+			"q",
+			"response",
+			"why",
+			"verified",
+			"quarantined",
+			"source",
+			"sourceRefs",
+			"sourceReview",
+			"tries",
+			"stimulus",
+			"use",
+			"group",
+			"demonstrates",
+			"demand",
+			"support",
+			"representation",
+			"steps",
+			"routes",
+			"errors",
+			"difficulty",
+			"concept",
+			"objectives",
+			"families",
+			"scoreFor"
+		].includes(key)) fail(at, `unknown item key ${key}`);
+		if (raw.quarantined !== void 0 && typeof raw.quarantined !== "boolean") fail(at, "quarantined must be boolean");
+		if (raw.skills && raw.difficulty !== void 0) fail(at, "difficulty is model-owned; author demand and support instead");
+		const evidence = validateItemEvidence(raw, types, errors, `questions/${at}`);
+		const type = types[evidence.skills[0]];
 		if (bank[raw.id]) {
 			fail(at, "duplicate item ID");
 			continue;
@@ -17520,6 +17741,11 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			]
 		};
 		for (const key of Object.keys(raw.response || {})) if (key !== "kind" && !(responseKeys[raw.response?.kind] || []).includes(key)) fail(at, `unknown response key ${key}`);
+		for (const step of evidence.steps) {
+			checkStimulusShape(step, `questions/${at} step ${step.id}`, errors);
+			checkResponse(step, `questions/${at} step ${step.id}`, errors);
+			for (const key of Object.keys(step.response || {})) if (key !== "kind" && !(responseKeys[step.response?.kind] || []).includes(key)) fail(at, `unknown step response key ${key}`);
+		}
 		const use = raw.use || "practice";
 		if (![
 			"practice",
@@ -17531,14 +17757,16 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 		for (const id of demonstrates) if (!types[id] || id === type.id) fail(at, `invalid demonstrates type ${id}`);
 		bank[raw.id] = {
 			...raw,
+			...evidence,
 			type: raw.type || type.task,
 			typeId: type.id,
 			concept: type.concept,
-			objectives: type.objectives,
-			families: type.families,
+			objectives: [...new Set(evidence.skills.flatMap((id) => types[id].objectives))],
+			families: [...new Set(evidence.skills.flatMap((id) => types[id].families))],
 			scoreFor: type.scoreFor,
 			use,
 			group: raw.group || `${type.id}:default`,
+			independence: raw.group ? "declared" : "unknown",
 			demonstrates,
 			contentVersion: bankVersion(raw)
 		};
@@ -17555,9 +17783,10 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			fail(`lesson ${sub.id}`, `${raw} is reserved ${item.use}; cannot appear in quiz`);
 			return [];
 		}
+		for (const skill of item.skills) if (!types[skill].scopes.includes(sub.id)) types[skill].scopes.push(sub.id);
 		const type = types[item.typeId];
 		if (!type.scopes.includes(sub.id)) type.scopes.push(sub.id);
-		if (!type.teach.length && !type.derivedTeach) type.derivedTeach = [];
+		if (type.schemaVersion !== 2 && !type.teach.length && !type.derivedTeach) type.derivedTeach = [];
 		if (type.derivedTeach && !type.derivedTeach.includes(sub.id)) type.derivedTeach.push(sub.id);
 		return [item];
 	});
@@ -17595,10 +17824,54 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 	for (const item of Object.values(bank)) {
 		const type = types[item.typeId];
 		item.help = type.teach[0] || null;
-		item.scopes = [...type.scopes];
-		item.contentVersion = bankVersion({
-			item: source.items.find((q) => q.id === item.id),
+		item.scopes = [...new Set(item.skills.flatMap((id) => types[id].scopes))];
+		const raw = source.items.find((q) => q.id === item.id);
+		if (item.schemaVersion === 1) item.legacyContentVersion = bankVersion({
+			item: raw,
 			type
+		});
+		const semantic = ({ q, response, stimulus, steps, why }) => ({
+			q,
+			response,
+			stimulus,
+			why,
+			steps: steps?.map(({ id, q, response, stimulus }) => ({
+				id,
+				q,
+				response,
+				stimulus
+			}))
+		});
+		item.skillVersions = Object.fromEntries(item.skills.map((id) => [id, bankVersion({
+			task: types[id].task,
+			standard: types[id].standard
+		})]));
+		item.contentVersion = bankVersion({
+			...semantic(raw),
+			skillVersions: item.skillVersions
+		});
+		item.evidenceVersion = bankVersion({
+			skills: item.skills,
+			skillVersions: item.skillVersions,
+			demand: item.demand,
+			support: item.support,
+			routes: item.routes,
+			steps: item.steps.map((s) => ({
+				id: s.id,
+				skills: s.skills,
+				support: s.support
+			})),
+			representation: item.representation,
+			group: item.group,
+			use: item.use,
+			quarantined: item.quarantined === true,
+			demonstrates: item.demonstrates
+		});
+		item.organizationVersion = bankVersion({
+			scopes: item.scopes,
+			help: item.help,
+			objectives: item.objectives,
+			families: item.families
 		});
 		if (item.use === "diagnostic" && !Object.values(types).some((t) => t.diagnose.includes(item.id))) fail(`bank ${item.id}`, "diagnostic has no diagnostic link");
 	}
@@ -17613,7 +17886,9 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			"criteria",
 			"outcomes",
 			"typeWeights",
-			"target"
+			"skillWeights",
+			"target",
+			"requirements"
 		].includes(key)) fail(at, `unknown assessment key ${key}`);
 		if (blueprints[raw.scope]) {
 			fail(at, "duplicate scope record");
@@ -17624,7 +17899,10 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 		const outcomeIds = [...new Set(candidates.map((t) => t.scoreFor).filter(Boolean))];
 		const overrides = mapping$1(raw.outcomes) ? raw.outcomes : {};
 		if (raw.outcomes !== void 0 && !mapping$1(raw.outcomes)) fail(at, "outcomes must be a sparse mapping");
-		const weights = mapping$1(raw.typeWeights) ? raw.typeWeights : {};
+		if (raw.typeWeights && raw.skillWeights) fail(at, "use skillWeights or legacy typeWeights, not both");
+		const suppliedWeights = raw.skillWeights ?? raw.typeWeights;
+		const weights = mapping$1(suppliedWeights) ? suppliedWeights : {};
+		if (raw.skillWeights !== void 0 && !mapping$1(raw.skillWeights)) fail(at, "skillWeights must be a mapping");
 		if (raw.typeWeights !== void 0 && !mapping$1(raw.typeWeights)) fail(at, "typeWeights must be a mapping");
 		for (const id of Object.keys(overrides)) if (!outcomeIds.includes(id)) fail(at, `unknown or unassessed outcome ${id}`);
 		for (const id of Object.keys(weights)) if (!candidates.some((t) => t.id === id)) fail(at, `unknown assessed type ${id}`);
@@ -17656,7 +17934,7 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			if (o.essential !== void 0 && typeof o.essential !== "boolean") fail(at, `${id} essential must be boolean`);
 			return [id, {
 				id,
-				weight: weight(o.weight ?? 1, id),
+				weight: weight(o.weight ?? C.objectives?.[id]?.importance ?? 1, id),
 				essential: o.essential !== false,
 				floor: fraction(o.floor ?? .8, `${id} floor`),
 				criteria: o.criteria || raw.criteria,
@@ -17666,7 +17944,7 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 		const total = Object.values(outcomes).reduce((n, o) => n + o.weight, 0);
 		const typeWeights = dict();
 		for (const o of Object.values(outcomes)) {
-			const values = o.types.map((id) => weight(own(weights, id) ? weights[id] : 1, id));
+			const values = o.types.map((id) => weight(own(weights, id) ? weights[id] : types[id].importance ?? 1, id));
 			const sum = values.reduce((a, b) => a + b, 0);
 			o.weight /= total;
 			o.types.forEach((id, i) => {
@@ -17674,8 +17952,14 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 			});
 		}
 		if (!candidates.length) fail(at, "no usable assessed types");
-		for (const t of candidates) if (!Object.values(bank).some((q) => q.typeId === t.id && q.use !== "diagnostic")) warnings.push(`questions/${at}: assessed type ${t.id} has no usable items`);
+		for (const t of candidates) if (!Object.values(bank).some((q) => q.skills.includes(t.id) && q.use !== "diagnostic" && !q.quarantined)) warnings.push(`questions/${at}: assessed type ${t.id} has no usable items`);
+		const requirements = validateEvidenceRequirements(raw.requirements, candidates.map((t) => t.id), errors, `questions/${at}`);
+		for (const t of candidates) if (t.representations?.length && !Object.hasOwn(requirements.representations, t.id)) Object.defineProperty(requirements.representations, t.id, {
+			value: [...t.representations],
+			enumerable: true
+		});
 		const blueprint = {
+			requirements,
 			scope: raw.scope,
 			criteria: raw.criteria,
 			target: fraction(raw.target ?? .9, "target"),
@@ -17685,8 +17969,16 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 		};
 		blueprint.version = bankVersion({
 			blueprint,
-			types: candidates,
-			items: Object.values(bank).filter((q) => blueprint.types.includes(q.typeId))
+			skills: candidates.map((t) => ({
+				id: t.id,
+				standard: t.standard,
+				task: t.task
+			})),
+			items: Object.values(bank).filter((q) => q.skills.some((id) => blueprint.types.includes(id))).map((q) => ({
+				id: q.id,
+				contentVersion: q.contentVersion,
+				evidenceVersion: q.evidenceVersion
+			}))
 		});
 		blueprints[raw.scope] = blueprint;
 	}
@@ -17699,6 +17991,7 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 	if (Object.keys(C.questionAliases).length !== Object.values(bank).filter((q) => q.authorId).length) fail("bank", "duplicate authorId alias");
 	for (const item of Object.values(bank)) if (item.authorId && bank[item.authorId] && item.authorId !== item.id) fail(`bank ${item.id}`, "authorId conflicts with bank ID");
 	C.questionBankWarnings = warnings;
+	C.questionSkills = types;
 	C.questionTypes = types;
 	C.questionBank = bank;
 	C.assessmentBlueprints = blueprints;
@@ -18049,7 +18342,7 @@ function loadCourse(dir) {
 		const review = parseFile(reviewPath);
 		if (review?.status === "accepted" && review.exceptions && typeof review.exceptions === "object") {
 			questionSource.reviewExceptions = Object.create(null);
-			for (const type of questionSource.types) {
+			for (const type of [...questionSource.types, ...questionSource.skills]) {
 				const entry = review.accepted?.entries?.find((e) => e.id === `type-${type.id}` && e.kind === "question-type");
 				const { authorId, ...content } = type;
 				if (entry && typeof entry.hash === "string" && review.exceptionVersions && Object.hasOwn(review.exceptionVersions, type.id) && review.exceptionVersions[type.id] === entry.hash && bankSignature(entry.content) === bankSignature(content) && Object.hasOwn(review.exceptions, type.id)) questionSource.reviewExceptions[type.id] = review.exceptions[type.id];
@@ -46178,19 +46471,7 @@ function conceptOf(C, q, sub) {
 	const seen = [...new Set([...textOf(sub).matchAll(/<c\s+k="([^"]+)"/g)].map((m) => m[1]))].filter((k) => concepts[k]);
 	return seen.length === 1 ? seen[0] : null;
 }
-const bankMetadata = (q) => Object.fromEntries([
-	"typeId",
-	"scoreFor",
-	"objectives",
-	"families",
-	"use",
-	"group",
-	"demonstrates",
-	"help",
-	"scopes",
-	"contentVersion",
-	"authorId"
-].filter((k) => q[k] !== void 0).map((k) => [k, q[k]]));
+const bankMetadata = questionMetadata;
 function buildIndex(C) {
 	const SUBS = {}, CUSE = {}, XIN = {}, QALL = [], SEARCH = [], CQ = {}, BLOCKS = {};
 	const ANNOTATIONS = [];
@@ -46315,7 +46596,8 @@ function buildIndex(C) {
 		CQ,
 		BLOCKS,
 		ANNOTATIONS,
-		TYPES: C.questionTypes || {},
+		TYPES: C.questionSkills || C.questionTypes || {},
+		SKILLS: C.questionSkills || C.questionTypes || {},
 		BANK: C.questionBank || {},
 		BLUEPRINTS: C.assessmentBlueprints || {},
 		CHECK: bankItems.filter((q) => q.use === "check"),

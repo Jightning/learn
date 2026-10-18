@@ -4,6 +4,7 @@
 import { get as retentionGet, isDue } from "./retention.js";
 
 export function categoryPool(pool, idx, category) {
+  pool = pool.filter(q => !q.quarantined);
   if (!category) return pool;
   const concepts = new Set(idx.CAT.drillsOf(category) || []);
   return pool.filter(q => concepts.has(q.concept) || q.scopes?.includes(category));
@@ -18,14 +19,16 @@ export function rangePool(idx, from, to) {
   const concepts = new Set(checks.map(q => q.concept).filter(Boolean));
   const sectionIds = new Set([...selected].map(id => idx.SUBS[id]?.sec?.id || id.split('-')[0]).filter(sec =>
     ids.filter(id => (idx.SUBS[id]?.sec?.id || id.split('-')[0]) === sec).every(id => selected.has(id))));
-  const selectedTypes = new Set(checks.map(q => q.typeId).filter(Boolean));
+  const skillsOf = q => q.skills?.length ? q.skills : [q.typeId].filter(Boolean);
+  const selectedTypes = new Set(checks.flatMap(skillsOf));
   const full = selected.size === ids.length;
-  return [...new Map([...checks, ...idx.PALL.filter(q => q.typeId
-    ? selectedTypes.has(q.typeId) || q.scopes?.some(s => selected.has(s) || sectionIds.has(s) || (full && s === 'course'))
-    : concepts.has(q.concept))].filter(q => !q.use || q.use === 'practice').map(q => [q.id, q])).values()];
+  return [...new Map([...checks, ...idx.PALL.filter(q => skillsOf(q).length
+    ? skillsOf(q).some(id => selectedTypes.has(id)) || q.scopes?.some(s => selected.has(s) || sectionIds.has(s) || (full && s === 'course'))
+    : concepts.has(q.concept))].filter(q => !q.quarantined && (!q.use || q.use === 'practice')).map(q => [q.id, q])).values()];
 }
 
 export function selectMixed(pool, cid, state, limit = 10, random = Math.random) {
+  pool = pool.filter(q => !q.quarantined);
   const weighted = pool.map(item => {
     const prior = state.get(item.id);
     const concept = item.concept && retentionGet(cid, item.concept);
@@ -45,6 +48,6 @@ export function selectMixed(pool, cid, state, limit = 10, random = Math.random) 
 }
 
 export function retryVariant(pool, current, usedIds) {
-  return pool.find(q => (!q.use || q.use === "practice") && (current.typeId ? q.typeId === current.typeId : q.concept && q.concept === current.concept) &&
+  return pool.find(q => !q.quarantined && (!q.use || q.use === "practice") && (current.typeId ? q.typeId === current.typeId : q.concept && q.concept === current.concept) &&
     q.id !== current.id && !usedIds.has(q.id)) || null;
 }

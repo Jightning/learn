@@ -1,5 +1,10 @@
 /* Shared question card for subsection checks, Mixed Practice, and Review. */
 .quiz{margin:26px 0 0;border-top:1px solid var(--rule);padding-top:18px}
+.section-questions{margin-top:30px;padding-top:18px;border-top:1px solid var(--rule)}
+.section-questions h3{margin:0 0 10px}
+.section-questions a{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:8px 0}
+.section-questions a>span:last-child{font-family:var(--mono);font-size:var(--fs-meta);color:var(--ink-2)}
+[id$="-questions"]{scroll-margin-top:80px}
 .quiz-h{display:flex;align-items:center;gap:9px;margin-bottom:12px;
   font-family:var(--ui);font-size:var(--fs-small);color:var(--ink-2)}
 .quiz-h .qstat{font-family:var(--mono);font-size:var(--fs-meta);margin-left:auto}

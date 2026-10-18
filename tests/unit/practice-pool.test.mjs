@@ -12,7 +12,7 @@ globalThis.localStorage = {
   clear: () => store.clear()
 };
 
-const { rangePool, selectMixed, retryVariant } = await import("../../src/lib/practice-pool.js");
+const { categoryPool, rangePool, selectMixed, retryVariant } = await import("../../src/lib/practice-pool.js");
 
 const q = (id, subId, concept, extra = {}) => ({ id, subId, concept, ...extra });
 const idx = {
@@ -42,4 +42,22 @@ test("a retry uses another unused variant of the same concept", () => {
   const pool = [q("first", null, "one"), q("second", null, "one"), q("other", null, "two")];
   assert.equal(retryVariant(pool, pool[0], new Set(["first"])).id, "second");
   assert.equal(retryVariant(pool, pool[0], new Set(["first", "second"])), null);
+});
+
+test('a placed combined task makes variants for each assessed component eligible', () => {
+  const course = { ...idx, QALL: [q('joint', 's1-1', null, { typeId: 'one', skills: ['one', 'two'] })],
+    PALL: [q('two-variant', null, null, { typeId: 'two', skills: ['two'] }), q('outside', null, null, { typeId: 'other', skills: ['other'] })] };
+  assert.deepEqual(rangePool(course, 's1-1', 's1-1').map(item => item.id), ['joint', 'two-variant']);
+});
+
+
+test('quarantined items are excluded from range, category, weighted, and retry selection', () => {
+  const banned = q('banned', 's1-1', 'one', { quarantined: true });
+  const safe = q('safe', 's1-1', 'one');
+  const course = { ...idx, QALL: [banned], PALL: [safe], CAT: { drillsOf: () => ['one'] } };
+  assert.deepEqual(rangePool(course, 's1-1', 's1-1').map(q => q.id), ['safe']);
+  assert.deepEqual(categoryPool([banned, safe], course, 'all'), [safe]);
+  assert.deepEqual(categoryPool([banned, safe], course, null), [safe]);
+  assert.deepEqual(selectMixed([banned, safe], 'c', { get: () => null }), [safe]);
+  assert.equal(retryVariant([banned], safe, new Set()), null);
 });

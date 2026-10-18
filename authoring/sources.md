@@ -24,9 +24,12 @@ that establishes the skill over a title-only heading. Catalog lookup confirms
 that a source unit exists and has content or a visual asset; it does not verify
 that the passage is the right evidence, so a reviewer must inspect the routed
 original.
-Do not dismiss a whole problem or review file as repetition. Reuse existing
-families for repeated tasks; inventory distinct methods and combinations
-before deciding what the requested scope excludes.
+Do not dismiss a problem or review file as repetition. Work through representative
+questions, including unfamiliar arrangements, combined methods, and in-scope
+boundary cases; check solutions against the original prompts and figures. Infer
+distinct methods and decisions, not just answers; use them to calibrate
+teaching and section-end tasks without copying examples or importing
+unexplained prerequisites.
 
 Writer packets reference content-addressed YAML excerpts, so shared source
 text is stored once rather than embedded in every packet. Open only assigned
