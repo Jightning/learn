@@ -45509,7 +45509,7 @@ function drawing(spec, caption = "") {
 	const maxX = Math.max(...bounds.map((b) => b.x + b.w)) + 8;
 	const maxY = Math.max(...bounds.map((b) => b.y + b.h)) + 8;
 	const width = maxX - minX;
-	return `<svg class="fx fx-drawing" viewBox="${minX} ${minY} ${width} ${maxY - minY}" style="min-width:${Math.min(Math.max(Math.ceil(width), 480), 760)}px" role="img" aria-label="${alt}">${shapes}</svg>`;
+	return `<svg class="fx fx-drawing" viewBox="${minX} ${minY} ${width} ${maxY - minY}" style="min-width:${Math.min(Math.ceil(width), 760)}px" role="img" aria-label="${alt}">${shapes}</svg>`;
 }
 //#endregion
 //#region src/figures/index.js
@@ -45823,6 +45823,7 @@ function checkDiagram(kind, spec, where, errs) {
 				"arrow",
 				"path"
 			].includes(shape.type) && (!Array.isArray(shape.points) || shape.points.length < 2 || !shape.points.every(point))) errs.push(`${where}: drawing ${shape.type} needs at least two [x, y] points`);
+			else if (["line", "arrow"].includes(shape.type) && shape.points.length !== 2) errs.push(`${where}: drawing ${shape.type} needs exactly two points; use path for a multi-segment wire`);
 			if ([
 				"rect",
 				"ellipse",

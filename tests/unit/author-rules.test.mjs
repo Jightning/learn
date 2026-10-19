@@ -41,6 +41,20 @@ test("expensive roles do not receive formatting modules even with explicit shape
   }
 });
 
+test("visual writers receive delivery guidance with only the selected recipe", () => {
+  for (const [need, recipe] of [["figure:circuit", "formats-figure-circuit"], ["block:image", "formats-images"]]) {
+    const selected = selectContext(context, { phase: "write", role: "writer", needs: [need] });
+    const ids = selected.modules.map(m => m.id);
+    assert.ok(ids.includes("figures"));
+    assert.ok(ids.includes(recipe));
+    assert.ok(!ids.includes("representations"));
+    assert.ok(!ids.includes("formats-figure-plot"));
+    assert.equal(new Set(ids).size, ids.length);
+  }
+  const ordinary = selectContext(context, { phase: "write", role: "writer" });
+  assert.ok(!ordinary.modules.some(m => m.id === "figures" || m.id === "representations"));
+});
+
 test("shape detection includes stimuli and does not depend on writing a draft first", () => {
   const found = shapeNeeds({ blocks: [{ t: "figure", kind: "plot" }, { t: "math" }],
     quiz: [{ response: { kind: "multi" }, stimulus: { t: "passage" } }] });

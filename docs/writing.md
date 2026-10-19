@@ -1,26 +1,17 @@
 # Writing a course
 
-Write for the learner described in the reader profile and teach the promised
-capability from that starting point. A lesson should read as one connected
-explanation: establish what is known, introduce each new idea where it is
-needed, show why the reasoning works, and connect examples and representations
-back to the claim they support. Use transitions when the relationship between
-blocks would otherwise be left for the learner to infer.
+Write a connected explanation for the stated learner, with a clear context,
+conceptual development and interpreted examples. The shared
+[teaching contract](../authoring/core.md) owns these principles and rewrite
+expectations. Use [block guidance](../authoring/blocks.md) to decide what belongs
+in running prose or a separate definition, rule, or worked case; use the
+[prose convention](../authoring/prose.md) for meaningful headings and emphasis.
+These are editorial decisions, not block or word quotas.
 
-Keep essential reasoning in the default reading. Add `optional: true` to a
-block only when a learner can understand and use the required material without
-it. Put an optional explanation beside the passage it develops, and use
-`follows: true` when it depends on the immediately preceding block. Optional
-content may deepen or extend an explanation; it must not carry a prerequisite,
-exam requirement, or missing step. Read the assembled subsection at full
-resolution and check the argument end to end.
-
-Use ordinary prose to carry the thread of the explanation. A callout is useful
-when its role helps the reader recognize a definition, rule, common error, or
-worked solution; avoid turning every paragraph into a card. Use examples to
-make decisions and intermediate states visible, then fade guidance as the
-learner gains the needed method. Revisit earlier ideas when a later step depends
-on them, without repeating their entire introduction.
+Keep essential teaching in the default reading. Use `optional: true` only when
+the required account remains understandable without the block. Place it beside
+the passage it extends; `follows: true` marks dependence on the preceding block.
+Inspect the assembled reading end to end, not just its fields.
 
 Teach when and why to use a method, including its conditions and stopping
 criteria. Required reading and section-end questions together support the

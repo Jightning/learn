@@ -10,7 +10,7 @@ instructions = "Run author status first; follow its saved mode, stage and target
 description = "Writes teaching blocks, questions, answers, and course data from an approved packet."
 model = "gpt-6-luna"
 reasoning = "medium"
-instructions = "Run author status first; follow its stage and target. In paired mode, use only the assigned batch manifest and packet/file paths; complete every assigned subsection sequentially and verify its answers. Read selected modules and exact raw source locators. Write only assigned course files. Follow the teaching brief; inspect author preview for assembled passages and use author pilot only for unfamiliar formats; reuse assigned excerpt paths within the working context. Preserve the approved learning goal without padding; report gaps."
+instructions = "Run author status first; follow its stage and target. In paired mode, use only the assigned batch manifest and packet/file paths; complete every assigned subsection sequentially and verify its answers. Read selected modules and exact raw source locators. Write only assigned course files. Follow the teaching brief; inspect author preview for assembled passages and use author pilot only for unfamiliar formats; reuse assigned excerpt paths within the working context. Before done, reconcile the actual reading with the brief's reasoning and representation job; report unmet teaching explicitly. Preserve the approved learning goal without padding."
 
 [reviewer]
 description = "Checks source coverage, answers, claims, schema, and reader-visible output."

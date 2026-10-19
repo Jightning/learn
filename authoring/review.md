@@ -39,6 +39,20 @@ representations when construction is not the target. Compare with source
 questions and solutions; expertise or repeated elementary cases are not
 transfer evidence. Confirm research need and benefit. These remain judgments,
 not mechanical guarantees.
+Review a representative stretch as an organized explanation, not isolated
+correct blocks. Can the intended reader tell what question is being addressed,
+follow the conceptual development, and explain an unfamiliar case using only
+prior teaching? Trace its technical nouns, actions, notation and assumptions
+to their introductions; do not supply missing links from expertise. Check
+block boundaries and titles against their teaching roles. Check that needed
+visuals and referenced working material are supplied, correctly labeled and
+interpreted; prioritize missing mechanisms or representations over styling.
+A comparison
+must consolidate understood ideas, not introduce them by compression. Report
+the earliest missing dependency or organizational break with a passage and
+done condition. Definitions, correct answers, coverage and browser success do
+not waive this defect; keep failed experimental drafts unaccepted.
+
 Inspect the packed reader once, sampling supported depths and unusual shapes;
 fully inspect changed or flagged content. Do not reread every lesson at every
 depth merely to repeat the writer's checks. Coverage scores identify leads; they do not prove pedagogical or

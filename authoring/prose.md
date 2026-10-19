@@ -1,15 +1,15 @@
 # Prose packet
 
-Write to the reader in direct, clear sentences. Second person can name the
-reader's situation; it should not turn every fact into an imperative. Keep the
-subject and verb close, and remove clauses that add no useful meaning. Avoid
-generated cadence: hung tails, nominalizations, hedged assertions, and
-judgement words such as “crucial” or “obvious.” Use punctuation that makes the
-relationship clear.
+Write direct, clear sentences with subjects and verbs close together. Second
+person can name the reader's situation without making every fact an imperative.
+Use paragraphs to develop a thought, with relationships stated in the prose.
+Compress repetition and established steps before unfamiliar reasoning. Avoid
+nominalizations, hedged assertions, judgement words such as “obvious,” and
+transitions that imply an unfamiliar idea is already known. Explain what
+happens directly; ask the learner to inspect, trace or compare only when it is
+a useful learning action and the relevant material is supplied. Read prose aloud.
 
-Connect technical terms to their plain meaning at first consequential use.
-Compress repetition and established steps before unfamiliar reasoning.
-
-Before emitting, check the YAML mapping trap: quote any scalar containing `: `
-or `#`, including list items and table cells. Read prose aloud. The separate
-`examples/` files carry format examples; this module carries only prose rules.
+Use `<strong>` or `<em>` sparingly when emphasis clarifies meaning, without
+automatic first-use bolding, redundant concept styling or restating a heading
+just to mark a term. Keep headings meaningful and the account understandable
+without styling. See blocks.md for boundaries and formats/inline.md for markup.

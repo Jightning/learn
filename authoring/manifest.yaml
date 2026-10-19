@@ -55,7 +55,7 @@ modules:
   figures:
     file: figures.md
     phases: []
-    needs: ['figure:graph', 'figure:circuit', 'figure:drawing', 'figure:plot', 'figure:flow', 'figure:grid', 'figure:timing', 'figure:bar', 'figure:scatter', 'figure:matrix', 'figure:svg']
+    needs: ['block:image', 'figure:graph', 'figure:circuit', 'figure:drawing', 'figure:plot', 'figure:flow', 'figure:grid', 'figure:timing', 'figure:bar', 'figure:scatter', 'figure:matrix', 'figure:svg']
     roles: [writer, single]
   review:
     file: review.md

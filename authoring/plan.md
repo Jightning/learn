@@ -101,8 +101,12 @@ lesson. Tools reject unknown IDs, duplicate ownership, and forward
 requirements. Omit fields that do not apply. Legacy plans without briefs remain
 usable and keep their existing mapping warnings.
 
-An introduction in a brief is planned evidence. A block becomes a written
-teaching anchor only when it has `introduces: [the-id]`, substantive teaching
+An introduction in a brief is planned evidence, not established understanding;
+apply the core teaching contract to its actual content. Include needed local
+foundations even when they do not deserve separate curriculum IDs.
+
+A block is mechanically indexed as a written teaching anchor only when it has
+`introduces: [the-id]`, substantive teaching
 content, and a stable `authorId`;
 objective/concept tags locate potentially relevant blocks but do not establish
 that an idea was taught. Prerequisite packets include only direct requirements
@@ -111,6 +115,10 @@ Earlier lessons assigned in the same writing batch remain planned until written.
 `written` means the content exists, not that a learner has mastered it. Missing
 anchors remain visible as planned evidence with a warning, never as mastery.
 
+Use `reasoning` to identify the local question or situation, the conceptual
+route from known ideas to the new capability, and decisions the learner must
+understand. An outcome or list of terms alone is not a route. Keep this brief:
+do not script the prose or prescribe a block for every concept.
 Use the existing `reasoning`, `practice`, and `boundary` fields to connect
 required reading and section-end questions to the lesson outcome, including
 without separate Practice. Capture decisions, conditions, applicable stopping criteria,

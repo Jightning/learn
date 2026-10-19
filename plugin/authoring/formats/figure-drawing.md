@@ -15,5 +15,7 @@
 ```
 
 Coordinates are pixels in the viewBox. Shapes are `line`, `arrow`, `path`,
-`rect`, `ellipse`, and `text`; lines, arrows, and paths use `points`, while
-rectangles and ellipses use `x,y,w,h`. `accent` is 0–3. `alt` is required.
+`rect`, `ellipse`, and `text`. Lines/arrows need exactly two `points`; use
+`path` for a multi-segment wire. Rectangles use top-left `x,y`; ellipses use
+center `x,y`; both take `w,h`. Keep wire endpoints and junction centers
+coincident. `accent` is 0–3. `alt` is required.

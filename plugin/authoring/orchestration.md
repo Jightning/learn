@@ -12,6 +12,13 @@ before correction. Batches bound writer context. During review, `batch` links
 the combined section screens and shared context rather than asking for one
 item at a time.
 
+For a requested revision, reconcile the affected teaching briefs and directives
+with the current contract and task before handing off writing. Retain approved
+outcomes and source routes; use existing planning fields to replace stale fact
+lists, generic representation jobs or instructions from a completed phase.
+Resolve conflicts such as an old question-generation directive in a reading-only
+rewrite. This is local plan maintenance, not a new inventory or workflow stage.
+
 ## Manual paired: three prompts, plus correction and recheck when needed
 
 When the user requests separate models, manual switching, or no subagents,

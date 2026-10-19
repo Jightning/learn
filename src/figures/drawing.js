@@ -55,6 +55,6 @@ export function drawing(spec, caption = "") {
   const maxY = Math.max(...bounds.map(b => b.y + b.h)) + 8;
   const width = maxX - minX;
   return `<svg class="fx fx-drawing" viewBox="${minX} ${minY} ${width} ${maxY - minY}"` +
-    ` style="min-width:${Math.min(Math.max(Math.ceil(width), 480), 760)}px"` +
+    ` style="min-width:${Math.min(Math.ceil(width), 760)}px"` +
     ` role="img" aria-label="${alt}">${shapes}</svg>`;
 }

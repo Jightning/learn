@@ -10,23 +10,49 @@ never absolute local paths or usernames.
 
 ## Teaching
 
-Teach the promised capability from the reader's established starting point.
-Connect new ideas to their purpose, prerequisites, and neighboring ideas.
-Establish unfamiliar parts and notation before use. Explain transferable
-reasoning, relevant conditions, and, where applicable, how to check a result or
-know when a procedure is complete. Show unfamiliar decisions, then fade
-established steps. Connect useful representations to the prose. Keep essential
-reasoning in the main path; place optional elaboration beside its passage.
-Write the full reading path as continuous teaching, then derive any review
-summary from it. Use ordinary prose between cards to connect premises, reasons,
-and changes in representation wherever those links help understanding.
-Match practice and feedback to the promised capability,
-including useful variation. Remove repetition and irrelevant detail without
-shortening away necessary reasoning.
+Teach the promised capability as a connected account from the reader's
+established knowledge, not a catalog of definitions or answers. Give new ideas
+an intelligible setting: what question, observation, use or difficulty makes
+them worth considering, and how they connect to what came before. Choose the
+route that fits the subject; a direct definition can lead when its context is
+already clear. An analogy helps only when its correspondence and limits are
+explained, and does not replace the actual account.
 
-These principles apply across subjects. Choose the order, amount of guidance,
-examples, and representations to fit the reader and task. No fixed lesson
-sequence, visual quota, word ceiling, or sentence count is required.
+Develop unfamiliar ideas before relying on them. Establish what a thing is,
+its purpose and the relevant mechanism or relationship; a behavior sentence
+alone may not define it. Ground the explanation's own parts, actions and
+notation in prior teaching, including ordinary-sounding technical verbs.
+Connect concrete cases to the general idea and back to its use. Show why
+unfamiliar decisions and intermediate results follow, including assumptions,
+limits, checks and stopping conditions where applicable; fade established
+steps. At changes of topic or representation, explain what carries over and
+why the next step is needed rather than leaving the connection to the reader.
+
+Ordinary prose carries this development; blocks, headings and emphasis make
+its organization visible (see blocks.md and prose.md). A paragraph can pose a
+problem, develop an explanation or interpret a case without becoming a
+callout. Use diagrams routinely to explain connections, spatial structure and
+state changes; supply and interpret them instead of expanding a verbal inventory.
+Prioritize mechanisms and useful representations over typography. Develop the
+ingredients before compressing them into comparisons
+or summaries; derive review summaries from the full reading, never expand a
+summary just by adding more terminology. Keep essential teaching in the main
+path and optional elaboration beside its passage. Match practice and feedback
+to the outcome with useful variation. Remove repetition and irrelevant detail
+without shortening away necessary explanation.
+
+Read from the learner's position: using only declared background and preceding
+teaching, can they explain what is happening, why it matters and why the result
+follows? Repair the earliest missing link, including missing context or
+organization. Correct facts, concept tags, coverage and worked answers do not
+settle this judgment. No fixed opening sequence, paragraph length, block count
+or visual quota is required.
+
+For a rewrite, assess the existing account against this contract. Preserve
+approved capabilities, sources and useful stable identities, not inadequate
+prose. Substantial length and completed workflow state do not establish
+quality. Rebuild the broken explanatory sequence where needed instead of
+appending clarifications to its summary; report local amendments as such.
 
 ## Scope and workflow
 

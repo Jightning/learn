@@ -127,6 +127,8 @@ function checkDiagram(kind, spec, where, errs) {
       if (["line", "arrow", "path"].includes(shape.type) &&
           (!Array.isArray(shape.points) || shape.points.length < 2 || !shape.points.every(point)))
         errs.push(`${where}: drawing ${shape.type} needs at least two [x, y] points`);
+      else if (["line", "arrow"].includes(shape.type) && shape.points.length !== 2)
+        errs.push(`${where}: drawing ${shape.type} needs exactly two points; use path for a multi-segment wire`);
       if (["rect", "ellipse", "text"].includes(shape.type) &&
           (!finite(shape.x) || !finite(shape.y))) errs.push(`${where}: drawing ${shape.type} needs numeric x and y`);
       if (["rect", "ellipse"].includes(shape.type) &&

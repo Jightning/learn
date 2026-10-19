@@ -10,6 +10,7 @@ import { graph } from "../../src/figures/graph.js";
 import { bar } from "../../src/figures/bar.js";
 import { plot } from "../../src/figures/plot.js";
 import { scatter } from "../../src/figures/scatter.js";
+import { drawing } from "../../src/figures/drawing.js";
 import { leftMargin, tickLabels, MARGIN } from "../../src/figures/axes.js";
 import { checkFigure } from "../../tools/lib/figures.mjs";
 
@@ -74,6 +75,21 @@ const ck = (name, ok, detail = "") => {
     .slice(1).map(Number);
   ck("the canvas is wide enough to hold them", chips[0][0] >= vx && chips[3][1] <= vx + vw,
      `notes ${Math.round(chips[0][0])}–${Math.round(chips[3][1])} in ${Math.round(vx)}–${Math.round(vx + vw)}`);
+}
+
+/* ---- drawings: respect compact layouts without shrinking wide content ---- */
+{
+  const minWidth = spec => Number(drawing(spec).match(/min-width:(\d+)px/)[1]);
+  const compact = { w: 280, h: 180, shapes: [
+    { type: "rect", x: 20, y: 30, w: 100, h: 60 },
+    { type: "text", x: 30, y: 60, text: "Driver" }
+  ] };
+  ck("a compact drawing can fit a phone panel at its authored scale", minWidth(compact) === 296);
+  ck("a wide drawing retains its readable scrolling width", minWidth({ w: 960, h: 200 }) === 760);
+  const overhang = { ...compact, shapes: [
+    { type: "text", x: 270, y: 60, text: "a label that extends beyond the authored canvas" }
+  ] };
+  ck("drawing width still includes labels beyond the authored canvas", minWidth(overhang) > 500);
 }
 
 /* ---- graph: scroll vs shrink ---- */
@@ -171,6 +187,14 @@ const ck = (name, ok, detail = "") => {
     const e = errsFor(kind, spec);
     ck(name, e.length === 1 && e[0].includes(needle), e[0] || "no error raised");
   };
+
+  for (const type of ["line", "arrow"]) {
+    one(`a drawing ${type} cannot silently drop wire segments`, "drawing",
+      { alt: "Connected wire", shapes: [{ type, points: [[0, 0], [0, 20], [30, 20]] }] },
+      "exactly two points");
+  }
+  ck("a drawing path supports the complete multi-segment wire", errsFor("drawing",
+    { alt: "Connected wire", shapes: [{ type: "path", points: [[0, 0], [0, 20], [30, 20]] }] }).length === 0);
 
   /* The defect this exists for. `{label: resolve, note: path, credential,
      query}` is four keys, two of them null, and the note renders as "path". */
