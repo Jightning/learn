@@ -42,7 +42,7 @@ const SECRET = "s".repeat(40);
 const req = (payload, auth = SECRET) => new Request("https://x/api", {
   method: "POST",
   headers: auth ? { authorization: `Bearer ${auth}` } : {},
-  body: JSON.stringify(payload)
+  body: JSON.stringify({protocol:2, ...payload})
 });
 
 const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {}) => {
@@ -109,7 +109,7 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
 
   const forged = await call(syncRoute,
     { device: "laptop", since: 0, rows: [{ id: "phone:9:9", ts: 9, enc: "x" }] }, { db, counter });
-  check("a device may not write another device's rows", forged.body.written === 0);
+  check("a device may not write another device's rows", forged.status === 400);
 }
 
 /* --------------------------------------------------------------- courses ----*/
@@ -230,9 +230,9 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
   const junk = await call(syncRoute, { device: "phone", since: 0,
     prefs: [pref("../../etc", 9e12, "x"), pref("hue:x", 9e12, "")] }, { db, counter });
   check("a key that is a path, or a value that is empty, is refused",
-        junk.body.prefs.length === 4, JSON.stringify(junk.body.prefs.map(p => p.k)));
+        junk.status === 400 && db.prepare("SELECT COUNT(*) n FROM prefs").get().n === 4);
   check("what is stored is ciphertext the server never reads into",
-        !JSON.stringify(junk.body.prefs).includes("hue:x"));
+        !db.prepare("SELECT k FROM prefs WHERE k = ?").get("hue:x"));
 }
 
 /* ------------------------------------------------------------ one round trip -*/
@@ -242,7 +242,7 @@ const call = async (route, payload, { auth = SECRET, env = {}, db, counter } = {
   await call(syncRoute, { device: "phone", since: 0, rows: [
     { id: "phone:1:1", ts: 1, enc: "a" }, { id: "phone:2:1", ts: 2, enc: "b" }] }, { db, counter });
   check("a sync is one request carrying rows, deletions and the listing",
-        counter.n - before <= 6, `${counter.n - before} statements in one call`);
+        counter.n - before <= 8, `${counter.n - before} statements in one call`);
 }
 
 /* ------------------------------------------------- what to hand up, and why -

@@ -4,6 +4,7 @@ export function syncBatches(rows, prefs) {
   let batch = { rows: [], prefs: [] }, bytes = 0;
   for (const [kind, records] of [["rows", rows], ["prefs", prefs]]) {
     for (const record of records) {
+      if (record.enc?.length > 128 * 1024) throw new Error("a saved value is too large to back up");
       const size = new TextEncoder().encode(JSON.stringify(record)).length + 1;
       if (size > 3 * 1024 * 1024) throw new Error("a saved value is too large to back up");
       if (batch[kind].length === 2000 || bytes + size > 3 * 1024 * 1024) {

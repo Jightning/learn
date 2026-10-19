@@ -53,9 +53,24 @@ export function guard(request, env) {
 
 /** Bounded read of a JSON body: a malformed or oversized payload is refused. */
 export async function body(request, maxBytes = 4 * 1024 * 1024) {
-  const raw = await request.text();
-  if (raw.length > maxBytes) throw new Error("payload too large");
-  try { return JSON.parse(raw); } catch { throw new Error("bad json"); }
+  const reader = request.body?.getReader();
+  const chunks = [];
+  let bytes = 0;
+  if (reader) {
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        bytes += value.byteLength;
+        if (bytes > maxBytes) { await reader.cancel(); throw new Error("payload too large"); }
+        chunks.push(value);
+      }
+    } finally { reader.releaseLock(); }
+  }
+  const combined = new Uint8Array(bytes);
+  let at = 0;
+  for (const chunk of chunks) { combined.set(chunk, at); at += chunk.byteLength; }
+  try { return JSON.parse(new TextDecoder().decode(combined)); } catch { throw new Error("bad json"); }
 }
 
 /* A tombstone is a restore window, not a promise: after this it is gone for
@@ -70,10 +85,10 @@ export async function purgeBin(db, now = Date.now()) {
     "SELECT id FROM courses WHERE deleted_at IS NOT NULL AND deleted_at < ?").bind(cutoff).all();
   const ids = (dead.results || []).map(r => r.id);
   if (!ids.length) return 0;
-  const marks = ids.map(() => "?").join(",");
+  const packed = JSON.stringify(ids);
   await db.batch([
-    db.prepare(`DELETE FROM course_chunks WHERE id IN (${marks})`).bind(...ids),
-    db.prepare(`DELETE FROM courses WHERE id IN (${marks})`).bind(...ids)
+    db.prepare("DELETE FROM course_chunks WHERE id IN (SELECT value FROM json_each(?))").bind(packed),
+    db.prepare("DELETE FROM courses WHERE id IN (SELECT value FROM json_each(?))").bind(packed)
   ]);
   return ids.length;
 }

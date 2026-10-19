@@ -12,7 +12,12 @@ import { readFileSync } from "node:fs";
 export function d1(db, counter = { n: 0 }) {
   const stmt = sql => {
     const bound = [];
-    const run = () => { counter.n++; return db.prepare(sql); };
+    const run = () => {
+      counter.n++;
+      if (counter.limit && counter.n > counter.limit) throw new Error("D1 query budget exceeded");
+      if (bound.length > 100) throw new Error("D1 bind budget exceeded");
+      return db.prepare(sql);
+    };
     const api = {
       bind: (...args) => { bound.push(...args); return api; },
       all: async () => ({ results: run().all(...bound) }),
@@ -22,7 +27,11 @@ export function d1(db, counter = { n: 0 }) {
     };
     return api;
   };
-  return { prepare: stmt, batch: async list => { for (const s of list) s._exec(); return []; } };
+  return { prepare: stmt, batch: async list => {
+    db.exec("BEGIN");
+    try { for (const s of list) s._exec(); db.exec("COMMIT"); return []; }
+    catch (e) { db.exec("ROLLBACK"); throw e; }
+  } };
 }
 
 export function freshDb(schemaPath) {

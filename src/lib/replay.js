@@ -19,6 +19,7 @@
  * slow, so the result is snapshotted with a watermark and later replays start
  * from there.
  * ==========================================================================*/
+import { migrateLearnerAliases } from "./learner-prefs.js";
 import { getItem, setItem, removeItem } from "./store.js";
 import { step as retentionStep, install as installRetention, configOf } from "./retention.js";
 import { orderEvents, scoredEvents } from "./evidence.js";
@@ -89,6 +90,7 @@ const blankish = () =>
  * `course` is the loaded course object; `cid` its folder id.
  */
 export function rebuild(cid, course) {
+  migrateLearnerAliases(keyFor(cid, course.code), course.legacyQuestionAliases);
   const cfg = configOf(course);
   let prior = readCkpt(cid);
   if (prior?.replayVersion !== 2) prior = null;

@@ -38,7 +38,7 @@ export default function CloudPanel({ setup = false, onChange }) {
   const report = r => {
     setBusy(false);
     setLast(lastSync());
-    if (!r) { setMsg("Nothing to do: already up to date today."); return; }
+    if (!r) { setMsg("Automatic backup is not due yet."); return; }
     if (!r.ok) {
       setMsg(r.unauthorized
         ? "That secret was refused. Check it matches SYNC_SECRET on the deployment."
@@ -123,7 +123,7 @@ export default function CloudPanel({ setup = false, onChange }) {
 
       {on && (
         <p class="cal-cap cloud-note">
-          Backup once a day.
+          Back up this device, then the other device. Back up here again to receive changes uploaded afterward.
         </p>
       )}
 

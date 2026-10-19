@@ -1,6 +1,6 @@
 /* Per-question outcomes for coverage and later practice. */
 import { getItem, setItem, removeItem, flush, keys } from "./store.js";
-import { readLearner, writeLearner, learnerRatings, dropLearner } from "./learner-prefs.js";
+import { readLearner, writeLearner, learnerRatings, dropLearner, answerHistory } from "./learner-prefs.js";
 import { setPref, dropPref } from "./prefs.js";
 const DAY = 864e5;
 const cache = {};
@@ -62,8 +62,16 @@ export function stateFor(id, course) {
       if (resetAt && !(value?.started > resetAt)) return null;
       return value?.signature === signature ? value : null;
     },
+    getAnswerHistory(qi, signature) {
+      const current = readLearner(KEY, 'answer', qi, d.answers?.[qi]);
+      return [...answerHistory(KEY, qi), ...(current && current.signature !== signature ? [current] : [])]
+        .filter(prior => !resetAt || prior.started > resetAt);
+    },
     saveAttempt(qi, attempt) {
       if (!on) return;
+      const previous = readLearner(KEY, 'answer', qi, d.answers?.[qi]);
+      if (previous && previous.signature !== attempt.signature && (!resetAt || previous.started > resetAt))
+        writeLearner(KEY, 'history', `${qi}:${previous.attemptId || previous.started || 'legacy'}`, { questionId:qi, attempt:previous });
       (d.answers ||= {})[qi] = attempt;
       writeLearner(KEY, 'answer', qi, attempt);
       save();

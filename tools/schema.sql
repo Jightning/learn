@@ -34,13 +34,14 @@ CREATE TABLE IF NOT EXISTS courses (
 -- a course's colour, the order of the cards, which bundled ones are dismissed.
 -- One row per key, because a single settings blob would let a device that has
 -- not looked in a week overwrite every key with what it remembers. `ts` is the
--- client's stamp and the only tiebreak: the later write wins, per key. The
+-- client's edit stamp; rev breaks equal stamps deterministically. The
 -- value is ciphertext like everything else; the key name is not, exactly as a
 -- course id is not.
 CREATE TABLE IF NOT EXISTS prefs (
   k   TEXT PRIMARY KEY,
   ts  INTEGER NOT NULL,
-  enc TEXT NOT NULL
+  enc TEXT NOT NULL,
+  rev TEXT NOT NULL DEFAULT ''
 );
 
 -- D1 caps how large a single value may be, and a course runs to ~1.5MB, so a

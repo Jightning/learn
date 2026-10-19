@@ -20,13 +20,10 @@ export default function PrivacyNote() {
   );
   return (
     <p class="lede cal-priv">
-      This device backs up to your own account once a day. Your answer log, your
-      courses, your notes and saved markers, and the settings that belong to the
-      shelf — a course's colour, card order and dismissed bundled courses — are
-      encrypted in this browser first, with a key derived from your secret, so
-      they can be stored there but not read there. What the backup can see is
-      the shape of it: which device wrote a row, when, and how big it was.
-      Schedules are recomputed from the log rather than sent.
+      This device backs up your saved learning data and courses, encrypted in
+      this browser. The backup server receives the shared secret, so it can
+      decrypt that data. Device IDs, record names, timestamps and sizes are
+      visible to it. Schedules are recomputed from the answer log.
     </p>
   );
 }

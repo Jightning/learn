@@ -383,6 +383,9 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
   const fresh = await browser.newContext();
   const C = await fresh.newPage();
   await enrol(C);
+  await openLibrary(C);
+  check("a fresh device shows progress before its first course visit",
+    /1 of 2 mastered/.test(await C.locator('.lcard', {has:C.locator('a.lhit[href="#/onlylaptop"]')}).innerText()));
   await C.goto(ORIGIN + "/#/onlylaptop/s1-1");
   await C.locator('.qposition').waitFor();
   check("a fresh browser restores the lesson question position",
@@ -442,6 +445,28 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
   check("and the colour chosen on one is the colour on the other",
         /--hue:\s*135/.test(painted), painted);
 }
+
+/* Offline and changed-question behavior remains visible through real UI. */
+await A.goto(ORIGIN + "/#/sync");
+await A.locator('#cloud-sync').waitFor();
+await laptop.setOffline(true);
+await A.locator('#cloud-sync').click();
+await A.getByText(/this device is offline/).waitFor();
+check("offline backup never reports already up to date", /offline/.test(await A.locator('.sync-msg').innerText()));
+await laptop.setOffline(false);
+const revised = {...course, "sections/01-a/1-b.yaml": course["sections/01-a/1-b.yaml"].replace('What is two plus two?', 'Compute the sum of two and two.')};
+await install(A, revised);
+await A.goto(ORIGIN + "/#/onlylaptop/s1-1");
+await A.locator('.qposition').waitFor();
+if (/Question 2/.test(await A.locator('.qposition').innerText()))
+  await A.getByRole('button', {name:'Previous question',exact:true}).click();
+await A.locator('.qhistory').waitFor();
+await A.locator('.qhistory summary').click();
+check("a changed question exposes its earlier saved answer", /4/.test(await A.locator('.qhistory pre').innerText()));
+await A.goto(ORIGIN + "/#/onlylaptop/calibration");
+await A.locator('.cal-priv').waitFor();
+check("privacy copy describes the shared-secret server boundary",
+  /server receives the shared secret/.test(await A.locator('.cal-priv').innerText()));
 
 await browser.close();
 server.close();

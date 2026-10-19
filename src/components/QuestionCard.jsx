@@ -57,6 +57,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
   }, [sessionId, item.id]);
   const signature = questionSignature(item);
   const tries = questionTries(item);
+  const [history] = useState(() => state.getAnswerHistory?.(item.id, signature) || []);
   const [saved] = useState(() => { const prior = state.getAttempt(item.id, signature);
     const sameSession = context === "lesson" || !sessionId || prior?.sessionId === sessionId;
     return sameSession && (restore || delayed || (prior && !prior.feedback?.recorded)) ? prior : null; });
@@ -223,6 +224,11 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
       </div>
       {questionStimuli(item.stimulus).map((part, i) => <Stimulus value={part} key={i} />)}
       <div class="qtext" dangerouslySetInnerHTML={{ __html: M(item.prompt) }} />
+      {history.length > 0 && <details class="qhistory">
+        <summary>Earlier answers saved before this question changed</summary>
+        <p>These answers are retained for reference. Answer the current question to update your progress.</p>
+        {history.map((prior, i) => <pre key={i}>{JSON.stringify(prior.value)}</pre>)}
+      </details>}
       <form class="qform" onSubmit={submit} ref={form}>
           {(response.kind === "single" || response.kind === "multi") && (
             <fieldset class="qchoices">

@@ -10,16 +10,14 @@
  * Three properties, in the order they mattered:
  *
  * QUOTA. Cloudflare's free tier is metered per account, so the design spends
- * requests like they are scarce. Everything except a course body is one round
- * trip; a course body is fetched only when its content hash differs; and an
- * automatic sync happens at most once a day, or not at all when there is
- * nothing to send. Two devices cost two requests a day. A reader without the
+ * requests like they are scarce. Log and preferences use bounded pages; a course body is fetched only when its content hash differs; and an
+ * automatic sync happens at most once a day. Requests depend on backlog size. A reader without the
  * secret makes none, ever — `configured()` is false and no call is attempted,
  * which is what keeps a stranger from spending the budget by opening the site.
  *
  * SECURITY. The payload is AES-GCM ciphertext under a key derived from the
- * secret, so the backend stores the log without being able to read it: item,
- * confidence, outcome, and the course material itself are opaque to it. What
+ * secret, so the backend stores encrypted payloads, but knows the shared secret: item,
+ * confidence, outcome and course material are protected at rest, not from the server. What
  * it necessarily sees is metadata — row ids, device ids, timestamps, sizes.
  * The secret is therefore a key as well as a password: lose it and the
  * ciphertext is scrap, which is why `courses/` on disk stays the real backup.
@@ -37,13 +35,14 @@ import { purge } from "./purge.js";
 import { deriveKey, seal as sealBytes, open as openBytes, versionOfFiles } from "./seal.js";
 import { mine as myPrefs, apply as applyPrefs, isNotePref } from "./prefs.js";
 import { syncBatches } from "./sync-batches.js";
-import { migrateLearnerPrefs } from "./learner-prefs.js";
+import { migrateLearnerPrefs, preserveReplacedAnswers } from "./learner-prefs.js";
 import { forget } from "./state.js";
 
 const SECRET = "cloud:secret";
 const CURSOR = "cloud:cursor";      /* server-assigned seq, never a clock */
 const LAST   = "cloud:last";        /* last successful sync, ms */
 const BIN    = "cloud:deletes";     /* removals waiting to be told to the server */
+const ACKS   = "cloud:pref-acks";
 const SEEN   = "cloud:bin";         /* the account's bin, as of the last sync */
 
 /* A day between automatic syncs. The number is a quota decision rather than a
@@ -64,6 +63,7 @@ export const bin = () => { try { return JSON.parse(getItem(SEEN)) || []; } catch
 
 export function configure(secret) {
   const s = (secret || "").trim();
+  if (s !== getItem(SECRET)) { removeItem(CURSOR); removeItem(ACKS); removeItem(LAST); removeItem("cloud:clock-offset"); }
   if (s) setItem(SECRET, s); else removeItem(SECRET);
   key = null;                       /* re-derive on next use */
   /* Written through rather than left to the debounce. Every other write can
@@ -85,17 +85,20 @@ const sealer = async () => {
 const seal = async value => sealBytes(await sealer(), value);
 const open = async text => openBytes(await sealer(), text);
 
-/* Settings from the account, opened. One that will not open is one written
-   under a different secret: it is skipped rather than allowed to abort a sync
-   that is mostly about other things. */
-const opened = async (prefs = []) => {
-  const out = [];
-  for (const p of prefs) {
-    try { out.push({ k: p.k, ts: p.ts, v: await open(p.enc) }); }
-    catch { console.warn(`setting ${p.k}: could not be decrypted with this secret`); }
-  }
-  return out;
-};
+/* Versioned envelopes bind values to their routing metadata; old ciphertext
+   remains readable. Never skip an unreadable record and acknowledge its cursor. */
+const sealRecord = (kind, identity, ts, rev, value) => seal({ syncEnvelope: 2, kind, identity, ts, rev, value });
+async function openRecord(kind, identity, ts, rev, enc) {
+  let value;
+  try { value = await open(enc); }
+  catch { throw new Error(`could not decrypt backup ${kind} ${identity}; download remains retryable`); }
+  if (value?.syncEnvelope !== 2) return value;
+  if (value.kind !== kind || value.identity !== identity || value.ts !== ts || value.rev !== rev)
+    throw new Error("backup record metadata does not match its encrypted envelope");
+  return value.value;
+}
+let applyCourses = async () => {};
+export const setSyncCourseLoader = callback => { applyCourses = callback; };
 
 /* ----------------------------------------------------------------- calling --*/
 class Unauthorized extends Error {}
@@ -103,25 +106,24 @@ class Unauthorized extends Error {}
 async function call(path, payload) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  let res;
+  const started = Date.now();
   try {
-    res = await fetch(path, {
-      method: "POST",
-      headers: { "content-type": "application/json",
-                 authorization: `Bearer ${getItem(SECRET) || ""}` },
-      body: JSON.stringify(payload),
-      signal: controller.signal
+    const res = await fetch(path, {
+      method:"POST", headers:{ "content-type":"application/json", authorization:`Bearer ${getItem(SECRET) || ""}` },
+      body:JSON.stringify(payload), signal:controller.signal
     });
+    if (res.status === 401 || res.status === 404) throw new Unauthorized();
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.error || `sync ${res.status}`);
+    }
+    const result = await res.json();
+    if (Number.isSafeInteger(result.now)) result.clockOffset = result.now - Math.round((started + Date.now()) / 2);
+    return result;
   } catch (e) {
-    if (controller.signal.aborted)
-      throw new Error("request timed out");
+    if (controller.signal.aborted) throw new Error("request timed out");
     throw e;
-  } finally {
-    clearTimeout(timeout);
-  }
-  if (res.status === 401 || res.status === 404) throw new Unauthorized();
-  if (!res.ok) throw new Error(`sync ${res.status}`);
-  return res.json();
+  } finally { clearTimeout(timeout); }
 }
 
 /* ------------------------------------------------------------- deletions ---
@@ -247,21 +249,29 @@ async function pullCourses(listing, taken, sent = []) {
     const files = await open(got.enc);
     const r = await importCourse(c.id, files, taken, c.version);
     if (r.ok) installed.push(c.id);
-    else console.warn(`${c.id}: ${r.errors.join("; ")}`);
+    else throw new Error(`${c.id}: ${r.errors.join("; ")}`);
   }
   return { installed, removed };
 }
 
 /* ------------------------------------------------------------------ sync ---*/
-let running = false;
+let running = null;
+
+export function sync({ manual = false } = {}) {
+  if (running) return manual ? running.then(() => sync({ manual: true })) : running;
+  running = runSync({ manual }).finally(() => { running = null; });
+  return running;
+}
 
 /**
- * One round trip for the log and the listing, then course bodies only where a
- * version differs. `manual` bypasses the once-a-day rule; nothing else does.
+ * Bounded pages for the log, preferences and listing; course bodies only
+ * where a version differs. `manual` bypasses the once-a-day rule; nothing else does.
  */
-export async function sync({ manual = false } = {}) {
-  if (running || !configured() || !navigator.onLine) return null;
+async function runSync({ manual = false } = {}) {
+  if (!configured()) return manual ? { ok:false, error:"connect this device first" } : null;
+  if (!navigator.onLine) return { ok:false, error:"this device is offline; reconnect and try again" };
 
+  const lastBefore = lastSync();
   const pending = logRows().filter(r => !r.sent);
   const dropped = queued();
   const due = Date.now() - lastSync() > AUTO_MS;
@@ -269,7 +279,6 @@ export async function sync({ manual = false } = {}) {
      is up; anything the reader asked for runs immediately. */
   if (!manual && !due && !dropped.length) return null;
 
-  running = true;
   try {
     await flush();
     const dev = deviceId();
@@ -279,7 +288,7 @@ export async function sync({ manual = false } = {}) {
       // The transport record belongs to the device backing up that import.
       const id = r.id.startsWith(dev + ':') ? r.id : `${dev}:import:${r.id}`;
       originals.set(id, r.id);
-      return { id, ts: r.ts, enc: await seal(r) };
+      return { id, ts: r.ts, enc: await sealRecord("row", id, r.ts, "", r) };
     }));
 
     /* Notes and settings ride along with the rows. Each note anchor is its own
@@ -287,12 +296,20 @@ export async function sync({ manual = false } = {}) {
        account keeps whichever stamp is later per key; deleted notes travel as
        encrypted null tombstones so an offline device cannot resurrect them. */
     migrateLearnerPrefs();
-    const sealedPrefs = await Promise.all(
-      myPrefs().map(async p => ({ k: p.k, ts: p.ts, enc: await seal(p.v ?? null) })));
+    let acknowledgments;
+    try { acknowledgments = JSON.parse(getItem(ACKS)) || {}; } catch { acknowledgments = {}; }
+    const prefVersions = new Map();
+    const sealedPrefs = (await Promise.all(myPrefs().map(async p => {
+      const version = await versionOfFiles({ value:p.v, stamp:p.ts, revision:p.rev });
+      prefVersions.set(p.k, version);
+      if (acknowledgments[p.k] === version) return null;
+      return { k:p.k, ts:p.ts, rev:p.rev, enc:await sealRecord("pref", p.k, p.ts, p.rev, p.v ?? null) };
+    }))).filter(Boolean);
     const batches = syncBatches(sealed, sealedPrefs);
 
     let cursor = Number(getItem(CURSOR)) || 0;
     let merged = 0, listing = [], pages = 0, wrote = 0, settings = 0, notes = false;
+    let prefAfter = "";
     /* Which courses the merged rows belong to: an open course has to be
        refolded rather than merely repainted, or it shows yesterday's schedule
        until the reader navigates away and back. */
@@ -303,36 +320,55 @@ export async function sync({ manual = false } = {}) {
     for (;;) {
       const batch = batches[pages] || { rows: [], prefs: [] };
       const res = await call("/api/sync", {
-        device: dev, since: cursor,
+        protocol: 2, device: dev, since: cursor, prefAfter,
         rows: batch.rows,
         deletes: pages === 0 ? dropped : [],
         prefs: batch.prefs,
         restores: []
       });
-      wrote += res.written || 0;
+      if (res.protocol !== 2 || !res.accepted ||
+          batch.rows.some(r => !res.accepted.rows?.includes(r.id)) ||
+          batch.prefs.some(p => !res.accepted.prefs?.includes(p.k)) ||
+          (pages === 0 && dropped.some(id => !res.accepted.deletes?.includes(id))))
+        throw new Error("backup server did not acknowledge every record; update the server and retry");
+      for (const p of batch.prefs) acknowledgments[p.k] = prefVersions.get(p.k);
+      setItem(ACKS, JSON.stringify(acknowledgments));
+      if ((res.more && !(res.cursor > cursor)) || (res.prefsMore && !(res.prefAfter > prefAfter)))
+        throw new Error("backup download did not advance; retry after updating the server");
+      wrote += res.accepted.rows.length;
       if (batch.rows.length) markSent(batch.rows.map(r => originals.get(r.id)));
-      if (pages === 0) {
-        if (dropped.length) removeItem(BIN);
+      if (pages === 0 && dropped.length) {
+        const sent = new Set(dropped);
+        setItem(BIN, JSON.stringify(queued().filter(id => !sent.has(id))));
       }
       listing = res.courses || [];
-      const accountPrefs = await opened(res.prefs);
+      const accountPrefs = await Promise.all((res.prefs || []).map(async p => ({
+        k:p.k, ts:p.ts, rev:p.rev || "", v:await openRecord("pref", p.k, p.ts, p.rev || "", p.enc)
+      })));
+      const plain = await Promise.all((res.rows || []).map(async r => {
+        const value = await openRecord("row", r.id, r.ts, "", r.enc);
+        if (!value || typeof value.id !== "string" || !Number.isSafeInteger(value.ts) || value.ts !== r.ts ||
+            (value.id !== r.id && !r.id.endsWith(":import:" + value.id))) throw new Error("invalid answer record in backup");
+        return { ...value, sent:1 };
+      }));
+      preserveReplacedAnswers(accountPrefs);
       const changed = applyPrefs(accountPrefs);
       settings += changed;
       if (changed) forget();
       notes ||= changed > 0 && accountPrefs.some(p => isNotePref(p.k));
-      const plain = [];
-      for (const r of res.rows || []) {
-        try { plain.push({ ...await open(r.enc), sent: 1 }); }
-        catch { console.warn(`row ${r.id}: could not be decrypted with this secret`); }
-      }
       if (plain.length) {
         merged += mergeRows(plain);
         for (const r of plain) if (r.course) { invalidate(r.course); touched.add(r.course); }
       }
+      const previous = cursor;
       cursor = Number(res.cursor) || cursor;
       setItem(CURSOR, String(cursor));
+      try { await flush(); }
+      catch (e) { setItem(CURSOR, String(previous)); throw e; }
+      if (Number.isSafeInteger(res.now)) setItem("cloud:clock-offset", String(res.clockOffset));
+      prefAfter = res.prefAfter || prefAfter;
       pages++;
-      if (!res.more && pages >= batches.length) break;
+      if (!res.more && !res.prefsMore && pages >= batches.length) break;
     }
 
     const uploaded = await pushCourses(listing);
@@ -341,6 +377,7 @@ export async function sync({ manual = false } = {}) {
     for (const [cid, e] of Object.entries(importedIndex())) if (e.code) taken.codes[e.code] = cid;
     const { installed, removed } = await pullCourses(listing, taken, uploaded);
 
+    await applyCourses();
     setItem(LAST, String(Date.now()));
     setItem(SEEN, JSON.stringify(listing.filter(c => c.deleted)));
     await flush();
@@ -351,11 +388,15 @@ export async function sync({ manual = false } = {}) {
     return { ok: true, sent: wrote, merged, uploaded, installed, removed, settings, notes,
              bin: listing.filter(c => c.deleted) };
   } catch (e) {
-    /* Cursors are only advanced on success, so a failure costs nothing but the
-       attempt: the next sync resumes exactly where this one stopped. */
+    setItem(LAST, String(lastBefore));
+    // Earlier pages may already be durable. Refresh those results even if a
+    // later page fails; failed pages retain their previous cursor for retry.
+    try {
+      await applyCourses();
+      await flush();
+      dispatchEvent(new CustomEvent("learn:synced", { detail:{ merged:0, settings:1, courses:[], installed:[], removed:[] } }));
+    } catch { /* Preserve the original backup error. */ }
     return { ok: false, unauthorized: e instanceof Unauthorized, error: e.message };
-  } finally {
-    running = false;
   }
 }
 
@@ -364,7 +405,7 @@ export async function restore(cid) {
   if (!configured()) return null;
   if (isBundledCourse(cid)) return { ok: false, error: "that course is bundled with the site and is restored by deploying the site" };
   try {
-    const res = await call("/api/sync", { device: deviceId(), since: Number(getItem(CURSOR)) || 0,
+    const res = await call("/api/sync", { protocol:2, device: deviceId(), since: Number(getItem(CURSOR)) || 0,
                                           rows: [], deletes: [], restores: [cid] });
     const taken = { ids: [...bundledCourseIds(), ...Object.keys(importedIndex())], codes: {} };
     const { installed } = await pullCourses((res.courses || []).filter(c => c.id === cid), taken);

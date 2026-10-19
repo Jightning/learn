@@ -1,8 +1,9 @@
 import { render } from "preact";
 import App from "./app.jsx";
 import { init, flush, onError, durable } from "./lib/store.js";
-import { auto } from "./lib/cloud.js";
-import { refresh, INDEX } from "./lib/library.js";
+import { rebuild } from "./lib/replay.js";
+import { auto, setSyncCourseLoader } from "./lib/cloud.js";
+import { refresh, INDEX, get } from "./lib/library.js";
 import { restore } from "./lib/place.js";
 
 /* one stylesheet per UI element; filename order is load order */
@@ -69,6 +70,15 @@ onError(e => {
 
 /* One await before the first paint: everything downstream reads storage
    synchronously, so it has to be in memory before a component asks. */
+setSyncCourseLoader(async () => {
+  refresh();
+  // The shelf must be correct even when none of its courses has been opened.
+  for (const cid of Object.keys(INDEX)) {
+    const course = await get(cid);
+    if (course) rebuild(cid, course);
+  }
+});
+
 init().then(() => {
   refresh();                    /* imported courses are readable now */
   durable();                    /* ask the browser not to evict them */

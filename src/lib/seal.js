@@ -11,10 +11,10 @@
  * the reader's secret with PBKDF2 — the secret is typed by a human, so a fast
  * KDF would make offline guessing worthwhile.
  *
- * The salt is fixed. A random one would have to be stored somewhere every other
- * device could read, which on a public origin means storing it with the
- * ciphertext, which is where an attacker already is; against offline guessing
- * the iteration count is what does the work.
+ * The legacy v1 salt is fixed to preserve existing backups. A future change
+ * to per-backup salt/KDF parameters requires a versioned key migration; see
+ * docs/sync.md. Ciphertext is protected at rest, not from a server that also
+ * holds the shared authentication/encryption secret.
  * ==========================================================================*/
 const enc = new TextEncoder();
 const dec = new TextDecoder();

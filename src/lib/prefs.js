@@ -21,10 +21,21 @@
  * heard about the clearing would hand the old value straight back.
  * ==========================================================================*/
 import { getItem, setItem, removeItem, keys } from "./store.js";
+import { deviceId } from "./device.js";
 
 /* When this device last changed each key. Its own key is not a preference and
    never travels: it is this device's account of what it did. */
 const STAMPS = "pref:stamps";
+const REVISIONS = "pref:revisions";
+const revisions = () => { try { return JSON.parse(getItem(REVISIONS)) || {}; } catch { return {}; } };
+const editStamp = (s, k) => {
+  const now = Date.now() + (Number(getItem("cloud:clock-offset")) || 0);
+  const prior = Number(s[k]) || 0;
+  // A rejected fast-clock edit must not permanently poison subsequent edits.
+  s[k] = Math.max(1, now, prior <= now + 5 * 60_000 ? prior + 1 : 0);
+  const r = revisions(); r[k] = `${deviceId()}:${crypto.randomUUID()}`;
+  setItem(REVISIONS, JSON.stringify(r)); write(s);
+};
 
 /* Explicit families prevent credentials and internal caches entering backup. */
 const NOTE = /^note:[\w-]{1,64}:s\d+(?:-\d+)?(?:#\d+)?(?:@attempt)?$/;
@@ -32,7 +43,7 @@ const SAVED = /^saved:[\w-]{1,64}$/;
 const SYNCED = [/^hue:/, /^order:v1$/, /^hidden:v1$/, /^added:v1$/, /^learnby:[\w-]+$/, NOTE, SAVED,
   /^(?:depth|lane|nfold|reset):[\w-]{1,64}$/, /^why:[\w-]{1,64}:.+$/,
   /^quiz:[\w-]{1,64}:s\d+-\d+$/,
-  /^learner:[^:]+:(?:answer|rating|policy|session):.*$/, /^place:v1$/,
+  /^learner:[^:]+:(?:answer|rating|policy|session|history):.*$/, /^place:v1$/,
   /^(?:contentZoom|tuckSidebar)$/, /^speech:(?:rate|voice|quiz)$/];
 
 export const isPref = k => typeof k === "string" && SYNCED.some(re => re.test(k));
@@ -58,21 +69,22 @@ export function setPref(k, v) {
   if (!isPref(k)) throw new Error(`${k} is not a synced preference`);
   if (getItem(k) === String(v)) return;
   setItem(k, v);
-  const s = stamps(); s[k] = Math.max(Date.now(), (Number(s[k]) || 0) + 1); write(s);
+  const s = stamps(); editStamp(s, k);
 }
 
 /** Clear one. A tombstone, not an absence — see the header. */
 export function dropPref(k) {
   if (!isPref(k)) throw new Error(`${k} is not a synced preference`);
   removeItem(k);
-  const s = stamps(); s[k] = Math.max(Date.now(), (Number(s[k]) || 0) + 1); write(s);
+  const s = stamps(); editStamp(s, k);
 }
 
 /** Everything this device has an opinion about, cleared ones included. */
 export function mine() {
   const s = stamps();
   const all = new Set([...keys().filter(isPref), ...Object.keys(s).filter(isPref)]);
-  return [...all].map(k => ({ k, v: getItem(k), ts: tsOf(s, k) }));
+  const r = revisions();
+  return [...all].map(k => ({ k, v: getItem(k), ts: tsOf(s, k), rev: r[k] || "" }));
 }
 
 /**
@@ -81,17 +93,19 @@ export function mine() {
  */
 export function apply(incoming) {
   const s = stamps();
+  const r = revisions();
   let n = 0;
   for (const p of incoming || []) {
     if (!p || !isPref(p.k)) continue;
     const ts = Number(p.ts) || 0;
     const local = tsOf(s, p.k);
-    if (!ts || ts < local || (ts === local && (p.v == null ? getItem(p.k) == null : String(p.v) === getItem(p.k)))) continue;
-    // Equal-clock writes use the account's accepted value. Otherwise devices
-    // that edited in the same millisecond would disagree indefinitely.
+    const rev = p.rev || "";
+    if (!ts || ts < local || (ts === local && rev < (r[p.k] || "")) || (ts === local && rev === (r[p.k] || "") && (p.v == null ? getItem(p.k) == null : String(p.v) === getItem(p.k)))) continue;
+    // Stable revisions break timestamp ties independently of arrival order.
+    // Empty legacy revisions retain the account's accepted value.
     if (p.v == null) removeItem(p.k); else setItem(p.k, String(p.v));
-    s[p.k] = ts; n++;
+    s[p.k] = ts; r[p.k] = rev; n++;
   }
-  if (n) write(s);
+  if (n) { write(s); setItem(REVISIONS, JSON.stringify(r)); }
   return n;
 }
