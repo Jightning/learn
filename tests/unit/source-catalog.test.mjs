@@ -24,6 +24,19 @@ const withFixture = (name, fn) => test(name, t => {
   return fn(dirs);
 });
 
+withFixture("large embedded HTML round-trips through the source cache", ({ sources, catalog }) => {
+  const path = join(sources, "slides.html");
+  const raw = '<html>\n<img data-src="data:image/png;base64,' + "A".repeat(2_000_000) + '">\n</html>\n';
+  writeFileSync(path, raw);
+  const files = [{ path, root: sources }];
+  const first = indexSources(files, catalog);
+  const second = indexSources(files, catalog);
+  const source = second.sources[0];
+  assert.equal(source.id, first.sources[0].id);
+  const restored = source.units.map(unit => readUnit(second, { source: source.id, unit: unit.id }).text).join("");
+  assert.equal(restored, raw);
+});
+
 withFixture("markdown units preserve every byte and readUnit narrows exact source lines", ({ sources, catalog }) => {
   const path = join(sources, "notes.md");
   const raw = "preface\n\n# First\nalpha\nbeta\n\n## Second\nfigure detail\n";

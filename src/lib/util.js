@@ -1,4 +1,5 @@
 /* Shared helpers. Pure functions; no DOM, no framework. */
+import { courseMarkdown } from "./course-markdown.js";
 export const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 /* Flatten a rendered equation to readable text.
  *
@@ -52,7 +53,7 @@ const entities = t => t.replace(/&(#x?[0-9a-fA-F]+|[a-z]+);/g, (m, e) => {
   return e in ENT ? ENT[e] : m;
 });
 
-export const strip = h => entities(flattenMath(String(h)
+export const strip = h => entities(flattenMath(courseMarkdown(h)
     .replace(/<span class="katex-mathml">[\s\S]*?<\/math><\/span>/g, ""))
   .replace(/<[^>]+>/g, " ")
   .replace(/\s+/g, " ")
@@ -68,7 +69,8 @@ export const qid = (subId, type) => `${subId}#${slug(type)}`;
 export function collect(v, out) {
   if (typeof v === "string") out.push(v);
   else if (Array.isArray(v)) v.forEach(x => collect(x, out));
-  else if (v && typeof v === "object") Object.values(v).forEach(x => collect(x, out));
+  else if (v && typeof v === "object") Object.entries(v)
+    .filter(([key]) => key !== "authorComment").forEach(([, x]) => collect(x, out));
 }
 export const textOf = v => { const p = []; collect(v, p); return p.join(" "); };
 

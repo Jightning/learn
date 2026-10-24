@@ -10,49 +10,43 @@ never absolute local paths or usernames.
 
 ## Teaching
 
-Teach the promised capability as a connected account from the reader's
-established knowledge, not a catalog of definitions or answers. Give new ideas
-an intelligible setting: what question, observation, use or difficulty makes
-them worth considering, and how they connect to what came before. Choose the
-route that fits the subject; a direct definition can lead when its context is
-already clear. An analogy helps only when its correspondence and limits are
-explained, and does not replace the actual account.
+Teach a usable mental model from the reader's established knowledge. At first
+use, answer the learner's central question in plain language: what kind of
+thing is this, what does it do, and why use it? State the essential distinction
+there; a name, implementation phrase or later example cannot stand in for the
+answer. Give context when needed, without a compulsory opening formula.
 
-Develop unfamiliar ideas before relying on them. Establish what a thing is,
-its purpose and the relevant mechanism or relationship; a behavior sentence
-alone may not define it. Ground the explanation's own parts, actions and
-notation in prior teaching, including ordinary-sounding technical verbs.
-Connect concrete cases to the general idea and back to its use. Show why
-unfamiliar decisions and intermediate results follow, including assumptions,
-limits, checks and stopping conditions where applicable; fade established
-steps. At changes of topic or representation, explain what carries over and
-why the next step is needed rather than leaving the connection to the reader.
+Establish unfamiliar parts, actions and notation before describing their
+interaction. Explain how the result follows and where the account applies.
+Use diagrams routinely for connections, spatial structure and change, with
+nearby interpretation. Choose their form for the inference, not the source's
+file format. An analogy can make the model familiar when its
+correspondence and limits are mapped back to the actual subject; it does not
+replace the mechanism. Sources ground facts, not the author's wording or
+explanatory route (see sources.md).
 
-Ordinary prose carries this development; blocks, headings and emphasis make
-its organization visible (see blocks.md and prose.md). A paragraph can pose a
-problem, develop an explanation or interpret a case without becoming a
-callout. Use diagrams routinely to explain connections, spatial structure and
-state changes; supply and interpret them instead of expanding a verbal inventory.
-Prioritize mechanisms and useful representations over typography. Develop the
-ingredients before compressing them into comparisons
-or summaries; derive review summaries from the full reading, never expand a
-summary just by adding more terminology. Keep essential teaching in the main
-path and optional elaboration beside its passage. Match practice and feedback
-to the outcome with useful variation. Remove repetition and irrelevant detail
-without shortening away necessary explanation.
+Develop concrete cases into reusable reasoning: expose unfamiliar decisions,
+intermediate results, assumptions, checks and stopping conditions; fade known
+steps. Keep a case fixed while explaining it, then vary a condition and show
+what carries over. At topic or representation changes, state the connection.
+Choose paragraphs, labeled cases and ordered steps by their teaching job
+(see blocks.md); neither prose volume nor a picture count establishes clarity.
+Introduce ingredients before comparing or summarizing them. Keep necessary
+teaching in the main path, optional extensions nearby, and practice aligned
+with the promised capability.
 
-Read from the learner's position: using only declared background and preceding
-teaching, can they explain what is happening, why it matters and why the result
-follows? Repair the earliest missing link, including missing context or
-organization. Correct facts, concept tags, coverage and worked answers do not
-settle this judgment. No fixed opening sequence, paragraph length, block count
-or visual quota is required.
+Read an introduction before reading its later examples: using only the stated
+background and preceding passage, can the reader say what the concept does,
+distinguish its relevant roles or cases, and understand the first prediction?
+Repair the earliest unanswered question where it arises. Do not count an
+answer found much later, your expert inference, correct tags or a finished
+workflow as an adequate introduction.
 
-For a rewrite, assess the existing account against this contract. Preserve
-approved capabilities, sources and useful stable identities, not inadequate
-prose. Substantial length and completed workflow state do not establish
-quality. Rebuild the broken explanatory sequence where needed instead of
-appending clarifications to its summary; report local amendments as such.
+For revisions, preserve approved capabilities, sources and useful identities,
+not a broken explanatory sequence. Rebuild that account from understood facts
+rather than patching its sentences or appending clarification. Remove
+repetition without deleting necessary reasoning. No fixed word, block, visual
+or analogy quota is required.
 
 ## Scope and workflow
 

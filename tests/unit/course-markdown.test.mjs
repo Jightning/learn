@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { courseMarkdown } from '../../src/lib/course-markdown.js';
+import { M } from '../../src/lib/math.js';
+import { renderBlock } from '../../src/blocks/index.js';
+import { decorate, refsOf } from '../../src/lib/refs.js';
+import { strip } from '../../src/lib/util.js';
+
+test('Markdown works in prose, inline fields, table cells and answers', () => {
+  assert.match(M('**Voltage** and *current*'), /<strong>Voltage<\/strong> and <em>current<\/em>/);
+  const prose = renderBlock({ t: 'p', h: 'First paragraph.\n\nSecond **paragraph**.\n\n- One\n- Two' }, {});
+  assert.match(prose, /<p>First paragraph\.<\/p>/);
+  assert.match(prose, /<p>Second <strong>paragraph<\/strong>\.<\/p>/);
+  assert.match(prose, /<ul>\s*<li>One<\/li>/);
+  assert.match(M(renderBlock({ t: 'table', head: ['**Input**'], rows: [['*Value*']] }, {})), /<th><strong>Input<\/strong><\/th>/);
+  assert.equal(strip('**Heading** and `code`'), 'Heading and code');
+});
+
+test('legacy markup, custom references and TeX retain their meaning', () => {
+  const old = '<p class="ink-info">A <strong>claim</strong>.</p>';
+  assert.equal(courseMarkdown(old), old);
+  assert.equal(courseMarkdown('<m>x_1*y_2</m>'), '<m>x_1*y_2</m>');
+  const rendered = decorate('[Earlier](#s1-1) and **<c k="power">power</c>**: <m>x_1*y_2</m>', 'demo', {});
+  assert.match(rendered, /href="#\/demo\/s1-1"/);
+  assert.match(rendered, /href="#\/demo\/c\/power"/);
+  assert.match(rendered, /class="katex"/);
+  assert.deepEqual(refsOf({ h: '[Earlier](#s1-1)' }), [{ kind: 'sub', id: 's1-1' }]);
+});
+
+test('code spans and fences preserve literal Markdown, tags and math', () => {
+  for (const source of ['`<m>x_1</m> **literal**`', '```js\nconst x = "<m>x_1</m> **literal**";\n```']) {
+    const rendered = M(source);
+    assert.match(rendered, /&lt;m&gt;x_1&lt;\/m&gt; \*\*literal\*\*/);
+    assert.doesNotMatch(rendered, /class="katex"|<strong>/);
+  }
+  const escaped = M(renderBlock({ t: 'p', h: '\\*literal\\* and **emphasis**' }, {}));
+  assert.match(escaped, /&#42;literal&#42; and <strong>emphasis<\/strong>/);
+});

@@ -16,14 +16,14 @@ passage:
 
 ```yaml
 - t: key
-  h: <p>The mixed-partial condition is <m>M_y = N_x</m>.</p>
+  h: The mixed-partial condition is <m>M_y = N_x</m>.
 
 - t: note
   optional: true
   follows: true
   h: |-
-    <p>If a potential exists, then
-    <m>M_y = F_{xy} = F_{yx} = N_x</m>.</p>
+    If a potential exists, then
+    <m>M_y = F_{xy} = F_{yx} = N_x</m>.
 ```
 
 Use `follows: true` only for a real dependency on the immediately preceding
@@ -44,8 +44,8 @@ beside its block and wraps below it on narrow screens:
       <n k="only-y">solve for <m>g'(y)</m></n>.
   asides:
     only-y: |-
-      <p>Only <m>y</m> may survive here. <m>M_y = N_x</m> cancels the
-      <m>x</m>-terms.</p>
+      Only <m>y</m> may survive here. <m>M_y = N_x</m> cancels the
+      <m>x</m>-terms.
 ```
 
 The phrase carries no mark at rest; the card and phrase highlight each other on

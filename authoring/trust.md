@@ -1,11 +1,12 @@
 # Truth and uncertainty
 
-Every explanatory `def`, `key`, and `trap` has a checkable `source:` or explicit
-`unverified`/`generated`. Model drafting is not publication verification. Before
-publish, record `sourceReview: sourced` for a checked origin or
-`sourceReview: disclosed` for an explicitly unverified/generated claim; answers
-must have no unverified state.
+The schema records `source:` on `def`, `key` and `trap`: name checked facts or
+premises, or disclose a genuinely unsupported claim as `unverified`/`generated`.
+Original explanatory wording, analogies and derivations are welcome, not
+uncertainty by themselves; check their premises, logic and results. Before
+publish, use `sourceReview: sourced` for checked origins and `disclosed` for
+explicit uncertainty. Answers require independent verification; never invent
+evidence.
 
-Separate source fact, derivation, editorial choice, and open freedom. Preserve
-disagreements with both locators and state the resolution, or leave an actionable
-review gap. Never invent institutional order, dates, thresholds, or conventions.
+Preserve disagreements with both locators and their resolution or an actionable
+gap. Do not invent institutional order, dates, thresholds or conventions.

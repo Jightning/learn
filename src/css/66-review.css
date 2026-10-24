@@ -12,7 +12,7 @@
  * `.wrap` like the index and the dependency map, which means the toolbar above
  * it pays for the status bar (10-shell.css) and the way out is the rail, the
  * breadcrumb and the back button — the same three every other page offers. */
-.review{padding:var(--view-top) 0 0}
+.review{padding:16px 0 0}
 .review>section{max-width:var(--measure)}
 .review>*:last-child{margin-bottom:0}
 .review-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
@@ -32,6 +32,19 @@
 .deadline-meter{height:7px;border-radius:8px;background:var(--rule);overflow:hidden;margin:12px 0}
 .deadline-meter i{display:block;height:100%;background:var(--hi);border-radius:8px}
 .deadline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.deadline-brief{display:flex;justify-content:space-between;gap:12px;font-family:var(--ui);font-size:var(--fs-small);color:var(--ink-2)}
+.modal.readiness-modal{box-sizing:border-box;inset:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);margin:auto;width:min(40rem,calc(100vw - 24px - var(--safe-l) - var(--safe-r)));max-width:calc(100vw - 24px - var(--safe-l) - var(--safe-r));max-height:calc(100vh - 24px - var(--safe-t) - var(--safe-b));max-height:calc(100dvh - 24px - var(--safe-t) - var(--safe-b));overflow:hidden;border:1px solid var(--rule);border-top:3px solid var(--hi);border-radius:6px}
+.modal.readiness-modal[open]{display:flex}
+.readiness-modal .modal-in{display:flex;flex-direction:column;min-width:0;min-height:0;max-width:100%;padding:16px}
+.readiness-modal .modal-head{flex-shrink:0}.readiness-modal .modal-head h2{overflow-wrap:anywhere;min-width:0}
+.readiness-modal .modal-body{min-height:0;overflow:auto;overscroll-behavior:contain;overflow-wrap:anywhere;color:var(--ink);line-height:1.4}
+.readiness-modal .deadline-meter{height:10px;margin:14px 0 18px}
+.readiness-hero{display:flex;align-items:center;gap:18px}.readiness-hero>strong{font:600 2.9rem var(--display);color:var(--hi-ink);line-height:1}.readiness-hero>div{display:grid;gap:3px}.readiness-hero span,.readiness-metrics span{color:var(--ink-2);font-size:var(--fs-small)}
+.readiness-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.readiness-metrics>div{display:grid;gap:4px;padding:12px;background:var(--surface-2,var(--surface));border:1px solid var(--rule);border-radius:5px}.readiness-metrics strong{font:600 1.1rem var(--mono)}
+.readiness-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:16px 0;color:var(--ink-2);font-size:var(--fs-small)}.readiness-chip{padding:4px 9px;border:1px solid var(--hi);border-radius:20px;color:var(--hi-ink);font-weight:600}.readiness-alert{border-color:var(--wn);color:var(--wn-ink)}
+.readiness-modal h3{font:600 1rem var(--ui);margin:18px 0 8px}.readiness-skills{border-top:1px solid var(--rule)}.readiness-skill,.readiness-next>div{display:flex;justify-content:space-between;align-items:start;gap:14px;padding:9px 2px;border-bottom:1px solid var(--rule)}.readiness-skill strong,.readiness-next strong{font-size:var(--fs-small);white-space:nowrap;color:var(--wn-ink)}.readiness-skill strong.readiness-ok{color:var(--hi-ink)}.readiness-next strong{text-transform:capitalize;color:var(--ink-2)}
+.readiness-modal .deadline-actions{justify-content:flex-end;margin-top:18px}
+@media(max-width:42em){.readiness-metrics strong{font-size:.9rem}.readiness-metrics>div{padding:8px}.readiness-skill strong{white-space:normal;text-align:right}}
 .deadline-form{display:grid;gap:12px}
 .deadline-form label{display:grid;gap:5px;font-family:var(--ui);font-size:var(--fs-small)}
 .deadline-form input,.deadline-form select{max-width:100%;min-width:0;padding:8px;border:1px solid var(--rule);border-radius:3px;background:var(--surface);color:var(--ink)}

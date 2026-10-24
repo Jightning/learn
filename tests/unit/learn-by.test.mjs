@@ -27,6 +27,21 @@ test('a selected range includes scoped types, variants, and only useful prerequi
   assert.deepEqual(material.pool.map(q => q.id).sort(), ['base-one', 'base-two', 'middle-one', 'middle-two']);
 });
 
+test('deadline questions retain normalized prompts and answers when bank records share their IDs', () => {
+  const course = { ...idx,
+    QALL: [{ ...item('middle-one', 'middle', 's1-2'), prompt: 'Rendered lesson prompt' }],
+    PALL: [],
+    BANK: {
+      'middle-one': { id: 'middle-one', typeId: 'middle', use: 'practice', q: 'Authored lesson prompt', response: { kind: 'number', value: 2 } },
+      'middle-bank': { id: 'middle-bank', typeId: 'middle', use: 'practice', q: 'Bank-only prompt', response: { kind: 'number', value: 3 } }
+    }
+  };
+  const material = goalMaterial(course, goal('g', 's1-2', 's1-2', 4));
+  assert.equal(material.pool.find(q => q.id === 'middle-one').prompt, 'Rendered lesson prompt');
+  assert.equal(material.pool.find(q => q.id === 'middle-bank').prompt, 'Bank-only prompt');
+  assert.equal(material.pool.find(q => q.id === 'middle-bank').response.value, 3);
+});
+
 test('whole-course ranges include course-scoped types without lesson quiz placement', () => {
   const course = { ...idx, TYPES: { ...idx.TYPES, capstone: { id: 'capstone', scopes: ['course'], requires: [] } },
     PALL: [...idx.PALL, item('capstone-one', 'capstone')] };

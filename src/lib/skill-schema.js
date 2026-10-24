@@ -1,3 +1,4 @@
+import { validateMatcher } from "./response-scoring.js";
 /* Creator metadata is compiled once. Inference never invents curriculum links. */
 const map = x => x && typeof x === "object" && !Array.isArray(x);
 const asList = x => x == null ? [] : Array.isArray(x) ? x : [x];
@@ -57,14 +58,15 @@ export function validateItemEvidence(raw, types, errors, where) {
   if (raw.steps !== undefined && (!Array.isArray(raw.steps) || !raw.steps.length)) fail("steps must be a nonempty list");
   for (const step of Array.isArray(raw.steps) ? raw.steps : []) {
     if (!map(step)) { fail("step must be a mapping"); continue; }
-    for (const key of Object.keys(step)) if (!["id", "skills", "q", "response", "support", "why", "tries", "stimulus"].includes(key)) fail(`unknown step key ${key}`);
+    for (const key of Object.keys(step)) if (!["id", "skills", "q", "response", "support", "why", "tries", "stimulus", "timing"].includes(key)) fail(`unknown step key ${key}`);
     if (typeof step.id !== "string" || !step.id.trim() || steps.some(s => s.id === step.id)) fail("step needs a distinct stable id");
     const stepSkills = ids(step.skills, "step skills");
     if (stepSkills.some(id => !skills.includes(id))) fail("step skills must belong to parent skills");
     if (typeof step.q !== "string" || !step.q.trim() || !map(step.response)) fail("step q and response are required");
     steps.push({ ...step, skills: stepSkills, support: support(step.support) });
   }
-  if (raw.errors !== undefined && (!Array.isArray(raw.errors) || raw.errors.some(e => !map(e) || typeof e.id !== "string" || !e.id.trim() || typeof e.description !== "string" || !e.description.trim() || Object.keys(e).some(k => !["id", "description", "match"].includes(k)) || (e.match !== undefined && typeof e.match !== "string")))) fail("errors must list reviewed {id, description, match?} hypotheses");
+  if (raw.errors !== undefined && (!Array.isArray(raw.errors) || raw.errors.some(e => !map(e) || typeof e.id !== "string" || !e.id.trim() || typeof e.description !== "string" || !e.description.trim() || Object.keys(e).some(k => !["id", "description", "match"].includes(k)) || (e.match !== undefined && typeof e.match !== "string" && !map(e.match))))) fail("errors must list reviewed {id, description, match?} hypotheses");
+  for (const error of Array.isArray(raw.errors) ? raw.errors : []) if (map(error?.match)) validateMatcher(error.match, `${where} error ${error.id}`, errors, raw.response);
   if (Array.isArray(raw.errors) && new Set(raw.errors.map(e => e?.id)).size !== raw.errors.length) fail("duplicate error ID");
   return { skills, demand, support: support(raw.support), routes, steps, schemaVersion: raw.skills ? 2 : 1 };
 }

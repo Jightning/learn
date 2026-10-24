@@ -8,7 +8,12 @@ import { skillAuthorContext } from './question-context.mjs';
 export function readAuthorBank(dir) {
   const root = join(dir, 'questions');
   const records = { types: [], items: [], assessments: [] };
-  for (const name of existsSync(root) ? readdirSync(root).filter(n => /\.(yaml|yml|json)$/.test(n) && !/^aliases\./.test(n)).sort() : []) {
+  const files = (dir, prefix = '') => existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const name = prefix + entry.name;
+    return entry.isDirectory() ? files(join(dir, entry.name), name + '/')
+      : entry.isFile() && /^[^_][^.]*\.(yaml|yml|json)$/.test(name) && !/^aliases\./.test(name) ? [name] : [];
+  }).sort() : [];
+  for (const name of files(root)) {
     const key = /^(types|skills)\./.test(name) ? 'types' : /^assessment\./.test(name) ? 'assessments' : 'items';
     const file = join(root, name), data = parseFile(file);
     if (!Array.isArray(data)) throw new Error(`${file}: expected a sequence`);

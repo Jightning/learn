@@ -50,3 +50,27 @@ test("images in attachment sequences resolve in quiz, practice, and legacy banks
   delete files["assets/a.png"];
   assert.equal(parseCourse(files).errors.filter(e => e.includes("missing image asset")).length, 3);
 });
+
+test("a canonical bank image resolves once across repeated lesson placements", () => {
+  const files = {
+    "course.json": JSON.stringify({ title: "Shared image" }),
+    "concepts/c.json": JSON.stringify({ term: "Circuit" }),
+    "categorize/objectives.json": JSON.stringify([{ id: "o", title: "Calculate voltage" }]),
+    "categorize/families.json": JSON.stringify([{ id: "f", title: "Read a circuit" }]),
+    "sections/01-start/_section.json": JSON.stringify({ title: "Start" }),
+    "sections/01-start/1-intro.json": JSON.stringify({ title: "First", blocks: [], quiz: ["shared"] }),
+    "sections/01-start/2-again.json": JSON.stringify({ title: "Again", blocks: [], quiz: ["shared"] }),
+    "questions/types.json": JSON.stringify([{ id: "t", task: "Read circuit", concept: "c", objectives: ["o"], families: ["f"] }]),
+    "questions/bank.json": JSON.stringify([{ id: "shared", typeId: "t", q: "Find the voltage.",
+      stimulus: { t: "image", src: "assets/circuit.png", alt: "Labeled circuit" },
+      response: { kind: "number", value: 2 } }]),
+    "assets/circuit.png": "data:image/png;base64,AAAA"
+  };
+  const { course, errors } = parseCourse(files);
+  assert.deepEqual(errors, []);
+  for (const sub of course.sections[0].subs)
+    assert.equal(sub.quiz[0].stimulus.src, files["assets/circuit.png"]);
+  assert.equal(course.questionBank.shared.stimulus.src, files["assets/circuit.png"]);
+  delete files["assets/circuit.png"];
+  assert.ok(parseCourse(files).errors.some(e => e.includes("missing image asset")));
+});

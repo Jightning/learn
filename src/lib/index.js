@@ -3,8 +3,10 @@
 import { collect, textOf, strip, qid } from "./util.js";
 import { numberFigures } from "./figures.js";
 import { nameOf, leadOf, present } from "./gist.js";
+import { compileSkillGraph } from "./skill-graph.js";
 import { indexCats } from "./cats.js";
 import { normalizeQuestion, practiceItems, questionMetadata } from "./questions.js";
+import { courseMarkdown } from "./course-markdown.js";
 
 /* A block's address. Positional, like every other id in the system, so an
    author never writes one. `~` rather than `#` because the router splits a
@@ -52,7 +54,7 @@ export function buildIndex(C) {
       ANNOTATIONS.push({ kind: "sub", id: sub.id, anchor: sub.id, sub, sec: s,
                          num, title: sub.title });
 
-      const txt = textOf(sub);
+      const txt = courseMarkdown(textOf(sub));
       for (const m of txt.matchAll(/<c\s+k="([^"]+)"/g)) push(CUSE, m[1], sub.id);
       for (const m of txt.matchAll(/href="#([^"]+)"/g)) if (m[1] !== sub.id) push(XIN, m[1], sub.id);
 
@@ -108,6 +110,7 @@ export function buildIndex(C) {
   const placed = new Set(QALL.map(q => q.id));
   const PALL = [...practiceItems(C), ...bankItems.filter(q => q.use === "practice" && !placed.has(q.id))].map(q => ({ ...q, subId: q.subId || null }));
   return { SUBS, CUSE, XIN, QALL, PALL, SEARCH, CQ, BLOCKS, ANNOTATIONS,
+           GRAPH: compileSkillGraph(C.questionSkills || C.questionTypes || {}),
            TYPES: C.questionSkills || C.questionTypes || {}, SKILLS: C.questionSkills || C.questionTypes || {}, BANK: C.questionBank || {}, BLUEPRINTS: C.assessmentBlueprints || {},
            CHECK: bankItems.filter(q => q.use === "check"), DIAGNOSTIC: bankItems.filter(q => q.use === "diagnostic"),
            CAT: indexCats(C), FIG: numberFigures(C) };

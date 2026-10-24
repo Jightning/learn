@@ -44,7 +44,7 @@ modules:
   questions:
     file: questions.md
     phases: []
-    needs: ['question:single', 'question:multi', 'question:number', 'question:formula', 'question:self']
+    needs: ['question:single', 'question:multi', 'question:number', 'question:formula', 'question:text', 'question:blanks', 'question:self']
     roles: [writer, single]
   practice:
     file: practice.md
@@ -102,9 +102,15 @@ modules:
   formats-questions:
     file: formats/questions.md
     phases: []
-    needs: [formats, 'question:single', 'question:multi', 'question:number', 'question:formula', 'question:self', 'question:synthesis']
+    needs: [formats, 'question:single', 'question:multi', 'question:number', 'question:formula', 'question:text', 'question:blanks', 'question:self', 'question:synthesis']
     roles: [writer, single]
     requires: [questions, inline]
+  formats-question-formula:
+    file: formats/question-formula.md
+    phases: []
+    needs: ['question:formula']
+    roles: [writer, single]
+    requires: [formats-questions]
   formats-stimulus:
     file: formats/stimulus.md
     phases: []

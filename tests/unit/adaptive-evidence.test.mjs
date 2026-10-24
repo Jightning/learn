@@ -72,7 +72,10 @@ test('post-block rubric grade augments the saved first response, without a secon
     {id:'exposure',ts:2,event:'exposure',itemId:'q1',beforeSubmission:false}];
   const evidence=observations(rows,'t');assert.equal(evidence.length,1);assert.equal(evidence[0].weight,1);
   assert.equal(evidence[0].firstUnaided,true);
-  const replayed=fold(rows,{target:.9});assert.equal(replayed.study.q1.got,1);assert.equal(replayed.retain['type:t'].reps,1);
+  const replayed=fold(rows,{target:.9});assert.equal(replayed.study.q1.got,1);assert.equal(replayed.retain['type:t'].selfReportedReps,1);
+  assert.equal(replayed.retain['type:t'].checkedReps,0);
+  const reviewed = rows.map(r => r.event === 'rubric-score' ? { ...r, grader: 'human' } : r);
+  const verified = fold(reviewed,{target:.9});assert.equal(verified.retain['type:t'].reps,1);
 });
 test('checkpoint accepts tied-time and older imported rows and applies aliases without new answers',async()=>{
   const { appendRow, setItem, getItem }=await import('../../src/lib/store.js');

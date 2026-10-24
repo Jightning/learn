@@ -3,6 +3,21 @@
 The plan is a small machine-readable packet, not a manuscript. It must cover
 the source and problem-family inventory before prose starts.
 
+Before new-course writing, show the user a compact outline of capabilities,
+prerequisites, applications, exclusions and unresolved evidence. Distinguish
+explicit requirements from proposed additions; explain each addition's need.
+Compare the requested capability with the source inventory independently:
+missing exposition is not proof that a method is outside scope. For example,
+an ODE scope may warrant proposing reduction of order even if the supplied
+notes omit it; a broad topic title alone does not establish exam requirements.
+Ask for outline approval or clarification of material ambiguity, and save the
+decision in the existing scope/directives or expectations artifact. Reuse
+explicit prior approval; do not invent approval or ask again for unchanged scope.
+Any later material addition or exclusion needs the same explicit decision.
+Examples, representations and changed-case practice within an approved
+capability are ordinary writing choices, not new scope approvals.
+Unresolved required coverage prevents a claim of completeness.
+
 ```yaml
 course: <id>
 scope:
@@ -115,10 +130,11 @@ Earlier lessons assigned in the same writing batch remain planned until written.
 `written` means the content exists, not that a learner has mastered it. Missing
 anchors remain visible as planned evidence with a warning, never as mastery.
 
-Use `reasoning` to identify the local question or situation, the conceptual
-route from known ideas to the new capability, and decisions the learner must
-understand. An outcome or list of terms alone is not a route. Keep this brief:
-do not script the prose or prescribe a block for every concept.
+Use `reasoning` for the learner's central question, the route from known ideas,
+and the distinction or mistaken model that the explanation must resolve.
+Name what the reader should understand at the introduction, not just the facts
+or implementation to cover. Keep it local and brief; do not script prose or
+create a per-term checklist.
 Use the existing `reasoning`, `practice`, and `boundary` fields to connect
 required reading and section-end questions to the lesson outcome, including
 without separate Practice. Capture decisions, conditions, applicable stopping criteria,

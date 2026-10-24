@@ -1,0 +1,1 @@
+Diagram described by endpoints: VDD -- weak resistor -- node Y. Branch A connects Y to ground if control A=1. Branch B connects Y to ground if B=1. A or B=0 opens only that branch. Each output can pull low or release; it cannot drive high. No stored charge model.

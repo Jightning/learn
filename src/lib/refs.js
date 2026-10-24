@@ -6,6 +6,7 @@ import { textOf, strip, clip } from "./util.js";
 import { dropAnchors } from "./asides.js";
 import { blockId } from "./index.js";
 import { safeMarkup } from "./safe-markup.js";
+import { courseMarkdown } from "./course-markdown.js";
 
 export function previewSub(SUBS, id) {
   const e = SUBS[id];
@@ -17,7 +18,7 @@ export function previewSub(SUBS, id) {
 
 /** every distinct reference inside one block, in order of appearance */
 export function refsOf(v) {
-  const t = textOf(v), seen = new Set(), out = [];
+  const t = courseMarkdown(textOf(v)), seen = new Set(), out = [];
   for (const m of t.matchAll(/href="#(s[0-9]+(?:-[0-9]+)?)"/g)) {
     if (seen.has("s" + m[1])) continue;
     seen.add("s" + m[1]); out.push({ kind: "sub", id: m[1] });
@@ -31,7 +32,7 @@ export function refsOf(v) {
 
 /** earlier sections this one depends on */
 export function buildsOn(SUBS, sections, s) {
-  const t = textOf(s), seen = new Set(), out = [];
+  const t = courseMarkdown(textOf(s)), seen = new Set(), out = [];
   for (const m of t.matchAll(/href="#(s[0-9]+(?:-[0-9]+)?)"/g)) {
     const id = m[1], e = SUBS[id];
     let num, label;
@@ -75,7 +76,7 @@ export const decorate = (html, cid, figs) => safeMarkup(
 export function sectionEdges(sections) {
   const seen = new Set(), edges = [];
   sections.forEach(s => {
-    const t = textOf(s);
+    const t = courseMarkdown(textOf(s));
     for (const m of t.matchAll(/href="#(s[0-9]+)(?:-[0-9]+)?"/g)) {
       const to = m[1], target = sections.find(x => x.id === to);
       if (!target || target.num >= s.num) continue;

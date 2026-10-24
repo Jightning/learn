@@ -227,7 +227,9 @@ export function indexSources(files, outDir, options = {}) {
     }
     if (!result) result = extract(source, options);
     const unitsPath = unitFile(source);
-    writeFileSync(join(directory, unitsPath), YAML.dump({ version: 1, extractorVersion: EXTRACTOR_VERSION, source: source.id, path: source.path, hash, format: source.format, status: result.status, units: result.units }, { noRefs: true, lineWidth: -1 }));
+    // JSON is valid YAML and avoids the YAML dumper's recursive scalar-style
+    // detection on large raw sources, such as HTML with embedded slide images.
+    writeFileSync(join(directory, unitsPath), JSON.stringify({ version: 1, extractorVersion: EXTRACTOR_VERSION, source: source.id, path: source.path, hash, format: source.format, status: result.status, units: result.units }, null, 2) + "\n");
     sources.push({ ...source, status: result.status, units: result.units.map(publicUnit), warnings: result.warnings });
   }
   const catalog = { version: 1, extractorVersion: EXTRACTOR_VERSION, directory, sources, warnings: sources.flatMap(source => source.warnings.map(message => `${source.id}: ${message}`)) };

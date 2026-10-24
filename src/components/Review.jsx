@@ -82,7 +82,7 @@ function DueReview({ only }) {
   if (!run) return <p>Loading questions…</p>;
   if (run.at >= run.items.length) return <div class="review-done">
     <h2>{run.items.length ? "Session complete" : focused ? 'No goal questions available' : "Nothing is due"}</h2>
-    <p>{run.items.length ? `${run.results.filter(r => r.correct).length} right; ${run.results.filter(r => !r.correct).length} to revisit.` :
+    <p>{run.items.length ? `${run.results.filter(r => r.firstUnaided === true && !r.selfChecked).length} right first try; ${run.results.filter(r=>r.selfChecked).length} self-rated; ${run.results.filter(r => r.correct === false && !r.timedOut).length} to revisit.` :
       focused ? 'No related practice questions are available for these goals.' : 'You are caught up.'}</p>
     {run.items.length > 0 && <button class="dbtn" onClick={again}>Another set</button>}
   </div>;
@@ -91,8 +91,8 @@ function DueReview({ only }) {
   const book = books.find(b => b.cid === row.cid);
   const result = outcome => setRun(prev => {
     const next = { ...prev, results: [...prev.results, outcome] };
-    const retryKey = row.item.typeId || row.item.concept;
-    if (!outcome.skipped && !outcome.correct && retryKey && !prev.retries.includes(retryKey)) {
+    const retryKey = [...(row.item.skills || [row.item.typeId || row.item.concept])].sort().join('+');
+    if (!outcome.skipped && !outcome.timedOut && outcome.firstUnaided === false && retryKey && !prev.retries.includes(retryKey)) {
       const used = new Set(prev.items.map(x => x.item.id));
       const item = retryVariant(book.items, row.item, used);
       if (item) {
@@ -107,7 +107,7 @@ function DueReview({ only }) {
 
   const advance = () => setRun(prev => {
     const at = prev.at + 1;
-    if (!focused || at >= prev.items.length) return { ...prev, at };
+    if (at >= prev.items.length) return { ...prev, at };
     const future = prev.items.slice(at), retries = future.filter(x => x.reason === 'Another version after a miss');
     const used = new Set([...prev.items.slice(0, at), ...retries].map(x => `${x.cid}:${x.item.id}`));
     const ranked = buildQueue(books || [], { limit: future.length - retries.length, used });
@@ -121,7 +121,7 @@ function DueReview({ only }) {
     <LearningGuidance help={row.help} item={row.item} ctx={book} />
     <QuestionCard key={`${run.at}:${row.item.id}`} item={row.item}
       ctx={{ ...book, state: book.state }} sessionId={run.sessionId} context="review" reason={row.reason}
-      selection={row.decision}
+      selection={row.decision} targetSkill={row.decision?.targetSkill}
       onResult={result} onContinue={advance} />
   </>;
 }

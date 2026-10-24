@@ -189,9 +189,14 @@ export function parseCourse(files) {
      after the first paint, and a figure must not 404 on the way to being right. */
   const assets = {};
   for (const p of Object.keys(files)) if (p.startsWith("assets/")) assets[p] = files[p];
+  const resolvedImages = new WeakSet();
   const resolveImage = (image, where) => {
-    if (!image || !image.src) return;
-    if (assets[image.src]) image.src = assets[image.src];
+    if (!image || !image.src || resolvedImages.has(image)) return;
+    if (assets[image.src]) {
+      image.src = assets[image.src];
+      // One canonical bank attachment can appear in several lesson placements.
+      resolvedImages.add(image);
+    }
     else errors.push(`${where}: missing image asset "${image.src}"`);
   };
   for (const s of C.sections)

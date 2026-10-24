@@ -141,15 +141,30 @@ test('download pages bound bytes and cannot silently skip an oversized legacy re
   assert.equal((await request({})).status,413);
 });
 
-test('additive revision migration preserves legacy encrypted data',async () => {
-  const {readFileSync}=await import('node:fs');
+test('the endpoint upgrades an existing database and preserves legacy encrypted data',async () => {
   db.exec('DROP TABLE prefs; CREATE TABLE prefs(k TEXT PRIMARY KEY, ts INTEGER NOT NULL, enc TEXT NOT NULL)');
   const enc=await seal(await deriveKey('test'),'legacy value');
   db.prepare('INSERT INTO prefs VALUES(?,?,?)').run('hue:migrated',1,enc);
-  db.exec(readFileSync(new URL('../../tools/migrations/0002-sync-revisions.sql',import.meta.url),'utf8'));
+  // Independent bindings model two isolates observing the old schema at once.
+  const upgrades=await Promise.all([request({}),request({})]);
+  assert.ok(upgrades.every(response=>response.status===200));
   assert.equal((await sync({manual:true})).ok,true);
   assert.equal(getItem('hue:migrated'),'legacy value');
   assert.equal(db.prepare('SELECT enc FROM prefs').get().enc,enc);
+  assert.ok(db.prepare('PRAGMA table_info(prefs)').all().some(c=>c.name==='rev'));
+  assert.equal((await sync({manual:true})).ok,true);
+});
+
+test('an uninitialized database returns an actionable error without accepting uploads',async()=>{
+  db.exec('DROP TABLE prefs');
+  const report=console.error;
+  try {
+    console.error=()=>{};
+    const response=await request({rows:[{id:'a:pending',ts:1,enc:'ciphertext'}]});
+    assert.equal(response.status,503);
+    assert.match((await response.json()).error,/backend:init/);
+    assert.equal(db.prepare('SELECT count(*) AS n FROM log').get().n,0);
+  } finally {console.error=report;}
 });
 
 test('clock correction recovers a rejected local future stamp, and equal-time tombstones win by revision',()=>{

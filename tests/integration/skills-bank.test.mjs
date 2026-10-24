@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { loadCourse } from "../../tools/lib/load.mjs";
 import { parseCourse } from "../../src/lib/parse.js";
 import { readAuthorBank, bankMatrix, resolveAuthorQuiz } from "../../tools/lib/author-bank.mjs";
+import { buildPacket } from "../../tools/lib/author-packets.mjs";
+import { loadContext } from "../../tools/lib/author-context.mjs";
 const files = {
   "course.json": JSON.stringify({ code: "new-skills", concepts: { c: { term: "Concept" } } }),
   "categorize/objectives.json": JSON.stringify([{ id: "o", families: ["f"] }]),
@@ -49,4 +51,31 @@ test("review expansion follows every joint skill and inherited family teaching",
   for (const id of ["type-a", "type-b", "sibling", "explanation"]) assert.ok(expanded.includes(id), id);
   const affected = affectedItems(index, ["type-b"]).map(e => e.id);
   assert.ok(affected.includes("joint")); assert.ok(affected.includes("sibling"));
+});
+
+test("writer packets include every skill in a joint question, including another lesson's skill", () => {
+  const dir = mkdtempSync(join(tmpdir(), "joint-packet-"));
+  try {
+    const input = { ...files,
+      "sections/01-one/2-other.json": JSON.stringify({ title: "Other", blocks: [], quiz: [] }),
+      "questions/skills.json": JSON.stringify([
+        { id: "t", task: "Compute", standard: "Compute independently", family: "f" },
+        { id: "t2", task: "Choose", standard: "Choose independently", family: "f", teach: ["s1-2"] }
+      ]),
+      "questions/joint/bank.json": JSON.stringify([{ id: "q", skills: ["t", "t2"], q: "Choose then compute",
+        response: { kind: "number", value: 2 }, why: "Apply both", verified: true }])
+    };
+    delete input["questions/bank.json"];
+    for (const [path, text] of Object.entries(input)) {
+      mkdirSync(dirname(join(dir, path)), { recursive: true }); writeFileSync(join(dir, path), text);
+    }
+    const plan = { path: join(dir, "materials/plan.yaml"), hash: "fixture", data: {
+      objectives: [{ id: "o", outcome: "Choose and compute", families: ["f"] }],
+      families: [{ id: "f" }], lessons: [{ id: "s1-1", objectives: ["o"] }]
+    } };
+    const packet = buildPacket({ plan, context: loadContext(new URL("../../authoring", import.meta.url).pathname),
+      subsection: { id: "s1-1", file: join(dir, "sections/01-one/1-lesson.json") }, phase: "write" });
+    assert.deepEqual(packet.questionTypes.map(t => t.id), ["t", "t2"]);
+    assert.deepEqual(packet.inventory.map(t => t.type), ["t", "t2"]);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

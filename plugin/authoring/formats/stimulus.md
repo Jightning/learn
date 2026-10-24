@@ -4,7 +4,7 @@ Review and practice prompts can carry a self-contained stimulus so they survive
 Review and Mixed Practice outside subsection context. Use one of these shapes:
 
 ```yaml
-stimulus: {t: passage, text: '<p>The short source passage the question needs.</p>', source: 'Book p. 4'}
+stimulus: {t: passage, text: 'The short source passage the question needs.', source: 'Book p. 4'}
 ```
 
 ```yaml
@@ -27,7 +27,7 @@ Use `passage` for a quoted source; use `p` for question instructions.
 ```yaml
 type: Trace
 concept: traversal
-q: '<p>What value does this function return?</p>'
+q: 'What value does this function return?'
 stimulus:
   - {t: p, h: 'Start with <code>n = 3</code>.'}
   - t: code
@@ -36,7 +36,7 @@ stimulus:
       int twice(int n) {
         return n * 2;
       }
-  - {t: note, label: Assumption, h: '<p>Assume integer arithmetic.</p>'}
+  - {t: note, label: Assumption, h: 'Assume integer arithmetic.'}
   - {t: p, h: 'Trace the expression before answering.'}
 response: {kind: number, value: 6}
 ```

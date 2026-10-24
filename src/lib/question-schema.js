@@ -1,14 +1,38 @@
 /* Shared validation for authored response data and documentation examples. */
+import { validateTiming } from "./question-timing.js";
 import { checkFormulaResponse } from "./formula.js";
 import { questionTries } from "./questions.js";
+import { RESPONSE_KINDS, FIELD_KINDS, checkTextAnswer, checkScoring } from "./response-scoring.js";
 
 export function checkResponse(item, where, errs) {
+  validateTiming(item.timing, where, errs);
   try { questionTries(item); } catch (error) { errs.push(`${where}: ${error.message}`); }
   const r = item.response;
   if (!r) return; /* legacy free-response item */
-  if (!["single", "multi", "number", "formula", "self"].includes(r.kind)) {
-    errs.push(`${where}: response.kind must be single, multi, number, formula, or self`); return;
+  if (!RESPONSE_KINDS.includes(r.kind)) {
+    errs.push(`${where}: response.kind must be single, multi, number, formula, self, text, or blanks`); return;
   }
+  const responseKeys = { single: ["choices", "correct"], multi: ["choices", "correct"], number: ["value", "tolerance", "unit"],
+    formula: ["answer", "variables", "solveFor", "independentVariable"], self: ["model", "mathSymbols", "formulaParsing"],
+    text: ["accepted", "normalization"], blanks: ["fields"] };
+  for (const key of Object.keys(r)) if (!["kind", "scoring", ...responseKeys[r.kind]].includes(key)) errs.push(`${where}: unknown response key ${key}`);
+  if (r.kind === "text") checkTextAnswer(r, where, errs);
+  if (r.kind === "blanks") {
+    if (!Array.isArray(r.fields) || !r.fields.length || r.fields.length > 40) errs.push(`${where}: blanks needs 1–40 fields`);
+    else {
+      const ids = new Set();
+      for (const field of r.fields) {
+        if (!field || typeof field !== "object" || Array.isArray(field)) { errs.push(`${where}: blank field must be a mapping`); continue; }
+        if (Object.keys(field).some(key => !["id", "label", "response"].includes(key))) errs.push(`${where}: unknown blank field key`);
+        if (typeof field.id !== "string" || !/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(field.id) || ids.has(field.id)) errs.push(`${where}: blank needs a distinct stable alphanumeric id`);
+        ids.add(field.id);
+        if (typeof field.label !== "string" || !field.label.trim()) errs.push(`${where}: blank needs a label`);
+        if (!FIELD_KINDS.includes(field.response?.kind)) errs.push(`${where}: blank response must be text, number, single, or multi`);
+        else checkResponse({ response: field.response }, `${where} blank ${field.id}`, errs);
+      }
+    }
+  }
+  checkScoring(r, where, errs);
   for (const field of ["mathSymbols", "formulaParsing"]) {
     if (r[field] != null && (r.kind !== "self" || typeof r[field] !== "boolean"))
       errs.push(`${where}: ${field} must be a boolean on a self response`);

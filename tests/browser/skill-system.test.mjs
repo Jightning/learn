@@ -49,7 +49,7 @@ test('new skill metadata reaches stepped questions, persistence, and honest goal
     assert.equal(events.find(r => r.stepId === 'second').dependent, true);
     assert.equal(events.find(r => r.stepId === 'first').submittedResponse, '2');
     await page.reload();
-    await page.getByText('Step 1 of 2').waitFor();
+    await page.locator('[data-qid=chain]').getByText('Correct', {exact:true}).waitFor();
     assert.equal((await rows(page)).filter(r => r.event === 'attempt').length, 3, 'reload does not duplicate step events');
     await page.goto(server.origin + '/#/demo/review/deadlines');
     await page.getByLabel('Minutes per day', { exact: true }).fill('1');
@@ -57,7 +57,12 @@ test('new skill metadata reaches stepped questions, persistence, and honest goal
     await page.getByRole('button', { name: 'Add goal', exact: true }).click();
     await page.getByRole('meter', { name: 'Supported requirements' }).waitFor();
     assert.equal(await page.getByRole('meter').getAttribute('aria-valuenow'), '0');
-    await page.getByRole('list', { name: 'Learning actions' }).waitFor();
+    await page.getByRole('button', { name: 'Readiness', exact: true }).click();
+    const readiness = page.getByRole('dialog', { name: 'Readiness', exact: true });
+    await readiness.getByRole('heading', { name: 'Next', exact: true }).waitFor();
+    assert.ok(await readiness.getByText('diagnose', { exact: true }).count() > 0, 'unsupported skills retain a scheduled diagnostic action');
+    assert.equal(await readiness.getByText('Needs evidence', { exact: true }).count(), 2, 'guided steps do not complete either skill standard');
+    await readiness.getByRole('button', { name: 'Close', exact: true }).click();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.getByRole('link', { name: 'Mixed practice', exact: true }).click();
     await page.getByLabel('Challenge').selectOption('foundation');

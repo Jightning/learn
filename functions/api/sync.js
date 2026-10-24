@@ -1,5 +1,6 @@
 /* Authenticated encrypted backup. See docs/sync.md for protocol invariants. */
 import { json, guard, body, purgeBin, okId } from "./_shared.js";
+import { ensureSyncSchema } from "./_sync-schema.js";
 
 const MAX_RECORDS = 2000;
 const MAX_VALUE = 128 * 1024;
@@ -32,6 +33,12 @@ export async function onRequestPost(context) {
   const now = Date.now();
   if (prefs.some(v => v.ts > now + 5 * 60_000))
     return json({ error: "device clock is ahead; correct the clock and edit the affected values again" }, 409);
+
+  try { await ensureSyncSchema(db); }
+  catch (error) {
+    console.error('Backup schema upgrade failed', error);
+    return json({ error: 'Backup database setup failed. Check the database binding and run npm run backend:init.' }, 503);
+  }
 
   // JSON table inputs keep both SQL bind counts and D1 query counts bounded.
   const writes = [];

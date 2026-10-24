@@ -17,6 +17,7 @@
  * revisits the same definitions constantly.
  * ==========================================================================*/
 import katex from "katex";
+import { courseMarkdown } from "./course-markdown.js";
 
 const OPTS = { throwOnError: false, strict: "ignore", output: "htmlAndMathml" };
 const INLINE = /<m>([\s\S]*?)<\/m>/g;
@@ -42,6 +43,6 @@ export const displayTex = src => render(src, display, true);
 
 /** Every `<m>…</m>` in a string. Returns the string untouched when there is none. */
 export function M(html) {
-  const s = String(html == null ? "" : html);
+  const s = courseMarkdown(html);
   return s.includes("<m>") ? s.replace(INLINE, (_, src) => render(src, inline, false)) : s;
 }

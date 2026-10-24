@@ -7,17 +7,28 @@ ID. Course content always lives in `<current workspace>/courses/<id>/`; hidden
 into. Use `--workspace` only when the user explicitly selected that workspace.
 Run status once at startup or handoff; preserve approved scope and completed
 files. Missing plan.yaml means migrate approved planning, not re-inventory it.
-All modes finish course writing before initial review and finish initial review
-before correction. Batches bound writer context. During review, `batch` links
+All modes finish course writing before formal review and finish that review
+before consolidated correction. Batches bound writer context. During review, `batch` links
 the combined section screens and shared context rather than asking for one
 item at a time.
 
-For a requested revision, reconcile the affected teaching briefs and directives
-with the current contract and task before handing off writing. Retain approved
-outcomes and source routes; use existing planning fields to replace stale fact
-lists, generic representation jobs or instructions from a completed phase.
-Resolve conflicts such as an old question-generation directive in a reading-only
-rewrite. This is local plan maintenance, not a new inventory or workflow stage.
+In every mode, resolve plan.md's outline approval before first writing or a
+writer handoff; reuse an unchanged approved scope when resuming.
+
+For revisions, reconcile affected briefs/directives with the current task before
+writing. Preserve approved outcomes, source routes and completed work; replace
+stale instructions locally rather than restarting planning.
+
+When an explanatory approach is unproven or repeated learner complaints expose
+failure, use one representative complete subsection as a bounded calibration
+batch before bulk writing. Choose a difficult dependency or source ambiguity,
+not just easy recall. Inspect its introduction, first worked case and changed
+task in isolation using review.md's reader check; a format-only `pilot` cannot answer that
+question. Return the earliest missing explanation, then continue with the same
+writer context and reuse the checked material in final review. This is an early
+writing sample, not per-lesson handoffs or formal acceptance. Repeated failure
+calls for reassessing the brief or authoring approach, not expanding a repair
+loop. Ordinary proven work keeps the single writing pass.
 
 ## Manual paired: three prompts, plus correction and recheck when needed
 
@@ -93,19 +104,12 @@ sequence; `reviewed --all` accepts the review in this direct single-model flow.
 
 ## Bounded work
 
-Let n include source bytes, authored content and evidence links. Process each
-once per phase; retain source extraction and compact prerequisite/evidence
-indices on disk. Never feed accumulated course prose or the full plan to every
-lesson. Request only local prerequisites, original selected items and exact
-source spans. Review unchanged accepted items once; recheck only changed items.
-Use whole-course `done --all` and `reviewed --all` when finishing a course; run
-global coverage/audit/pack once at completion, not after each lesson.
-
-Normal model work must grow proportionally to n; avoid multiplying it by the
-number of lessons or handoffs. If one focused correction fails, stop and report
-the uncertainty rather than loop. This bounds normal work, not wall-clock time,
-provider latency or arbitrary model retries. Large courses may require fresh
-writer contexts internally; resume from files with the same user prompt.
+Read shared rules/evidence once per phase. Give each assignment only its local
+brief, prerequisites and exact source spans; never repeat the whole course.
+Reuse checked results and grouped packets. Run global completion/coverage checks
+once at completion; after correction, recheck changed items and affected context.
+If one focused correction fails, report the uncertainty rather than looping.
+Resume large courses from files; fresh contexts do not require a new user handoff.
 
 When a usage budget applies, save starting meter/reset/approved increment in
 `.author/<id>/usage.yaml`, preserve across handoffs and include child usage.

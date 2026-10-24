@@ -2,14 +2,18 @@
  * and publish checks able to refuse fields that need an explicit migration. */
 const LEGACY_FIELDS = ["a", "answer", "stem", "steps"];
 
-const hasLegacyShape = item => !item?.response ||
-  LEGACY_FIELDS.some(key => Object.hasOwn(item || {}, key));
+const legacyFields = (C, item) => LEGACY_FIELDS.filter(key =>
+  Object.hasOwn(item || {}, key) &&
+  // Bank compilation validates typed steps and adds an empty list when absent.
+  // Legacy inline steps are answer prose and still require migration.
+  !(key === "steps" && item?.id && C.questionBank?.[item.id] === item));
+const hasLegacyShape = (C, item) => !item?.response || legacyFields(C, item).length > 0;
 
 export function legacyQuestionCounts(C) {
   const quiz = (C.sections || []).reduce((n, s) => n + (s.subs || []).reduce((m, u) =>
-    m + (u.quiz || []).filter(hasLegacyShape).length, 0), 0);
+    m + (u.quiz || []).filter(item => hasLegacyShape(C, item)).length, 0), 0);
   const practice = Object.values(C.practice || {}).reduce((n, bank) => n +
-    (bank.items || []).filter(hasLegacyShape).length, 0);
+    (bank.items || []).filter(item => hasLegacyShape(C, item)).length, 0);
   const drills = Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0);
   return { quiz, practice, drills };
 }
@@ -24,7 +28,7 @@ export function strictCurrentIssues(C) {
   for (const s of C.sections || [])
     for (const u of s.subs || [])
       for (const item of u.quiz || []) {
-        const legacy = LEGACY_FIELDS.filter(key => Object.hasOwn(item || {}, key));
+        const legacy = legacyFields(C, item);
         if (!item.response || legacy.length) {
           const detail = [!item.response && "requires response:",
             legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`]
@@ -35,7 +39,7 @@ export function strictCurrentIssues(C) {
 
   for (const [key, bank] of Object.entries(C.practice || {}))
     for (const [i, item] of (bank.items || []).entries()) {
-      const legacy = LEGACY_FIELDS.filter(field => Object.hasOwn(item || {}, field));
+      const legacy = legacyFields(C, item);
       if (!item.response || legacy.length) {
         const detail = [!item.response && "requires response:",
           legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`]

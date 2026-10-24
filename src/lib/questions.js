@@ -1,15 +1,16 @@
 /* One authored question shape for subsection checks and later practice.
  * Legacy text questions are adapted here, so every route uses one renderer. */
 import { qid } from "./util.js";
+import { checkValue, matchesResponse } from "./response-scoring.js";
 
-export const QUESTION_METADATA = ["typeId", "skills", "routes", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "legacyContentVersion", "evidenceVersion", "organizationVersion", "schemaVersion", "standard", "demand", "support", "representation", "errors", "steps", "parentId", "stepId", "dependent", "quarantined", "authorId"];
+export const QUESTION_METADATA = ["typeId", "skills", "routes", "scoreFor", "objectives", "families", "use", "group", "demonstrates", "help", "scopes", "contentVersion", "legacyContentVersion", "evidenceVersion", "organizationVersion", "schemaVersion", "standard", "demand", "support", "representation", "errors", "steps", "parentId", "stepId", "dependent", "quarantined", "authorId", "timing", "diagnosticsFor", "probes"];
 export const questionMetadata = raw => Object.fromEntries(QUESTION_METADATA.filter(k => raw[k] !== undefined).map(k => [k, raw[k]]));
 export const questionSkills = item => item.skills?.length ? item.skills : item.typeId ? [item.typeId] : [];
 export const retentionKeyFor = item => questionSkills(item).length > 1 || item.routes?.length
   ? `joint:${item.id || item.itemId}` : item.typeId ? `type:${item.typeId}` : item.concept;
-// Literal reviewed signatures are hints for feedback, never automatic diagnoses.
+// Reviewed signatures suggest possible causes; they never prove a diagnosis.
 export const questionErrorHypotheses = (item, value) => (item.errors || []).filter(error =>
-  typeof error.match === 'string' && String(value).trim() === error.match.trim());
+  matchesResponse(error.match, value));
 export const questionSessionCurrent = (item, bank) => !item.typeId || !!bank?.[item.id] &&
   !bank[item.id].quarantined && bank[item.id].contentVersion === item.contentVersion &&
   (!item.evidenceVersion || bank[item.id].evidenceVersion === item.evidenceVersion);
@@ -40,9 +41,17 @@ export function questionTries(item) {
   return tries;
 }
 
-export const questionSignature = item => JSON.stringify(item.contentVersion
-  ? [item.prompt, item.response, item.tries, item.stimulus, item.contentVersion]
-  : questionTries(item) === 1 ? [item.prompt, item.response] : [item.prompt, item.response, item.tries]);
+export const questionSignature = item => {
+  const signature = item.contentVersion ? [item.prompt, item.response, item.tries, item.stimulus, item.contentVersion]
+    : questionTries(item) === 1 ? [item.prompt, item.response] : [item.prompt, item.response, item.tries];
+  return JSON.stringify(item.timing ? [...signature, item.timing] : signature);
+};
+export function shouldRestoreAttempt(prior, { context = "lesson", sessionId = null, restore = false, delayed = false, timed = false } = {}) {
+  if (!prior) return false;
+  const unfinishedTimed = timed && prior.timing && !prior.feedback?.recorded;
+  const sameSession = context === "lesson" || !sessionId || prior.sessionId === sessionId;
+  return !!unfinishedTimed || sameSession && (restore || delayed || !prior.feedback?.recorded);
+}
 
 export function normalizeQuestion(raw, { subId = null, concept = null, id = null } = {}) {
   const answer = raw.response || (raw.a != null
@@ -64,22 +73,7 @@ export function normalizeQuestion(raw, { subId = null, concept = null, id = null
 }
 
 export function gradeQuestion(response, value) {
-  if (response.kind === "self") return null;
-  if (response.kind === "formula") throw new Error("Use the asynchronous formula checker for formula responses.");
-  if (response.kind === "single") return Number(value) === Number(response.correct);
-  if (response.kind === "multi") {
-    const chosen = new Set(value || []);
-    const correct = new Set(response.correct || []);
-    return chosen.size === correct.size && [...chosen].every(x => correct.has(x));
-  }
-  if (response.kind === "number") {
-    const n = Number(value);
-    const target = Number(response.value);
-    const rounding = Number.EPSILON * Math.max(1, Math.abs(target)) * 8;
-    return String(value).trim() !== "" && Number.isFinite(n) &&
-      Math.abs(n - target) <= Number(response.tolerance || 0) + rounding;
-  }
-  throw new Error(`Unknown response kind: ${response.kind}`);
+  return checkValue(response, value);
 }
 
 export function practiceItems(C) {

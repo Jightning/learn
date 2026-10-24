@@ -1,5 +1,18 @@
 # Evaluation and limits
 
+## Six-case source robustness round
+
+The completed 2026-10-19 round is recorded in
+`docs/research/creator-six-case-2026-10-19.md`. Six GPT-6 Luna Medium workers
+produced small synthetic courses with at most one correction each. Dilution,
+feedback and binary search met the bounded content checks after correction;
+ODE metadata, a logic-diagram label and a statistics question's missing Review
+data remain open. Correct answers and schema success did not catch all teaching
+failures. The full production CLI lifecycle and learner outcomes were not tested.
+Outline approval remains agent guidance, not a deterministic gate. Guidance was
+consolidated, but final default context still increased; no total token savings
+or reliable cheap-model independence is claimed.
+
 ## Teaching overhaul
 
 Teaching briefs now record the intended reasoning, local prerequisite IDs,
@@ -7,7 +20,7 @@ representation job, and practice target. Explicit substantive introduction
 anchors distinguish available teaching from a mention. Writer packets select
 that evidence and preserve reader priorities; a shared outline avoids copying
 the course into every lesson. `author preview --sub` reuses production lane,
-depth and HTML rendering for composition inspection. Component interaction
+depth and rendered output for composition inspection. Component interaction
 and final layout still require the real reader.
 
 Optional summaries no longer create audit debt. A `core` belongs to full

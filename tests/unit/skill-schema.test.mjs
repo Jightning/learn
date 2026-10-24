@@ -45,7 +45,7 @@ test("routes and separately observed steps validate explicit evidence and strict
   s.items[0].steps.push({ id: "first", skills: ["missing"], q: "Compute", response: { kind: "number", value: 1, typo: true } });
   s.items[0].typo = 1; s.items[0].support = ["easy"]; s.items[0].routes = [["a"], ["a"]];
   const { errors } = resolve(s);
-  for (const text of ["distinct stable id", "known skills", "unknown step response", "unknown item key", "support must", "duplicate alternative route"])
+  for (const text of ["distinct stable id", "known skills", "step first: unknown response key typo", "unknown item key", "support must", "duplicate alternative route"])
     assert.ok(errors.some(e => e.includes(text)), text);
 });
 test("sparse assessment overrides replace skill importance without changing the outcome budget", () => {

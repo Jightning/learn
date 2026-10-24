@@ -1,0 +1,1 @@
+Handout: While low < high, choose mid=floor((low+high)/2). If a[mid]<target set low=mid+1, else high=mid. Return low. Elsewhere the handout says high=n-1 is inclusive. It omits an empty-input rule and equality check.

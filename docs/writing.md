@@ -19,18 +19,9 @@ lesson outcome; questions should test decisions on unfamiliar in-scope tasks
 and give explanatory feedback. Provide a working representation when
 constructing it is not the target.
 
-Write equations in the same flow as the surrounding explanation. Inline math
-uses `<m>...</m>`. When an equation is important enough to pause the reading,
-keep it in the same block and paragraph flow:
-
-```html
-<p class="equation"><m>\displaystyle ...</m></p>
-```
-
-Use a separate math block only when the equation itself is the teaching object
-or needs its own explanation. A YAML line break does not create a visible
-paragraph break; use paragraph markup for a new thought and `<br>` for a short
-break within one paragraph.
+Use Markdown for text, blank lines for paragraphs, `<m>...</m>` for inline
+math, and a math block for a central equation. HTML can fulfill what Markdown
+cannot. See [text formatting](../authoring/formats/inline.md).
 
 Questions should ask the learner to retrieve, distinguish, apply, or connect a
 capability already taught. Use the current typed response kinds (`single`,

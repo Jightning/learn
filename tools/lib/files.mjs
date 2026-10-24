@@ -8,6 +8,25 @@
  * ==========================================================================*/
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname, relative, sep } from "node:path";
+import * as YAML from "js-yaml";
+
+/** Author reasoning stays in source files, never in distributed course data. */
+export function withoutAuthorComments(value) {
+  if (Array.isArray(value)) return value.map(withoutAuthorComments);
+  if (value && typeof value === "object") return Object.fromEntries(
+    Object.entries(value).filter(([key]) => key !== "authorComment")
+      .map(([key, child]) => [key, withoutAuthorComments(child)]));
+  return value;
+}
+
+function publishText(name, text) {
+  if (!/\.(ya?ml|json)$/i.test(name) || !text.includes("authorComment")) return text;
+  const json = /\.json$/i.test(name);
+  const value = json ? JSON.parse(text) : YAML.load(text);
+  const clean = withoutAuthorComments(value);
+  if (JSON.stringify(value) === JSON.stringify(clean)) return text;
+  return json ? JSON.stringify(clean) : YAML.dump(clean, { lineWidth: -1, noRefs: true });
+}
 
 /* Only explicitly approved courses may reach the public deployment.
    Keep this allowlist separate from course.yaml so authoring cannot publish a
@@ -36,7 +55,7 @@ function courseFiles(dir, fail) {
       if (e.isDirectory()) { walk(full); continue; }
 
       const rel = relative(dir, full).split(sep).join("/");
-      if (TEXT.test(e.name)) { files[rel] = readFileSync(full, "utf8"); continue; }
+      if (TEXT.test(e.name)) { files[rel] = publishText(e.name, readFileSync(full, "utf8")); continue; }
 
       /* Images travel as data URIs under their own path, so a course stays one
          self-contained map with nothing to fetch alongside it. */

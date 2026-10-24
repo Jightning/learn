@@ -23,6 +23,11 @@ spans; source references within a packet are deduplicated, and batch reviewers
 can reuse the shared context and packet artifacts.
 
 Review the plan against raw sources and the rendered course against the plan.
+Also compare the approved capability with the inventory: identify plausible
+missing methods/applications, unsupported exclusions and unresolved source
+regions. A complete mapping of an incomplete inventory is still incomplete.
+Keep proposed additions separate from approved obligations and check the saved
+user decision before accepting changed scope.
 Map each required objective/family to teaching and assessment evidence, exact
 locator, and reader-visible subsection. Verify answers by derivation or
 calculation; sample flagged uncertainty, high-risk claims, and representative
@@ -39,19 +44,21 @@ representations when construction is not the target. Compare with source
 questions and solutions; expertise or repeated elementary cases are not
 transfer evidence. Confirm research need and benefit. These remain judgments,
 not mechanical guarantees.
-Review a representative stretch as an organized explanation, not isolated
-correct blocks. Can the intended reader tell what question is being addressed,
-follow the conceptual development, and explain an unfamiliar case using only
-prior teaching? Trace its technical nouns, actions, notation and assumptions
-to their introductions; do not supply missing links from expertise. Check
-block boundaries and titles against their teaching roles. Check that needed
-visuals and referenced working material are supplied, correctly labeled and
-interpreted; prioritize missing mechanisms or representations over styling.
-A comparison
-must consolidate understood ideas, not introduce them by compression. Report
-the earliest missing dependency or organizational break with a passage and
-done condition. Definitions, correct answers, coverage and browser success do
-not waive this defect; keep failed experimental drafts unaccepted.
+Read a representative introduction before its later examples or summaries.
+From that passage and declared background alone, state what the thing does,
+which roles/cases differ, and what question remains unanswered. Cite the actual
+support; do not fill a gap from expertise or retroactively count later text.
+Then check that the first worked case makes its decisions and reasons visible
+and supports a changed case. A factual retrieval answer is not proof that the
+explanation is organized or intelligible.
+
+Check block roles/titles, notation dependencies and interpreted, correctly
+labeled visuals. Tables must clarify an understood comparison. Report the
+earliest missing answer or organizational break with its passage and done
+condition before requesting stylistic polish. Writer completion reports,
+correct answers, source tags, coverage and browser success do not waive this
+judgment. A previously accepted passage restored during correction still needs
+this reading check; keep failed experimental drafts unaccepted.
 
 Inspect the packed reader once, sampling supported depths and unusual shapes;
 fully inspect changed or flagged content. Do not reread every lesson at every
@@ -64,6 +71,8 @@ and escalate scope or truth judgment. Do not rewrite a writer's packet while
 reviewing it. A reviewer may issue concise, actionable corrections with a
 target and done condition.
 
+Before dispatching corrections, include outstanding scoped validation failures
+with the teaching findings so metadata and prose repairs share the same pass.
 Save one consolidated issues report with `author issues <course> --report
 PATH`. Each entry uses `target` or `targets`, a concise issue, and a done
 condition; `sourceRefs` is optional. The CLI generates an issue ID when omitted

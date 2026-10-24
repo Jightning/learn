@@ -3,13 +3,14 @@
 import { keys, getItem } from './store.js';
 import { setPref, dropPref } from './prefs.js';
 import { rangePool } from './practice-pool.js';
+import { normalizeQuestion } from './questions.js';
 import { skillState, provisionalDemonstrations } from './evidence.js';
 import { get as retentionGet } from './retention.js';
 import { retrievability } from './schedule.js';
 
 const PREFIX = 'learnby:';
 const DAY = 864e5;
-const KIND_SECONDS = { single: 45, multi: 75, number: 75, formula: 120, self: 150 };
+const KIND_SECONDS = { single: 45, multi: 75, text:45, blanks:90, number: 75, formula: 120, self: 150 };
 const skillsOf = q => q.skills?.length ? q.skills : [q.typeId || q.concept || q.id];
 const catalog = idx => idx.SKILLS || idx.TYPES || {};
 const validBudget = (n, max) => n === undefined || (Number.isFinite(n) && n > 0 && n <= max);
@@ -73,7 +74,10 @@ export function goalMaterial(idx, goal) {
     visiting.delete(id);
   };
   for (const id of ids) visit(id);
-  const all = [...new Map([...(idx.QALL || []), ...(idx.PALL || []), ...Object.values(idx.BANK || {})].filter(q => !q.quarantined && (!q.use || q.use === 'practice')).map(q => [q.id, q])).values()];
+  // Bank records are authored data. Keep the normalized card when an item is
+  // also placed in a lesson, and normalize bank-only items before selection.
+  const bank = Object.values(idx.BANK || {}).map(q => normalizeQuestion(q));
+  const all = [...new Map([...bank, ...(idx.PALL || []), ...(idx.QALL || [])].filter(q => !q.quarantined && (!q.use || q.use === 'practice')).map(q => [q.id, q])).values()];
   const pool = all.filter(q => skillsOf(q).some(id => ids.has(id) || deps.has(id)));
   const required = [...ids].sort();
   return { types: required, prerequisites: [...deps].filter(id => !ids.has(id)), pool,
@@ -140,7 +144,7 @@ export function deadlinePlan(idx, courseGoals, rows, { now = Date.now(), retenti
     if (!expired && !material.error) {
       const missingSets = new Map(Object.values(states).flatMap(state => state.coverage?.missingIntegrations || []).map(set => [[...set].sort().join('+'), set]));
       for (const [signature, skillIds] of missingSets) {
-        const candidates = [...new Map([...material.pool, ...Object.values(idx.BANK || {})].map(q => [q.id, q])).values()];
+        const candidates = material.pool;
         const item = candidates.find(q => !q.quarantined && !q.routes?.length && !(Array.isArray(q.support) ? q.support.length : q.support) &&
           (!q.demand || q.demand === 'standard') && skillIds.every(id => skillsOf(q).includes(id)));
         if (!item) { material.missing.push(`integration:${signature}`); continue; }

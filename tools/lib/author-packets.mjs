@@ -49,6 +49,14 @@ const asList = value => value == null ? [] : Array.isArray(value) ? value : [val
 const named = value => typeof value === "string" ? value : value?.id;
 const tags = item => asList(item?.objectives ?? item?.objective).map(named);
 const active = item => !["excluded", "moved", "prerequisite"].includes(item?.disposition);
+// Older plans use titles and plural risks; retain their meaning without
+// turning a topic title into an asserted performance standard.
+const objectiveContext = o => ({ id: o.id,
+  ...(o.outcome ? { outcome: o.outcome } : {}),
+  ...(o.title && o.title !== o.outcome ? { title: o.title } : {}),
+  ...(o.risks ?? o.risk ? { risks: asList(o.risks ?? o.risk) } : {}),
+  ...(o.requiredEvidence ? { requiredEvidence: o.requiredEvidence } : {})
+});
 
 export function indexPlan(plan) {
   const strict = !!plan.canonical;
@@ -160,7 +168,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
   const familyIds = new Set(lesson && Object.hasOwn(lesson, "families")
     ? asList(lesson.families).map(named)
     : shared ? [] : local.flatMap(o => asList(o.families).map(named)));
-  const prerequisites = [...prerequisiteIds].map(id => index.objectives.get(id)).filter(Boolean).map(o => ({ id: o.id, outcome: o.outcome }));
+  const prerequisites = [...prerequisiteIds].map(id => index.objectives.get(id)).filter(Boolean).map(objectiveContext);
   const families = [...familyIds].map(id => index.families.get(id)).filter(Boolean).filter(active);
   const effectiveRole = mode === "single" ? "single" : role ||
     (phase === "plan" ? "planner" : phase === "review" ? "reviewer" : "writer");
@@ -177,6 +185,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
   const readerContext = phase === "write"
     ? teachingContext.reader || { ...(reader.goal ? { goal: reader.goal } : {}), ...(reader.background ? { background: reader.background } : {}) }
     : selected && reader.background ? { background: reader.background } : null;
+  const placedSkills = new Set(resolved.quiz.flatMap(q => q.skills || [q.typeId]).filter(Boolean));
   const packet = {
     phase, mode, role: effectiveRole,
     rules: rules.modules.map(m => m.path),
@@ -189,8 +198,8 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
     ...(phase === "write" && teachingContext.outline ? { outline: teachingContext.outline } : {}),
     ...(phase === "write" && teachingContext.prerequisiteEvidence ? { prerequisiteEvidence: teachingContext.prerequisiteEvidence } : {}),
     ...(phase === "plan" ? { inventory: plan.path } : {}),
-    ...(phase === "write" && bank.types.length ? { questionTypes: bank.types.filter(r => asList(r.content.teach).includes(subsection?.id) || resolved.quiz.some(q => q.typeId === r.content.id)).map(r => r.content), inventory: bankMatrix(bank).rows.filter(r => asList(r.teach).includes(subsection?.id) || resolved.quiz.some(q => q.typeId === r.type)) } : {}),
-    ...(local.length ? { objectives: local.map(o => ({ id: o.id, outcome: o.outcome, ...(o.risk ? { risk: o.risk } : {}) })) } : {}),
+    ...(phase === "write" && bank.types.length ? { questionTypes: bank.types.filter(r => asList(r.content.teach).includes(subsection?.id) || placedSkills.has(r.content.id)).map(r => r.content), inventory: bankMatrix(bank).rows.filter(r => asList(r.teach).includes(subsection?.id) || placedSkills.has(r.type)) } : {}),
+    ...(local.length ? { objectives: local.map(objectiveContext) } : {}),
     ...(phase === "write" && prerequisites.length ? { prerequisites } : {}),
     ...(phase === "write" && families.length ? { families } : {}),
     ...(phase !== "review" && lesson?.directives ? { directives: lesson.directives } : {}),

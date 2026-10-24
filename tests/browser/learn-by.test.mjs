@@ -34,8 +34,17 @@ test('a saved learn-by goal introduces untouched scoped material in Review and M
     await page.getByLabel('Name').fill('Sunday objectives');
     await page.getByRole('button', { name: 'Add goal' }).click();
     await page.getByText('Sunday objectives', { exact: true }).waitFor();
-    assert.equal(await page.locator('.deadline-card .practice-stats strong').first().textContent(), '0 / 1');
-    assert.match(await page.locator('.deadline-card .practice-stats').textContent(), /Estimated remaining work/);
+    assert.match(await page.locator('.deadline-card .deadline-brief').textContent(), /0\/1 skills/);
+    assert.match(await page.locator('.deadline-card .deadline-brief').textContent(), /Time unset/);
+    assert.equal(await page.getByRole('dialog', { name: 'Sunday objectives' }).count(), 0);
+    await page.locator('.deadline-card').getByRole('button', { name: 'Readiness' }).click();
+    const readiness = page.getByRole('dialog', { name: 'Sunday objectives' });
+    await readiness.getByText('Skills supported').waitFor();
+    assert.match(await readiness.textContent(), /0 \/ 1/);
+    await page.setViewportSize({ width: 390, height: 720 });
+    assert.ok(await readiness.evaluate(el => { const box = el.getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight; }));
+    await page.keyboard.press('Escape');
+    assert.equal(await readiness.count(), 0);
     assert.doesNotMatch(await page.locator('.deadline-card time').textContent(), /\d{1,2}:\d{2}:\d{2}/, 'deadline omits seconds');
     assert.doesNotMatch(await page.locator('.deadlines-page').textContent(), /types ready|cover current gaps|Focus gives|Set when you| · /);
 
@@ -66,6 +75,7 @@ test('a saved learn-by goal introduces untouched scoped material in Review and M
     assert.equal(await page.getByText('Readiness check', { exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Start', exact: true }).click();
     await page.locator('.q[data-qid=second], .q[data-qid=second-alt]').waitFor();
+    assert.match(await page.locator('.q:visible').textContent(), /What is (two plus two|three plus three)\?/);
     await page.reload();
     await page.getByRole('button', { name: 'Finish session' }).click();
     await page.getByRole('link', { name: 'Learn by' }).click();
@@ -84,6 +94,40 @@ test('a saved learn-by goal introduces untouched scoped material in Review and M
   } finally { await browser.close(); server.close(); }
 });
 
+
+test('readiness stays inside viewport gutters and scrolls to its actions at narrow, short and zoomed sizes', async () => {
+  const server = await serveDist('.'), browser = await chromium.launch();
+  try {
+    const page = await browser.newPage(); page.setDefaultTimeout(7000);
+    const types = Array.from({ length: 24 }, (_, i) => ({ id: `skill-${i}`, task: `Skill ${i}: ${'longlabel'.repeat(12)}`, concept: 'c', scope: ['course'], objectives: ['o'], families: ['f'] }));
+    const expanded = { ...files,
+      'questions/types.json': JSON.stringify([...JSON.parse(files['questions/types.json']), ...types]),
+      'questions/bank.json': JSON.stringify([...JSON.parse(files['questions/bank.json']), ...types.map(t => ({ id: t.id, typeId: t.id, q: 'Compute.', response: { kind: 'number', value: 1 } }))]) };
+    await page.route('**/courses/demo.json', r => r.fulfill({ json: expanded }));
+    await page.goto(server.origin + '/#/demo/review/deadlines');
+    await page.getByRole('heading', { name: 'Add a learn-by goal' }).waitFor();
+    await page.getByLabel('Name').fill('Readiness viewport test');
+    await page.getByRole('button', { name: 'Add goal' }).click();
+    await page.locator('.deadline-card').getByRole('button', { name: 'Readiness' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Readiness viewport test' });
+    for (const [width, height, zoom] of [[320,480,1], [390,720,1], [844,390,1], [1440,900,1.5], [320,480,2]]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate(z => document.documentElement.style.setProperty('--zoom', z), zoom);
+      const bounds = await dialog.evaluate(el => {
+        const r = el.getBoundingClientRect(), body = el.querySelector('.modal-body');
+        return { left:r.left, right:r.right, top:r.top, bottom:r.bottom, overflow:body.scrollWidth-body.clientWidth, scrollable:body.scrollHeight>body.clientHeight };
+      });
+      assert.ok(bounds.left >= 11 && bounds.right <= width-11 && bounds.top >= 11 && bounds.bottom <= height-11, JSON.stringify({ width, height, zoom, bounds }));
+      assert.ok(bounds.overflow <= 1, 'long skills wrap without horizontal clipping');
+      assert.ok(bounds.scrollable, 'long readiness content scrolls');
+      await dialog.locator('.modal-body').evaluate(el => { el.scrollTop = el.scrollHeight; });
+      assert.ok(await dialog.getByRole('link', { name: 'Practice', exact: true }).evaluate(el => { const r=el.getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; }));
+      assert.ok(await dialog.getByRole('button', { name: 'Close', exact: true }).isVisible());
+    }
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+    assert.equal(await dialog.count(), 0);
+  } finally { await browser.close(); server.close(); }
+});
 
 test('utility pages center their content and keep practice controls visible at desktop and phone widths', async () => {
   const server = await serveDist('.'), browser = await chromium.launch();
@@ -129,6 +173,34 @@ test('utility pages center their content and keep practice controls visible at d
         }
         await page.getByRole('button', { name: 'Show the section list' }).click();
       }
+    }
+  } finally { await browser.close(); server.close(); }
+});
+
+test('Review keeps a compact toolbar gap and a short practice question visible on laptops and phones', async () => {
+  const server = await serveDist('.'), browser = await chromium.launch();
+  try {
+    const page = await browser.newPage(); page.setDefaultTimeout(7000);
+    await page.route('**/courses/demo.json', route => route.fulfill({ json: files }));
+    for (const [width, height] of [[1366,768], [1280,720], [390,844], [320,568]]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(server.origin + '/#/demo/review/mixed');
+      await page.getByRole('button', { name: 'Start', exact: true }).waitFor();
+      const layout = await page.locator('.review').evaluate(el => {
+        const toolbar = document.querySelector('.topbar').getBoundingClientRect();
+        const header = el.querySelector('.review-head').getBoundingClientRect();
+        return { gap:header.top-toolbar.bottom, overflow:document.documentElement.scrollWidth-innerWidth };
+      });
+      assert.ok(layout.gap >= 12 && layout.gap <= 24, `${width}px compact gap: ${layout.gap}`);
+      assert.ok(layout.overflow <= 1, `${width}px no horizontal overflow`);
+      await page.getByRole('button', { name: 'Start', exact: true }).click();
+      const card = page.locator('.q:visible'); await card.waitFor();
+      if (width >= 1280) {
+        assert.ok(await card.evaluate(el => el.getBoundingClientRect().bottom <= innerHeight), `${width}px short question fits without scrolling`);
+        assert.equal(await page.evaluate(() => scrollY), 0);
+      }
+      await page.getByRole('button', { name: 'Finish session' }).click();
+      await page.getByRole('button', { name: 'Another set' }).click();
     }
   } finally { await browser.close(); server.close(); }
 });

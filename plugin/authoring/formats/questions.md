@@ -1,9 +1,42 @@
 # Question response schemas
 
-Current questions have `type`, `q`, `concept`, optional `objectives` and
-`family`, typed `response`, and optional `why`. The supported response kinds are
-`single`, `multi`, `number`, `formula`, and `self`. Prefer a checked kind when
+Inline questions have `type`, `q`, `concept`, optional `objectives` and
+`family`, typed `response`, and optional `why`. Bank items inherit curriculum
+links through their skills; do not copy inline metadata onto them. Response kinds are
+`single`, `multi`, `number`, `formula`, `text`, `blanks`, and `self`. Prefer a checked kind when
 it fits the outcome; reserve `self` for reasoning or unsupported answer forms.
+
+## Checked text, blanks, points and timing
+
+```yaml
+response: {kind: text, accepted: [NAND], normalization: {trim: true, caseSensitive: false}}
+```
+
+Text matches complete accepted answers; defaults preserve case and whitespace.
+Use `number`/`formula` for mathematical equivalence. Open reasoning can remain
+`self`; its grade is labeled self-reported rather than checked.
+
+```yaml
+response:
+  kind: blanks
+  fields:
+    - {id: index, label: Selected output index, response: {kind: number, value: 5}}
+    - {id: level, label: Asserted level, response: {kind: text, accepted: [low]}}
+```
+
+Blanks render labeled fields; IDs stay stable. Supported field kinds are text,
+number, single and multi. Each field is checked separately; all must be correct
+for whole-task success. Do not use independent fields for coupled alternatives.
+Optional `response.scoring.criteria` entries have `id`, `match`, positive `points`,
+optional `skills`, and `field` for blanks. Match kinds: `choice` (`value` or
+`values`), `choice-set` (`values`), `number` (`value`, optional `tolerance`),
+`text` (`accepted`, optional `normalization`). Points describe observed task
+criteria; they do not certify skill mastery or override whole-answer checking.
+
+Optional question `timing: {limitSeconds: 60, mode: strict}` enforces a limit;
+`mode: pacing` only displays a target. Timers start explicitly and survive reload.
+Assessment records may declare the same timing shape for a total check limit.
+Timeouts are separate from misconceptions. No time limit is the default.
 
 ## Optional multiple tries
 
@@ -19,7 +52,7 @@ response: {kind: number, value: 12, unit: 'cm²'}
 
 `tries` must be a positive integer and sits beside `response`, never inside it.
 It works for inline lesson questions and bank questions.
-The button shows tries remaining. A wrong answer offers **Try again** until the
+The button shows tries remaining. A wrong answer stays editable until the
 limit is reached; success, the last try, or **Skip** completes the question.
 Correct answers and explanations stay hidden until completion, except `self`
 which must reveal its model answer for comparison before the reader grades it.
@@ -28,11 +61,11 @@ which must reveal its model answer for comparison before the reader grades it.
 - `multi`: all choices stay editable; a failed combination cannot be resubmitted.
   Individual choices are not marked, since a failed set may include correct ones.
 - `number` and `formula`: keep the answer for editing; no answers are blocked.
-- `self`: choose **Wrong**, then **Try again** to edit and compare another answer.
+- `self`: choose **Wrong** to edit and compare another answer while tries remain.
 
 Formula syntax, loading, and timeout errors use no tries. Lesson reloads retain
-the remaining tries and rejected choices. The final outcome is recorded once
-for progress and review scheduling; intermediate wrong tries do not complete it.
+the remaining tries and rejected choices. Each submitted try is retained; the final outcome completes the question once.
+First-attempt evidence remains distinct from success after retrying.
 
 ```yaml
 response: {kind: single, correct: 1, choices: [{text: 'A', why: 'It matches the rule.'}, {text: 'B', why: 'It confuses the boundary.'}]}
@@ -72,43 +105,8 @@ this is an answer for comparison. For open-ended questions, show the essential
 ideas a correct response needs, allowing valid variations. Use `why` for further
 transfer guidance or discussion of tempting mistakes.
 
-```yaml
-response:
-  kind: formula
-  answer: 'y = 2*x + 1'
-  variables: [x, y]
-  solveFor: y
-```
-
-`formula` provides a single-line typeset math editor, basic insertion
-buttons, and a `…` symbol popup. Use plain math text: `2x`, `x^2`, `sqrt(x)`,
-`pi`, `e^x`, and `*` for explicit multiplication. Typed function names such as
-`sqrt` and `abs` automatically become math notation; the Greek-letter picker
-displays glyphs while keeping their names accessible. Keys use plain math text,
-not HTML or LaTeX. Expressions omit `solveFor`; constant answers use `variables: []`.
-Equations must isolate `solveFor` on either side; general implicit equations
-are unsupported. Variables are real scalars, with at most four declared names.
-Supported functions are `sqrt`, `abs`, `sin`, `cos`, `tan`, `exp`, and `log`
-(natural logarithm). Limits: 256 characters, 80 syntax nodes, 16 nesting levels,
-and numeric powers from -12 to 12. Assignments, matrices, units, arbitrary
-functions, and custom domain assumptions are unsupported.
-Calculus supports `diff(expression,x)` (also `derivative`) and
-`integral(polynomial,x)` or `integral(polynomial,x,lower,upper)` for single-variable
-polynomials with numeric coefficients up to degree 11.
-An indefinite integral denotes the primitive with zero integration constant;
-add `+C` and declare `C` when the question expects that constant. General
-nonpolynomial integration is unsupported; use an evaluated key or `self`.
-`y'`, `y''`, and `y'''` match the corresponding formal derivatives of `y`;
-declare both `y` and the independent variable, and use `solveFor: "y'"` for
-derivative equations. `independentVariable` defaults to `x`; set it to a declared
-variable for other prime notation. The editor's integral and differential
-symbols use the same checker syntax. Valid extra variable names in learner
-answers count as nonmatching, rather than producing a syntax error.
-Reordering, factoring, and expansion can match, including `y=2(x+1/2)` for
-`y=2x+1`. Valid formulas that do not match are marked incorrect by default;
-there is no automatic self-check fallback. Syntax, loading, and timeout errors
-allow editing or retrying without recording an attempt. Independently work
-out every key; the checker does not validate the mathematics of the question.
+For checked formulas, load [Formula responses](question-formula.md); the writer
+context selects that recipe for `question:formula`.
 
 ```yaml
 response:
@@ -125,7 +123,7 @@ can be enabled separately or together; grading remains self-check. Math appears 
 the editable input; there is no separate learner preview. Formula responses include
 both features automatically.
 Model answers also honor `formulaParsing`, including inline math in prose;
-authored HTML and existing `<m>` notation remain supported.
+Markdown and existing `<m>` notation remain supported.
 
 Choice `why` explains why the tempting wrong choice fails. A question type identifies a skill surface; the concept
 routes retention and review.

@@ -10,7 +10,7 @@ each question.
 
 Every bank question has `skills` (or legacy `typeId`), `q`, inherited curriculum links, a typed
 `response`, and an independently checked answer. The current response kinds
-are `single`, `multi`, `number`, `formula`, and `self`. Prefer checked responses
+are `single`, `multi`, `number`, `formula`, `text`, `blanks`, and `self`. Prefer checked responses
 when they fit; reserve `self` for reasoning, proofs, or answer forms without a
 supported checker. `self.model` answers the prompt directly. Include `why`
 when it helps explain a tempting error or supports transfer.
@@ -26,9 +26,12 @@ When a question needs a passage, figure, code listing, table, equation, image,
 or supporting card, attach it through `stimulus`. An ordered stimulus can put
 prose before, between, or after attachments; `q` remains the final prompt. See
 [`formats/stimulus.md`](formats/stimulus.md).
+Read each prompt with only its attached stimulus, as it appears in Review.
+Include needed data and operands there; do not require remembering arbitrary
+example values from the lesson to perform a calculation.
 
 Question prompts, attachments, and answers are reader-facing content. Apply
-the same source, math, HTML, and uncertainty rules as lesson prose. Work out
+the same source, math, markup, and uncertainty rules as lesson prose. Work out
 every answer independently; a source citation or `verified` marker records the
 check but never substitutes for it. Section-end questions must support the
 promised capability even when there is no separate Practice area. Assess
@@ -37,6 +40,8 @@ task, then retrieve, distinguish, apply, or connect what the reading taught.
 When methods combine, ask for the decision and reasoning rather than changing
 only numbers. Explain why the answer follows and address likely errors in
 feedback. Supply working representations when construction is not the target.
+Review answer-position patterns and unintended cues across related questions;
+vary correct-choice positions without changing the meaning of ordered choices.
 
 An explicitly assessment-required family needs an actual, non-diagnostic task
 attached to its mapped type. Test the declared method or decision; a type name,

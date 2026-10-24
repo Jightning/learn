@@ -1,0 +1,1 @@
+Observational records, not randomized. Treatment: mild 9 successes / 10 people; severe 20/100. No treatment: mild 80/100; severe 1/10. Summary slide claims treatment is harmful because 29/110 < 81/110. Assignment reasons and other patient differences are unknown.

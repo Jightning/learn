@@ -460,9 +460,8 @@ await A.goto(ORIGIN + "/#/onlylaptop/s1-1");
 await A.locator('.qposition').waitFor();
 if (/Question 2/.test(await A.locator('.qposition').innerText()))
   await A.getByRole('button', {name:'Previous question',exact:true}).click();
-await A.locator('.qhistory').waitFor();
-await A.locator('.qhistory summary').click();
-check("a changed question exposes its earlier saved answer", /4/.test(await A.locator('.qhistory pre').innerText()));
+await A.locator('.qtext').filter({ hasText: 'Compute the sum of two and two.' }).waitFor();
+check("a changed question has no earlier-answer panel", await A.locator('.qhistory').count() === 0);
 await A.goto(ORIGIN + "/#/onlylaptop/calibration");
 await A.locator('.cal-priv').waitFor();
 check("privacy copy describes the shared-secret server boundary",

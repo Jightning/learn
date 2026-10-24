@@ -81,6 +81,27 @@ test("practice and variants needs select the central bank format and guidance", 
   }
 });
 
+test("checked text and blanks receive current recipes without unrelated formula limits", () => {
+  for (const kind of ["text", "blanks"]) {
+    const selected = selectContext(context, { role: "writer", needs: [`question:${kind}`] });
+    assert.deepEqual(selected.warnings, []);
+    assert.ok(selected.modules.some(m => m.id === "formats-questions"));
+    assert.match(selected.text, /Text matches complete accepted answers/);
+    assert.ok(!selected.modules.some(m => m.id === "formats-question-formula"));
+  }
+});
+
+test("checked steps select their own formats and all formula checker limits", () => {
+  const needs = shapeNeeds({ quiz: [{ skills: ["model"], response: { kind: "self" },
+    steps: [{ response: { kind: "formula" }, stimulus: { t: "table", head: ["x"], rows: [[1]] } }] }] });
+  assert.ok(needs.includes("bank"));
+  assert.ok(needs.includes("stimulus:table"));
+  const selected = selectContext(context, { role: "writer", needs });
+  assert.ok(selected.modules.some(m => m.id === "formats-question-formula"));
+  assert.match(selected.text, /at most four declared names/);
+  assert.match(selected.text, /zero integration constant/);
+});
+
 test("broken manifests, cycles, and symlink escapes cannot silently empty context", () => {
   const dir = mkdtempSync(join(tmpdir(), "context-"));
   try {
@@ -102,6 +123,6 @@ test("modular math rules preserve main-checkout raw math and display guidance", 
   assert.match(output, /bare TeX prints literally/);
   assert.match(output, /<m>e\^\{2x\}<\/m>/);
   assert.match(output, /math block for a central equation/);
-  assert.match(output, /source newlines, and each becomes a visible break/);
+  assert.match(output, /blank lines for paragraphs/);
   assert.match(output, /wraps naturally on mobile/);
 });

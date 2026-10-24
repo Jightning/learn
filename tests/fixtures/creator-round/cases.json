@@ -1,0 +1,50 @@
+[
+  {
+    "id": "ode",
+    "title": "A second solution from a known one",
+    "reader": "Can differentiate products, integrate exponentials, and check solutions by substitution. Knows linear independence means neither solution is a constant multiple of the other.",
+    "goal": "Prepare for second-order linear homogeneous ODE tasks where one solution is supplied and a second independent solution must be constructed. Exclude nonhomogeneous equations.",
+    "source": "Notes: For constant coefficients, try y=exp(rx), solve the characteristic polynomial, and form linear combinations. Example y\u2032\u2032-3y\u2032+2y=0 has exp(x) and exp(2x).\nPractice demand: For x>0, solve y\u2032\u2032-(2/x)y\u2032+(2/x\u00b2)y=0 given y1=x. The notes give no method for this demand.\n",
+    "edge": "Missing method; propose the addition before drafting. Initial outline approval is absent."
+  },
+  {
+    "id": "key",
+    "title": "Conservation in dilution",
+    "reader": "Can multiply and divide, understands mg and mL. Has not studied concentration.",
+    "goal": "Calculate dilution with conserved solute and distinguish added from final volume. Scope approved.",
+    "source": "Concentration is amount per volume. Assume volumes add and no solute is lost. Problem: Add 150 mL pure solvent to 50 mL of a 12 mg/mL solution. Answer key: 4 mg/mL because 600/150=4.\n",
+    "edge": "Wrong key; verify rather than copy. No health or lab advice."
+  },
+  {
+    "id": "slides",
+    "title": "Feedback and a delayed sensor",
+    "reader": "Understands numbers and comparing room temperature to a target; no control vocabulary.",
+    "goal": "Explain the sign of a temperature-control response and why a stale sensor can keep heating past the target. Do not claim stability or teach equations. Scope approved.",
+    "source": "Slide 1: target -> comparator -> heater -> room -> sensor -> comparator.\nSlide 2: error = target minus measured temperature; positive error turns heater on.\nSpeaker notes: Measurement can lag behind current room temperature. No quantitative model or guarantee of oscillation is supplied.\n",
+    "edge": "PPTX with sparse slide text and speaker notes; actual file is indexed separately."
+  },
+  {
+    "id": "logic",
+    "title": "Read a shared open-drain node",
+    "reader": "Knows a closed switch conducts, an open switch disconnects, high means 1 and ground means 0. No transistor terminology assumed.",
+    "goal": "Predict a node shared by two ideal open-drain outputs and a weak pull-up; distinguish released output from node voltage; test removal of the pull-up. Scope approved.",
+    "source": "Diagram described by endpoints: VDD -- weak resistor -- node Y. Branch A connects Y to ground if control A=1. Branch B connects Y to ground if B=1. A or B=0 opens only that branch. Each output can pull low or release; it cannot drive high. No stored charge model.\n",
+    "edge": "Visual reasoning; supplied connection description is authoritative. Do not confuse control with data or Z with 0."
+  },
+  {
+    "id": "stats",
+    "title": "Association with unequal groups",
+    "reader": "Understands fractions and percentages, not statistical vocabulary.",
+    "goal": "Compare overall and within-group success rates; explain what this observational table can and cannot establish. No causal effect estimation. Scope approved.",
+    "source": "Observational records, not randomized. Treatment: mild 9 successes / 10 people; severe 20/100. No treatment: mild 80/100; severe 1/10. Summary slide claims treatment is harmful because 29/110 < 81/110. Assignment reasons and other patient differences are unknown.\n",
+    "edge": "Confounding and aggregation reversal; distinguish observed rates from causal claim."
+  },
+  {
+    "id": "prereq",
+    "title": "Binary search with an unfamiliar invariant",
+    "reader": "Can read an indexed sorted list and compare integers. Has never learned intervals, midpoint rounding, or loop invariants.",
+    "goal": "Trace binary search on sorted ascending distinct integers, return an index or not-found, including missing target and empty input. Scope approved. No proof formalism or programming-language expertise required.",
+    "source": "Handout: While low < high, choose mid=floor((low+high)/2). If a[mid]<target set low=mid+1, else high=mid. Return low. Elsewhere the handout says high=n-1 is inclusive. It omits an empty-input rule and equality check.\n",
+    "edge": "Conflicting interval conventions and undeclared prerequisites; correct one coherent algorithm, do not copy mixture."
+  }
+]

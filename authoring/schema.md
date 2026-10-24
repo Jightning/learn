@@ -42,8 +42,8 @@ from full reading. A block may use either or neither, but not both; a `def`,
 `key`, or `trap` still has `source:`. Keep essential teaching in the full
 reading path; these fields do not replace the block's development.
 Define a term once where first needed; a subsection need not repeat a `def`.
-Every quiz has `type`, `q`,
-`response`, and a resolvable `concept`. Teaching blocks and questions carry
+Every inline quiz has `type`, `q`,
+`response`, and a resolvable `concept`. Teaching blocks and inline questions carry
 their approved `objectives:` and `family:` (or `families: [...]` for genuinely
 shared assessment) tags when the packet supplies them;
 these tags make source-family coverage auditable without duplicating prose.
@@ -51,22 +51,9 @@ Record checked source origins and answer verification while writing; leaving
 their publish fields absent creates avoidable repair work. Markers never replace
 the actual checks or the reviewer's independent checks.
 
-Prefer checked responses when the learning outcome permits: `single` for one
-choice, `multi` for select-all-that-apply, `number` for a numeric input, and
-`formula` for a scalar expression or an equation with an isolated answer variable.
-Reserve `self` for reasoning, proofs, or answers outside the supported checker.
-`self.model` displays a direct answer with any reasoning needed for self-check;
-the card supplies the comparison framing. `formula.answer` is a checked key.
-Formula keys give `answer` and `variables`; equations also give `solveFor`.
-Prime equations can use `solveFor: "y'"`; `independentVariable` defaults to `x`.
-See `formats/questions.md` for bounded derivative/integral support.
-For `self`, independent boolean fields `formulaParsing` (inline math editor) and
-`mathSymbols` (insertion toolbar) default to false; neither enables grading.
-`multi.correct` lists
-the 1-based numbers of every correct choice. A numeric response gives `value`
-and may give a nonnegative absolute `tolerance`; omitted tolerance defaults to
-`0` (exact apart from floating-point rounding). See `formats/questions.md` for
-complete examples and choice explanations.
+Choose a checked response when it fits the intended performance; reserve `self`
+for answers without a suitable checker. The selected question format module
+owns answer syntax, normalization, partial criteria, and checker limits.
 
 Use a `cat:` only for a declared category with a boundary and members; use
 secondary lowercase hyphenated `tags:` sparingly. A `label` names one block.
@@ -96,3 +83,11 @@ course snapshots as directed by its usage. Unique prompt/response/tries/stimulus
 matches create stable aliases once in `questions/aliases.yaml`; resolve
 ambiguous matches explicitly. Do not regenerate aliases during routine author
 startup or rewrite learner history. Unknown first-try evidence remains unknown.
+
+## Author comments
+
+Any YAML object may carry `authorComment: <reason, unresolved issue, or revisit condition>`.
+Use it only for context a future pass cannot infer from the content. It survives
+indexing, is ignored by learner search, and is removed from published/packed data.
+Keep course-wide decisions in the plan's existing directives; comments do not
+replace source evidence, verification, or review. Read only relevant comments.

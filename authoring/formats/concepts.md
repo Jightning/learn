@@ -31,13 +31,13 @@ bodies in `concepts/<key>.yaml` after scope is approved.
 ```yaml
 # concepts/<key>.yaml
 term: Initial-value problem
-body: '<p>A differential equation coupled with an initial value.</p>'
+body: 'A differential equation coupled with an initial value.'
 src: Defined in §4.1
 
 # categories/<key>.yaml
 name: Precipitation reactions
 short: PPT
-boundary: '<p>Dissolved substances form one or more solid products.</p>'
+boundary: 'Dissolved substances form one or more solid products.'
 siblings: [acid-base-reactions, redox-reactions]
 
 ```

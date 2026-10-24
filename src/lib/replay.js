@@ -22,7 +22,7 @@
 import { migrateLearnerAliases } from "./learner-prefs.js";
 import { getItem, setItem, removeItem } from "./store.js";
 import { step as retentionStep, install as installRetention, configOf } from "./retention.js";
-import { orderEvents, scoredEvents } from "./evidence.js";
+import { effectiveEvents, retentionEligible, POLICY } from "./evidence.js";
 import { rateStep, forget, keyFor } from "./state.js";
 import { forCourse } from "./log.js";
 import { retentionKeyFor } from "./questions.js";
@@ -44,18 +44,19 @@ export function fold(rows, cfg, start = { retain: {}, study: {} }) {
   let last = start.ts || 0;
   const sessions = new Set(start.sessions || []);
 
-  for (const r of scoredEvents(rows)) {
+  for (const r of effectiveEvents(rows, {bank:cfg.bank})) {
     if (r.ts < last) continue;
     last = r.ts;
 
     if (r.event === "exposure" || r.voided) continue;
     if (r.loop === "Q") {
-      if (r.itemId) study[r.itemId] = rateStep(study[r.itemId] || null, null, r.correct, r.ts);
+      if (r.itemId && r.correct != null && !(r.timedOut && r.firstUnaided == null)) study[r.itemId] = rateStep(study[r.itemId] || null, null, r.correct, r.ts);
       const key = retentionKeyFor({ ...r, id: r.itemId });
       const session = `${key}:${r.sessionId}`;
-      const eligible = (!r.typeId || (r.firstUnaided != null && !r.assisted && !r.skipped && !sessions.has(session))) && !r.support?.length && !r.dependent;
+      const observation = !r.typeId && !r.gradeSource && r.firstUnaided === undefined ? {...r, firstUnaided:r.correct} : r;
+      const eligible = retentionEligible(observation, {priorSession:!!r.typeId && sessions.has(session),allowSelf:true});
       if (key && eligible) retain[key] = retentionStep(retain[key] || null, {
-        itemId: r.itemId, correct: r.typeId ? r.firstUnaided : r.correct, conf: null, criterion: r.criterion,
+        itemId: r.itemId, correct: r.typeId ? r.firstUnaided : r.correct, conf: null, gradeSource:r.gradeSource || (r.selfChecked ? 'self' : 'legacy'), criterion: r.criterion,
         target: cfg.target, deadline: cfg.deadline, now: r.ts
       });
       if (r.typeId && eligible) sessions.add(session);
@@ -93,20 +94,22 @@ export function rebuild(cid, course) {
   migrateLearnerAliases(keyFor(cid, course.code), course.legacyQuestionAliases);
   const cfg = configOf(course);
   let prior = readCkpt(cid);
-  if (prior?.replayVersion !== 2) prior = null;
+  if (prior?.replayVersion !== POLICY.version) prior = null;
   const allRows = forCourse(cid, course);
   const resetAt = Number(getItem(`reset:${cid}`)) || 0;
   if (prior?.resetAt !== resetAt) prior = null;
   const mappingVersion = JSON.stringify(course.legacyQuestionAliases || {});
+  const evidenceVersion = JSON.stringify(Object.values(course.questionBank || {}).map(q=>[q.id,q.contentVersion,q.evidenceVersion,q.quarantined]));
   const covered = new Set(prior?.eventIds || []);
   let rows = allRows.filter(r=>!covered.has(r.id));
-  if (prior && (prior.mappingVersion !== mappingVersion || !prior.eventIds ||
+  if (prior && (prior.mappingVersion !== mappingVersion || prior.evidenceVersion !== evidenceVersion || !prior.eventIds ||
     rows.some(r=>r.ts <= prior.ts || ['rubric-score', 'grade-revision', 'attempt-void'].includes(r.event)))) { prior = null; rows = allRows; }
   // An imported older row, tied timestamp or new alias needs a complete fold.
-  const next = rows.length || !prior ? fold(rows, cfg, prior || undefined) : prior;
+  const next = rows.length || !prior ? fold(rows, {...cfg,bank:course.questionBank}, prior || undefined) : prior;
   next.eventIds = allRows.map(r=>r.id);
   next.mappingVersion = mappingVersion;
-  next.replayVersion = 2;
+  next.evidenceVersion = evidenceVersion;
+  next.replayVersion = POLICY.version;
   next.resetAt = resetAt;
   installRetention(cid, next.retain);
 

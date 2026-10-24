@@ -51,13 +51,18 @@ export function contact(cid, key) {
    `answer` (live) and lib/replay.js (rebuilding from the log) go through this,
    so a replayed schedule is identical to the one that was lived. */
 export function step(prev, { itemId, correct, conf, criterion = CRITERION,
-                             target = 0.9, deadline = null, now = Date.now() }) {
+                             target = 0.9, deadline = null, gradeSource = 'legacy', now = Date.now() }) {
   const c = prev
     ? { ...prev, items: [...(prev.items || [])], relearnDays: [...(prev.relearnDays || [])] }
     : blank();
+  const previousRecall = c.last || null;
+  c.delayMs = previousRecall == null ? null : Math.max(0, now-previousRecall);
   Object.assign(c, review(c.reps ? c : null, grade(correct, conf), now, target));
   c.criterion = Math.max(c.reps ? c.criterion || 1 : 1,
     Math.min(CRITERION, Math.max(1, Number(criterion) || CRITERION)));
+  c.gradeSource = gradeSource;
+  c.selfReportedReps = (c.selfReportedReps || 0) + Number(gradeSource === 'self');
+  c.checkedReps = (c.checkedReps || 0) + Number(['deterministic-checker','human-review'].includes(gradeSource));
   c.reps++;
   c.ok = !!correct;
   if (correct) {
@@ -65,9 +70,10 @@ export function step(prev, { itemId, correct, conf, criterion = CRITERION,
       if (!c.items.includes(itemId)) c.items.push(itemId);
     } else {
       const t = day(now);
-      if (!c.relearnDays.includes(t)) c.relearnDays.push(t);
+      if (c.delayMs >= 864e5 && !c.relearnDays.includes(t)) c.relearnDays.push(t);
     }
   }
+  if (!correct) c.relearnDays = [];
   c.dueAt = due(c, { target, deadline });
   return c;
 }
@@ -88,11 +94,12 @@ export function phase(c) {
 }
 
 export function label(c) {
+  const source = c?.selfReportedReps ? 'Self-reported review: ' : c?.reps && !c.checkedReps ? 'Earlier review history: ' : '';
   switch (phase(c)) {
     case "new": return "not started";
-    case "learning": return `learning, ${c.items.length} of ${c.criterion || CRITERION} items`;
-    case "criterion": return `at criterion, ${c.relearnDays.length} of ${RELEARN} relearn sessions`;
-    default: return "retained over observed review sessions";
+    case "learning": return `${source}learning, ${c.items.length} of ${c.criterion || CRITERION} items`;
+    case "criterion": return `${source}at criterion, ${c.relearnDays.length} of ${RELEARN} relearn sessions`;
+    default: return `${source}retained over observed review sessions`;
   }
 }
 
@@ -105,13 +112,14 @@ export function dueKeys(cid, now = Date.now()) {
 
 export function counts(cid, keys = Object.keys(load()[cid] || {})) {
   const d = load()[cid] || {};
-  const n = { total: keys.length, seen: 0, criterion: 0, durable: 0, due: 0 };
+  const n = { total: keys.length, seen: 0, criterion: 0, durable: 0, due: 0, selfReported:0 };
   for (const k of keys) {
     const c = d[k];
     if (!c) continue;                    /* not in contact: not the queue's business */
     if (isDue(c)) n.due++;
     if (!c.reps) continue;
     n.seen++;
+    if (c.selfReportedReps) n.selfReported++;
     const p = phase(c);
     if (p === "durable") n.durable++;
     else if (p === "criterion") n.criterion++;

@@ -3,7 +3,7 @@
  *
  * Every renderable thing is registered by name and produces an HTML string
  * from data. Components inject the result. Keeping these as string renderers
- * is deliberate: course content is authored as raw HTML in YAML, so a
+ * is deliberate: course content is authored as rich text in YAML, so a
  * component-based renderer would have to inject it unescaped anyway, and this
  * keeps the extension point trivial for a new subject.
  *
@@ -13,6 +13,7 @@ import { esc, strip, clip } from "../lib/util.js";
 import { sourceReference } from "../lib/source-label.js";
 import { Figures } from "../figures/index.js";
 import { displayTex } from "../lib/math.js";
+import { courseMarkdown } from "../lib/course-markdown.js";
 
 const reg = {};
 export const Blocks = {
@@ -118,11 +119,11 @@ export const U = {
    * it above that prose would give away exactly what the prose is withholding. */
   body: b => {
     const c = b.core;
-    if (!c) return b.h || "";
+    if (!c) return courseMarkdown(b.h);
     const lead = Array.isArray(c)
       ? `<ul class="bcore bcore-l">${c.map(x => `<li>${x}</li>`).join("")}</ul>`
       : `<p class="bcore">${c}</p>`;
-    return lead + (b.h || "");
+    return lead + courseMarkdown(b.h);
   },
 
   /* A callout's enumeration, rendered as the list it is.
@@ -199,7 +200,7 @@ export const holdsOf = t => ((Blocks.get(t) || {}).holds === "structure" ? "stru
 
 /* ---------- prose and callouts ---------- */
 R("p",    { notes: "hidden", render: b => {
-  const h = b.h || "";
+  const h = courseMarkdown(b.h);
   // Rich prose already owns its paragraph boundaries. Nesting it in another
   // paragraph makes the browser insert empty paragraphs and misleading gaps.
   return /<(?:p|ol|ul|blockquote|div|pre|table|h[1-6])(?:\s|>)/i.test(h) ? h : `<p>${h}</p>`;

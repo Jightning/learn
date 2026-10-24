@@ -123,7 +123,7 @@ export default function Desk({ ctx }) {
         <a href={H("review")}>Review</a>
         <a href={H("map")}>Dependency map</a>
         <a href={H("calibration")}>
-          Practice history{b && b.seen ? ` (${b.durable}/${b.total} retained over observed reviews)` : ""}
+          Practice history{b && b.seen ? ` (${b.durable}/${b.total} retained over observed reviews${b.selfReported ? `; ${b.selfReported} include self reports` : ""})` : ""}
         </a>
       </div>
     </div>

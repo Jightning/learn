@@ -1,5 +1,6 @@
 /* Due review uses every encountered concept, regardless of where its question
  * first appeared. The content pool combines subsection checks and variants. */
+import { POLICY } from "./evidence.js";
 import { get, dueKeys, configOf } from "./retention.js";
 import { retrievability } from "./schedule.js";
 import { activeGoals, deadlinePlan } from "./learn-by.js";
@@ -23,12 +24,12 @@ export function buildQueue(books, { limit = 20, now = Date.now(), used = new Set
   const rows = [];
   for (const entry of due) {
     if (rows.length >= limit) break;
-    const candidates = (entry.items || []).filter(q => !q.quarantined && (!q.use || q.use === "practice") && retentionKeyFor(q) === entry.key);
+    const candidates = (entry.items || []).filter(q => !used.has(`${entry.cid}:${q.id}`) && !q.quarantined && (!q.use || q.use === "practice") && retentionKeyFor(q) === entry.key);
     if (!candidates.length) continue;
     const seen = new Set(entry.history?.items || []);
     const item = candidates.find(q => !seen.has(q.id)) || candidates[0];
     rows.push({ cid: entry.cid, C: entry.C, item,
-      reason: entry.history?.ok ? "Due for review" : "Previously missed" });
+      reason: entry.history?.selfReportedReps ? "Self-reported review" : entry.history?.ok ? "Due for review" : "Previously missed" });
   }
   return rows;
 }
@@ -45,16 +46,16 @@ function buildGoalQueue(books, { limit, now, used }) {
     const best = entries.flatMap(({ book, plan, rows, versions }) => {
       const localUsed = new Set([...taken].filter(key => key.startsWith(`${book.cid}:`)).map(key => key.slice(book.cid.length + 1)));
       const selected = selectScored(plan.pool, rows, { used: localUsed, types: book.idx.TYPES || {},
-        bank: book.idx.BANK, diagnostics: book.idx.DIAGNOSTIC, inventory: book.idx.TYPES,
+        bank: book.idx.BANK, graph:book.idx.GRAPH, diagnostics: book.idx.DIAGNOSTIC, inventory: book.idx.TYPES,
         standard: practiceRequirements(plan.details.map(d => d.standard)),
         dueTypes: duePracticeTypes(plan.pool, book.cid, undefined, now), goalPriorities: plan.priorities,
         goalReasons: plan.reasons, versions, remaining: limit - chosen.length });
-      return selected.item ? [{ book, selected, score: selected.scores[0].score }] : [];
+      return selected.item ? [{ book, selected, score: selected.selectedScore ?? 0 }] : [];
     }).sort((a, b) => b.score - a.score || a.book.cid.localeCompare(b.book.cid));
     if (!best.length) break;
     const { book, selected } = best[0];
     chosen.push({ cid: book.cid, C: book.C, item: selected.item, reason: selected.reason, help: selected.help, action: selected.action,
-      decision: { policyVersion: 2, action: selected.action, probability: 1, deterministic: true,
+      decision: { policyVersion: POLICY.version, sourceAttemptId:selected.sourceAttemptId, targetSkill:selected.targetSkill, features:selected.scores.find(q=>q.id===selected.item.id)?.features,score:selected.selectedScore, action: selected.action, probability: 1, deterministic: true,
         eligibleActions: [...new Set([...selected.scores.map(q => q.id), selected.item.id])] } });
     taken.add(`${book.cid}:${selected.item.id}`);
   }

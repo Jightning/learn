@@ -13,6 +13,7 @@
 import { readdirSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { responseAnswerText } from "../src/lib/response-scoring.js";
 import { loadCourse } from "./lib/load.mjs";
 import { COURSES as COURSES_DIR } from "./lib/paths.mjs";
 
@@ -43,11 +44,8 @@ function problems(C) {
     out.push("", "**Solutions**", "");
     items.forEach((it, i) => {
       const r = it.response;
-      const answer = !r ? it.answer : r.kind === "self" ? r.model :
-        r.kind === "number" ? `${r.value} ${r.unit || ""}` : r.kind === "formula" ? r.answer :
-        (r.kind === "single" ? [r.correct] : r.correct || [])
-          .map(n => r.choices[n - 1]?.text || "").join("; ");
-      const steps = (it.steps || []).map(strip).join(" → ");
+      const answer = r ? responseAnswerText(r) : it.answer;
+      const steps = (it.steps || []).map(step => typeof step === "string" ? strip(step) : strip(responseAnswerText(step.response))).join(" → ");
       out.push(`${i + 1}. ${steps ? steps + " → " : ""}**${strip(answer)}**` +
         (it.why ? ` — ${strip(it.why)}` : ""));
     });

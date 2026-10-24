@@ -1,7 +1,7 @@
 # Cross-course links
 
 ```yaml
-h: '<p>This builds on <a href="#/other-course/s6-1">first-order transients</a>.</p>'
+h: 'This builds on <a href="#/other-course/s6-1">first-order transients</a>.'
 ```
 
 Use a full course route with a subsection anchor. The target must resolve among

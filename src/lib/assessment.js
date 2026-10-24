@@ -1,16 +1,16 @@
-import { POLICY, exposedItems, skillsOf, skillState, isJoint, hasSupport } from './evidence.js';
+import { POLICY, exposedItems, skillsOf, skillState, isJoint, hasSupport, reliableGrade } from './evidence.js';
 /* Confirmation selects an applicable standard; only observations supply evidence. */
 export function checkCandidates(idx, blueprint, rows, now = Date.now()) {
-  if (!blueprint) return { items: [], missing: [], reason: 'No applicable assessment standard.' };
+  if (!blueprint) return { items: [], selfItems: [], missing: [], reason: 'No applicable assessment standard.' };
   const exposed = exposedItems(rows), selected = new Map(), missing = new Set(), inventoryGaps = [];
   const candidates = (idx.CHECK || []).filter(q => !exposed.has(q.id) && !q.quarantined &&
-    !hasSupport(q) && (!q.demand || q.demand === 'standard'));
+    !hasSupport(q) && q.response?.kind !== 'self' && (!q.demand || q.demand === 'standard'));
   const states = Object.fromEntries(blueprint.types.map(id => [id,
     skillState(id, rows, { bank: idx.BANK, now, standard: blueprint, skill: idx.TYPES?.[id] })]));
   const choose = q => { selected.set(q.id, q); return q; };
   for (const id of blueprint.types) {
     const state = states[id];
-    if (state.ready) continue;
+    if (state.ready && state.coverage.freshIndependent >= POLICY.minimumIndependent) continue;
     const groups = new Set(state.practice.map(r => r.group || `${id}:unknown`));
     const atomic = candidates.filter(q => skillsOf(q).includes(id) && !isJoint(q));
     const chosen = [];
@@ -37,15 +37,28 @@ export function checkCandidates(idx, blueprint, rows, now = Date.now()) {
     if (task) choose(task);
     else { skills.forEach(id => missing.add(id)); inventoryGaps.push(`integration:${[...skills].sort().join('+')}`); }
   }
-  return { items: [...selected.values()], missing: [...missing], inventoryGaps,
+  const selfItems = (idx.CHECK || []).filter(q => q.response?.kind === 'self' && !q.quarantined &&
+    !exposed.has(q.id) && skillsOf(q).some(id=>blueprint.types.includes(id)));
+  return { items: [...selected.values()], selfItems, missing: [...missing], inventoryGaps,
     reason: missing.size ? 'Fresh independent check inventory is insufficient. Useful practice remains available.' : null };
+}
+
+function weightedMean(ids, scores, weights) {
+  let sum = 0, total = 0;
+  for (const id of ids) {
+    const weight = weights[id] || 0;
+    sum += weight * (scores[id] || 0);
+    total += weight;
+  }
+  // Normalize by the same accumulated weights: rounded fractional budgets
+  // must not make a genuinely perfect outcome fail a 100% requirement.
+  return total ? sum / total : 0;
 }
 
 export function readiness(blueprint, rows, { confirmedVersion, bank, now = Date.now() } = {}) {
   if (!blueprint || confirmedVersion !== blueprint.version) return { ready: false, label: 'Readiness needs an applicable confirmed standard.', gaps: [] };
   const states = Object.fromEntries(blueprint.types.map(id => [id, skillState(id, rows, { bank, now, standard: blueprint })]));
   const scores = {}, gaps = [], contradictions = [], outcomes = {}, adequacy = {};
-  let aggregate = 0;
   for (const id of blueprint.types) {
     const state = states[id];
     const fresh = state.observations.filter(r => now-r.ts <= POLICY.freshnessDays*864e5);
@@ -66,19 +79,22 @@ export function readiness(blueprint, rows, { confirmedVersion, bank, now = Date.
       const recent = fresh.slice(-POLICY.window);
       scores[id] = recent.filter(r => r.firstUnaided).length/recent.length;
     }
-    aggregate += (blueprint.typeWeights[id] || 0)*(scores[id] || 0);
   }
   for (const [id, outcome] of Object.entries(blueprint.outcomes || {})) {
     const assessed = outcome.types.every(t => t in scores);
-    const score = assessed ? outcome.types.reduce((n, t) => n+(blueprint.typeWeights[t] || 0)*scores[t], 0)/outcome.weight : null;
+    const score = assessed ? weightedMean(outcome.types, scores, blueprint.typeWeights) : null;
     outcomes[id] = { score, essential: outcome.essential, floor: outcome.floor };
     if (!assessed || (outcome.essential && score < (outcome.floor ?? .8))) gaps.push(id);
   }
   const evidence = [...new Map(Object.values(states).flatMap(s => s.observations).map(r => [r.id, r])).values()];
+  const aggregate = weightedMean(blueprint.types, scores, blueprint.typeWeights);
   const ready = !gaps.length && aggregate >= blueprint.target;
   return { ready, score: aggregate, scores, states, adequacy, outcomes, gaps, contradictions,
     evidenceKey: evidence.map(r => r.id).sort().join('|'), confirmed: true,
     label: ready ? 'Meets the confirmed assessment criteria; delayed retention is separate.' : 'Required sampling or assessment performance does not yet meet the confirmed criteria.',
-    selfAssessed: Object.values(states).some(s => s.practice.some(r => r.selfChecked)) };
+    gradeSources: Object.fromEntries(['checked', 'self', 'provisional'].map(source => [source,
+      [...new Map(Object.values(states).flatMap(s => s.practice).map(r => [r.id, r])).values()].filter(r =>
+        source === 'checked' ? reliableGrade(r) : source === 'self' ? r.gradeSource === 'self' || r.selfChecked && !r.gradeSource && !reliableGrade(r) : r.gradeSource === 'model-provisional').length])),
+    selfAssessed: Object.values(states).some(s => s.practice.some(r => !reliableGrade(r) && (r.selfChecked || r.gradeSource === 'self'))) };
 
 }

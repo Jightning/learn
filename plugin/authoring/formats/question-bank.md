@@ -24,9 +24,9 @@ Derived values and resulting assessment contributions appear in author packets.
 # bank.yaml
 - id: q-normalize-1
   skills: [normalize]
-  q: '<p>Divide <m>3y\prime+6y=9</m> by 3. What coefficient multiplies <m>y</m>?</p>'
+  q: 'Divide <m>3y\prime+6y=9</m> by 3. What coefficient multiplies <m>y</m>?'
   response: {kind: number, value: 2}
-  why: '<p>Every term is divided by 3.</p>'
+  why: 'Every term is divided by 3.'
   verified: true # only after checking
 ```
 
@@ -39,7 +39,8 @@ Legacy types retain their old placement-derived teaching behavior.
 Skill exceptions: `teach` supplies explicit subsection/category anchors;
 `membership` extends scope without inserting lesson content; `requires` forms a
 prerequisite DAG, used for diagnosis rather than blocking access; `assess: false`
-marks supporting skills; `diagnose` links diagnostic item IDs. Default relative
+marks supporting skills. Diagnostic items declare `diagnosticsFor: [skill-id]`;
+the reverse skill lookup is generated (`diagnose` remains legacy-compatible). Default relative
 `importance` is 1. Objectives may declare their default outcome `importance`.
 `representations: [graph, equation]` declares meaningful required variation.
 A missing teaching route needs a reviewed external-teaching/assessment-only
@@ -55,9 +56,11 @@ Item exceptions have separate meanings:
   Different labels alone do not prove independent transfer.
 - `representation`: one meaningful variation ID, when relevant.
 - `use`: `practice` (default), `diagnostic`, or `check`. Reserved items cannot be
-  placed in lesson quizzes; diagnostic items need a skill's diagnostic link.
+  placed in lesson quizzes; diagnostic items need `diagnosticsFor` or a legacy
+  skill diagnostic link. Optional `probes: [error-id]` targets reviewed causes.
 - `errors`: reviewed hypotheses `{id, description, match?}`. A match is a textual
-  signature for optional analysis, never proof of a learner misconception.
+  signature or typed response matcher (see questions.md); it proposes a cause,
+  never proves a learner misconception. Matching probes can be selected next.
 
 Multiple `skills` mean one all-required joint task. A wrong final answer cannot
 identify the failed component. Declare alternative valid methods with

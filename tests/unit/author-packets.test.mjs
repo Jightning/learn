@@ -38,6 +38,18 @@ test('single mode skips role handoff; writer receives objective source reference
   assert.equal(p.families[0].description,'Apply on a new surface');
   assert.equal(buildPacket({...args,context,phase:'write',mode:'paired'}).role,'writer');
 }));
+test('writer handoffs retain title-only objectives, risk aliases and required evidence',()=>fixture(args=>{
+  delete args.plan.data.objectives[0].outcome;
+  Object.assign(args.plan.data.objectives[0], {title:'Vector operations', risks:['sign slips'],
+    requiredEvidence:['Choose a method independently'], prerequisites:['b']});
+  Object.assign(args.plan.data.objectives[1], {risk:'unstated domain', title:'Prior topic'});
+  const p=buildPacket({...args,context,phase:'write',mode:'paired'});
+  assert.deepEqual(p.objectives, [{id:'a',title:'Vector operations',risks:['sign slips'],
+    requiredEvidence:['Choose a method independently']}]);
+  assert.equal(p.objectives[0].outcome,undefined);
+  assert.deepEqual(p.prerequisites,[{id:'b',outcome:'Unrelated',title:'Prior topic',risks:['unstated domain']}]);
+  assert.ok(!Object.hasOwn(p.objectives[0],'sources'));
+}));
 test('write packets include lesson teaching decisions and reader calibration without broad prose',()=>fixture(args=>{
   const lesson=args.plan.data.lessons[0];
   lesson.needs=['block:figure'];

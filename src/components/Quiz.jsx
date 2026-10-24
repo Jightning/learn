@@ -39,7 +39,7 @@ export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
     </div>
     {items.map((item, i) => <div key={item.id} hidden={at !== i}
       style={{ display: at === i ? "" : "none" }}>
-      <QuestionCard item={item} ctx={ctx} restore sessionId={session}
+      <QuestionCard item={item} ctx={ctx} activeQuestion={at === i} restore sessionId={session}
         onResult={r => setResults(prev => ({ ...prev, [item.id]: r }))}
         onContinue={() => moveTo(i + 1 < total ? i + 1 : total)} />
     </div>)}

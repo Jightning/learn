@@ -15,6 +15,27 @@ const files = {
 };
 const logRows = page => page.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('learn');r.onsuccess=()=>{
   const db=r.result,q=db.transaction('log').objectStore('log').getAll();q.onsuccess=()=>{db.close();resolve(q.result)};};}));
+test('a revised question does not display earlier saved answers', async () => {
+  const server = await serveDist('.'), browser = await chromium.launch();
+  try {
+    const page = await browser.newPage(); page.setDefaultTimeout(7000);
+    let current = files;
+    await page.route('**/courses/demo.json', r => r.fulfill({ json: current }));
+    await page.goto(server.origin + '/#/demo/s1-1');
+    const card = page.locator('.q:visible');
+    await card.locator('input[type=number]').fill('1');
+    await card.getByRole('button', { name: /^Check answer/ }).click();
+    await card.locator('.qresult').filter({ hasText: 'Correct' }).waitFor();
+    const bank = JSON.parse(files['questions/bank.json']);
+    bank.find(q => q.id === 'a').q = 'Revised question: compute one.';
+    current = { ...files, 'questions/bank.json': JSON.stringify(bank) };
+    await page.reload();
+    await card.locator('.qtext').filter({ hasText: 'Revised question: compute one.' }).waitFor();
+    assert.equal(await card.locator('input[type=number]').inputValue(), '');
+    assert.equal(await card.locator('.qhistory').count(), 0);
+    assert.doesNotMatch(await card.textContent(), /Earlier answers|Previous answer/);
+  } finally { await browser.close(); server.close(); }
+});
 test('stable lesson attempt, reload retry, scoped mixed bank and delayed check feedback',async()=>{
   const server=await serveDist('.'), browser=await chromium.launch();
   try {
@@ -54,7 +75,7 @@ test('self rubric check stores first response before revealing model and grades 
     taskFiles['questions/bank.json']=JSON.stringify(bank);
     await page.route('**/courses/demo.json',r=>r.fulfill({json:taskFiles}));await page.goto(server.origin+'/#/demo/review/mixed');
     await page.getByText('Readiness check',{exact:true}).click();await page.getByRole('button',{name:'Confirm this standard applies to my goal'}).click();
-    await page.getByRole('button',{name:'Start fresh check'}).click();const card=page.locator('.q:visible');
+    await page.getByRole('button',{name:'Start self-report check'}).click();const card=page.locator('.q:visible');
     await card.locator('textarea').fill('My independently written reasoning.');await card.getByRole('button',{name:/Check answer/}).click();
     await card.getByText('Response saved').waitFor();assert.equal(await card.locator('.ans').count(),0);
     await card.getByRole('button',{name:/Continue/}).click();await page.getByText('Answer and feedback',{exact:true}).click();
@@ -62,6 +83,9 @@ test('self rubric check stores first response before revealing model and grades 
     await page.getByRole('button',{name:'Correct',exact:true}).click();await page.locator('.qresult').filter({hasText:'Correct'}).waitFor();
     const rows=await logRows(page);assert.equal(rows.filter(r=>r.event==='attempt'&&r.itemId==='fresh').length,1);
     assert.equal(rows.filter(r=>r.event==='rubric-score').length,1);
+    assert.equal(rows.find(r=>r.event==='rubric-score').gradeSource,'self');
+    assert.match(await page.locator('.pdone').innerText(),/1 self-rated, 0 to revisit/);
+    await page.getByText('Self-reported',{exact:false}).waitFor();
   } finally {await browser.close();server.close();}
 });
 test('adaptive Mixed Practice is default and weighted fallback persists',async()=>{

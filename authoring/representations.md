@@ -1,6 +1,8 @@
 # Representation selection
 
 Choose the representation's job while planning; load only the chosen format.
+Choose by the relationship to explain, not the source file's format: slide
+sources do not imply a carousel, and prose frames do not show a feedback loop.
 Treat visuals as ordinary explanatory material, especially for structure,
 connections, geometry and change. The jobs below guide selection, not a quota.
 

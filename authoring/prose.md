@@ -1,15 +1,17 @@
-# Prose packet
+# Prose
 
-Write direct, clear sentences with subjects and verbs close together. Second
-person can name the reader's situation without making every fact an imperative.
-Use paragraphs to develop a thought, with relationships stated in the prose.
-Compress repetition and established steps before unfamiliar reasoning. Avoid
-nominalizations, hedged assertions, judgement words such as “obvious,” and
-transitions that imply an unfamiliar idea is already known. Explain what
-happens directly; ask the learner to inspect, trace or compare only when it is
-a useful learning action and the relevant material is supplied. Read prose aloud.
+Use concrete subjects and direct verbs. Keep each explanation or worked case
+coherent; distinguish assumptions, actions and consequences. Compress repetition
+and established steps before unfamiliar reasoning. Avoid unexplained terminology,
+nominalizations and claims that something is obvious. Use meaningful headings
+and emphasis sparingly; the account must remain understandable without styling.
 
-Use `<strong>` or `<em>` sparingly when emphasis clarifies meaning, without
-automatic first-use bolding, redundant concept styling or restating a heading
-just to mark a term. Keep headings meaningful and the account understandable
-without styling. See blocks.md for boundaries and formats/inline.md for markup.
+Solve each transfer task from preceding teaching and declared background. Teach
+any missing method, boundary rule or representation convention before asking it;
+feedback cannot introduce a required rule for the first time. Vary a meaningful
+condition or decision, not just numbers. In the existing verification note,
+identify the changed condition and reasoning tested.
+
+The teaching contract in core.md owns first explanations, stable examples,
+analogies, variation and revision. Block boundaries belong to blocks.md;
+formatting belongs to formats/inline.md.

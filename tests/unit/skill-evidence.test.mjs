@@ -7,6 +7,27 @@ const row = (id, extra = {}) => ({ id, event: 'attempt', itemId: id, typeId: 'a'
   ts: Number(id.replace(/\D/g, '')) || 1, firstUnaided: true, methodCued: false, ...extra });
 const item = (id, typeId = 'a', extra = {}) => ({ id, typeId, skills: [typeId], group: id, ...extra });
 
+test('perfect fractional outcome budgets meet a 100% target without accepting a real miss', () => {
+  const blueprint = { version: 'perfect', target: 1, types: [], typeWeights: {}, outcomes: {} };
+  const rows = [];
+  for (const [index, count] of [5, 7, 10, 5, 3].entries()) {
+    const types = Array.from({ length: count }, (_, i) => `skill-${index}-${i}`);
+    blueprint.types.push(...types);
+    blueprint.outcomes[`outcome-${index}`] = { types, weight: .2, essential: true, floor: 1 };
+    for (const id of types) {
+      blueprint.typeWeights[id] = .2 / count;
+      for (const ts of [1, 2]) rows.push(row(`${id}-${ts}`, { ts, typeId: id, skills: [id], context: 'check' }));
+    }
+  }
+  const options = { confirmedVersion: 'perfect', now: 10 };
+  const result = readiness(blueprint, rows, options);
+  assert.equal(result.ready, true);
+  assert.equal(result.score, 1);
+  for (const outcome of Object.values(result.outcomes)) assert.equal(outcome.score, 1);
+  const missed = rows.map((r, i) => i === 0 ? { ...r, firstUnaided: false } : r);
+  assert.equal(readiness(blueprint, missed, options).ready, false);
+});
+
 test('same template across sessions and unknown groups never manufacture independence', () => {
   const same = [row('q1', { group: 'same', sessionId: 'one' }), row('q2', { group: 'same', sessionId: 'two' })];
   assert.equal(observations(same, 'a').length, 1);

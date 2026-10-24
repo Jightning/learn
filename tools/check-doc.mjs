@@ -56,6 +56,7 @@ const TYPES = new Set([
    or the build — and each is named with what reads it, so an entry cannot
    outlive its reader unnoticed. */
 const FIELDS = new Set([
+  "authorComment", /* tools/lib/files.mjs strips author-only reasoning on export. */
   ...[...registry.matchAll(/\bb\.([a-zA-Z_]\w*)/g)].map(m => m[1]),
   ...[...readFileSync(join(ROOT, "src/lib/gist.js"), "utf8")
         .matchAll(/\bb\.([a-zA-Z_]\w*)/g)].map(m => m[1]),
