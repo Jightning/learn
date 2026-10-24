@@ -38,7 +38,9 @@ const fixture = {
     ] },
     { t: 'key', source: '<strong>Math reference</strong> <m>\\sum_i a_i</m>', h: '<p>First line.\n\nThird line with <code>kept\nspacing</code>.</p>\n<p>Second paragraph.</p>\n<p><strong>Bold first</strong>\n<em>Italic second</em></p>' },
     { t: 'table', mono: true, map: { '1': 'one' }, head: ['<strong>Σ</strong> <m>\\sum_{i=1}^{n} a_i</m>'],
-      rows: [['<strong>Total</strong> <m>\\sum_{i=1}^{n} a_i</m>'], ['1']] }
+      rows: [['<strong>Total</strong> <m>\\sum_{i=1}^{n} a_i</m>'], ['1']] },
+    { t: 'p', h: 'A paragraph with source wrapping\nshould continue naturally on the same reading line\nwhenever there is room for its words.\n\nA separate paragraph stays separate.' },
+    { t: 'p', h: 'An intentional break:<br>starts a new line.' }
   ], quiz: [
     { type: 'summation recall', q: '<strong>Compute the total</strong> <m>\\sum_{i=1}^{n} a_i</m>.',
       response: { kind: 'self', model: '<strong>Add each term:</strong> <m>a_1 + \\cdots + a_n</m>.' } },
@@ -69,15 +71,32 @@ try {
   const row = i => page.locator(`[id="s1-1~${i}"]`);
   await page.goto(server.origin + '/#/demo/s1-1');
   await page.locator('.nref').first().waitFor();
-  check('authored text newlines render as line and blank-line breaks',
-    await page.locator('[id="s1-1~13"] .bhtml p').first().locator('br').count() === 2);
+  check('HTML source newlines stay soft whitespace',
+    await page.locator('[id="s1-1~13"] .bhtml p').first().locator('br').count() === 0);
   const paragraphCount = await page.locator('[id="s1-1~13"] .bhtml p').count();
   const codeText = await page.locator('[id="s1-1~13"] code').textContent();
   check('HTML paragraph boundaries and code whitespace stay structural',
     paragraphCount === 3 && codeText === 'kept\nspacing' && await row(13).locator('.bhtml > br').count() === 0);
-  check('intentional breaks between wholly formatted inline phrases stay visible',
-    await row(13).locator('.bhtml p').nth(2).locator('br').count() === 1 &&
-    await row(13).locator('.bhtml p').nth(2).evaluate(p => p.querySelector('em').getBoundingClientRect().top > p.querySelector('strong').getBoundingClientRect().top));
+  check('newlines between formatted phrases wrap naturally',
+    await row(13).locator('.bhtml p').nth(2).locator('br').count() === 0 &&
+    await row(13).locator('.bhtml p').nth(2).evaluate(p => p.querySelector('em').getBoundingClientRect().top === p.querySelector('strong').getBoundingClientRect().top));
+  const checkWrapping = async width => {
+    await page.setViewportSize({ width, height: 1000 });
+    const flowing = await page.locator('[id="s1-1~13"] .bhtml p, [id="s1-1~15"] .bhtml p').evaluateAll(paragraphs => paragraphs.every(p => {
+      const clone = p.cloneNode(true);
+      const walk = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walk.nextNode())) if (!node.parentElement.closest('code')) node.nodeValue = node.nodeValue.replace(/\s+/g, ' ');
+      p.after(clone);
+      const sameHeight = Math.abs(p.getBoundingClientRect().height - clone.getBoundingClientRect().height) < 1;
+      clone.remove();
+      return sameHeight && p.querySelectorAll('br').length === 0;
+    }));
+    check(`source wrapping matches continuous prose at ${width}px`, flowing);
+    check(`Markdown paragraph boundaries survive at ${width}px`, await row(15).locator('.bhtml p').count() === 2);
+    check(`explicit breaks survive at ${width}px`, await row(16).locator('.bhtml br').count() === 1);
+  };
+  await checkWrapping(1600);
   check('source attributions render authored math and emphasis safely',
     await row(13).locator('.bsrc strong').textContent() === 'Math reference' && await row(13).locator('.bsrc .katex').count() === 1);
   check('summation and authored emphasis render in table headers and rows',
@@ -110,20 +129,7 @@ try {
     await activeQuestion().locator('.qchoice-text .katex-mathml math').count() === 2);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(300);
-  const newlineLines = await row(13).locator('.bhtml p').first().evaluate(p => {
-    const texts = [];
-    const walk = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walk.nextNode())) if (node.textContent.trim()) texts.push(node);
-    const rect = text => {
-      const range = document.createRange(); range.setStart(text, 0); range.setEnd(text, 1);
-      return range.getBoundingClientRect();
-    };
-    const first = rect(texts[0]), third = rect(texts[1]);
-    return { delta: third.top - first.top, line: parseFloat(getComputedStyle(p).lineHeight), breaks: p.querySelectorAll(':scope > br').length };
-  });
-  check('mobile authored blank lines remain visibly separated',
-    newlineLines.breaks === 2 && newlineLines.delta >= newlineLines.line * 1.8);
+  await checkWrapping(390);
   check('mobile prose wraps without widening the viewport', await page.evaluate(() =>
     document.documentElement.scrollWidth <= innerWidth + 1 &&
     [...document.querySelectorAll('[id="s1-1~8"] .bhtml p')].every(p => p.scrollWidth <= p.clientWidth + 1)));

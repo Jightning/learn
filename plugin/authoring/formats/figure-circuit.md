@@ -26,6 +26,9 @@ Rectangle sides are travel order. Manual wires join grid points; supported parts
 are `resistor`, `capacitor`, `battery`, `switch`, `diode`, `lamp`, and `source`.
 Split wires at branches, mark junctions, and remember crossing wires without a
 dot do not connect. `dir: v` rotates a part.
+Manual wires stop at the terminals of collinear parts automatically; leave
+perpendicular crossings clear of component bodies. Check the actual connections,
+polarity and current references in the rendered diagram.
 
 Native nMOS/pMOS symbols and control-dependent switch states are not supported.
 For those, use a labeled idealized drawing or a sourced/redrawn image; identify

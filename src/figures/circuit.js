@@ -15,6 +15,29 @@ const HEIGHT = {
   switch: [15, 4], diode: [15, 15], lamp: [18, 18], source: [18, 18]
 };
 
+/* A manual wire may describe a whole branch. Replace its collinear component
+ * spans with the symbols, rather than drawing a short through their bodies. */
+function wireSegments(wire, parts) {
+  const [a, b] = [wire.from, wire.to];
+  const vertical = a[0] === b[0];
+  if (!vertical && a[1] !== b[1]) return [wire];
+  const axis = vertical ? 1 : 0, cross = 1 - axis;
+  let spans = [[Math.min(a[axis], b[axis]), Math.max(a[axis], b[axis])]];
+  for (const part of parts) {
+    if ((part.dir === "v") !== vertical || part[vertical ? "x" : "y"] !== a[cross]) continue;
+    const center = part[vertical ? "y" : "x"], lo = center - 0.5, hi = center + 0.5;
+    spans = spans.flatMap(([start, end]) => {
+      if (hi <= start || lo >= end) return [[start, end]];
+      return [[start, Math.min(end, lo)], [Math.max(start, hi), end]].filter(([l, r]) => r > l);
+    });
+  }
+  return spans.map(([start, end]) => {
+    const from = [...a], to = [...b];
+    [from[axis], to[axis]] = a[axis] < b[axis] ? [start, end] : [end, start];
+    return { ...wire, from, to };
+  });
+}
+
 /* Four ordered paths. Each part replaces one short section of its side; the
  * remaining sections become wires with stable side-number references. */
 function rectangle(spec) {
@@ -63,14 +86,16 @@ export function circuit(spec, caption = "") {
       ? { x: X(p.x) - 19, y: Y(p.y) - 25, w: 38, h: 50 }
       : { x: X(p.x) - 25, y: Y(p.y) - above, w: 50, h: above + below };
   });
-  const boxes = [{ x: X(0), y: Y(0), w: X(w) - X(0), h: Y(h) - Y(0) }];
-  const wires = (data.wires || []).map((v, i) => {
+  const boxes = [{ x: X(0), y: Y(0), w: X(w) - X(0), h: Y(h) - Y(0) }, ...reserved];
+  const segments = (data.wires || []).flatMap((wire, i) =>
+    wireSegments({ ...wire, ref: wire.ref || `wire-${i + 1}` }, data.parts || []));
+  const wires = segments.map(v => {
     const x1 = X(v.from[0]), y1 = Y(v.from[1]), x2 = X(v.to[0]), y2 = Y(v.to[1]);
     boxes.push({ x: Math.min(x1, x2), y: Math.min(y1, y2),
       w: Math.abs(x2 - x1), h: Math.abs(y2 - y1) });
     reserved.push({ x: Math.min(x1, x2) - 3, y: Math.min(y1, y2) - 3,
       w: Math.abs(x2 - x1) + 6, h: Math.abs(y2 - y1) + 6 });
-    const ref = v.ref || `wire-${i + 1}`;
+    const ref = v.ref;
     return `<line x1="${x1}" y1="${y1}" ` +
       `x2="${x2}" y2="${y2}" class="fx-c-wire" data-wire="${esc(ref)}"/>`;
   }).join("");

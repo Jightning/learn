@@ -36,3 +36,15 @@ test('code spans and fences preserve literal Markdown, tags and math', () => {
   const escaped = M(renderBlock({ t: 'p', h: '\\*literal\\* and **emphasis**' }, {}));
   assert.match(escaped, /&#42;literal&#42; and <strong>emphasis<\/strong>/);
 });
+
+test('source line wrapping stays soft while explicit breaks and paragraphs survive', () => {
+  for (const source of ['First phrase\ncontinues here.', '**First phrase**\n*continues here.*',
+    '<p>First phrase\ncontinues here.</p>']) {
+    assert.doesNotMatch(courseMarkdown(source), /<br\s*\/?>/);
+    assert.match(courseMarkdown(source), /\n/);
+  }
+  assert.match(courseMarkdown('First paragraph.\n\nSecond paragraph.'), /<\/p>\n<p>/);
+  for (const source of ['First<br>Second', 'First  \nSecond', 'First\\\nSecond'])
+    assert.match(courseMarkdown(source), /<br\s*\/?>/);
+  assert.match(courseMarkdown('```\nfirst\nsecond\n```'), /first\nsecond/);
+});

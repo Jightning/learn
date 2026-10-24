@@ -1,6 +1,6 @@
 import { Marked } from "marked";
 
-const parser = new Marked({ gfm: true, breaks: true });
+const parser = new Marked({ gfm: true, breaks: false });
 const STRUCTURAL = /<(?:p|div|ol|ul|li|table|pre|h[1-6]|blockquote)\b/i;
 
 /** Render authored text before math/references and final safeMarkup sanitization.

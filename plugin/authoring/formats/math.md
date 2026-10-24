@@ -20,5 +20,5 @@ still print unintended letters or lose word spacing.
 Text fields (`core`, `h`, prompts and answer models) need `<m>...</m>`
 around TeX: `<m>e^{2x}</m>` renders, while bare TeX prints literally.
 Validation rejects raw math in prose. Use a math block for a central equation.
-Use blank lines for paragraphs; single newlines preserve intentional breaks.
-Folded YAML `>` joins source lines so prose wraps naturally on mobile.
+Use blank lines for paragraphs in Markdown; single newlines wrap naturally.
+Use `<br>` for an intentional line break, or `<p>` for HTML paragraphs.

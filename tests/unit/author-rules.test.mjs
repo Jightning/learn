@@ -124,5 +124,6 @@ test("modular math rules preserve main-checkout raw math and display guidance", 
   assert.match(output, /<m>e\^\{2x\}<\/m>/);
   assert.match(output, /math block for a central equation/);
   assert.match(output, /blank lines for paragraphs/);
-  assert.match(output, /wraps naturally on mobile/);
+  assert.match(output, /single newlines wrap naturally/);
+  assert.match(output, /`<br>` for an intentional line break/);
 });

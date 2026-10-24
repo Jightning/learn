@@ -46,6 +46,13 @@ const figures = {
   } }),
   demo: circuit(demoCircuit.spec, demoCircuit.cap),
   branch: circuit(demoBranch.spec, demoBranch.cap),
+  manualSymbols: circuit({ w: 6, h: 4,
+    wires: [{ from: [0, 1], to: [6, 1] }, { from: [6, 1], to: [6, 4] }],
+    parts: [{ type: "capacitor", x: 1, y: 1, label: "C" },
+      { type: "switch", x: 3, y: 1, label: "Open switch" },
+      { type: "source", x: 6, y: 2.5, dir: "v", label: "Source" }] }),
+  edgeSymbol: circuit({ w: 2, h: 2,
+    parts: [{ type: "capacitor", x: -1, y: -1 }] }),
   stateGraph: graph(demoGraph.spec, demoGraph.cap),
   demoFlow: flow(demoFlow.spec, demoFlow.cap),
   drawing: drawing({ w: 320, h: 160, alt: "A label near the edge", shapes: [
@@ -98,7 +105,7 @@ test("long figure labels remain separate and visible at phone and desktop widths
               overlap.push([boxes[i].text, boxes[j].text]);
           }
           const symbolOverlap = [];
-          if (["rectangle", "circuit", "demo", "branch"].includes(box.dataset.kind)) {
+          if (["rectangle", "circuit", "demo", "branch", "manualSymbols"].includes(box.dataset.kind)) {
             const strokes = [...svg.querySelectorAll("line,path,circle")]
               .map(el => el.getBoundingClientRect());
             for (const { text, box: a } of boxes) for (const b of strokes) {
