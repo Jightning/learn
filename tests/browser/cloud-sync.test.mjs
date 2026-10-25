@@ -347,12 +347,12 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
 {
   await A.goto(ORIGIN + "/#/onlylaptop/s1-1");
   await A.locator('.attempt-in').fill('unfinished try-first response');
-  await A.locator('.quiz input[type="number"]').first().fill('3');
+  await A.locator('.quiz input[data-numeric-answer]').first().fill('3');
   await A.locator('.quiz button[type="submit"]').first().click();
   await A.waitForTimeout(500);
   await backUp(A); await backUp(B);
   await B.goto(ORIGIN + "/#/onlylaptop/s1-1");
-  const answer = B.locator('.quiz input[type="number"]').first();
+  const answer = B.locator('.quiz input[data-numeric-answer]').first();
   await answer.waitFor();
   check("an unsubmitted try-first draft reaches the phone without being submitted",
     await B.locator('.attempt-in').inputValue() === 'unfinished try-first response' &&
@@ -374,7 +374,7 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
   check("try-first submission status returns to the laptop",
     await A.locator('.attempt-done').count() === 1);
   check("the corrected answer and completion return to the laptop",
-    await A.locator('.quiz input[type="number"]').first().inputValue() === '4' &&
+    await A.locator('.quiz input[data-numeric-answer]').first().inputValue() === '4' &&
     /Correct/.test(await A.locator('.quiz').innerText()));
   await A.getByRole('button', {name:'Next question',exact:true}).click();
   check("an unfinished written answer returns too",
@@ -392,7 +392,7 @@ check("a synced shelf still transfers no bodies", hits.course === 0, `${hits.cou
     /Question 2 of 2/.test(await C.locator('.qposition').innerText()));
   await C.getByRole('button', {name:'Previous question',exact:true}).click();
   check("a fresh browser restores completed answers and course progress",
-    await C.locator('.quiz input[type="number"]').first().inputValue() === '4' &&
+    await C.locator('.quiz input[data-numeric-answer]').first().inputValue() === '4' &&
     /1 answered/.test(await C.locator('.quiz').innerText()));
   await C.getByRole('button', {name:'Next question',exact:true}).click();
   check("a fresh browser restores try-first responses and submission status",

@@ -8,7 +8,8 @@ can use the same changed review flow. Screening finds leads; it cannot settle
 math or source truth. Expand evidence before any
 math or source judgment. Use `author packet <course> --ids id1,id2 [--expand]`
 for full item and evidence lookup; the envelope prints stable IDs once.
-Before reporting missing teaching, check the shared map and later items.
+Before reporting missing teaching, check the shared map and prerequisite anchors;
+later teaching may locate a repair but cannot satisfy an earlier dependency.
 Expand truncated fields and relevant dependencies; an excerpt cannot prove
 that an explanation is absent.
 
@@ -59,6 +60,13 @@ condition before requesting stylistic polish. Writer completion reports,
 correct answers, source tags, coverage and browser success do not waive this
 judgment. A previously accepted passage restored during correction still needs
 this reading check; keep failed experimental drafts unaccepted.
+
+For each first-use formula, account for every unfamiliar symbol's meaning and
+units, its model assumptions, and where these are taught before the first
+dependent task; reconstruct that task using only the preceding learner text.
+An undefined symbol or an unstated required prerequisite blocks acceptance:
+record the formula/task IDs and missing teaching, rather than a generic
+“notation checked” claim.
 
 Inspect the packed reader once, sampling supported depths and unusual shapes;
 fully inspect changed or flagged content. Do not reread every lesson at every

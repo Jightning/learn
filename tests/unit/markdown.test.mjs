@@ -86,6 +86,23 @@ check("a bare number is not mistaken for a code placeholder",
 check("emphasis inside a code span stays literal",
       md("`a*b*c`") === "<p><code>a*b*c</code></p>", md("`a*b*c`"));
 
+check("escaped multiplication signs remain visible",
+      md(String.raw`(L \* 2 \* 3)`) === "<p>(L &#42; 2 &#42; 3)</p>");
+check("escaped emphasis does not format the text",
+      md(String.raw`\*\*plain\*\* and \_plain\_`) === "<p>&#42;&#42;plain&#42;&#42; and &#95;plain&#95;</p>");
+check("escaped list markers stay paragraphs",
+      md(String.raw`\* item`) === "<p>&#42; item</p>" && md(String.raw`1\. item`) === "<p>1&#46; item</p>");
+check("escaped backticks do not start code",
+      md(String.raw`\`plain\``) === "<p>&#96;plain&#96;</p>");
+check("backslashes in code stay literal",
+      md('`a\\*b`') === "<p><code>a\\*b</code></p>");
+check("ordinary backslash sequences are preserved",
+      md(String.raw`\mu`) === "<p>\\mu</p>");
+check("escaped brackets cannot create a link",
+      !md(String.raw`\[link\](https://example.com)`).includes("<a "));
+check("escaped HTML remains harmless text",
+      md(String.raw`\<script\>`) === "<p>&lt;script&gt;</p>");
+
 /* A list interrupted by a paragraph closes, rather than swallowing it. */
 check("a list closes before the paragraph after it",
       md("- a\n\nafter") === "<ul><li>a</li></ul><p>after</p>", md("- a\n\nafter"));

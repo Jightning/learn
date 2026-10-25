@@ -5040,7 +5040,7 @@ O.parse;
 T.lex;
 new U({
 	gfm: true,
-	breaks: true
+	breaks: false
 });
 //#endregion
 //#region node_modules/@babel/runtime/helpers/extends.js

@@ -43,6 +43,13 @@ export const displayTex = src => render(src, display, true);
 
 /** Every `<m>…</m>` in a string. Returns the string untouched when there is none. */
 export function M(html) {
-  const s = courseMarkdown(html);
-  return s.includes("<m>") ? s.replace(INLINE, (_, src) => render(src, inline, false)) : s;
+  // Older course prose sometimes starts a derivative outside its math span.
+  // Join only the recognizable d(variable)/dt boundary, leaving ordinary prose alone.
+  const s = courseMarkdown(html).replace(/\b(L)?d([vi](?:_?[CL])?)\s*\/\s*(?:<m>\s*dt|d\s*<m>\s*t)(?=\s*[=+−-])/g,
+    (_, coefficient, variable) => `<m>${coefficient ? `${coefficient}\\,` : ""}d${variable}/dt`);
+  return s.includes("<m>") ? s.replace(INLINE, (_, src) => {
+    const derivative = src.replace(/\\(?:text|mathrm|operatorname)\{[^{}]*\}|(?<![A-Za-z\\])d([vi])(?:_?([CL]))?\s*\/\s*dt\b/g,
+      (match, variable, subscript) => variable ? `\\frac{d${variable}${subscript ? `_${subscript}` : ""}}{dt}` : match);
+    return render(derivative, inline, false);
+  }) : s;
 }

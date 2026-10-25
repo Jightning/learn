@@ -34,12 +34,12 @@ test('new skill metadata reaches stepped questions, persistence, and honest goal
     await page.goto(server.origin + '/#/demo/s1-1');
     for (const [id, answer] of [['first', '2'], ['second', '3']]) {
       const card = page.locator(`[data-qid="chain:step:${id}"]`);
-      await card.locator('input[type=number]').fill(answer);
+      await card.locator('input[data-numeric-answer]').fill(answer);
       await card.getByRole('button', { name: /^Check answer/ }).click();
       await card.getByRole('button', { name: /Continue/ }).click();
     }
     const final = page.locator('[data-qid=chain]');
-    await final.locator('input[type=number]').fill('5');
+    await final.locator('input[data-numeric-answer]').fill('5');
     await final.getByRole('button', { name: /^Check answer/ }).click();
     await final.getByText('Correct', { exact: true }).waitFor();
     const events = (await rows(page)).filter(r => r.event === 'attempt');
@@ -87,7 +87,7 @@ test('independent practice, assessment, and Learn-by agree after replay', async 
       const card = page.locator('.q:visible');
       const id = await card.getAttribute('data-qid');
       assert.match(id, /^[ab]-[12]$/); assert.equal(seen.has(id), false); seen.add(id);
-      await card.locator('input[type=number]').fill('2');
+      await card.locator('input[data-numeric-answer]').fill('2');
       await card.getByRole('button', { name: /^Check answer/ }).click();
       await card.getByRole('button', { name: /Continue/ }).click();
     }

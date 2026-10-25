@@ -5039,7 +5039,7 @@ O.parse;
 T.lex;
 new U({
 	gfm: true,
-	breaks: true
+	breaks: false
 });
 //#endregion
 //#region src/lib/response-scoring.js
@@ -19088,7 +19088,8 @@ function checkResponse(item, where, errs) {
 		number: [
 			"value",
 			"tolerance",
-			"unit"
+			"unit",
+			"allowSymbols"
 		],
 		formula: [
 			"answer",
@@ -19110,6 +19111,7 @@ function checkResponse(item, where, errs) {
 		...responseKeys[r.kind]
 	].includes(key)) errs.push(`${where}: unknown response key ${key}`);
 	if (r.kind === "text") checkTextAnswer(r, where, errs);
+	if (r.kind === "number" && r.allowSymbols !== void 0 && typeof r.allowSymbols !== "boolean") errs.push(`${where}: allowSymbols must be a boolean`);
 	if (r.kind === "blanks") {
 		if (!Array.isArray(r.fields) || !r.fields.length || r.fields.length > 40) errs.push(`${where}: blanks needs 1–40 fields`);
 		else {

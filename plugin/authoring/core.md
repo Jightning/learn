@@ -85,3 +85,4 @@ copies are no sufficiency guarantee. Indexes derive inheritance and
 assessment weights; never ask a writer to synchronize duplicate inventories.
 Select `bank` rules for this format. Runtime policy mathematics do not belong
 in writer packets.
+Before accepting a question, inspect its combined stimulus, prompt and feedback as the reader sees them: avoid duplicated setup, define unfamiliar symbols and units before use, keep complete equations inside math spans with explicit subscripts, and choose tolerances that accept sensible rounding while rejecting meaningful mistakes.

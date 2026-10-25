@@ -48,3 +48,14 @@ test('source line wrapping stays soft while explicit breaks and paragraphs survi
     assert.match(courseMarkdown(source), /<br\s*\/?>/);
   assert.match(courseMarkdown('```\nfirst\nsecond\n```'), /first\nsecond/);
 });
+
+test('circuit derivatives repair split math boundaries and render as complete fractions', () => {
+  for (const source of ['dv/<m>dt=6t+2</m>', 'di/<m>dt=4-6t</m>',
+    'Ldi/d<m>t=10</m>', '<m>dv_C/dt=14</m>', '<m>i_C=C\\,dv_C/dt</m>']) {
+    const rendered = M(source);
+    assert.match(rendered, /<mfrac>/);
+    assert.doesNotMatch(rendered, /katex-error|(?:dv|di)\//);
+  }
+  assert.doesNotMatch(M('`dv/<m>dt=14</m>`'), /class="katex"/);
+  assert.doesNotMatch(M('A route is dv/dt; voltage times capacitance is vC.'), /class="katex"/);
+});

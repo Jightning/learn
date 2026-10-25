@@ -88,12 +88,19 @@ response: {kind: number, value: 12, tolerance: 0.2, unit: cm}
 response: {kind: number, value: 12} # omitted tolerance defaults to 0
 ```
 
+```yaml
+response: {kind: number, value: 0.3333333333333333, tolerance: 0.05, allowSymbols: false, unit: factor}
+```
+
 `number` renders a numeric input. The reader accepts a finite answer when its
 absolute difference from `value` is at most `tolerance`, with a tiny allowance
 for floating-point rounding. `tolerance` must be nonnegative and defaults to
-`0` if omitted; choose an explicit tolerance when rounding or measurement
-variation should count. `unit` is optional display text; the reader enters
-only the number.
+`0` if omitted, except `unit: factor` defaults to `0.05`; choose an explicit
+tolerance when rounding or measurement variation should count. `unit` is
+optional display text; the reader enters only the number. Numeric fields
+accept scientific notation and fractions; set `allowSymbols: false` to require
+a plain signed decimal (no fractions, exponents, or named constants), including
+on individual numeric fields in `blanks`.
 
 ```yaml
 response: {kind: self, model: 'The slope is positive because y increases as x increases.'}

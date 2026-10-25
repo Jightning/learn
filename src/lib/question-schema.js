@@ -12,11 +12,13 @@ export function checkResponse(item, where, errs) {
   if (!RESPONSE_KINDS.includes(r.kind)) {
     errs.push(`${where}: response.kind must be single, multi, number, formula, self, text, or blanks`); return;
   }
-  const responseKeys = { single: ["choices", "correct"], multi: ["choices", "correct"], number: ["value", "tolerance", "unit"],
+  const responseKeys = { single: ["choices", "correct"], multi: ["choices", "correct"], number: ["value", "tolerance", "unit", "allowSymbols"],
     formula: ["answer", "variables", "solveFor", "independentVariable"], self: ["model", "mathSymbols", "formulaParsing"],
     text: ["accepted", "normalization"], blanks: ["fields"] };
   for (const key of Object.keys(r)) if (!["kind", "scoring", ...responseKeys[r.kind]].includes(key)) errs.push(`${where}: unknown response key ${key}`);
   if (r.kind === "text") checkTextAnswer(r, where, errs);
+  if (r.kind === "number" && r.allowSymbols !== undefined && typeof r.allowSymbols !== "boolean")
+    errs.push(`${where}: allowSymbols must be a boolean`);
   if (r.kind === "blanks") {
     if (!Array.isArray(r.fields) || !r.fields.length || r.fields.length > 40) errs.push(`${where}: blanks needs 1–40 fields`);
     else {

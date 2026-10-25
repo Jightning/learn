@@ -4364,7 +4364,7 @@ T$1.lex;
 //#region src/lib/course-markdown.js
 const parser = new U$1({
 	gfm: true,
-	breaks: true
+	breaks: false
 });
 const STRUCTURAL = /<(?:p|div|ol|ul|li|table|pre|h[1-6]|blockquote)\b/i;
 /** Render authored text before math/references and final safeMarkup sanitization.
@@ -18493,7 +18493,8 @@ function checkResponse(item, where, errs) {
 		number: [
 			"value",
 			"tolerance",
-			"unit"
+			"unit",
+			"allowSymbols"
 		],
 		formula: [
 			"answer",
@@ -18515,6 +18516,7 @@ function checkResponse(item, where, errs) {
 		...responseKeys[r.kind]
 	].includes(key)) errs.push(`${where}: unknown response key ${key}`);
 	if (r.kind === "text") checkTextAnswer(r, where, errs);
+	if (r.kind === "number" && r.allowSymbols !== void 0 && typeof r.allowSymbols !== "boolean") errs.push(`${where}: allowSymbols must be a boolean`);
 	if (r.kind === "blanks") {
 		if (!Array.isArray(r.fields) || !r.fields.length || r.fields.length > 40) errs.push(`${where}: blanks needs 1–40 fields`);
 		else {
@@ -21471,6 +21473,30 @@ const HEIGHT = {
 	lamp: [18, 18],
 	source: [18, 18]
 };
+function wireSegments(wire, parts) {
+	const [a, b] = [wire.from, wire.to];
+	const vertical = a[0] === b[0];
+	if (!vertical && a[1] !== b[1]) return [wire];
+	const axis = vertical ? 1 : 0, cross = 1 - axis;
+	let spans = [[Math.min(a[axis], b[axis]), Math.max(a[axis], b[axis])]];
+	for (const part of parts) {
+		if (part.dir === "v" !== vertical || part[vertical ? "x" : "y"] !== a[cross]) continue;
+		const center = part[vertical ? "y" : "x"], lo = center - .5, hi = center + .5;
+		spans = spans.flatMap(([start, end]) => {
+			if (hi <= start || lo >= end) return [[start, end]];
+			return [[start, Math.min(end, lo)], [Math.max(start, hi), end]].filter(([l, r]) => r > l);
+		});
+	}
+	return spans.map(([start, end]) => {
+		const from = [...a], to = [...b];
+		[from[axis], to[axis]] = a[axis] < b[axis] ? [start, end] : [end, start];
+		return {
+			...wire,
+			from,
+			to
+		};
+	});
+}
 function rectangle(spec) {
 	const sides = spec.sides || {};
 	const top = sides.top || [], right = sides.right || [];
@@ -21572,8 +21598,11 @@ function circuit(spec, caption = "") {
 		y: Y(0),
 		w: X(w) - X(0),
 		h: Y(h) - Y(0)
-	}];
-	const wires = (data.wires || []).map((v, i) => {
+	}, ...reserved];
+	const wires = (data.wires || []).flatMap((wire, i) => wireSegments({
+		...wire,
+		ref: wire.ref || `wire-${i + 1}`
+	}, data.parts || [])).map((v) => {
 		const x1 = X(v.from[0]), y1 = Y(v.from[1]), x2 = X(v.to[0]), y2 = Y(v.to[1]);
 		boxes.push({
 			x: Math.min(x1, x2),
@@ -21587,7 +21616,8 @@ function circuit(spec, caption = "") {
 			w: Math.abs(x2 - x1) + 6,
 			h: Math.abs(y2 - y1) + 6
 		});
-		return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="fx-c-wire" data-wire="${esc(v.ref || `wire-${i + 1}`)}"/>`;
+		const ref = v.ref;
+		return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="fx-c-wire" data-wire="${esc(ref)}"/>`;
 	}).join("");
 	const parts = (data.parts || []).map((p) => {
 		const x = X(p.x), y = Y(p.y);
@@ -48099,8 +48129,11 @@ const render = (src, cache, displayMode) => {
 const displayTex = (src) => render(src, display, true);
 /** Every `<m>…</m>` in a string. Returns the string untouched when there is none. */
 function M(html) {
-	const s = courseMarkdown(html);
-	return s.includes("<m>") ? s.replace(INLINE, (_, src) => render(src, inline, false)) : s;
+	const s = courseMarkdown(html).replace(/\b(L)?d([vi](?:_?[CL])?)\s*\/\s*(?:<m>\s*dt|d\s*<m>\s*t)(?=\s*[=+−-])/g, (_, coefficient, variable) => `<m>${coefficient ? `${coefficient}\\,` : ""}d${variable}/dt`);
+	return s.includes("<m>") ? s.replace(INLINE, (_, src) => {
+		const derivative = src.replace(/\\(?:text|mathrm|operatorname)\{[^{}]*\}|(?<![A-Za-z\\])d([vi])(?:_?([CL]))?\s*\/\s*dt\b/g, (match, variable, subscript) => variable ? `\\frac{d${variable}${subscript ? `_${subscript}` : ""}}{dt}` : match);
+		return render(derivative, inline, false);
+	}) : s;
 }
 //#endregion
 //#region src/blocks/index.js
@@ -48763,11 +48796,12 @@ const LEGACY_FIELDS = [
 	"stem",
 	"steps"
 ];
-const hasLegacyShape = (item) => !item?.response || LEGACY_FIELDS.some((key) => Object.hasOwn(item || {}, key));
+const legacyFields = (C, item) => LEGACY_FIELDS.filter((key) => Object.hasOwn(item || {}, key) && !(key === "steps" && item?.id && C.questionBank?.[item.id] === item));
+const hasLegacyShape = (C, item) => !item?.response || legacyFields(C, item).length > 0;
 function legacyQuestionCounts(C) {
 	return {
-		quiz: (C.sections || []).reduce((n, s) => n + (s.subs || []).reduce((m, u) => m + (u.quiz || []).filter(hasLegacyShape).length, 0), 0),
-		practice: Object.values(C.practice || {}).reduce((n, bank) => n + (bank.items || []).filter(hasLegacyShape).length, 0),
+		quiz: (C.sections || []).reduce((n, s) => n + (s.subs || []).reduce((m, u) => m + (u.quiz || []).filter((item) => hasLegacyShape(C, item)).length, 0), 0),
+		practice: Object.values(C.practice || {}).reduce((n, bank) => n + (bank.items || []).filter((item) => hasLegacyShape(C, item)).length, 0),
 		drills: Object.values(C.drills || {}).reduce((n, bank) => n + (bank.items || []).length, 0)
 	};
 }
@@ -48778,14 +48812,14 @@ function migrationReportLine(id, C) {
 function strictCurrentIssues(C) {
 	const issues = [];
 	for (const s of C.sections || []) for (const u of s.subs || []) for (const item of u.quiz || []) {
-		const legacy = LEGACY_FIELDS.filter((key) => Object.hasOwn(item || {}, key));
+		const legacy = legacyFields(C, item);
 		if (!item.response || legacy.length) {
 			const detail = [!item.response && "requires response:", legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`].filter(Boolean).join("; ");
 			issues.push(`${u.id}: question "${item.type || "(untitled)"}": strict current schema ${detail}`);
 		}
 	}
 	for (const [key, bank] of Object.entries(C.practice || {})) for (const [i, item] of (bank.items || []).entries()) {
-		const legacy = LEGACY_FIELDS.filter((field) => Object.hasOwn(item || {}, field));
+		const legacy = legacyFields(C, item);
 		if (!item.response || legacy.length) {
 			const detail = [!item.response && "requires response:", legacy.length && `remove legacy field${legacy.length > 1 ? "s" : ""} ${legacy.join(", ")}`].filter(Boolean).join("; ");
 			issues.push(`practice/${key} item ${i + 1}: strict current schema ${detail}`);

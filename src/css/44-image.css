@@ -5,7 +5,8 @@
   background:var(--surface)}
 .imgblock img{
   display:block;width:100%;height:auto;border-radius:3px;
-  border:0;background:none;
+  /* Supplied diagrams often have fixed dark ink on a transparent canvas. */
+  border:0;background:#fff;color-scheme:light;
 }
 .imgblock figcaption{
   font-family:var(--sans);font-size:var(--fs-small);line-height:1.55;

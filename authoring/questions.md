@@ -17,7 +17,7 @@ when it helps explain a tempting error or supports transfer.
 
 For `multi`, key the complete set of 1-based choice numbers. For `number`, set
 the checked `value` and an absolute `tolerance` when needed; omitted tolerance
-defaults to zero. Formula syntax and limits are in
+defaults to zero (or `0.05` for `unit: factor`). Formula syntax and limits are in
 [`formats/questions.md`](formats/questions.md). Questions may carry a positive
 integer `tries` beside `q` and `response`; it counts total attempts including
 the first and defaults to one.

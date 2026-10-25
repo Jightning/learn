@@ -53,7 +53,7 @@ test('a saved learn-by goal introduces untouched scoped material in Review and M
     assert.equal(await page.locator('.q[data-qid=first]').count(), 0);
     const reviewCard = page.locator('.q:visible');
     const reviewId = await reviewCard.getAttribute('data-qid');
-    await reviewCard.locator('input[type=number]').fill(reviewId === 'second' ? '4' : '6');
+    await reviewCard.locator('input[data-numeric-answer]').fill(reviewId === 'second' ? '4' : '6');
     await reviewCard.getByRole('button', { name: /^Check answer/ }).click();
     await reviewCard.locator('.qresult').filter({ hasText: 'Correct' }).waitFor();
     const reviewRows = await page.evaluate(() => new Promise(resolve => {

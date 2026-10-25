@@ -52,7 +52,7 @@ for (const width of [1440, 390]) test(`ordered question attachments are readable
     assert.equal(await card.locator("img").evaluate(img => img.complete && img.naturalWidth > 0), true);
     await card.scrollIntoViewIfNeeded();
     await card.screenshot({ path: `/private/tmp/question-attachments-${width}.png` });
-    await card.locator('input[type="number"]').fill("6");
+    await card.locator('input[data-numeric-answer]').fill("6 × 10^0");
     await card.getByRole("button", { name: "Check answer" }).click();
     assert.equal(await card.locator(".qresult").innerText(), "Correct");
   } finally { await browser.close(); server.close(); }

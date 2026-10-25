@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "preact/hooks";
 import ResponseFields from "./ResponseFields.jsx";
+import { numericTolerance } from "../lib/numeric-answer.js";
 import { initialResponse, hasResponse, responseKey, scoreResponse, submissionObservation, assertResponseSize } from "../lib/response-scoring.js";
 import { beginTiming, timingSnapshot, effectiveTiming, timingClock } from "../lib/question-timing.js";
 import AnswerInput, { FormulaPreview } from "./AnswerInput.jsx";
@@ -461,7 +462,8 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
             </fieldset>
           )}
           {response.kind === "number" && <label class="qentry">Your answer
-            <span><input type="number" step="any" inputMode="decimal" value={value} readOnly={!editable}
+            <span><input type="text" data-numeric-answer inputMode={response.allowSymbols === false ? "decimal" : "text"}
+              maxLength={128} placeholder={response.allowSymbols === false ? "Decimal only, e.g. 0.33" : "e.g. 1/3 or 1.2e3"} value={value} readOnly={!editable}
               onInput={e => setValue(e.currentTarget.value)} /> {response.unit || ""}</span>
           </label>}
           {response.kind === "text" && <label class="qentry">Your answer
@@ -482,7 +484,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           {editable && repeatedAnswer && <p class="qcheck-error" role="status">That answer was incorrect. Change your answer.</p>}
       </form>
       {feedback && delayed && <div class="qbody" aria-live="polite"><strong>Response saved</strong>
-        {onContinue && <button class="dbtn primary qnext" onClick={onContinue}>Continue →</button>}</div>}
+        {onContinue && <button class="dbtn primary qnext" onClick={onContinue}>Continue</button>}</div>}
       {feedback && !delayed && !retryable && (
         <div class="qbody" aria-live="polite">
           <strong class={"qresult " + (feedback.correct ? "is-right" : "is-miss")}>
@@ -498,11 +500,10 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
                 field.response.choices[field.response.correct-1].text : field.response.correct.map(n => field.response.choices[n-1].text).join("; ")}</dd>
           </div>)}</dl>}
           {reveal && response.kind === "number" && <p class="ans">Answer: {response.value} {response.unit || ""}
-            {Number(response.tolerance) > 0 && ` (within ±${response.tolerance})`}</p>}
+            {numericTolerance(response) > 0 && ` (within ±${numericTolerance(response)})`}</p>}
           {!delayed && response.kind === "self" && (response.formulaParsing ? <div class="ans"><FormulaPreview value={response.model} freeform /></div> :
             <div class="ans" dangerouslySetInnerHTML={{ __html: M(response.model) }} />)}
           {reveal && response.kind === "formula" && <div class="ans"><FormulaPreview value={response.answer} variables={response.variables} independentVariable={response.independentVariable} /></div>}
-          {reveal && item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)}>Review the relevant lesson</a>}
           {reveal && item.why && <div class="qexplain" dangerouslySetInnerHTML={{ __html: M(item.why) }} />}
           {reveal && feedback.correct === false && questionErrorHypotheses(item, attempt.current.firstResponse ?? value).map(error =>
             <p key={error.id}>Possible issue: <span dangerouslySetInnerHTML={{ __html: M(error.description) }} /></p>)}
@@ -511,7 +512,10 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
             <button class="dbtn" onClick={() => feedback.recorded ? gradeReservedSelf(true) : checkSelf(true)}>Correct</button>
             <button class="dbtn" onClick={() => feedback.recorded ? gradeReservedSelf(false) : checkSelf(false)}>Wrong</button>
           </div>}
-          {feedback.recorded && onContinue && <button class="dbtn primary qnext" onClick={onContinue}>Continue →</button>}
+          {(reveal && item.help || feedback.recorded && onContinue) && <div class="qactions">
+            {feedback.recorded && onContinue && <button class="dbtn primary" onClick={onContinue}>Continue</button>}
+            {reveal && item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)}>Review the relevant lesson</a>}
+          </div>}
         </div>
       )}
     </article>

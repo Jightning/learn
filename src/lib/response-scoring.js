@@ -1,4 +1,5 @@
 /* Bounded response checkers. Points describe task criteria, never mastery. */
+import { numericAnswer, numericTolerance } from "./numeric-answer.js";
 const mapping = value => value && typeof value === "object" && !Array.isArray(value);
 const nonempty = value => typeof value === "string" && value.trim().length > 0;
 export const RESPONSE_KINDS = ["single", "multi", "number", "formula", "self", "text", "blanks"];
@@ -20,6 +21,7 @@ export const responseKey = value => JSON.stringify(value, (_, entry) => mapping(
   ? Object.fromEntries(Object.keys(entry).sort().map(key => [key, entry[key]])) : entry);
 export function hasResponse(response, value) {
   if (response.kind === "blanks") return mapping(value) && response.fields.every(field => hasResponse(field.response, value[field.id]));
+  if (response.kind === "number") return Number.isFinite(numericAnswer(value, response));
   return response.kind === "multi" ? Array.isArray(value) && value.length > 0 : value != null && String(value).trim() !== "";
 }
 export function initialResponse(response) {
@@ -27,7 +29,7 @@ export function initialResponse(response) {
   if (response.kind === "blanks") return Object.fromEntries(response.fields.map(field => [field.id, initialResponse(field.response)]));
   return "";
 }
-export function matchesResponse(match, value) {
+export function matchesResponse(match, value, numericOptions) {
   if (mapping(match) && match.field) {
     value = mapping(value) ? value[match.field] : undefined;
     match = { ...match, field: undefined };
@@ -41,7 +43,7 @@ export function matchesResponse(match, value) {
     return chosen.size === expected.size && [...chosen].every(n => expected.has(n));
   }
   if (match.kind === "number") {
-    const n = Number(value), target = Number(match.value);
+    const n = numericAnswer(value, numericOptions), target = Number(match.value);
     return ["string", "number"].includes(typeof value) && String(value ?? "").trim() !== "" && Number.isFinite(n) && Math.abs(n-target) <= (match.tolerance || 0) + Number.EPSILON*Math.max(1, Math.abs(target))*8;
   }
   if (match.kind === "text") return typeof value === "string" && match.accepted.some(answer => normalizeAcceptedText(value, match.normalization) === normalizeAcceptedText(answer, match.normalization));
@@ -52,7 +54,7 @@ export function checkValue(response, value) {
   if (response.kind === "formula") throw new Error("Use the asynchronous formula checker for formula responses.");
   if (response.kind === "single") return matchesResponse({ kind: "choice", value: response.correct }, value);
   if (response.kind === "multi") return matchesResponse({ kind: "choice-set", values: response.correct }, value);
-  if (response.kind === "number") return matchesResponse({ kind: "number", value: response.value, tolerance: response.tolerance }, value);
+  if (response.kind === "number") return matchesResponse({ kind: "number", value: response.value, tolerance: numericTolerance(response) }, value, response);
   if (response.kind === "text") return matchesResponse({ kind: "text", accepted: response.accepted, normalization: response.normalization }, value);
   if (response.kind === "blanks") return mapping(value) && Object.keys(value).every(id => response.fields.some(f => f.id === id)) && response.fields.every(field => checkValue(field.response, value[field.id]) === true);
   throw new Error(`Unknown response kind: ${response.kind}`);
@@ -64,7 +66,7 @@ export function scoreResponse(response, value, correctness) {
     const observed = criterion.field ? value?.[criterion.field] : value;
     const field = criterion.field && response.fields?.find(f => f.id === criterion.field);
     const answered = observed != null && (Array.isArray(observed) ? observed.length > 0 : String(observed).trim() !== "");
-    const result = answered ? matchesResponse(criterion.match, observed) : null;
+    const result = answered ? matchesResponse(criterion.match, observed, field?.response || response) : null;
     return { id: criterion.id, field: field?.id, correct: result, score: result ? criterion.points : 0,
       maxScore: criterion.points, skills: criterion.skills || [] };
   }) || (response.kind === "blanks" ? response.fields.map(field => ({

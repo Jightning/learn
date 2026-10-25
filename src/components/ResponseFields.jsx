@@ -17,8 +17,10 @@ export default function ResponseFields({ fields, value, onInput, readOnly }) {
       </fieldset>;
       return <label class="qentry" key={field.id}>
         <span dangerouslySetInnerHTML={{ __html: M(field.label) }} />
-        <input type={response.kind === "number" ? "number" : "text"} step={response.kind === "number" ? "any" : undefined}
-          maxLength={response.kind === "text" ? 1024 : undefined} value={current} readOnly={readOnly} onInput={event => change(event.currentTarget.value)} />
+        <input type="text" data-numeric-answer={response.kind === "number" || undefined}
+          inputMode={response.kind === "number" && response.allowSymbols === false ? "decimal" : "text"}
+          placeholder={response.kind === "number" ? response.allowSymbols === false ? "Decimal only, e.g. 0.33" : "e.g. 1/3 or 1.2e3" : undefined}
+          maxLength={response.kind === "text" ? 1024 : 128} value={current} readOnly={readOnly} onInput={event => change(event.currentTarget.value)} />
       </label>;
     })}
   </fieldset>;

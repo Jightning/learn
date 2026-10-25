@@ -57,7 +57,7 @@ test('lesson answers and math fields survive reload without another rating', asy
     assert.equal(await card.locator('.qresult').innerText(), 'Correct');
     await next();
     await card.getByRole('button', {name:'Correct', exact:true}).click();
-    await card.getByRole('button', {name:'Continue →', exact:true}).waitFor();
+    await card.getByRole('button', {name:'Continue', exact:true}).waitFor();
     await page.reload();
     await card.locator('.qresult').waitFor();
     assert.equal(await quiz.locator('.qstat').innerText(), '3 answered');

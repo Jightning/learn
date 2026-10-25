@@ -17,7 +17,7 @@ for (const width of [1440, 390]) test(`bank questions share lesson identity and 
     const lesson = page.locator('.quiz .q[data-qid="linear-1"]');
     await lesson.waitFor();
     assert.match(await lesson.locator(".qtext").innerText(), /2x/);
-    await lesson.locator('input[type="number"]').fill("3");
+    await lesson.locator('input[data-numeric-answer]').fill("6/2");
     await lesson.getByRole("button", { name: /^Check answer/ }).click();
     await lesson.locator(".qresult").filter({ hasText: /^Correct$/ }).waitFor();
     await page.reload();

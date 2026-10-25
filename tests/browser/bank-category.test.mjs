@@ -21,10 +21,19 @@ test("bank category practice follows its teaching link and returns to the curren
     const card = page.locator("#p-run .q");
     const id = await card.getAttribute("data-qid");
     await page.reload();
-    await card.locator('input[type="number"]').fill(String(bank.find(q => q.id === id).response.value));
+    await card.locator('input[data-numeric-answer]').fill(String(bank.find(q => q.id === id).response.value));
     await card.getByRole("button", { name: /^Check answer/ }).click();
     const help = card.getByRole("link", { name: "Review the relevant lesson" });
     await help.waitFor();
+    const next = card.getByRole("button", { name: "Continue", exact: true });
+    await next.waitFor();
+    assert.equal(await help.evaluate(el => el.parentElement === el.parentElement.querySelector("button").parentElement && el.parentElement.classList.contains("qactions")), true);
+    assert.equal(await card.getByRole("button", { name: "Continue →", exact: true }).count(), 0);
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      const a = await next.boundingBox(), b = await help.boundingBox();
+      assert.ok(Math.abs(a.y - b.y) < 2, `feedback actions share a row at ${width}px`);
+    }
     assert.equal(await help.getAttribute("href"), "#/demo/cat/methods");
     await help.click();
     await page.locator(".catpractice").click();
@@ -43,6 +52,6 @@ test("bank category practice follows its teaching link and returns to the curren
     await page.getByRole("button", { name: "Another set", exact: true }).click();
     await page.locator("#p-start").click();
     assert.equal(await page.locator("#p-run .qresult").count(), 0);
-    assert.equal(await page.locator('#p-run input[type="number"]').inputValue(), "");
+    assert.equal(await page.locator('#p-run input[data-numeric-answer]').inputValue(), "");
   } finally { await browser.close(); server.close(); }
 });

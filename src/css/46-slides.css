@@ -18,7 +18,8 @@
 .slides-visual{overflow-x:auto}
 .slides-visual svg{margin:auto}
 .slides-image{margin:0;text-align:center}
-.slides-image img{display:block;max-width:100%;max-height:380px;margin:auto;object-fit:contain;border-radius:3px}
+.slides-image img{display:block;max-width:100%;max-height:380px;margin:auto;object-fit:contain;border-radius:3px;
+  background:#fff;color-scheme:light}
 .slides-text{font-family:var(--sans);line-height:1.6;color:var(--ink)}
 .slides-text>*:first-child{margin-top:0}
 .slides-text>*:last-child{margin-bottom:0}

@@ -23,7 +23,7 @@ test('a revised question does not display earlier saved answers', async () => {
     await page.route('**/courses/demo.json', r => r.fulfill({ json: current }));
     await page.goto(server.origin + '/#/demo/s1-1');
     const card = page.locator('.q:visible');
-    await card.locator('input[type=number]').fill('1');
+    await card.locator('input[data-numeric-answer]').fill('1');
     await card.getByRole('button', { name: /^Check answer/ }).click();
     await card.locator('.qresult').filter({ hasText: 'Correct' }).waitFor();
     const bank = JSON.parse(files['questions/bank.json']);
@@ -31,7 +31,7 @@ test('a revised question does not display earlier saved answers', async () => {
     current = { ...files, 'questions/bank.json': JSON.stringify(bank) };
     await page.reload();
     await card.locator('.qtext').filter({ hasText: 'Revised question: compute one.' }).waitFor();
-    assert.equal(await card.locator('input[type=number]').inputValue(), '');
+    assert.equal(await card.locator('input[data-numeric-answer]').inputValue(), '');
     assert.equal(await card.locator('.qhistory').count(), 0);
     assert.doesNotMatch(await card.textContent(), /Earlier answers|Previous answer/);
   } finally { await browser.close(); server.close(); }
@@ -42,10 +42,10 @@ test('stable lesson attempt, reload retry, scoped mixed bank and delayed check f
     const page=await browser.newPage();page.setDefaultTimeout(7000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/courses/demo.json',r=>r.fulfill({json:files}));
     await page.goto(server.origin+'/#/demo/s1-1');
-    let card=page.locator('.q:visible');await card.locator('input[type=number]').fill('9');
+    let card=page.locator('.q:visible');await card.locator('input[data-numeric-answer]').fill('9');
     await card.getByRole('button',{name:/^Check answer/}).click();await card.locator('.qresult').filter({hasText:'Wrong'}).waitFor();
     await page.reload();await card.locator('.qresult').filter({hasText:'Wrong'}).waitFor();
-    await card.locator('input[type=number]').fill('1');await card.getByRole('button',{name:/^Check answer/}).click();
+    await card.locator('input[data-numeric-answer]').fill('1');await card.getByRole('button',{name:/^Check answer/}).click();
     await card.locator('.qresult').filter({hasText:'Correct'}).waitFor();
     await page.goto(server.origin+'/#/demo/review/mixed');
     await page.getByRole('button',{name:'Start',exact:true}).click();
@@ -55,7 +55,7 @@ test('stable lesson attempt, reload retry, scoped mixed bank and delayed check f
     await page.getByRole('button',{name:'Confirm this standard applies to my goal'}).click();
     await page.getByRole('button',{name:'Start fresh check'}).click();card=page.locator('.q:visible');
     assert.equal(await card.getAttribute('data-qid'),'fresh');assert.equal(await card.locator('.qtype,.qreason').count(),0);
-    await card.locator('input[type=number]').fill('3');await card.getByRole('button',{name:/Check answer/}).click();
+    await card.locator('input[data-numeric-answer]').fill('3');await card.getByRole('button',{name:/Check answer/}).click();
     await card.getByText('Response saved').waitFor();assert.equal(await card.locator('.ans,.qexplain,.is-right').count(),0);
     await page.reload();await card.getByText('Response saved').waitFor();
     await card.getByRole('button',{name:/Continue/}).click();await page.getByText('Check complete').waitFor();
@@ -108,10 +108,10 @@ test('adaptive Mixed Practice is default and weighted fallback persists',async()
     const first=await card.getAttribute('data-qid');
     assert.ok(['a','b'].includes(first));
     await card.locator('.qreason').filter({hasText:'Broaden coverage'}).waitFor();
-    await card.locator('input[type=number]').fill('9');
+    await card.locator('input[data-numeric-answer]').fill('9');
     await card.getByRole('button',{name:/^Check answer/}).click();
     await card.locator('.qresult').filter({hasText:'Wrong'}).waitFor();
-    await card.locator('input[type=number]').fill(first==='a'?'1':'2');
+    await card.locator('input[data-numeric-answer]').fill(first==='a'?'1':'2');
     await card.getByRole('button',{name:/^Check answer/}).click();
     await card.locator('.qresult').filter({hasText:'Correct'}).waitFor();
     await card.getByRole('button',{name:/Continue/}).click();
