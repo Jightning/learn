@@ -143,5 +143,21 @@ for (const set of [fresh, done, midway, mine]) {
         JSON.stringify(bad));
 }
 
+const bankCourse = {
+  sections: [{ id: 's1', num: 1, title: 'Bank', subs: [
+    { id: 's1-1', title: 'First', quiz: [{ id: 'bank-a', type: 'Solve' }] },
+    { id: 's1-2', title: 'Second', quiz: [{ id: 'bank-b', type: 'Solve' }] }
+  ] }]
+};
+const bankIdx = { SUBS: Object.fromEntries(bankCourse.sections[0].subs.map((sub, i) =>
+  [sub.id, { sub, num: `1.${i + 1}` }])) };
+const bankDone = nextUp({ C: bankCourse, cid: 'bank', idx: bankIdx,
+  state: stateWith({ 'bank-a': { got: true }, 'bank-b': { got: true } }) });
+check('completed bank lessons recommend practice using stable IDs', bankDone[0].kind === 'practice', JSON.stringify(bankDone));
+const bankPartial = nextUp({ C: bankCourse, cid: 'bank', idx: bankIdx,
+  state: stateWith({ 'bank-a': { got: true } }) });
+check('bank progress surfaces the next unanswered lesson',
+  bankPartial.some(x => x.kind === 'quiz' && x.href === '#/bank/s1-2'), JSON.stringify(bankPartial));
+
 console.log(fail.length ? `\n${fail.length} failed` : "\nall passed");
 process.exit(fail.length ? 1 : 0);

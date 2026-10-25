@@ -58,7 +58,7 @@ import { counts } from "./retention.js";
 export const DUE_FLOOR = 5;
 
 /** Every question id in a subsection, in the order they are asked. */
-const idsOf = sub => (sub.quiz || []).map(q => qid(sub.id, q.type));
+const idsOf = sub => (sub.quiz || []).map(q => q.id || qid(sub.id, q.type));
 
 /** Roughly how long the rest of `sub` will take, in whole minutes. */
 const minutesLeft = (sub, frac = 0) => {

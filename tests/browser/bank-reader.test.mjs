@@ -22,6 +22,10 @@ for (const width of [1440, 390]) test(`bank questions share lesson identity and 
     await lesson.locator(".qresult").filter({ hasText: /^Correct$/ }).waitFor();
     await page.reload();
     await page.locator('.quiz .q[data-qid="linear-1"] .qresult').filter({ hasText: /^Correct$/ }).waitFor();
+    await page.goto(`${server.origin}/#/demo`);
+    await page.locator('.spine .srow-c').filter({ hasText: '1/2' }).waitFor();
+    await page.goto(`${server.origin}/#/demo/map`);
+    await page.locator('.mapwrap [data-node="s1"].is-started').waitFor();
     await page.goto(`${server.origin}/#/demo/review/mixed`);
     await page.getByRole("group", { name: "Practice settings" }).waitFor();
     await page.selectOption("#p-from", "s1-1");
@@ -47,5 +51,33 @@ for (const width of [1440, 390]) test(`bank questions share lesson identity and 
     assert.equal(await broadPage.locator('[data-qid="linear-check"], [data-qid="branch-check"]').count(), 0);
     if (process.env.BANK_READER_SHOTS) await broadPage.screenshot({ path: `${process.env.BANK_READER_SHOTS}/broad-${width}.png`, fullPage: true });
     assert.deepEqual(errors, []);
+  } finally { await browser.close(); server.close(); }
+});
+
+test('completed bank lessons count distinct IDs with the same type after reload', async () => {
+  const files = JSON.parse(readFileSync('tests/fixtures/question-bank/files.json', 'utf8'));
+  const second = JSON.parse(files['sections/01-equations/2-explain.json']);
+  second.quiz = ['linear-2'];
+  files['sections/01-equations/2-explain.json'] = JSON.stringify(second);
+  const server = await serveDist('.'), browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    page.setDefaultTimeout(8000);
+    await page.route('**/courses/demo.json', route => route.fulfill({ json: files }));
+    for (const [sub, id, answer] of [['s1-1', 'linear-1', '3'], ['s1-2', 'linear-2', '4']]) {
+      await page.goto(`${server.origin}/#/demo/${sub}`);
+      const question = page.locator(`.quiz .q[data-qid="${id}"]`);
+      await question.locator('input[data-numeric-answer]').fill(answer);
+      await question.getByRole('button', { name: /^Check answer/ }).click();
+      await question.locator('.qresult').filter({ hasText: /^Correct$/ }).waitFor();
+    }
+    await page.goto(`${server.origin}/#/demo`);
+    await page.locator('.spine .srow-c').filter({ hasText: '2/2' }).waitFor();
+    assert.equal(await page.locator('.spine .srow-m.done').count(), 1);
+    assert.match(await page.locator('.now-h').innerText(), /Nothing is due/);
+    await page.reload();
+    await page.locator('.spine .srow-c').filter({ hasText: '2/2' }).waitFor();
+    await page.goto(`${server.origin}/#/demo/map`);
+    await page.locator('.mapwrap [data-node="s1"].is-mastered').waitFor();
   } finally { await browser.close(); server.close(); }
 });

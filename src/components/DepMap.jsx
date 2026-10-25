@@ -35,7 +35,7 @@ export default function DepMap({ ctx, onNode, focus }) {
 
   const nodes = C.sections.map(s => {
     const ids = [];
-    s.subs.forEach(u => (u.quiz || []).forEach(q => ids.push(qid(u.id, q.type))));
+    s.subs.forEach(u => (u.quiz || []).forEach(q => ids.push(q.id || qid(u.id, q.type))));
     const ss = state.on ? state.stats(ids) : null;
     const mastered = ss && ss.total && ss.got === ss.total;
     const started = ss && ss.seen;
