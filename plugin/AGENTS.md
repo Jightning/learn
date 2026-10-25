@@ -1,3 +1,11 @@
+# Course-creator changes
+
+Evaluate every course-creator change within the existing task: its benefit must
+justify added token use, processing and context growth, including agent startup,
+repeated reads/checks and generated guidance. Reuse existing capabilities, prefer
+the smallest general fix and remove redundancy; do not introduce a separate
+cost-audit step, report or agent.
+
 # Course authoring
 
 Choose **single** or **paired** (accept “paried”). Separate models or manual
@@ -29,8 +37,8 @@ node "<KIT>/scripts/author.mjs" finish <id>
 Read `<KIT>/authoring/orchestration.md` for the selected flow. Manual paired mode uses
 one planner prompt, one writer prompt for all remaining lessons, one validation
 prompt, and, only when needed, a writer correction prompt followed by reviewer
-validation. Do not hand off per section. Automatic paired uses fresh cheap
-workers and `batch`; single works directly on the same plan, issue, correction,
+validation. Do not hand off per section. Automatic paired uses batched cheap
+writers; `batch` bounds assignments, not agent lifetime. Single works directly on the same plan, issue, correction,
 and review artifacts without handoffs. In paired mode the writer never accepts
 its own corrections.
 Commands never run models. Use status at handoffs or compaction; read only named

@@ -80,14 +80,18 @@ never rewrites, reformats or converts content.
 
 Persist `--handoff auto`. Use one writer for a coherent prerequisite sequence. Parallel workers own
 independent branches only; planned teaching from another worker is unavailable
-until written. Use the configured cheap writer with explicit model
-and effort, `fork_turns: none`, assigned file ownership, relevant packets and
+until written. Start new workers with the configured cheap model
+and explicit effort, `fork_turns: none`, assigned file ownership, relevant packets and
 no inherited conversation. Never silently inherit the expensive model. Wait
 for a completed batch; do not poll at short intervals or pre-review files while
 it writes. Reuse checked results. Return only paths, checks and uncertainties.
 Use focused strong judgments as above; finish all assigned reviews, then save
-one consolidated issues report. Fresh cheap workers apply corrections and
-write a separate correction-results report, then run checked `done --all`.
+one consolidated issues report. Reuse a reliable writer for related batches
+and consolidated corrections; a batch boundary alone does not justify a new
+agent. Start fresh when context or repeated failure makes reuse unreliable,
+or when an independent role or parallel workload justifies startup overhead.
+The writer records correction results and runs checked `done --all`;
+the reviewer still accepts separately.
 Reviewers read the shared review context once and reuse it across section
 packets. Group item IDs to deduplicate source spans. After correction, the
 reviewer screens changed items and affected context before acceptance; fresh

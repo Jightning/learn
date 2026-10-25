@@ -116,3 +116,26 @@ test("attempt signatures preserve default answers and invalidate changed tries",
   assert.notEqual(questionSignature({ ...item, tries: 2 }), questionSignature(item));
   assert.notEqual(questionSignature({ ...item, tries: 2 }), questionSignature({ ...item, tries: 3 }));
 });
+
+test("context review flags substantial repeated setup across prose and prompt", () => {
+  const setup = "A 20 V ideal source feeds node A through 2 kΩ. An 8 kΩ resistor and capacitor are parallel from A to ground. Stored energy at DC is 1.28 mJ.";
+  const q = "A 20 V source feeds node A through 2 kΩ. An 8 kΩ resistor and capacitor connect from A to ground. After DC steady state, the capacitor stores 1.28 mJ. Find C.";
+  assert.match(questionContextWarning({ q, stimulus: [{ t: "p", h: setup }] }, "item"), /repeat substantial setup/);
+  const other = "The warehouse receives twelve crates on Monday and four more on Tuesday. Each crate contains six sealed boxes and each box contains ten identical parts.";
+  assert.match(questionContextWarning({ q: `${other} How many parts arrive?`, stimulus: { t: "p", h: other } }, "item"), /repeat substantial setup/);
+  assert.equal(questionContextWarning({ q: "Find the capacitor value.", stimulus: { t: "p", h: setup } }, "item"), null);
+  assert.equal(questionContextWarning({ q, stimulus: { t: "passage", text: setup } }, "item"), null);
+  assert.equal(questionContextWarning({ q, stimulus: { t: "image", alt: setup } }, "item"), null);
+  assert.equal(questionContextWarning({ q: "Use the value of R to find the current.", stimulus: { t: "p", h: "R is 10 ohms." } }, "item"), null);
+});
+
+test("context review catches a split identifier without guessing its intended meaning", () => {
+  for (const item of [{ q: "Later i<m>L=</m>4 A." },
+    { q: "Find the current.", stimulus: { t: "p", h: "Later i<m>L=</m>4 A." } },
+    { q: "Find the current.", why: "Use i<m>L=</m>4 A." }]) {
+    assert.match(questionContextWarning(item, "item"), /splits a name/);
+  }
+  assert.equal(questionContextWarning({ q: "Later <m>i_L=4\\,\\mathrm{A}</m>." }, "item"), null);
+  assert.equal(questionContextWarning({ q: "Find L.", response: { kind: "formula", answer: "iL=4" } }, "item"), null);
+  assert.equal(questionContextWarning({ q: "Inspect `<m>L=</m>` and `i<m>L=</m>4` as literal code." }, "item"), null);
+});

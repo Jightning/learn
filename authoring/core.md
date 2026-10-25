@@ -85,4 +85,7 @@ copies are no sufficiency guarantee. Indexes derive inheritance and
 assessment weights; never ask a writer to synchronize duplicate inventories.
 Select `bank` rules for this format. Runtime policy mathematics do not belong
 in writer packets.
-Before accepting a question, inspect its combined stimulus, prompt and feedback as the reader sees them: avoid duplicated setup, define unfamiliar symbols and units before use, keep complete equations inside math spans with explicit subscripts, and choose tolerances that accept sensible rounding while rejecting meaningful mistakes.
+Write and review complete learner-facing passages, including the assembled
+prompt, attachments and feedback: state each given once, introduce unfamiliar
+notation and units before use, keep whole equations inside math spans, and
+choose tolerances that accept sensible rounding while rejecting meaningful mistakes.

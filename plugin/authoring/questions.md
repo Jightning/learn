@@ -22,12 +22,13 @@ defaults to zero (or `0.05` for `unit: factor`). Formula syntax and limits are i
 integer `tries` beside `q` and `response`; it counts total attempts including
 the first and defaults to one.
 
-When a question needs a passage, figure, code listing, table, equation, image,
-or supporting card, attach it through `stimulus`. An ordered stimulus can put
-prose before, between, or after attachments; `q` remains the final prompt. See
+Treat `stimulus` and `q` as one self-contained question: state each given once.
+Use `stimulus` for supplied material and `q` for the request; if `q` already
+contains the complete setup, omit a redundant prose attachment. An ordered
+stimulus can put prose before, between, or after attachments. See
 [`formats/stimulus.md`](formats/stimulus.md).
 Read each prompt with only its attached stimulus, as it appears in Review.
-Include needed data and operands there; do not require remembering arbitrary
+Include needed data and operands in the combined card; do not require remembering arbitrary
 example values from the lesson to perform a calculation.
 
 Question prompts, attachments, and answers are reader-facing content. Apply

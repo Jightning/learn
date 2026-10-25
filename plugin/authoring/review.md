@@ -61,12 +61,10 @@ correct answers, source tags, coverage and browser success do not waive this
 judgment. A previously accepted passage restored during correction still needs
 this reading check; keep failed experimental drafts unaccepted.
 
-For each first-use formula, account for every unfamiliar symbol's meaning and
-units, its model assumptions, and where these are taught before the first
-dependent task; reconstruct that task using only the preceding learner text.
-An undefined symbol or an unstated required prerequisite blocks acceptance:
-record the formula/task IDs and missing teaching, rather than a generic
-“notation checked” claim.
+Account for unfamiliar symbols, units and assumptions at first use, reusing
+established definitions; reconstruct tasks once per distinct method using only
+preceding learner text, rather than repeating the check for equivalent formulas.
+Missing prerequisites block acceptance; record gaps and their teaching/task IDs.
 
 Inspect the packed reader once, sampling supported depths and unusual shapes;
 fully inspect changed or flagged content. Do not reread every lesson at every

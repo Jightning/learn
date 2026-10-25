@@ -8,6 +8,7 @@ import { checkCandidates, readiness } from "../../src/lib/assessment.js";
 import { M } from "../../src/lib/math.js";
 import { checkValue } from "../../src/lib/response-scoring.js";
 import { renderBlock } from "../../src/blocks/index.js";
+import { questionContextWarning } from "../../tools/lib/question-context.mjs";
 
 const load = () => {
   const files = courseFiles("courses/ece20001", message => { throw new Error(message); });
@@ -44,6 +45,21 @@ test("section 6.1 electron-count question has one self-contained setup", () => {
   assert.equal(question.id, "e2-st-cap-electrons");
   assert.ok(!question.stimulus || Array.isArray(question.stimulus) && question.stimulus.length === 0);
   for (const given of ["1.6", "0.50", "1.602"]) assert.ok(question.q.includes(given));
+});
+
+test("section 6.2 capacitor-energy question states its setup once and retains every given", () => {
+  const { course } = load();
+  const question = course.sections.flatMap(s => s.subs).find(u => u.id === "s6-2").quiz[7];
+  assert.equal(question.id, "e2-st-energy-dc-cap-practice");
+  assert.ok(!question.stimulus || Array.isArray(question.stimulus) && question.stimulus.every(s => s.t !== "p"));
+  for (const given of ["20 V", "2 kΩ", "8 kΩ", "1.28 mJ"]) assert.ok(question.q.includes(given));
+});
+
+test("Exam 2 bank has no detected repeated setup or split-name math", () => {
+  const { idx } = load();
+  const warnings = Object.values(idx.BANK).map(q => questionContextWarning(q, q.id))
+    .filter(w => w && /repeat substantial setup|splits a name/.test(w));
+  assert.deepEqual(warnings, []);
 });
 
 test("section 6.2 teaches the solenoid quantities and limits before its dependent question", () => {
