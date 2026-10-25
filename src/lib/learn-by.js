@@ -4,7 +4,7 @@ import { keys, getItem } from './store.js';
 import { setPref, dropPref } from './prefs.js';
 import { rangePool } from './practice-pool.js';
 import { normalizeQuestion } from './questions.js';
-import { skillState, provisionalDemonstrations } from './evidence.js';
+import { skillState, provisionalDemonstrations, effectiveEvents } from './evidence.js';
 import { get as retentionGet } from './retention.js';
 import { retrievability } from './schedule.js';
 
@@ -265,7 +265,7 @@ const nextLocalDay = time => { const date = new Date(time); date.setHours(0, 0, 
 export function studyMinutesToday(rows, now = Date.now()) {
   const start = localDayStart(now);
   const unique = new Map(rows.map(r => [r.id || `${r.course}:${r.attemptId}:${r.ts}`, r]));
-  return [...unique.values()].filter(r => r.event === 'attempt' && r.ts >= start && r.ts <= now && !r.timingFlags?.length)
+  return effectiveEvents([...unique.values()]).filter(r => r.event === 'attempt' && r.ts >= start && r.ts <= now && !r.timingFlags?.length)
     .reduce((sum, r) => sum + [r.activeMs, r.feedbackMs].reduce((total, ms) => total + (Number.isFinite(ms) && ms > 0 ? ms / 6e4 : 0), 0), 0);
 }
 

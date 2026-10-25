@@ -13,6 +13,7 @@ import LearningGuidance from "./LearningGuidance.jsx";
 import { questionSessionCurrent, practiceRequirements, normalizeQuestion } from '../lib/questions.js';
 import { strip } from "../lib/util.js";
 import { activeGoals, deadlinePlan } from "../lib/learn-by.js";
+import { ignoreSessionAnswer } from "../lib/practice-session.js";
 
 export default function Practice({ ctx, cat, embedded = false }) {
   const { cid, idx, state } = ctx;
@@ -139,6 +140,11 @@ export default function Practice({ ctx, cat, embedded = false }) {
   });
   const result = (item, outcome) => {
     setRun(prev => {
+      if (prev && outcome.ignored) {
+        if (prev.results.some(r => r.id === item.id && !r.ignored))
+          state.savePolicy({ ...state.getPolicy(), actions: Math.max(0, (state.getPolicy().actions || 0) - 1) });
+        return ignoreSessionAnswer(prev, item.id);
+      }
       if (!prev || prev.results.some(r => r.id === item.id)) return prev;
       state.savePolicy({ ...state.getPolicy(), actions: (state.getPolicy().actions || 0)+1 });
       const next = { ...prev, results: [...prev.results, { id: item.id, ...outcome }] };
@@ -152,6 +158,7 @@ export default function Practice({ ctx, cat, embedded = false }) {
           next.items.splice(Math.min(prev.at + 3, next.items.length), 0, retry);
           next.retries = [...prev.retries, retryKey];
           next.retryIds = [...(prev.retryIds || []), retry.id];
+          next.retrySources = { ...prev.retrySources, [retry.id]: { itemId: item.id, key: retryKey } };
         }
       }
       return next;
@@ -242,7 +249,7 @@ export default function Practice({ ctx, cat, embedded = false }) {
         </>}
         <p>{run.results.filter(r => r.firstUnaided === true && !r.selfChecked).length} right first try, {run.results.filter(r => r.correct && r.firstUnaided === false && !r.selfChecked).length} recovered, {run.results.filter(r => r.selfChecked).length} self-rated, {run.results.filter(r => r.correct === false && !r.timedOut).length} to revisit.</p>
         {run.mode === "check" && run.items.filter(q=>run.results.some(r=>r.id === q.id)).map(q => <details key={q.id}><summary>Answer and feedback</summary>
-          <QuestionCard item={q} ctx={ctx} restore context="check" onResult={outcome => { setRun(prev=>({...prev,results:prev.results.map(r=>r.id === q.id ? {...r,...outcome} : r)})); refreshEvidence(n=>n+1); }} /></details>)}
+          <QuestionCard item={q} ctx={ctx} restore context="check" onResult={outcome => { setRun(prev=> outcome.ignored ? ignoreSessionAnswer(prev, q.id) : ({...prev,results:prev.results.map(r=>r.id === q.id ? {...r,...outcome} : r)})); refreshEvidence(n=>n+1); }} /></details>)}
         <button class="dbtn" onClick={() => setRun(null)}>Another set</button>
       </div>}
     </div>}

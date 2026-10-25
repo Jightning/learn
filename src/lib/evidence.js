@@ -1,6 +1,6 @@
 /* Descriptive evidence rules, shared by practice, assessment and Learn-by.
  * Counts describe observations; they are not calibrated mastery probabilities. */
-export const POLICY = Object.freeze({ version: 3, window: 8, decay: 0.8,
+export const POLICY = Object.freeze({ version: 4, window: 8, decay: 0.8,
   minimumIndependent: 2, coverageEvery: 3, repairMisses: 2, repairBudget: 3,
   freshnessDays: 30, recheckDays: 1, timingBatch: 5 });
 export const orderEvents = rows => [...new Map(rows.map(r => [r.id, r])).values()]
@@ -8,6 +8,7 @@ export const orderEvents = rows => [...new Map(rows.map(r => [r.id, r])).values(
 export const skillsOf = r => r.skills?.length ? r.skills : r.typeId ? [r.typeId] : r.concept ? [r.concept] : [];
 export const isJoint = r => skillsOf(r).length > 1 || !!r.routes?.length;
 export const hasSupport = r => r.assisted || r.dependent || r.methodCued === true || (Array.isArray(r.support) ? r.support.length > 0 : !!r.support);
+export const ignoredAttemptIds = rows => new Set(rows.filter(r => r.event === 'attempt-void' && r.attemptId).map(r => r.attemptId));
 export function currentEvidence(r, bank) {
   const parent = r.parentId && bank?.[r.parentId];
   const q = bank?.[r.itemId] || parent;
@@ -20,10 +21,11 @@ export function currentEvidence(r, bank) {
 export function scoredEvents(rows) {
   const ordered = orderEvents(rows);
   const ratings = new Map(ordered.filter(r => r.event === 'rubric-score' || r.event === 'grade-revision').map(r => [r.attemptId, r]));
-  const voided = new Set(ordered.filter(r => r.event === 'attempt-void').map(r => r.attemptId));
+  const voided = ignoredAttemptIds(ordered);
   return ordered.map(r => {
+    // An ignored response must not survive as an exposure or a legacy rating.
+    if (r.event !== 'attempt-void' && voided.has(r.attemptId)) return { ...r, firstUnaided: null, voided: true };
     if (r.event !== 'attempt') return r;
-    if (voided.has(r.attemptId)) return { ...r, firstUnaided: null, voided: true };
     const rating = ratings.get(r.attemptId);
     if (!rating || (!r.selfChecked && rating.event !== 'grade-revision')) return r;
     return { ...r, firstUnaided: rating.correct, correct: rating.correct,
@@ -85,7 +87,7 @@ export function recentPerformance(rows, typeId, versions) {
     misses: recent.slice(-2).filter(r => !r.firstUnaided).length,
     last: recent.at(-1)?.ts || 0, groups: new Set(recent.map(r => r.group)).size };
 }
-export const exposedItems = rows => new Set(rows.filter(r => r.event === 'exposure' || r.event === 'attempt' || r.loop === 'Q').map(r => r.itemId));
+export const exposedItems = rows => new Set(effectiveEvents(rows).filter(r => r.event === 'exposure' || r.event === 'attempt' || r.loop === 'Q').map(r => r.itemId));
 const median = values => { const a = [...values].sort((a, b) => a-b), m = Math.floor(a.length / 2);
   return a.length ? a.length % 2 ? a[m] : (a[m-1] + a[m]) / 2 : null; };
 const targetTask = r => !r.demand || r.demand === 'standard';

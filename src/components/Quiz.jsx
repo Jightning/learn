@@ -20,7 +20,7 @@ export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
   }));
   const [results, setResults] = useState(() => Object.fromEntries(items.flatMap(item => {
     const saved = ctx.state.getAttempt(item.id, questionSignature(item));
-    return saved?.feedback?.recorded ? [[item.id, saved.feedback]] : [];
+    return saved?.feedback?.recorded && !saved.feedback.ignored ? [[item.id, saved.feedback]] : [];
   })));
   if (!items.length) return null;
   const total = items.length;
@@ -40,7 +40,11 @@ export default function Quiz({ sub, num, ctx, depth = "full", expandAll }) {
     {items.map((item, i) => <div key={item.id} hidden={at !== i}
       style={{ display: at === i ? "" : "none" }}>
       <QuestionCard item={item} ctx={ctx} activeQuestion={at === i} restore sessionId={session}
-        onResult={r => setResults(prev => ({ ...prev, [item.id]: r }))}
+        onResult={r => setResults(prev => {
+          const next = { ...prev };
+          if (r.ignored) delete next[item.id]; else next[item.id] = r;
+          return next;
+        })}
         onContinue={() => moveTo(i + 1 < total ? i + 1 : total)} />
     </div>)}
     {at >= total && <div class="qsummary">

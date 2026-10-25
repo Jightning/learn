@@ -1,5 +1,7 @@
 # Creating a course
 
+For user-requested diagram review, see [Optional quality checks](quality.md).
+
 Create the course folder with:
 
 ```sh

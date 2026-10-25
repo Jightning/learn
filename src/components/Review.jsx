@@ -11,6 +11,7 @@ import LearningGuidance from "./LearningGuidance.jsx";
 import Practice from "./Practice.jsx";
 import Deadlines from "./Deadlines.jsx";
 import { activeGoals } from "../lib/learn-by.js";
+import { ignoreSessionAnswer } from "../lib/practice-session.js";
 
 const SESSION = 20;
 
@@ -58,7 +59,9 @@ export default function Review({ only = null, ctx = null, mixed = false, deadlin
 function DueReview({ only }) {
   const available = only ? [only] : ORDER;
   const focused = available.some(cid => activeGoals(cid).length > 0);
-  const wanted = available.filter(cid => focused ? activeGoals(cid).length > 0 : dueKeys(cid).length > 0);
+  // Answering or ignoring a question can remove its schedule. Keep the current
+  // session visible until the reader finishes or leaves it.
+  const [wanted] = useState(() => available.filter(cid => focused ? activeGoals(cid).length > 0 : dueKeys(cid).length > 0));
   const [books, setBooks] = useState(null);
   const [run, setRun] = useState(null);
 
@@ -89,8 +92,11 @@ function DueReview({ only }) {
 
   const row = run.items[run.at];
   const book = books.find(b => b.cid === row.cid);
+  const resultId = `${row.cid}:${row.item.id}`;
   const result = outcome => setRun(prev => {
-    const next = { ...prev, results: [...prev.results, outcome] };
+    if (outcome.ignored) return ignoreSessionAnswer(prev, resultId);
+    if (prev.results.some(r => r.id === resultId)) return prev;
+    const next = { ...prev, results: [...prev.results, { id: resultId, ...outcome }] };
     const retryKey = [...(row.item.skills || [row.item.typeId || row.item.concept])].sort().join('+');
     if (!outcome.skipped && !outcome.timedOut && outcome.firstUnaided === false && retryKey && !prev.retries.includes(retryKey)) {
       const used = new Set(prev.items.map(x => x.item.id));
@@ -100,6 +106,7 @@ function DueReview({ only }) {
         next.items.splice(Math.min(prev.at + 3, next.items.length), 0,
           { cid: row.cid, C: row.C, item, reason: "Another version after a miss" });
         next.retries = [...prev.retries, retryKey];
+        next.retrySources = { ...prev.retrySources, [`${row.cid}:${item.id}`]: { itemId: resultId, key: retryKey } };
       }
     }
     return next;

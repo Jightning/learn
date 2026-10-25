@@ -92,6 +92,11 @@
 .qactions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:16px}
 .qactions .dbtn{min-height:40px}
 .qactions .dbtn[disabled]{opacity:.55;cursor:default}
+.qfooter{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:8px 12px;
+  font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-2)}
+.qignore{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;flex:none}
+.qignore[aria-pressed="true"]{color:var(--wn-ink)}
+.qignore[disabled]{cursor:default}
 .qbody{padding:18px 20px 20px;border-top:1px solid var(--rule);background:var(--surface);
   font-size:.93rem;line-height:1.5}
 .qbody>*:first-child{margin-top:0}

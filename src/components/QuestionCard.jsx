@@ -17,6 +17,8 @@ import * as retention from "../lib/retention.js";
 import { invalidate, rebuild } from "../lib/replay.js";
 import { laneFor } from "../lib/tiers.js";
 import { retrievability } from "../lib/schedule.js";
+import { ignoreAnswer } from "../lib/ignore-answer.js";
+import { IconThumbDown } from "./Icon.jsx";
 
 function Stimulus({ value }) {
   if (!value) return null;
@@ -271,14 +273,14 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
         predictedR, lane: laneFor(cid) });
     }
     if (!delayed) expose();
-    onResult?.({ correct, skipped, firstUnaided: progress.current.firstUnaided ?? null, value: finalValue, selfChecked,
+    onResult?.({ attemptId: attempt.current.attemptId, correct, skipped, firstUnaided: progress.current.firstUnaided ?? null, value: finalValue, selfChecked,
       timedOut: !!attempt.current.timedOut, status, gradeSource: finalGrade.gradeSource,
       score: finalGrade.score, maxScore: finalGrade.maxScore });
     showFeedback({ correct, skipped, recorded: true, timedOut: !!attempt.current.timedOut,
       score: finalGrade.score, maxScore: finalGrade.maxScore, gradeSource: finalGrade.gradeSource }, finalValue);
   };
 
-  useEffect(() => { if (!delayed && feedback?.recorded) expose(); }, [delayed, feedback?.recorded]);
+  useEffect(() => { if (!delayed && feedback?.recorded && !feedback.ignored) expose(); }, [delayed, feedback?.recorded]);
 
   const submit = async e => {
     e.preventDefault();
@@ -338,7 +340,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           await showFeedback({ correct: completed.correct, skipped: completed.skipped, recorded: true,
             timedOut: completed.timedOut, score: completed.score, maxScore: completed.maxScore,
             gradeSource: completed.gradeSource }, pending.value);
-          onResult?.({ correct: completed.correct, skipped: completed.skipped, firstUnaided: completed.firstUnaided,
+          onResult?.({ attemptId: attempt.current.attemptId, correct: completed.correct, skipped: completed.skipped, firstUnaided: completed.firstUnaided,
             value: pending.value, timedOut: completed.timedOut, gradeSource: completed.gradeSource,
             score: completed.score, maxScore: completed.maxScore });
           return;
@@ -357,6 +359,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
   }, [signature]);
 
   const gradeReservedSelf = async correct => {
+    if (feedback?.ignored) return;
     const original = forCourse(cid, C).find(r=>r.id === `${attempt.current.attemptId}:complete`);
     if (!original || scoredEvents(forCourse(cid, C)).find(r=>r.id===original.id)?.rubricScored) return;
     append({ id: `${attempt.current.attemptId}:rubric`, course: cid, event: "rubric-score",
@@ -369,6 +372,22 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
   };
   const checkSelf = correct => { if (selfCheck || committing.current || recorded.current) return; setSelfCheck(true); completeTry(correct); };
   const skip = () => { if (!committing.current && !checking) record(false, true, response.kind === "self", draftSaved.current); };
+  const ignore = async () => {
+    if (committing.current || checking || feedback?.ignored) return;
+    committing.current = true;
+    setChecking(true);
+    try {
+      const next = await ignoreAnswer(ctx, item, { ...attempt.current, signature,
+        value: valueRef.current, progress: progress.current });
+      attempt.current.feedback = next;
+      recorded.current = true;
+      if (active.current) {
+        setFeedback(next);
+        onResult?.({ attemptId: attempt.current.attemptId, ignored: true, correct: null, firstUnaided: null });
+      }
+    } catch (error) { if (active.current) setCheckError(error.message); }
+    finally { committing.current = false; if (active.current) setChecking(false); }
+  };
   const toggle = i => setValue(value.includes(i) ? value.filter(x => x !== i) : [...value, i]);
   const repeatedSet = response.kind === "multi" && progress.current.combinations.includes([...value].sort((a, b) => a - b).join(","));
   const repeatedAnswer = !["single", "multi"].includes(response.kind) &&
@@ -483,15 +502,15 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           {editable && repeatedSet && <p class="qcheck-error" role="status">That combination was incorrect. Change your selection.</p>}
           {editable && repeatedAnswer && <p class="qcheck-error" role="status">That answer was incorrect. Change your answer.</p>}
       </form>
-      {feedback && delayed && <div class="qbody" aria-live="polite"><strong>Response saved</strong>
+      {feedback && delayed && <div class="qbody" aria-live="polite"><strong>{feedback.ignored ? "Answer ignored" : "Response saved"}</strong>
         {onContinue && <button class="dbtn primary qnext" onClick={onContinue}>Continue</button>}</div>}
       {feedback && !delayed && !retryable && (
         <div class="qbody" aria-live="polite">
-          <strong class={"qresult " + (feedback.correct ? "is-right" : "is-miss")}>
-            {feedback.timedOut ? "Time expired" : feedback.skipped ? "Skipped" : feedback.correct == null ? "Compare your answer" :
+          <strong class={"qresult " + (feedback.ignored ? "" : feedback.correct ? "is-right" : "is-miss")}>
+            {feedback.ignored ? "Answer ignored" : feedback.timedOut ? "Time expired" : feedback.skipped ? "Skipped" : feedback.correct == null ? "Compare your answer" :
               feedback.correct ? "Correct" : "Wrong"}
           </strong>
-          {feedback.recorded && <p class="qgrade">{feedback.skipped || (feedback.timedOut && feedback.correct == null) ? "No verified grade" : feedback.gradeSource === "self" || response.kind === "self" ? "Self-reported" : "Checked against answer rules"}
+          {feedback.recorded && !feedback.ignored && <p class="qgrade">{feedback.skipped || (feedback.timedOut && feedback.correct == null) ? "No verified grade" : feedback.gradeSource === "self" || response.kind === "self" ? "Self-reported" : "Checked against answer rules"}
             {feedback.maxScore > 1 && ` · ${feedback.score}/${feedback.maxScore} points`}</p>}
           {reveal && response.kind === "text" && <p class="ans">Accepted: {response.accepted.join("; ")}</p>}
           {reveal && response.kind === "blanks" && <dl class="ans">{response.fields.map(field => <div key={field.id}>
@@ -507,7 +526,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           {reveal && item.why && <div class="qexplain" dangerouslySetInnerHTML={{ __html: M(item.why) }} />}
           {reveal && feedback.correct === false && questionErrorHypotheses(item, attempt.current.firstResponse ?? value).map(error =>
             <p key={error.id}>Possible issue: <span dangerouslySetInnerHTML={{ __html: M(error.description) }} /></p>)}
-          {feedback.correct == null && !feedback.timedOut && !selfCheck && !feedback.skipped && <div class="qactions">
+          {feedback.correct == null && !feedback.ignored && !feedback.timedOut && !selfCheck && !feedback.skipped && <div class="qactions">
             <span>Compared with your answer:</span>
             <button class="dbtn" onClick={() => feedback.recorded ? gradeReservedSelf(true) : checkSelf(true)}>Correct</button>
             <button class="dbtn" onClick={() => feedback.recorded ? gradeReservedSelf(false) : checkSelf(false)}>Wrong</button>
@@ -518,6 +537,13 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           </div>}
         </div>
       )}
+      <div class="qfooter">
+        {feedback?.ignored && <span role="status">Excluded from learning progress</span>}
+        <button type="button" class="dbtn ghost qignore" aria-label="Ignore this answer"
+          title={feedback?.ignored ? "This answer is excluded from learning progress" : "Ignore this answer in learning progress"}
+          aria-pressed={!!feedback?.ignored} disabled={!state.on || checking || !feedback || feedback.ignored}
+          onClick={ignore}><IconThumbDown /></button>
+      </div>
     </article>
   );
 }

@@ -50,7 +50,7 @@ const SCRIPTS = ["author.mjs", "author-log.mjs", "coverage.mjs", "validate.mjs",
 /* Read at runtime by validate.mjs, so it travels with the scripts. */
 const ASSETS = [["src/blocks/index.js", "src/blocks/index.js"]];
 
-const DOCS = ["create_course.md", "material_truth.md", "writing.md"];
+const DOCS = ["create_course.md", "material_truth.md", "writing.md", "quality.md"];
 
 /* ------------------------------------------------------------- workflow --*/
 const workflow = readFileSync(join(ROOT, "authoring", "entrypoint.md"), "utf8");

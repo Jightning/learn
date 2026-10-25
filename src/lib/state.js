@@ -1,5 +1,7 @@
 /* Per-question outcomes for coverage and later practice. */
-import { getItem, setItem, removeItem, flush, keys } from "./store.js";
+import { getItem, setItem, removeItem, flush, keys, logRows } from "./store.js";
+import { ignoredAttemptIds } from "./evidence.js";
+import { reconcileSession } from "./practice-session.js";
 import { readLearner, writeLearner, learnerRatings, dropLearner, answerHistory } from "./learner-prefs.js";
 import { setPref, dropPref } from "./prefs.js";
 const DAY = 864e5;
@@ -45,7 +47,10 @@ export function stateFor(id, course) {
   const raw = on && getItem(KEY);
   if (raw) { try { d = JSON.parse(raw) || d; } catch {} }
   if (!d.q) d.q = {};
-  d.q = { ...learnerRatings(KEY), ...d.q };
+  const rows = () => logRows().filter(r => r.course === id);
+  const managed = new Set(rows().filter(r => r.loop === 'Q' || r.loop === 'A').flatMap(r => [r.itemId, r.legacyItemId]).filter(Boolean));
+  d.q = { ...Object.fromEntries(Object.entries(learnerRatings(KEY)).filter(([qi]) => !managed.has(qi))), ...d.q };
+  let ignored = ignoredAttemptIds(rows());
   const resetAt = Number(getItem(`reset:${id}`)) || 0;
   if (resetAt) d.q = Object.fromEntries(Object.entries(d.q).filter(([, r]) => r?.last > resetAt));
   const save = () => { if (on) setItem(KEY, JSON.stringify(d)); };
@@ -53,14 +58,19 @@ export function stateFor(id, course) {
   return (cache[id] = {
     on,
     get: qi => d.q[qi],
+    refresh() {
+      d = JSON.parse(getItem(KEY)) || { q: {} };
+      ignored = ignoredAttemptIds(rows());
+    },
     getPolicy: () => readLearner(KEY, 'policy', '', resetAt ? null : d.policy, resetAt) || {},
-    getSession: () => readLearner(KEY, 'session', '', resetAt ? null : d.session, resetAt) || null,
+    getSession: () => reconcileSession(readLearner(KEY, 'session', '', resetAt ? null : d.session, resetAt) || null, rows()),
     saveSession(session) { if (!on) return; d.session = session; writeLearner(KEY, 'session', '', session); save(); return flush(); },
     savePolicy(policy) { if (!on) return; d.policy = policy; writeLearner(KEY, 'policy', '', policy); save(); },
     getAttempt(qi, signature) {
       const value = readLearner(KEY, 'answer', qi, d.answers?.[qi]);
       if (resetAt && !(value?.started > resetAt)) return null;
-      return value?.signature === signature ? value : null;
+      if (value?.signature !== signature) return null;
+      return ignored.has(value.attemptId) ? { ...value, feedback: { ...value.feedback, recorded: true, ignored: true } } : value;
     },
     getAnswerHistory(qi, signature) {
       const current = readLearner(KEY, 'answer', qi, d.answers?.[qi]);
