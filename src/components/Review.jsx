@@ -1,3 +1,4 @@
+import MasteryPath from './MasteryPath.jsx';
 import { sessionId } from "../lib/attempt.js";
 import { useState, useEffect } from "preact/hooks";
 import { INDEX, ORDER, getAll } from "../lib/library.js";
@@ -36,6 +37,8 @@ export default function Review({ only = null, ctx = null, mixed = false, deadlin
            aria-current={deadlines ? "page" : undefined}>Learn by</a>
       </nav>
     </header>
+    {ctx?.C.mastery && <MasteryPath ctx={ctx} />}
+    {ctx?.C.mastery && mixed && <p>Free exploration: this practice does not bypass required activity gates.</p>}
     {!mixed && !deadlines && <section aria-label="Due now">
       <DueReview only={only} />
     </section>}

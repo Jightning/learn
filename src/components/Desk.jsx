@@ -1,3 +1,4 @@
+import MasteryPath from './MasteryPath.jsx';
 import { qid } from "../lib/util.js";
 import { nextUp } from "../lib/next.js";
 import { peek } from "../lib/place.js";
@@ -56,7 +57,8 @@ export default function Desk({ ctx }) {
       {/* One variant, not one per kind: the only visual distinction the row
           makes is whether it is a next step or something already decaying,
           which is binary. The eyebrow says which in words regardless. */}
-      <a class={"now" + (lead.kind === "review" ? " now-review" : "")} href={lead.href}>
+      {C.mastery && <MasteryPath ctx={ctx} />}
+      {!C.mastery && <a class={"now" + (lead.kind === "review" ? " now-review" : "")} href={lead.href}>
         <span class="now-txt">
           <span class="now-k">{lead.kind === "resume" ? "Pick up here" : "Next"}</span>
           <span class="now-h"><Inline text={lead.title} /></span>
@@ -65,7 +67,7 @@ export default function Desk({ ctx }) {
         <span class="now-go" aria-hidden="true">
           {lead.kind === "resume" ? "Continue" : "Open"} →
         </span>
-      </a>
+      </a>}
 
       {rest.length > 0 && (
         <div class="also">

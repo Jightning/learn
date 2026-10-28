@@ -1,0 +1,70 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { serveDist } from '../helpers/browser-harness.mjs';
+import { masteryCourseFiles } from '../fixtures/mastery/course.mjs';
+
+for (const width of [1440, 390]) test(`required path is reachable, truthful and resumes at ${width}px`, async () => {
+  const files = masteryCourseFiles();
+  const course = JSON.parse(files['course.json']); course.state = { enabled: true }; files['course.json'] = JSON.stringify(course);
+  const activities = JSON.parse(files['mastery/activities.json']);
+  for (const a of activities.activities) if (!a.timing) a.timing = { active: [30, 60], feedback: [10, 20] };
+  activities.activities.find(a => a.id === 'repair').after = [];
+  files['mastery/activities.json'] = JSON.stringify(activities);
+  const server = await serveDist('.'), browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    page.setDefaultTimeout(10000);
+    const errors = []; page.on('pageerror', e => errors.push(e.message));
+    await page.route('**/courses/demo.json', route => route.fulfill({ json: files }));
+    await page.goto(`${server.origin}/#/demo`);
+    const panel = page.getByRole('region', { name: 'Required learning path' });
+    await panel.getByText(/Incomplete: required evidence/).waitFor();
+    await panel.getByText('Targets and evidence gaps').click();
+    assert.match(await panel.innerText(), /Unknown \/ target/);
+    await panel.getByText(/All remaining actions/).click();
+    assert.match(await panel.innerText(), /Duration unknown/);
+    for (const id of ['ordinary','lab','defense','repair','delayed','future-audio','future-trusted']) {
+      const link = panel.locator(`a[href="#/demo/activity/${id}"]`);
+      assert.equal(await link.count(), 1);
+    }
+    await panel.locator('a[href="#/demo/activity/teach%3As1-1"]').click();
+    await page.getByRole('button', { name: 'I have read this lesson' }).click();
+    await page.getByRole('link', { name: /^Guided practice —/ }).waitFor();
+    await page.reload();
+    await page.getByRole('link', { name: /^Guided practice —/ }).waitFor();
+    await page.getByRole('link', { name: /^Guided practice —/ }).focus();
+    await page.keyboard.press('Enter');
+    await page.locator('[data-qid="ledger-total"]').waitFor();
+    await page.goto(`${server.origin}/#/demo/activity/ordinary`);
+    await page.locator('[data-activity-id="ordinary"] .q').waitFor();
+    await page.locator('[data-qid="ledger-total"]').waitFor();
+    await page.locator('input[data-numeric-answer]').fill('5');
+    await page.getByRole('button', { name: /^Check answer/ }).click();
+    await page.locator('.qresult').filter({ hasText: /^Correct$/ }).waitFor();
+    await page.reload();
+    await page.locator('[data-qid="ledger-total"]').waitFor();
+    await page.locator('.qresult').filter({ hasText: /^Correct$/ }).waitFor();
+    await page.goto(`${server.origin}/#/demo/activity/repair`);
+    await page.locator('[data-activity-id="repair"] .q').waitFor();
+    await page.locator('[data-qid="ledger-total"]').waitFor();
+    assert.equal(await page.locator('[data-activity-id="repair"] .qresult').count(), 0, 'a different activity must not reuse a completed answer');
+    await page.goto(`${server.origin}/#/demo/activity/lab`);
+    await page.getByText(/Submission controls are not available/).waitFor();
+    await page.goto(`${server.origin}/#/demo/activity/defense`);
+    await page.getByText(/Explain your reasoning against/).waitFor();
+    await page.goto(`${server.origin}/#/demo/activity/delayed`);
+    await page.getByText('Independent evidence needed before delay starts', { exact: true }).waitFor();
+    await page.goto(`${server.origin}/#/demo/review/mixed`);
+    await page.getByText(/Free exploration:/).waitFor();
+    await page.getByRole('combobox', { name: /^Session/ }).selectOption('60');
+    await page.reload();
+    await page.getByRole('combobox', { name: /^Session/ }).waitFor();
+    assert.equal(await page.getByRole('combobox', { name: /^Session/ }).inputValue(), '60');
+    await page.getByText('Targets and evidence gaps').click();
+    assert.match(await panel.innerText(), /Historical claim: unsubstantiated/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: `/tmp/s10-${width}.png`, fullPage: true });
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); server.close(); }
+});

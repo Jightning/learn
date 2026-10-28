@@ -99,3 +99,8 @@
 .shell.utility .review>section{max-width:none}
 .deadline-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--fs-small);color:var(--ink-2);margin-top:6px}
 .deadline-meta time{flex-basis:100%}
+
+.mastery-path { min-width: 0; overflow-wrap: anywhere; }
+.mastery-path > label { display: block; margin-block: .5rem; }
+.mastery-path select { max-width: 100%; }
+.mastery-path li { margin-block: .75rem; }

@@ -1,3 +1,4 @@
+import MasteryPath from './components/MasteryPath.jsx';
 import { isEditingEvent } from "./lib/keyboard.js";
 import { useState, useEffect, useMemo, useCallback, useRef } from "preact/hooks";
 import { INDEX, ORDER, get as getCourse, peek, refresh as refreshLibrary } from "./lib/library.js";
@@ -469,6 +470,7 @@ export default function App() {
     ? <Library courses={INDEX} order={ORDER} loading={!loadError} error={loadError}
                onChange={() => forceRender(n => n + 1)} />
     : <Library courses={INDEX} order={ORDER} onChange={() => forceRender(n => n + 1)} />;
+  else if (course?.mastery && rest.startsWith("activity/")) view = <MasteryPath ctx={ctx} selected={rest.slice(9)} />;
   else if (!rest) view = <Desk ctx={ctx} />;
   /* One page, three routes. `index` is the canonical one; `concepts` and `cat`
      are what every link and bookmark written before the two hubs were merged
