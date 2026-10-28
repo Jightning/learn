@@ -87,5 +87,5 @@ Select `bank` rules for this format. Runtime policy mathematics do not belong
 in writer packets.
 Write and review complete learner-facing passages, including the assembled
 prompt, attachments and feedback: state each given once, introduce unfamiliar
-notation and units before use, keep whole equations inside math spans, and
-choose tolerances that accept sensible rounding while rejecting meaningful mistakes.
+notation and units before use, and keep whole equations inside math spans.
+Make answering convenient: accept reasonable approximations and require only the information and form needed to demonstrate the learning goal.

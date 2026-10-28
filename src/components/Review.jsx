@@ -11,7 +11,7 @@ import LearningGuidance from "./LearningGuidance.jsx";
 import Practice from "./Practice.jsx";
 import Deadlines from "./Deadlines.jsx";
 import { activeGoals } from "../lib/learn-by.js";
-import { ignoreSessionAnswer } from "../lib/practice-session.js";
+import { ignoreSessionAnswer, reviseSessionAnswer } from "../lib/practice-session.js";
 
 const SESSION = 20;
 
@@ -95,6 +95,7 @@ function DueReview({ only }) {
   const resultId = `${row.cid}:${row.item.id}`;
   const result = outcome => setRun(prev => {
     if (outcome.ignored) return ignoreSessionAnswer(prev, resultId);
+    if (outcome.gradeRevised) return reviseSessionAnswer(prev, resultId, outcome);
     if (prev.results.some(r => r.id === resultId)) return prev;
     const next = { ...prev, results: [...prev.results, { id: resultId, ...outcome }] };
     const retryKey = [...(row.item.skills || [row.item.typeId || row.item.concept])].sort().join('+');

@@ -29,6 +29,9 @@ export function scoredEvents(rows) {
     const rating = ratings.get(r.attemptId);
     if (!rating || (!r.selfChecked && rating.event !== 'grade-revision')) return r;
     return { ...r, firstUnaided: rating.correct, correct: rating.correct,
+      ...(rating.event === 'grade-revision' ? { gradeRevised: true, status: rating.correct ? 'correct' : 'incorrect',
+        ...(rating.score != null ? { score: rating.score, maxScore: rating.maxScore } : {}),
+        ...(rating.selfChecked != null ? { selfChecked: rating.selfChecked } : {}) } : {}),
       assisted: rating.event === 'rubric-score' && r.firstUnaided == null ? false : r.assisted,
       rubricScored: true, grader: rating.grader || 'self',
       gradeSource: rating.gradeSource || (['human', 'reviewed-rubric'].includes(rating.grader) ? 'human-review'

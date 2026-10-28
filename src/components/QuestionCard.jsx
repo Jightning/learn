@@ -17,7 +17,7 @@ import * as retention from "../lib/retention.js";
 import { invalidate, rebuild } from "../lib/replay.js";
 import { laneFor } from "../lib/tiers.js";
 import { retrievability } from "../lib/schedule.js";
-import { ignoreAnswer } from "../lib/ignore-answer.js";
+import { correctAnswer } from "../lib/correct-answer.js";
 import { IconThumbDown } from "./Icon.jsx";
 
 function Stimulus({ value }) {
@@ -276,7 +276,7 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
     onResult?.({ attemptId: attempt.current.attemptId, correct, skipped, firstUnaided: progress.current.firstUnaided ?? null, value: finalValue, selfChecked,
       timedOut: !!attempt.current.timedOut, status, gradeSource: finalGrade.gradeSource,
       score: finalGrade.score, maxScore: finalGrade.maxScore });
-    showFeedback({ correct, skipped, recorded: true, timedOut: !!attempt.current.timedOut,
+    return showFeedback({ correct, skipped, recorded: true, timedOut: !!attempt.current.timedOut,
       score: finalGrade.score, maxScore: finalGrade.maxScore, gradeSource: finalGrade.gradeSource }, finalValue);
   };
 
@@ -372,18 +372,20 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
   };
   const checkSelf = correct => { if (selfCheck || committing.current || recorded.current) return; setSelfCheck(true); completeTry(correct); };
   const skip = () => { if (!committing.current && !checking) record(false, true, response.kind === "self", draftSaved.current); };
-  const ignore = async () => {
-    if (committing.current || checking || feedback?.ignored) return;
+  const markCorrect = async () => {
+    if (committing.current || checking || !feedback || feedback.ignored || feedback.correct === true) return;
+    if (!feedback.recorded) await record(feedback.correct);
     committing.current = true;
     setChecking(true);
     try {
-      const next = await ignoreAnswer(ctx, item, { ...attempt.current, signature,
+      const next = await correctAnswer(ctx, item, { ...attempt.current, signature,
         value: valueRef.current, progress: progress.current });
       attempt.current.feedback = next;
       recorded.current = true;
       if (active.current) {
         setFeedback(next);
-        onResult?.({ attemptId: attempt.current.attemptId, ignored: true, correct: null, firstUnaided: null });
+        onResult?.({ attemptId: attempt.current.attemptId, correct: true, firstUnaided: true,
+          gradeRevised: true, gradeSource: "self", selfChecked: true, score: next.score, maxScore: next.maxScore, status: "correct" });
       }
     } catch (error) { if (active.current) setCheckError(error.message); }
     finally { committing.current = false; if (active.current) setChecking(false); }
@@ -438,6 +440,13 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
     tick(); const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
   }, [timerReady, activeQuestion, assessmentTiming?.deadlineAt, feedback?.recorded]);
+
+  const ignoreControl = feedback && !feedback.skipped && !attempt.current.timeoutUnanswered && !feedback.ignored && (
+    <button type="button" class="dbtn ghost qignore" aria-label="Mark answer correct"
+      title={feedback.gradeRevised ? "Marked correct by you" : "Mark this answer as correct"}
+      aria-pressed={!!feedback.gradeRevised} disabled={!state.on || checking || feedback.correct === true}
+      onClick={markCorrect}><IconThumbDown /></button>
+  );
 
   return (
     <article class="q" data-qid={item.id}>
@@ -494,10 +503,13 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
             value={value} readOnly={!editable || checking} onInput={next => { setValue(next); setCheckError(""); }} />}
           {checkError && <p class="qcheck-error" role="status">{checkError}</p>}
           {retryable && <strong class="qresult is-miss" role="status">Wrong</strong>}
-          {editable && <div class="qactions">
-            <button class="dbtn primary" type="submit" disabled={!canSubmit || checking}>{checking ? "Checking…" : "Check answer"}</button>
-            <button class="dbtn ghost" type="button" disabled={checking} onClick={skip}>Skip</button>
-            {item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)} onClick={expose}>Need help</a>}
+          {editable && <div class="qactions qanswer-actions">
+            <div class="qanswer-buttons">
+              <button class="dbtn primary" type="submit" disabled={!canSubmit || checking}>{checking ? "Checking…" : "Check answer"}</button>
+              <button class="dbtn ghost" type="button" disabled={checking} onClick={skip}>Skip</button>
+              {item.help && <a class="dbtn ghost" href={questionHelpHref(cid, item, idx)} onClick={expose}>Need help</a>}
+            </div>
+            {ignoreControl}
           </div>}
           {editable && repeatedSet && <p class="qcheck-error" role="status">That combination was incorrect. Change your selection.</p>}
           {editable && repeatedAnswer && <p class="qcheck-error" role="status">That answer was incorrect. Change your answer.</p>}
@@ -537,13 +549,10 @@ export default function QuestionCard({ item, ctx, onContinue, onResult, reason =
           </div>}
         </div>
       )}
-      <div class="qfooter">
+      {!editable && (ignoreControl || feedback?.ignored) && <div class="qfooter">
         {feedback?.ignored && <span role="status">Excluded from learning progress</span>}
-        <button type="button" class="dbtn ghost qignore" aria-label="Ignore this answer"
-          title={feedback?.ignored ? "This answer is excluded from learning progress" : "Ignore this answer in learning progress"}
-          aria-pressed={!!feedback?.ignored} disabled={!state.on || checking || !feedback || feedback.ignored}
-          onClick={ignore}><IconThumbDown /></button>
-      </div>
+        {ignoreControl}
+      </div>}
     </article>
   );
 }

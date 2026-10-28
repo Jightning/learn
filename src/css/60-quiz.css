@@ -91,6 +91,9 @@
 .qsymbol-groups h3{font-family:var(--ui);font-size:var(--fs-small);margin:0}
 .qactions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:16px}
 .qactions .dbtn{min-height:40px}
+.qanswer-actions{align-items:flex-start;flex-wrap:nowrap}
+.qanswer-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:9px;flex:1;min-width:0}
+.qanswer-actions .dbtn{min-height:44px}
 .qactions .dbtn[disabled]{opacity:.55;cursor:default}
 .qfooter{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:8px 12px;
   font-family:var(--ui);font-size:var(--fs-meta);color:var(--ink-2)}

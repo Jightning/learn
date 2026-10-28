@@ -1,6 +1,6 @@
 /* Per-question outcomes for coverage and later practice. */
 import { getItem, setItem, removeItem, flush, keys, logRows } from "./store.js";
-import { ignoredAttemptIds } from "./evidence.js";
+import { ignoredAttemptIds, scoredEvents } from "./evidence.js";
 import { reconcileSession } from "./practice-session.js";
 import { readLearner, writeLearner, learnerRatings, dropLearner, answerHistory } from "./learner-prefs.js";
 import { setPref, dropPref } from "./prefs.js";
@@ -70,7 +70,10 @@ export function stateFor(id, course) {
       const value = readLearner(KEY, 'answer', qi, d.answers?.[qi]);
       if (resetAt && !(value?.started > resetAt)) return null;
       if (value?.signature !== signature) return null;
-      return ignored.has(value.attemptId) ? { ...value, feedback: { ...value.feedback, recorded: true, ignored: true } } : value;
+      if (ignored.has(value.attemptId)) return { ...value, feedback: { ...value.feedback, recorded: true, ignored: true } };
+      const revised = scoredEvents(rows()).find(r => r.event === 'attempt' && r.attemptId === value.attemptId && r.gradeRevised);
+      return revised ? { ...value, feedback: { ...value.feedback, recorded: true, correct: revised.correct,
+        gradeRevised: true, gradeSource: revised.gradeSource, score: revised.score, maxScore: revised.maxScore } } : value;
     },
     getAnswerHistory(qi, signature) {
       const current = readLearner(KEY, 'answer', qi, d.answers?.[qi]);

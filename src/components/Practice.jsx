@@ -13,7 +13,7 @@ import LearningGuidance from "./LearningGuidance.jsx";
 import { questionSessionCurrent, practiceRequirements, normalizeQuestion } from '../lib/questions.js';
 import { strip } from "../lib/util.js";
 import { activeGoals, deadlinePlan } from "../lib/learn-by.js";
-import { ignoreSessionAnswer } from "../lib/practice-session.js";
+import { ignoreSessionAnswer, reviseSessionAnswer } from "../lib/practice-session.js";
 
 export default function Practice({ ctx, cat, embedded = false }) {
   const { cid, idx, state } = ctx;
@@ -145,6 +145,7 @@ export default function Practice({ ctx, cat, embedded = false }) {
           state.savePolicy({ ...state.getPolicy(), actions: Math.max(0, (state.getPolicy().actions || 0) - 1) });
         return ignoreSessionAnswer(prev, item.id);
       }
+      if (prev && outcome.gradeRevised) return reviseSessionAnswer(prev, item.id, outcome);
       if (!prev || prev.results.some(r => r.id === item.id)) return prev;
       state.savePolicy({ ...state.getPolicy(), actions: (state.getPolicy().actions || 0)+1 });
       const next = { ...prev, results: [...prev.results, { id: item.id, ...outcome }] };

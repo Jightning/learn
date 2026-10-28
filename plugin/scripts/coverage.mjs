@@ -18684,6 +18684,7 @@ const { parse: parse$1, derivative, rationalize: rationalize$1 } = formulaMath;
 //#endregion
 //#region src/lib/formula.js
 const { parse, simplify, rationalize } = formulaMath;
+new Set("alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega varepsilon vartheta varpi varrho varsigma varphi".split(" "));
 Object.freeze([
 	"objectives",
 	"families",

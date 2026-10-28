@@ -7,6 +7,27 @@ import { normalizeMathText } from "../../src/lib/math-text.js";
 const expression = answer => ({ kind: "formula", answer, variables: ["x"] });
 const equation = { kind: "formula", answer: "y = 2*x + 1", variables: ["x", "y"], solveFor: "y" };
 
+test("adjacent letters multiply in keys and responses, while subscripts and Greek names stay distinct", () => {
+  const product = { kind: "formula", answer: "vC", variables: ["v", "C"] };
+  for (const input of ["vC", "v C", "v*C", "C*v"])
+    assert.equal(gradeFormula(product, input), true);
+  assert.equal(gradeFormula(product, "v_C"), false);
+  assert.equal(gradeFormula({ ...product, answer: "vC^2" }, "v*C^2"), true);
+  assert.equal(gradeFormula({ ...product, answer: "vC^2" }, "(v*C)^2"), false);
+  assert.equal(gradeFormula({ kind: "formula", answer: "1e-3", variables: [] }, "0.001"), true);
+  assert.equal(gradeFormula({ ...product, answer: "Rth", variables: ["R", "t", "h"] }, "R*t*h"), true);
+  const subscript = { kind: "formula", answer: "v_C", variables: ["v_C"] };
+  assert.equal(gradeFormula(subscript, "v_C"), true);
+  assert.equal(gradeFormula(subscript, "v_c"), false);
+  assert.equal(gradeFormula(subscript, "vC"), false);
+  assert.equal(gradeFormula({ kind: "formula", answer: "alpha+theta", variables: ["alpha", "theta"] }, "theta+alpha"), true);
+  for (const name of ["vC", "Rth", "xy", "vC'"])
+    assert.throws(() => checkFormulaResponse({ kind: "formula", answer: name, variables: [name] }), /Adjacent letters.*multiplication/);
+  const errors = [];
+  checkResponse({ response: { kind: "formula", answer: "vC=1", variables: ["vC"], solveFor: "vC" } }, "question", errors);
+  assert.ok(errors.some(error => /Adjacent letters.*multiplication/.test(error)));
+});
+
 test("formula display hides coefficient multiplication without changing verification", () => {
   const parsed = parseFormula("y=2*x+1");
   assert.doesNotMatch(parsed.tex, /\\cdot/);

@@ -8,6 +8,17 @@ const { parse, simplify, rationalize } = formulaMath;
 const FUNCTIONS = new Set(["sqrt", "abs", "sin", "cos", "tan", "exp", "log"]);
 const CALCULUS = new Set(["diff", "derivative", "integral"]);
 const CONSTANTS = new Set(["e", "pi"]);
+// Greek names represent single editor glyphs; ordinary adjacent letters multiply.
+const GREEK = new Set("alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega varepsilon vartheta varpi varrho varsigma varphi".split(" "));
+const joinedLetters = name => /^[A-Za-z]{2,}$/.test(name) &&
+  !GREEK.has(name) && !CONSTANTS.has(name) && !FUNCTIONS.has(name) && !CALCULUS.has(name);
+function separateLetters(source) {
+  // Tokenize numbers first so scientific notation stays intact. Split before
+  // parsing so vC^2 means v * C^2, just as it does in the editor.
+  return source.replace(/(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z][A-Za-z0-9_]*/g,
+    (token, at) => joinedLetters(token) && !/^\s*\(/.test(source.slice(at + token.length))
+      ? token.split("").join(" ") : token);
+}
 const OPS = new Set(["add", "subtract", "multiply", "divide", "pow", "unaryMinus", "unaryPlus"]);
 export const FORMULA_LIMIT = 256;
 
@@ -83,7 +94,7 @@ export function parseFormula(text, variables = null, independentVariable = "x", 
     } else throw new Error("Use arithmetic, powers, roots or the supported scalar functions.");
   };
   let nodes;
-  try { nodes = parts.map(part => parse(part)); }
+  try { nodes = parts.map(part => parse(separateLetters(part))); }
   catch { throw new Error("Complete the formula: check parentheses, fractions, and missing operands."); }
   nodes.forEach(node => visit(node));
   const tex = nodes.map(formulaTex).join(" = ");
@@ -110,6 +121,10 @@ export function checkFormulaResponse(response) {
       response.variables.some(v => typeof v !== "string" || !/^[a-zA-Z][a-zA-Z0-9_]{0,15}'{0,3}$/.test(v) || CONSTANTS.has(v) || FUNCTIONS.has(v) || CALCULUS.has(v)) ||
       new Set(response.variables).size !== response.variables.length)
     throw new Error("Formula responses need a variables list of up to four distinct names (use [] for constants).");
+  for (const name of response.variables) {
+    if (joinedLetters(name.replace(/'+$/, "")))
+      throw new Error(`Adjacent letters in ${name} mean multiplication, not one variable. Declare each factor separately, or use a subscripted variable such as v_C.`);
+  }
   const independent = response.independentVariable || "x";
   if (response.independentVariable != null && !response.variables.includes(independent))
     throw new Error("independentVariable must name a declared variable.");

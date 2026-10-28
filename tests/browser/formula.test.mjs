@@ -164,3 +164,38 @@ test("mobile touch keyboard enters and submits formula and formulaParsing answer
     assert.equal(await mixed.locator(".qresult").innerText(), "Correct");
   } finally { await browser.close(); server.close(); }
 });
+
+for (const width of [1440, 390]) test(`typed adjacent letters multiply and subscripts survive at ${width}px`, async () => {
+  const server = await serveDist("."), browser = await chromium.launch();
+  try {
+    const files = JSON.parse(readFileSync("dist/courses/demo.json", "utf8"));
+    const key = Object.keys(files).find(k => /sections\/01-[^/]+\/1-.*yaml$/.test(k));
+    const unit = YAML.load(files[key]), concept = unit.quiz[0].concept;
+    unit.quiz = [
+      { type: "Product", concept, q: "Enter v times C squared.", response:
+        { kind: "formula", answer: "vC^2", variables: ["v", "C"] } },
+      { type: "Subscript", concept, q: "Enter v with subscript uppercase C.", tries: 2, response:
+        { kind: "formula", answer: "v_C", variables: ["v_C"] } }
+    ];
+    files[key] = YAML.dump(unit);
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    await page.route("**/courses/demo.json", route => route.fulfill({ json: files }));
+    await page.goto(server.origin + "/#/demo/s1-1");
+    const quiz = page.getByRole("region", { name: "1.1 questions", exact: true });
+    const card = quiz.locator(".q:visible"), field = card.locator("math-field");
+    await field.click();
+    await page.keyboard.type("vC^2", { delay: 100 });
+    assert.equal(await field.evaluate(el => el.getValue("ascii-math")), "v C^2");
+    await page.reload();
+    await field.waitFor();
+    assert.equal(await field.evaluate(el => el.getValue("ascii-math")), "v C^2");
+    await card.getByRole("button", { name: "Check answer", exact: true }).click();
+    await card.getByText("Correct", { exact: true }).waitFor();
+    await quiz.getByRole("button", { name: "Next question", exact: true }).click();
+    await field.click();
+    await page.keyboard.type("v_C", { delay: 100 });
+    assert.equal(await field.evaluate(el => el.getValue("ascii-math")), "v_C");
+    await card.getByRole("button", { name: "Check answer", exact: true }).click();
+    await card.getByText("Correct", { exact: true }).waitFor();
+  } finally { await browser.close(); server.close(); }
+});

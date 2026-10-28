@@ -18927,6 +18927,11 @@ const CALCULUS = /* @__PURE__ */ new Set([
 	"integral"
 ]);
 const CONSTANTS = /* @__PURE__ */ new Set(["e", "pi"]);
+const GREEK = new Set("alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega varepsilon vartheta varpi varrho varsigma varphi".split(" "));
+const joinedLetters = (name) => /^[A-Za-z]{2,}$/.test(name) && !GREEK.has(name) && !CONSTANTS.has(name) && !FUNCTIONS.has(name) && !CALCULUS.has(name);
+function separateLetters(source) {
+	return source.replace(/(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z][A-Za-z0-9_]*/g, (token, at) => joinedLetters(token) && !/^\s*\(/.test(source.slice(at + token.length)) ? token.split("").join(" ") : token);
+}
 const OPS = /* @__PURE__ */ new Set([
 	"add",
 	"subtract",
@@ -19001,7 +19006,7 @@ function parseFormula(text, variables = null, independentVariable = "x", evaluat
 	};
 	let nodes;
 	try {
-		nodes = parts.map((part) => parse(part));
+		nodes = parts.map((part) => parse(separateLetters(part)));
 	} catch {
 		throw new Error("Complete the formula: check parentheses, fractions, and missing operands.");
 	}
@@ -19034,6 +19039,7 @@ function parseFormula(text, variables = null, independentVariable = "x", evaluat
 }
 function checkFormulaResponse(response) {
 	if (!Array.isArray(response.variables) || response.variables.length > 4 || response.variables.some((v) => typeof v !== "string" || !/^[a-zA-Z][a-zA-Z0-9_]{0,15}'{0,3}$/.test(v) || CONSTANTS.has(v) || FUNCTIONS.has(v) || CALCULUS.has(v)) || new Set(response.variables).size !== response.variables.length) throw new Error("Formula responses need a variables list of up to four distinct names (use [] for constants).");
+	for (const name of response.variables) if (joinedLetters(name.replace(/'+$/, ""))) throw new Error(`Adjacent letters in ${name} mean multiplication, not one variable. Declare each factor separately, or use a subscripted variable such as v_C.`);
 	const independent = response.independentVariable || "x";
 	if (response.independentVariable != null && !response.variables.includes(independent)) throw new Error("independentVariable must name a declared variable.");
 	const parsed = parseFormula(response.answer, response.variables, independent);
