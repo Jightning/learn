@@ -41,6 +41,27 @@ beforeEach(async () => {
 });
 afterEach(() => { db.close(); setSyncCourseLoader(async () => {}); wipe(); });
 
+test('S11 draft context and reviewer follow-up cross encrypted sync with unavailable artifact bytes', async () => {
+  const initial = await submit(0);
+  const input = { text: 'Fresh answer', followup: { submissionHash: initial.request.submissionHash,
+    reviewerId: 'claimed-human', prompt: 'Explain the zero-input case' }, artifacts: [{ id: 'report',
+    url: 'https://example.invalid/report.txt', sha256: 'a'.repeat(64), bytes: 123, mediaType: 'text/plain' }] };
+  const fields = await submissionFields(C, 0, input);
+  fields.request.attemptId = 'fresh-attempt'; fields.request.nonce = 'fresh-nonce';
+  await recordActivityEvent(cid, C, fields, { now: 20, sessionId: 'followup' });
+  const context = { assistance: fields.assistance, timing: fields.timing, environment: { description: '' } };
+  await saveActivityDraft(cid, C, 'task-1', { text: 'Unfinished explanation' }, { now: 30, context });
+  const expected = await run();
+  assert.equal((await sync({ manual: true })).ok, true);
+  await fresh('b'); assert.equal((await sync({ manual: true })).ok, true);
+  assert.deepEqual(await run(), expected);
+  assert.deepEqual(refreshed.drafts[0].context, context);
+  assert.deepEqual(refreshed.rows[1].request.input.followup, input.followup);
+  assert.equal(refreshed.artifacts[0].availability, 'unavailable');
+  assert.equal(refreshed.artifacts[0].bytesRestored, false);
+  assert.equal(refreshed.projection.complete, false);
+});
+
 test('S09 feedback durations and repair methods cross encrypted sync without gaining authority', async () => {
   const sub = await submit(0);
   const e = await recordActivityEvent(cid, C, evaluationFields(C, sub, 20, 'fail'), { now: 20, sessionId: 'timing' });

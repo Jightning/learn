@@ -78,6 +78,17 @@ function validator(errors) {
   return { fail, shape, note, assistance, timing };
 }
 
+export function validateActivityContext(value, errors = [], { draft = false } = {}) {
+  const start = errors.length, { shape, assistance, timing, note, fail } = validator(errors);
+  if (!shape(value, ['assistance', 'timing', 'environment'])) return null;
+  assistance(value.assistance); timing(value.timing);
+  if (shape(value.environment, ['description', 'fixture', 'seed'])) {
+    if (!(draft && value.environment.description === '') && !note(value.environment.description)) fail('environment description required');
+    for (const key of ['fixture', 'seed']) if (value.environment[key] !== undefined && !id(value.environment[key])) fail(`invalid environment ${key}`);
+  }
+  return errors.length === start ? structuredClone(value) : null;
+}
+
 /** Validate a bounded import/append set, including its referenced history.
  * Nothing is stored or projected. Order is deterministic, not import order;
  * identical IDs deduplicate, conflicting IDs/attempt reuse fail the whole set.
@@ -123,11 +134,7 @@ export async function validateActivityEvents(rows, C, errors = []) {
       if (responseKey(row.compatibility) !== responseKey(await activityEventCompatibility(C, activity.id))) fail("compatibility/policy identity mismatch");
       if (attempts.has(row.request.attemptId) || nonces.has(row.request.nonce)) fail("duplicate committed attempt/nonce; use a new attempt for changed work");
       attempts.add(row.request.attemptId); nonces.add(row.request.nonce);
-      assistance(row.assistance); timing(row.timing);
-      if (shape(row.environment, ["description", "fixture", "seed"])) {
-        if (!note(row.environment.description)) fail("environment description required");
-        for (const key of ["fixture", "seed"]) if (row.environment[key] !== undefined && !id(row.environment[key])) fail(`invalid environment ${key}`);
-      }
+      validateActivityContext({ assistance: row.assistance, timing: row.timing, environment: row.environment }, errors);
     } else if (row.event === "activity-evaluation") {
       const submission = reference("submissionId", "activity-submission", row);
       if (!submission) continue;

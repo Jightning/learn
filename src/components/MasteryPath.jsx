@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { loadMasteryPath, availableEnvironment, setEnvironment, pathSettings, savePathSettings, exposeLesson, actionHref, reasonText } from '../lib/mastery-path.js';
 import { normalizeQuestion } from '../lib/questions.js';
 import QuestionCard from './QuestionCard.jsx';
+import ActivitySubmission from './ActivitySubmission.jsx';
 
 const names = { teach: 'Read lesson', guided: 'Guided practice', independent: 'Independent check', practical: 'Practical task', defense: 'Written defense', delayed: 'Delayed check', repair: 'Review explanation', 'request-review': 'Request review' };
 
@@ -51,9 +52,9 @@ export default function MasteryPath({ ctx, selected = null }) {
       {['teach','repair'].includes(action.kind) && <button class="dbtn" onClick={() => commit(() => exposeLesson(cid, action.lesson))}>I have read this lesson</button>}
       {['teach','repair'].includes(action.kind) && <p>Reading records exposure only; it does not establish mastery.</p>}
       {question && action.status === 'ready' && <QuestionCard key={action.id} item={normalizeQuestion(question, { id: activity.question, subId: activity.lesson })} ctx={ctx} sessionId={`path:${activity.id}:${activity.evidenceVersion}:${activity.rubricVersion}`} restore context={activity.delay ? "check" : "practice"} delayed={!!activity.delay} onResult={() => refresh(n => n + 1)} />}
-      {activity?.lab && <p>{activity.lab.instructions}</p>}
       {activity?.kind === 'written-defense' && <p>Explain your reasoning against the activity criteria: {activity.tests.flatMap(t => t.criteria).join(', ')}.</p>}
-      {activity && activity.kind !== 'question' && <p>Submission controls are not available yet. This activity remains incomplete.</p>}
+      {activity && ['external-lab','written-defense'].includes(activity.kind) && <ActivitySubmission key={activity.id} ctx={ctx} activity={activity} state={state} onChange={() => refresh(n => n + 1)} />}
+      {activity && !['question','external-lab','written-defense'].includes(activity.kind) && <p>This adapter is unavailable. This activity remains incomplete.</p>}
       {question && !ctx.state.on && <p>Answer saving is disabled for this course.</p>}
       {question && <p>Practice answers alone do not certify this activity; verified activity evidence is required.</p>}
     </article>}

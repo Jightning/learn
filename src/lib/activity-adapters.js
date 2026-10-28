@@ -26,7 +26,7 @@ export function validateAdapterRequest(value, activity, errors = []) {
   for (const key of bindings.slice(0, 5)) if (!id(value[key])) fail(`missing ${key}`);
   if (value.activityId !== activity.id || !hash(value.submissionHash)) fail("activity identity or submission hash mismatch");
   for (const key of bindings.slice(5)) if (value[key] !== activity[key]) fail(`${key} mismatch`);
-  if (shape(value.input, ["text", "artifacts"])) {
+  if (shape(value.input, ["text", "artifacts", "followup"])) {
     const input = value.input;
     if (input.text !== undefined && (typeof input.text !== "string" || input.text.length > ADAPTER_LIMITS.text)) fail("text exceeds bounded input contract");
     if (input.artifacts !== undefined) {
@@ -39,6 +39,14 @@ export function validateAdapterRequest(value, activity, errors = []) {
         if (activity.artifact && !activity.artifact.mediaTypes.includes(artifact.mediaType)) fail("artifact media type not allowed");
       }
       if (Array.isArray(input.artifacts) && new Set(input.artifacts.map(x => x?.id)).size !== input.artifacts.length) fail("duplicate artifact id");
+    }
+    if (input.followup !== undefined) {
+      if (activity.kind !== "written-defense") fail("follow-up requires a written defense");
+      if (shape(input.followup, ["submissionHash", "prompt", "reviewerId"])) {
+        if (!hash(input.followup.submissionHash) || !id(input.followup.reviewerId) ||
+          typeof input.followup.prompt !== "string" || !input.followup.prompt.trim() || input.followup.prompt.length > 2048)
+          fail("invalid bounded reviewer follow-up");
+      }
     }
     if (!(typeof input.text === "string" && input.text.trim()) && !input.artifacts?.length) fail("committed input is required");
     if (["question", "written-defense"].includes(activity.kind) && !(typeof input.text === "string" && input.text.trim())) fail("text input is required for this adapter");

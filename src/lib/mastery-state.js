@@ -1,6 +1,6 @@
 import { getItem, setItem, keys, logRows, mergeRows, removeItem } from './store.js';
 import { deviceId } from './device.js';
-import { activityInputHash, activityEventCompatibility, validateActivityHistory, ACTIVITY_EVENT_LIMITS } from './activity-events.js';
+import { activityInputHash, activityEventCompatibility, validateActivityHistory, validateActivityContext, ACTIVITY_EVENT_LIMITS } from './activity-events.js';
 import { validateAdapterRequest } from './activity-adapters.js';
 import { projectMasteryHistory } from './mastery-projection.js';
 import { masterySnapshot, snapshotIdentity, resolveMasterySnapshot } from './mastery-snapshot.js';
@@ -154,23 +154,24 @@ function validateDraft(record, definitions) {
     attemptId: 'draft', nonce: 'draft', submissionHash: '0'.repeat(64), input,
     contentVersion: activity.contentVersion, evidenceVersion: activity.evidenceVersion, rubricVersion: activity.rubricVersion };
   if (!validateAdapterRequest(request, activity, errors)) throw new Error(errors.join('; '));
-  if (Object.keys(value).some(k => !['definitionId', 'activityId', 'started', 'input'].includes(k))) throw new Error('Unknown activity draft field');
+  if (value.context !== undefined && !validateActivityContext(value.context, errors, { draft: true })) throw new Error(errors.join('; '));
+  if (Object.keys(value).some(k => !['definitionId', 'activityId', 'started', 'input', 'context'].includes(k))) throw new Error('Unknown activity draft field');
   return { cid, identity, C };
 }
 
 export function saveActivityDraft(cid, C, activityId, input, options = {}) {
-  const value = structuredClone(input), course = structuredClone(C);
-  return serialize(() => saveDraft(cid, course, activityId, value, options));
+  const value = structuredClone(input), course = structuredClone(C), settings = structuredClone(options);
+  return serialize(() => saveDraft(cid, course, activityId, value, settings));
 }
 
-async function saveDraft(cid, C, activityId, input, { now = Date.now() } = {}) {
+async function saveDraft(cid, C, activityId, input, { now = Date.now(), context } = {}) {
   checkCid(cid);
   if (!stamp(now) || now <= cutoff(cid)) throw new Error('Draft time must follow course reset');
   const snapshot = masterySnapshot(C), definitionId = await snapshotIdentity(snapshot);
   const compatibility = await activityInputHash(await activityEventCompatibility(C, activityId));
   const identity = draftIdentity(activityId, compatibility), key = learnerKey(`mastery:${cid}`, 'activity-draft', identity);
   const prior = readActivityDrafts(cid).find(p => p.k === key);
-  const value = input === null ? null : { definitionId, activityId, started: prior?.value && prior.ts > cutoff(cid) && prior.value.started > cutoff(cid) ? prior.value.started : now, input };
+  const value = input === null ? null : { definitionId, activityId, started: prior?.value && prior.ts > cutoff(cid) && prior.value.started > cutoff(cid) ? prior.value.started : now, input, ...(context === undefined ? {} : { context }) };
   const candidate = { k: key, ts: Math.max(now, (prior?.ts || 0) + 1), rev: '0'.repeat(36), value };
   const definitions = definitionsMap(); definitions.set(`${definitionPrefix(cid)}${definitionId}`, snapshot);
   validateDraft(candidate, definitions);

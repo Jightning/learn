@@ -50,7 +50,7 @@ for (const width of [1440, 390]) test(`required path is reachable, truthful and 
     await page.locator('[data-qid="ledger-total"]').waitFor();
     assert.equal(await page.locator('[data-activity-id="repair"] .qresult').count(), 0, 'a different activity must not reuse a completed answer');
     await page.goto(`${server.origin}/#/demo/activity/lab`);
-    await page.getByText(/Submission controls are not available/).waitFor();
+    await page.getByRole('button', { name: 'Commit submission', exact: true }).waitFor();
     await page.goto(`${server.origin}/#/demo/activity/defense`);
     await page.getByText(/Explain your reasoning against/).waitFor();
     await page.goto(`${server.origin}/#/demo/activity/delayed`);
