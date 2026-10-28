@@ -559,7 +559,7 @@ function isPlainObject$1(data) {
 	const prototype = Object.getPrototypeOf(data);
 	return prototype === null || prototype === Object.prototype;
 }
-function pick(object, keys) {
+function pick$1(object, keys) {
 	const result = {};
 	for (const key of keys) if (object[key] !== void 0) result[key] = object[key];
 	return result;
@@ -2504,8 +2504,8 @@ function loadDocuments(input, options = {}) {
 	const source = String(input);
 	const PARSER_OPT_KEYS = Object.keys(DEFAULT_PARSER_OPTIONS);
 	const CONSTRUCTOR_OPT_KEYS = Object.keys(DEFAULT_CONSTRUCTOR_OPTIONS);
-	return constructFromEvents(parseEvents(source, pick(opts, PARSER_OPT_KEYS)), {
-		...pick(opts, CONSTRUCTOR_OPT_KEYS),
+	return constructFromEvents(parseEvents(source, pick$1(opts, PARSER_OPT_KEYS)), {
+		...pick$1(opts, CONSTRUCTOR_OPT_KEYS),
 		source
 	});
 }
@@ -3302,7 +3302,7 @@ function dump(input, options = {}) {
 	}
 	opts.transform(documents);
 	return present$1(documents, {
-		...pick(opts, Object.keys(DEFAULT_PRESENTER_OPTIONS)),
+		...pick$1(opts, Object.keys(DEFAULT_PRESENTER_OPTIONS)),
 		schema: opts.schema
 	});
 }
@@ -3322,6 +3322,582 @@ COLLECTION_STYLE.FLOW;
 CHOMPING_MODE.CLIP;
 CHOMPING_MODE.STRIP;
 CHOMPING_MODE.KEEP;
+//#endregion
+//#region src/lib/outcome-weights.js
+function allocateOutcomeWeights(entries, budgets) {
+	const rawTotal = Object.values(budgets).reduce((sum, weight) => sum + weight, 0);
+	const scale = Number.isFinite(rawTotal) ? 1 : Math.max(...Object.values(budgets));
+	const total = scale === 1 ? rawTotal : Object.values(budgets).reduce((sum, weight) => sum + weight / scale, 0);
+	const outcomes = Object.fromEntries(Object.entries(budgets).map(([id, weight]) => [id, weight / scale / total]));
+	const weights = Object.create(null);
+	for (const [id, budget] of Object.entries(outcomes)) {
+		const members = entries.filter((entry) => entry.scoreFor === id);
+		const rawSum = members.reduce((n, entry) => n + entry.importance, 0);
+		const max = Number.isFinite(rawSum) ? 1 : Math.max(...members.map((entry) => entry.importance));
+		const sum = max === 1 ? rawSum : members.reduce((n, entry) => n + entry.importance / max, 0);
+		for (const entry of members) weights[entry.id] = budget * (entry.importance / max) / sum;
+	}
+	return {
+		outcomes,
+		weights
+	};
+}
+const MASTERY_CAPABILITIES = Object.freeze({
+	"mastery.targets": 1,
+	"mastery.policies": 1
+});
+const map$3 = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+const text$3 = (x) => typeof x === "string" && !!x.trim();
+const level = (x) => Number.isInteger(x) && x >= 1 && x <= 7;
+const positive = (x) => typeof x === "number" && Number.isFinite(x) && x > 0;
+const own$2 = (x, id) => x != null && Object.hasOwn(x, id);
+const policyRange = {
+	P3: [
+		1,
+		3,
+		2,
+		1
+	],
+	P45: [
+		4,
+		5,
+		3,
+		2
+	],
+	P67: [
+		6,
+		7,
+		4,
+		2
+	]
+};
+function validator$1(errors) {
+	const fail = (at, message) => errors.push(`mastery/${at}: ${message}`);
+	const shape = (value, keys, at) => {
+		if (!map$3(value)) {
+			fail(at, "must be a mapping");
+			return false;
+		}
+		for (const key of Object.keys(value)) if (!keys.includes(key)) fail(at, `unknown key ${key}`);
+		return true;
+	};
+	const ids = (value, at) => {
+		if (!Array.isArray(value) || !value.length || value.some((x) => !text$3(x)) || new Set(value).size !== value.length) {
+			fail(at, "must list distinct nonempty IDs");
+			return [];
+		}
+		return value;
+	};
+	const catalog = (value, at) => {
+		if (!Array.isArray(value) || !value.length) {
+			fail(at, "must be a nonempty list");
+			return [];
+		}
+		const seen = /* @__PURE__ */ new Set();
+		return value.filter((item) => {
+			if (!map$3(item) || !text$3(item.id)) {
+				fail(at, "entry needs a stable id");
+				return false;
+			}
+			if (seen.has(item.id)) {
+				fail(at, `duplicate id ${item.id}`);
+				return false;
+			}
+			seen.add(item.id);
+			return true;
+		});
+	};
+	return {
+		fail,
+		shape,
+		ids,
+		catalog
+	};
+}
+/** Unsupported required capabilities fail closed; optional gaps stay explicit.
+This validates declarations only and never establishes evaluator trust. */
+function validateMasteryManifest(value, errors = [], supported = MASTERY_CAPABILITIES) {
+	const start = errors.length, { fail, shape } = validator$1(errors);
+	if (!shape(value, [
+		"schemaVersion",
+		"required",
+		"optional"
+	], "capabilities")) return null;
+	if (value.schemaVersion !== 1) fail("capabilities", "unsupported schemaVersion; update the reader or course");
+	const unavailable = [];
+	for (const key of ["required", "optional"]) {
+		const entries = value[key] ?? {};
+		if (!map$3(entries)) {
+			fail("capabilities", `${key} must map capability IDs to versions`);
+			continue;
+		}
+		for (const [id, version] of Object.entries(entries)) {
+			if (!text$3(id) || !Number.isInteger(version) || version < 1) fail("capabilities", `invalid version for ${id}`);
+			if (key === "optional" && own$2(value.required, id)) fail("capabilities", `${id} cannot be both required and optional`);
+			if (!own$2(supported, id) || supported[id] !== version) {
+				if (key === "required") fail("capabilities", `unsupported required capability ${id}@${version}; update the reader or course`);
+				else unavailable.push({
+					id,
+					version
+				});
+			}
+		}
+	}
+	return errors.length === start ? {
+		...value,
+		unavailable
+	} : null;
+}
+/** Pure opt-in compiler. C supplies canonical objectives and resolved native
+questionSkills (questionTypes for legacy callers); no loader or state writes.
+Invalid definitions produce no usable index, even if the caller keeps errors. */
+function compileMastery(C, source, errors = [], supported = MASTERY_CAPABILITIES) {
+	if (source === void 0) return null;
+	const start = errors.length, { fail, shape, ids, catalog } = validator$1(errors);
+	if (!shape(source, [
+		"manifest",
+		"targets",
+		"policies"
+	], "source")) return null;
+	const manifest = validateMasteryManifest(source.manifest, errors, supported);
+	for (const id of Object.keys(MASTERY_CAPABILITIES)) if (source.manifest?.required?.[id] !== 1) fail("capabilities", `declare ${id}@1 as required`);
+	for (const [name, key] of [["targets", "roots"], ["policies", "policies"]]) {
+		if (!shape(source[name], ["schemaVersion", key], name)) continue;
+		if (source[name].schemaVersion !== 1) fail(name, "unsupported schemaVersion; update the reader or course");
+	}
+	const policies = Object.create(null), roots = Object.create(null), skills = C.questionSkills ?? C.questionTypes ?? {};
+	for (const raw of catalog(source.policies?.policies, "policies")) {
+		const at = `policy ${raw.id}`;
+		shape(raw, [
+			"id",
+			"version",
+			"minGroups",
+			"minSessions",
+			"noncriticalFloor",
+			"delayDays",
+			"unfamiliarConstraint",
+			"criteria",
+			"entails"
+		], at);
+		const range = own$2(policyRange, raw.id) ? policyRange[raw.id] : null;
+		if (!range) fail(at, "unknown policy; use P3, P45 or P67");
+		if (!Number.isInteger(raw.version) || raw.version < 1) fail(at, "version must be a positive integer");
+		for (const [key, floor] of [["minGroups", range?.[2]], ["minSessions", range?.[3]]]) if (!Number.isInteger(raw[key]) || raw[key] < (floor ?? 1)) fail(at, `${key} is below the policy minimum`);
+		if (raw.noncriticalFloor !== .8) fail(at, "noncriticalFloor must be 0.8; critical criteria always all pass");
+		if (!Array.isArray(raw.delayDays) || !raw.delayDays.length || raw.delayDays.some((day, i, xs) => !positive(day) || i > 0 && day <= xs[i - 1])) fail(at, "delayDays must be increasing positive elapsed-day intervals after qualifying evidence/repair");
+		if (typeof raw.unfamiliarConstraint !== "boolean" || raw.id === "P67" && !raw.unfamiliarConstraint) fail(at, "unfamiliarConstraint must be boolean and required for P67");
+		const criteria = Object.create(null);
+		for (const criterion of catalog(raw.criteria, `${at} criteria`)) {
+			shape(criterion, [
+				"id",
+				"standard",
+				"critical"
+			], `${at} criterion ${criterion.id}`);
+			if (!text$3(criterion.standard) || typeof criterion.critical !== "boolean") fail(at, "criteria need a standard and explicit critical boolean");
+			criteria[criterion.id] = { ...criterion };
+		}
+		const entails = raw.entails ?? [], pairs = /* @__PURE__ */ new Set();
+		if (!Array.isArray(entails)) fail(at, "entails must list explicit {from, to} anchor rules");
+		else for (const rule of entails) {
+			if (!shape(rule, ["from", "to"], `${at} entails`)) continue;
+			if (!level(rule.from) || !level(rule.to) || rule.from <= rule.to) fail(at, "entailment must descend between valid anchors");
+			const key = `${rule.from}:${rule.to}`;
+			if (pairs.has(key)) fail(at, "duplicate entailment");
+			pairs.add(key);
+		}
+		policies[raw.id] = {
+			...raw,
+			criteria,
+			entails: Array.isArray(entails) ? entails.map((x) => ({ ...x })) : []
+		};
+	}
+	const skillRoots = Object.create(null), outcomeRoots = Object.create(null);
+	for (const raw of catalog(source.targets?.roots, "targets")) {
+		const at = `root ${raw.id}`;
+		shape(raw, [
+			"id",
+			"label",
+			"semanticVersion",
+			"requiredAnchor",
+			"importance",
+			"skills",
+			"scoreFor",
+			"targetOwnerModule",
+			"claimRequirement",
+			"policy",
+			"anchors",
+			"facets"
+		], at);
+		for (const key of ["label", "targetOwnerModule"]) if (!text$3(raw[key])) fail(at, `${key} is required`);
+		if (!Number.isInteger(raw.semanticVersion) || raw.semanticVersion < 1) fail(at, "semanticVersion must be a positive integer");
+		if (!level(raw.requiredAnchor)) fail(at, "requiredAnchor must be an integer 1–7");
+		if (!Number.isInteger(raw.importance) || raw.importance < 1 || raw.importance > 10) fail(at, "importance must be an integer 1–10");
+		if (!["none", "historical-evidence"].includes(raw.claimRequirement)) fail(at, "claimRequirement must explicitly be none or historical-evidence; authored achievement is forbidden");
+		if (!text$3(raw.scoreFor) || !own$2(C.objectives, raw.scoreFor)) fail(at, `unknown scoring objective ${raw.scoreFor}`);
+		const linked = ids(raw.skills, `${at} skills`);
+		for (const id of linked) {
+			if (!own$2(skills, id)) {
+				fail(at, `unknown native skill ${id}`);
+				continue;
+			}
+			if (skills[id].scoreFor !== raw.scoreFor) fail(at, `contradictory scoring ownership for skill ${id}; split separately observed attribution instead`);
+			(skillRoots[id] ??= []).push(raw.id);
+		}
+		const policy = policies[raw.policy], range = own$2(policyRange, raw.policy) ? policyRange[raw.policy] : null;
+		if (!policy) fail(at, `unknown policy ${raw.policy}`);
+		if (range && (raw.requiredAnchor < range[0] || raw.requiredAnchor > range[1])) fail(at, "policy does not match required anchor");
+		const facets = Object.create(null);
+		for (const facet of catalog(raw.facets, `${at} facets`)) {
+			const where = `${at} facet ${facet.id}`;
+			shape(facet, [
+				"id",
+				"standard",
+				"skills",
+				"anchors"
+			], where);
+			if (!text$3(facet.standard)) fail(where, "standard is required");
+			const facetSkills = ids(facet.skills, `${where} skills`);
+			for (const id of facetSkills) if (!linked.includes(id)) fail(where, `dangling native skill ${id}`);
+			const anchors = Object.create(null);
+			if (!Array.isArray(facet.anchors) || !facet.anchors.length) fail(where, "anchors must be a nonempty list");
+			else for (const anchor of facet.anchors) {
+				if (!shape(anchor, [
+					"level",
+					"standard",
+					"criteria"
+				], `${where} anchor`)) continue;
+				if (!level(anchor.level) || own$2(anchors, anchor.level)) fail(where, "invalid or duplicate anchor");
+				if (!text$3(anchor.standard)) fail(where, "anchor standard is required");
+				for (const id of ids(anchor.criteria, `${where} criteria`)) if (!own$2(policy?.criteria, id)) fail(where, `unknown policy criterion ${id}`);
+				anchors[anchor.level] = {
+					...anchor,
+					criteria: Array.isArray(anchor.criteria) ? [...anchor.criteria] : []
+				};
+			}
+			facets[facet.id] = {
+				...facet,
+				skills: facetSkills,
+				anchors
+			};
+		}
+		const anchors = Object.create(null);
+		if (!Array.isArray(raw.anchors) || !raw.anchors.length) fail(at, "anchors must be a nonempty list");
+		else for (const anchor of raw.anchors) {
+			if (!shape(anchor, [
+				"level",
+				"standard",
+				"facets"
+			], `${at} anchor`)) continue;
+			if (!level(anchor.level) || own$2(anchors, anchor.level)) fail(at, "invalid or duplicate anchor");
+			if (!text$3(anchor.standard)) fail(at, "anchor standard is required");
+			for (const id of ids(anchor.facets, `${at} anchor facets`)) if (!own$2(facets, id) || !own$2(facets[id].anchors, anchor.level)) fail(at, `dangling facet/anchor ${id}@${anchor.level}`);
+			anchors[anchor.level] = {
+				...anchor,
+				facets: Array.isArray(anchor.facets) ? [...anchor.facets] : []
+			};
+		}
+		if (!own$2(anchors, raw.requiredAnchor)) fail(at, "required anchor is not defined");
+		for (const facet of Object.values(facets)) for (const n of Object.keys(facet.anchors)) if (!anchors[n]?.facets.includes(facet.id)) fail(at, `unused facet anchor ${facet.id}@${n}`);
+		(outcomeRoots[raw.scoreFor] ??= []).push(raw.id);
+		roots[raw.id] = {
+			...raw,
+			skills: linked,
+			facets,
+			anchors
+		};
+	}
+	const budgets = Object.fromEntries(Object.keys(outcomeRoots).map((id) => [id, C.objectives?.[id]?.importance ?? 1]));
+	for (const [id, weight] of Object.entries(budgets)) if (!positive(weight)) fail("targets", `objective ${id} importance must be positive finite weight`);
+	if (errors.length !== start) return null;
+	const allocation = allocateOutcomeWeights(Object.values(roots).map((root) => ({
+		id: root.id,
+		scoreFor: root.scoreFor,
+		importance: root.importance ** 2
+	})), budgets);
+	return {
+		schemaVersion: 1,
+		manifest,
+		roots,
+		policies,
+		skillRoots,
+		outcomeRoots,
+		outcomeWeights: allocation.outcomes,
+		rootWeights: allocation.weights
+	};
+}
+//#endregion
+//#region src/lib/activity-schema.js
+const ACTIVITY_ADAPTERS = Object.freeze({
+	question: 1,
+	"external-submission": 1,
+	"written-defense": 1
+});
+const ACTIVITY_CAPABILITIES = Object.freeze({
+	...MASTERY_CAPABILITIES,
+	"mastery.activities": 1,
+	...Object.fromEntries(Object.entries(ACTIVITY_ADAPTERS).map(([id, version]) => [`adapter.${id}`, version]))
+});
+const ADAPTER_LIMITS = Object.freeze({
+	text: 32768,
+	artifacts: 8,
+	artifactBytes: 1e8,
+	criteria: 64
+});
+const mapping$3 = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+const text$2 = (x) => typeof x === "string" && !!x.trim() && x.length <= 512;
+const version$1 = (x) => Number.isInteger(x) && x > 0;
+const anchor = (x) => version$1(x) && x <= 7;
+const own$1 = (x, key) => x != null && Object.hasOwn(x, key);
+const hash = (x) => typeof x === "string" && /^[a-f0-9]{64}$/.test(x);
+const https = (x) => {
+	try {
+		const u = new URL(x);
+		return u.protocol === "https:" && !u.username && !u.password;
+	} catch {
+		return false;
+	}
+};
+const kinds = {
+	question: "question",
+	"external-lab": "external-submission",
+	"written-defense": "written-defense",
+	audio: "audio",
+	"trusted-evaluation": "trusted-evaluation"
+};
+function validator(errors) {
+	const fail = (at, message) => errors.push(`activities/${at}: ${message}`);
+	const shape = (x, keys, at) => {
+		if (!mapping$3(x)) {
+			fail(at, "must be a mapping");
+			return false;
+		}
+		for (const key of Object.keys(x)) if (!keys.includes(key)) fail(at, `unknown key ${key}`);
+		return true;
+	};
+	const list = (x, at, empty = false) => {
+		if (!Array.isArray(x) || !empty && !x.length || x.some((id) => !text$2(id)) || new Set(x).size !== x.length) {
+			fail(at, "must list distinct nonempty IDs");
+			return [];
+		}
+		return x;
+	};
+	return {
+		fail,
+		shape,
+		list
+	};
+}
+/** Compile already-loaded definitions against canonical native and mastery indexes.
+* Lesson/question IDs come from the caller's resolved indexes, not file paths.
+* Missing optional adapters remain visible gaps; there is no runtime execution. */
+function compileActivities(C, mastery, source, errors = [], adapters = ACTIVITY_ADAPTERS) {
+	if (source === void 0) return null;
+	const start = errors.length, { fail, shape, list } = validator(errors);
+	if (!shape(source, [
+		"manifest",
+		"schemaVersion",
+		"activities"
+	], "source")) return null;
+	const supported = {
+		...MASTERY_CAPABILITIES,
+		"mastery.activities": 1,
+		...Object.fromEntries(Object.entries(adapters).map(([id, n]) => [`adapter.${id}`, n]))
+	};
+	const manifest = validateMasteryManifest(source.manifest, errors, supported);
+	if (source.manifest?.required?.["mastery.activities"] !== 1) fail("manifest", "declare mastery.activities@1 as required");
+	if (source.schemaVersion !== 1) fail("source", "unsupported schemaVersion; update the reader or course");
+	if (!mastery?.roots || !mastery?.policies) fail("source", "validated mastery index is required");
+	if (!Array.isArray(source.activities)) {
+		fail("source", "activities must be a list");
+		return null;
+	}
+	const activities = Object.create(null), skillActivities = Object.create(null), rootActivities = Object.create(null);
+	for (const raw of source.activities) {
+		if (!mapping$3(raw) || !text$2(raw.id)) {
+			fail("entry", "stable id is required");
+			continue;
+		}
+		const at = raw.id;
+		if (own$1(activities, at)) {
+			fail(at, "duplicate activity id");
+			continue;
+		}
+		shape(raw, [
+			"id",
+			"contentVersion",
+			"evidenceVersion",
+			"kind",
+			"lesson",
+			"required",
+			"wave",
+			"prerequisites",
+			"after",
+			"tests",
+			"group",
+			"support",
+			"rubricVersion",
+			"adapter",
+			"question",
+			"lab",
+			"timing",
+			"environment",
+			"fallback",
+			"delay",
+			"artifact",
+			"checkVisibility"
+		], at);
+		for (const key of [
+			"contentVersion",
+			"evidenceVersion",
+			"rubricVersion",
+			"wave"
+		]) if (!version$1(raw[key])) fail(at, `${key} must be a positive integer`);
+		if (!own$1(kinds, raw.kind)) fail(at, "unsupported activity kind");
+		if (!text$2(raw.lesson) || !own$1(C.subsections, raw.lesson)) fail(at, "unknown lesson");
+		if (typeof raw.required !== "boolean") fail(at, "required must be boolean");
+		if (!text$2(raw.group)) fail(at, "honest task group is required");
+		if (![
+			"none",
+			"guided",
+			"reference",
+			"collaborative"
+		].includes(raw.support)) fail(at, "invalid allowed support");
+		if (![
+			"public",
+			"private",
+			"review"
+		].includes(raw.checkVisibility)) fail(at, "invalid checkVisibility");
+		let available = false;
+		if (shape(raw.adapter, ["id", "version"], `${at} adapter`)) {
+			const { id, version: n } = raw.adapter;
+			if (!text$2(id) || !version$1(n) || id !== kinds[raw.kind]) fail(at, "adapter ID/version must match activity kind");
+			const declaration = `adapter.${id}`;
+			if (source.manifest?.required?.[declaration] !== n && source.manifest?.optional?.[declaration] !== n) fail(at, "adapter must be declared with its version in manifest");
+			available = own$1(adapters, id) && adapters[id] === n;
+			if (raw.required && !available) fail(at, `unsupported required adapter ${id}@${n}; update the reader or course`);
+		}
+		const prerequisites = raw.prerequisites ?? [];
+		if (!Array.isArray(prerequisites)) fail(at, "prerequisites must be a list");
+		else {
+			const seen = /* @__PURE__ */ new Set();
+			for (const pre of prerequisites) {
+				if (!shape(pre, [
+					"skill",
+					"root",
+					"minAnchor"
+				], `${at} prerequisite`)) continue;
+				const root = mastery?.roots?.[pre.root];
+				if (!own$1(C.questionSkills ?? C.questionTypes, pre.skill) || !root?.skills.includes(pre.skill) || !own$1(root?.anchors, pre.minAnchor) || !anchor(pre.minAnchor)) fail(at, "unknown prerequisite skill/root/anchor");
+				const key = `${pre.root}:${pre.skill}`;
+				if (seen.has(key)) fail(at, "duplicate prerequisite");
+				seen.add(key);
+			}
+		}
+		const tested = /* @__PURE__ */ new Set();
+		if (!Array.isArray(raw.tests) || !raw.tests.length || raw.tests.length > ADAPTER_LIMITS.criteria) fail(at, "tests needs 1–64 qualified attributions");
+		else for (const target of raw.tests) {
+			if (!shape(target, [
+				"root",
+				"facet",
+				"skill",
+				"anchor",
+				"criteria",
+				"unfamiliarConstraint"
+			], `${at} tests`)) continue;
+			if (target.unfamiliarConstraint !== void 0 && typeof target.unfamiliarConstraint !== "boolean") fail(at, "unfamiliarConstraint must be boolean");
+			const facet = (mastery?.roots?.[target.root])?.facets?.[target.facet], demand = facet?.anchors?.[target.anchor];
+			if (!anchor(target.anchor) || !demand || !facet.skills.includes(target.skill)) fail(at, "unknown tested root/facet/skill/anchor");
+			for (const id of list(target.criteria, `${at} criteria`)) if (!demand?.criteria.includes(id)) fail(at, `unknown qualified criterion ${id}`);
+			const key = `${target.root}:${target.facet}:${target.skill}:${target.anchor}`;
+			if (tested.has(key)) fail(at, "duplicate tested attribution");
+			tested.add(key);
+			(rootActivities[target.root] ??= []).push(at);
+			(skillActivities[target.skill] ??= []).push(at);
+		}
+		const after = list(raw.after ?? [], `${at} after`, true);
+		if (raw.question !== void 0 || raw.kind === "question") {
+			if (raw.kind !== "question" || !text$2(raw.question) || !own$1(C.questionBank, raw.question)) fail(at, "unknown or misplaced question reference");
+		}
+		if (raw.lab !== void 0 || raw.kind === "external-lab") {
+			if (shape(raw.lab, [
+				"id",
+				"version",
+				"url",
+				"sha256",
+				"instructions",
+				"command",
+				"cleanup"
+			], `${at} lab`)) {
+				if (raw.kind !== "external-lab" || !text$2(raw.lab.id) || !text$2(raw.lab.version) || !https(raw.lab.url) || !hash(raw.lab.sha256) || !text$2(raw.lab.instructions) || !text$2(raw.lab.command)) fail(at, "lab needs public package identity/version/HTTPS URL/SHA-256/instructions/command");
+				if (raw.lab.cleanup !== void 0 && !text$2(raw.lab.cleanup)) fail(at, "cleanup must be instructions");
+			}
+		}
+		if (raw.timing !== void 0 && shape(raw.timing, [
+			"active",
+			"setup",
+			"feedback"
+		], `${at} timing`)) {
+			for (const [key, range] of Object.entries(raw.timing)) if (!Array.isArray(range) || range.length !== 2 || range.some((n) => !Number.isFinite(n) || n < 0 || n > 604800) || range[1] < range[0]) fail(at, `invalid ${key} seconds range`);
+		}
+		if (raw.environment !== void 0 && shape(raw.environment, [
+			"capabilities",
+			"instructions",
+			"cleanup"
+		], `${at} environment`)) {
+			list(raw.environment.capabilities, `${at} environment capabilities`);
+			for (const key of ["instructions", "cleanup"]) if (raw.environment[key] !== void 0 && !text$2(raw.environment[key])) fail(at, `invalid environment ${key}`);
+		}
+		if (raw.fallback !== void 0 && !text$2(raw.fallback)) fail(at, "fallback must reference an activity");
+		if (raw.delay !== void 0 && shape(raw.delay, [
+			"activity",
+			"root",
+			"days",
+			"after"
+		], `${at} delay`)) {
+			const root = mastery?.roots?.[raw.delay.root], policy = mastery?.policies?.[root?.policy];
+			if (!text$2(raw.delay.activity) || !policy?.delayDays.includes(raw.delay.days) || raw.delay.after !== "qualifying-evidence-or-repair") fail(at, "delay must reference qualifying evidence/repair and a root policy interval");
+		}
+		if (raw.artifact !== void 0 && shape(raw.artifact, ["mediaTypes", "maxBytes"], `${at} artifact`)) {
+			list(raw.artifact.mediaTypes, `${at} mediaTypes`);
+			if (!version$1(raw.artifact.maxBytes) || raw.artifact.maxBytes > ADAPTER_LIMITS.artifactBytes) fail(at, "artifact size exceeds bounded reference contract");
+		}
+		activities[at] = {
+			...structuredClone(raw),
+			prerequisites: structuredClone(prerequisites),
+			after: [...after],
+			availability: available ? "available" : "unavailable"
+		};
+	}
+	const visiting = /* @__PURE__ */ new Set(), visited = /* @__PURE__ */ new Set();
+	const visit = (id) => {
+		if (visiting.has(id)) {
+			fail(id, "activity dependency cycle");
+			return;
+		}
+		if (visited.has(id)) return;
+		visiting.add(id);
+		const item = activities[id];
+		for (const dep of [
+			...item.after,
+			item.fallback,
+			item.delay?.activity
+		].filter(Boolean)) if (!own$1(activities, dep)) fail(id, `unknown activity reference ${dep}`);
+		else visit(dep);
+		if (item.delay && !(Array.isArray(activities[item.delay.activity]?.tests) && activities[item.delay.activity].tests.some((t) => t?.root === item.delay.root))) fail(id, "delay source must test the referenced root");
+		visiting.delete(id);
+		visited.add(id);
+	};
+	for (const id of Object.keys(activities)) visit(id);
+	if (errors.length !== start) return null;
+	for (const index of [rootActivities, skillActivities]) for (const id of Object.keys(index)) index[id] = [...new Set(index[id])];
+	return {
+		schemaVersion: 1,
+		manifest,
+		activities,
+		rootActivities,
+		skillActivities
+	};
+}
 //#endregion
 //#region node_modules/marked/lib/marked.esm.js
 /**
@@ -19794,16 +20370,13 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 				types: candidates.filter((t) => t.scoreFor === id).map((t) => t.id)
 			}];
 		}));
-		const total = Object.values(outcomes).reduce((n, o) => n + o.weight, 0);
-		const typeWeights = dict();
-		for (const o of Object.values(outcomes)) {
-			const values = o.types.map((id) => weight(own(weights, id) ? weights[id] : types[id].importance ?? 1, id));
-			const sum = values.reduce((a, b) => a + b, 0);
-			o.weight /= total;
-			o.types.forEach((id, i) => {
-				typeWeights[id] = o.weight * values[i] / sum;
-			});
-		}
+		const allocation = allocateOutcomeWeights(candidates.map((t) => ({
+			id: t.id,
+			scoreFor: t.scoreFor,
+			importance: weight(own(weights, t.id) ? weights[t.id] : t.importance ?? 1, t.id)
+		})), Object.fromEntries(Object.values(outcomes).map((o) => [o.id, o.weight])));
+		const typeWeights = allocation.weights;
+		for (const o of Object.values(outcomes)) o.weight = allocation.outcomes[o.id];
 		if (!candidates.length) fail(at, "no usable assessed types");
 		for (const t of candidates) if (!Object.values(bank).some((q) => q.skills.includes(t.id) && q.use !== "diagnostic" && !q.quarantined)) warnings.push(`questions/${at}: assessed type ${t.id} has no usable items`);
 		const requirements = validateEvidenceRequirements(raw.requirements, candidates.map((t) => t.id), errors, `questions/${at}`);
@@ -19856,6 +20429,220 @@ function resolveQuestionBank(C, source = {}, errors = []) {
 		errors,
 		warnings
 	};
+}
+//#endregion
+//#region src/lib/mastery-versions.js
+const pick = (value, keys) => Object.fromEntries(keys.filter((k) => value?.[k] !== void 0).map((k) => [k, value[k]]));
+const sorted = (xs) => [...xs].sort((a, b) => {
+	const left = bankSignature(a), right = bankSignature(b);
+	return left < right ? -1 : left > right ? 1 : 0;
+});
+const skills = (C, ids) => sorted(ids.map((id) => pick(C.questionSkills[id], [
+	"id",
+	"task",
+	"standard",
+	"scoreFor"
+])));
+const questionContent = (q) => q && {
+	...pick(q, [
+		"id",
+		"q",
+		"response",
+		"stimulus",
+		"tries"
+	]),
+	steps: (q.steps || []).map((step) => pick(step, [
+		"id",
+		"q",
+		"response",
+		"stimulus"
+	]))
+};
+const questionEvidence = (q) => q && {
+	...pick(q, [
+		"skills",
+		"demand",
+		"support",
+		"group",
+		"demonstrates",
+		"representation",
+		"routes"
+	]),
+	steps: (q.steps || []).map((step) => pick(step, [
+		"id",
+		"skills",
+		"demand",
+		"support",
+		"route"
+	]))
+};
+/** Canonical signatures are compatibility identities, not artifact hashes or
+* trust proofs. Explicit versions AND semantic payloads participate so forgotten
+* version bumps cannot silently reuse changed task/rubric evidence. */
+function masterySignatures(C) {
+	const { roots, policies } = C.mastery;
+	for (const root of Object.values(roots)) {
+		root.contentSignature = bankSignature({
+			...pick(root, [
+				"id",
+				"semanticVersion",
+				"skills",
+				"scoreFor",
+				"anchors",
+				"facets"
+			]),
+			skills: skills(C, root.skills)
+		});
+		root.rubricSignature = bankSignature(policies[root.policy]);
+		root.organizationSignature = bankSignature(pick(root, [
+			"label",
+			"importance",
+			"requiredAnchor",
+			"targetOwnerModule",
+			"claimRequirement"
+		]));
+	}
+	for (const item of Object.values(C.activityIndex?.activities || {})) {
+		const question = C.questionBank[item.question];
+		const tested = sorted(item.tests.map((t) => {
+			const root = roots[t.root], facet = root.facets[t.facet];
+			return {
+				...t,
+				criteria: sorted(t.criteria),
+				semanticVersion: root.semanticVersion,
+				standard: facet.standard,
+				anchorStandard: facet.anchors[t.anchor].standard,
+				rootStandard: root.anchors[t.anchor].standard,
+				skill: skills(C, [t.skill])
+			};
+		}));
+		item.contentSignature = bankSignature({
+			...pick(item, [
+				"id",
+				"kind",
+				"contentVersion",
+				"lab",
+				"artifact",
+				"environment",
+				"adapter"
+			]),
+			question: questionContent(question),
+			tested
+		});
+		item.evidenceSignature = bankSignature({
+			content: item.contentSignature,
+			...pick(item, [
+				"evidenceVersion",
+				"group",
+				"support",
+				"tests",
+				"checkVisibility"
+			]),
+			question: questionEvidence(question)
+		});
+		item.rubricSignature = bankSignature({
+			rubricVersion: item.rubricVersion,
+			policies: sorted(item.tests.map((t) => {
+				const p = policies[roots[t.root].policy];
+				return {
+					...pick(p, [
+						"id",
+						"version",
+						"minGroups",
+						"minSessions",
+						"noncriticalFloor",
+						"delayDays",
+						"unfamiliarConstraint",
+						"entails"
+					]),
+					criteria: sorted(t.criteria.map((id) => p.criteria[id]))
+				};
+			}))
+		});
+		item.organizationSignature = bankSignature(pick(item, [
+			"lesson",
+			"required",
+			"wave",
+			"after",
+			"prerequisites",
+			"fallback",
+			"delay",
+			"timing"
+		]));
+	}
+	C.mastery.organizationSignature = bankSignature({
+		roots: Object.fromEntries(Object.values(roots).map((root) => [root.id, root.organizationSignature])),
+		skills: Object.fromEntries(Object.values(C.questionSkills).map((skill) => [skill.id, pick(skill, [
+			"teach",
+			"importance",
+			"scopes"
+		])])),
+		objectives: Object.fromEntries(Object.entries(C.objectives).map(([id, objective]) => [id, objective.importance ?? 1])),
+		lessons: C.sections.map((s) => ({
+			id: s.id,
+			subs: s.subs.map((u) => u.id)
+		})),
+		activities: Object.fromEntries(Object.values(C.activityIndex?.activities || {}).map((item) => [item.id, item.organizationSignature]))
+	});
+}
+//#endregion
+//#region src/lib/mastery-course.js
+const DATA$1 = /^mastery\/(manifest|targets|policies|activities)\.(ya?ml|json)$/;
+function readMasteryCollections(files, read, errors = []) {
+	const paths = Object.keys(files).filter((p) => p.startsWith("mastery/"));
+	if (!paths.length) return void 0;
+	const source = {};
+	for (const path of paths.sort()) {
+		const match = DATA$1.exec(path);
+		if (!match) {
+			errors.push(`${path}: unsupported mastery file; use public definition documents and external package references`);
+			continue;
+		}
+		if (Object.hasOwn(source, match[1])) {
+			errors.push(`${path}: duplicate mastery ${match[1]} document`);
+			continue;
+		}
+		source[match[1]] = read(path);
+	}
+	for (const key of [
+		"manifest",
+		"targets",
+		"policies"
+	]) if (!Object.hasOwn(source, key)) errors.push(`mastery/${key}: required document is missing`);
+	return source;
+}
+/** A private flag cannot make a distributed file secret. Reject conventional
+* private/evaluator trees in opted-in courses rather than quietly packing them. */
+function masteryDistributionIssues(paths) {
+	if (!paths.some((p) => p.startsWith("mastery/"))) return [];
+	return paths.filter((p) => p.split("/").some((part) => /^(private|evaluator|private-assessment)$/i.test(part))).map((p) => `${p}: private evaluator packages must be outside the course tree`);
+}
+function resolveMastery(C, files, read, errors = []) {
+	for (const key of ["mastery", "activityIndex"]) if (Object.hasOwn(C, key)) {
+		errors.push(`course: ${key} is derived; use mastery/ documents`);
+		delete C[key];
+	}
+	const start = errors.length;
+	const source = readMasteryCollections(files, read, errors);
+	if (source === void 0) return;
+	errors.push(...masteryDistributionIssues(Object.keys(files)));
+	const { activities, ...definitions } = source;
+	if (activities && Object.hasOwn(activities, "manifest")) errors.push("mastery/activities: use the shared mastery/manifest document");
+	const mastery = compileMastery(C, definitions, errors, ACTIVITY_CAPABILITIES);
+	const declared = source.manifest?.required?.["mastery.activities"] ?? source.manifest?.optional?.["mastery.activities"];
+	if (activities !== void 0 && declared !== 1) errors.push("mastery/manifest: declare mastery.activities@1 for activity definitions");
+	if (activities === void 0 && declared === 1) errors.push("mastery/activities: declared collection is missing");
+	const activityIndex = activities === void 0 ? null : compileActivities({
+		...C,
+		subsections: Object.fromEntries(C.sections.flatMap((s) => s.subs.map((u) => [u.id, u])))
+	}, mastery, {
+		...activities,
+		manifest: source.manifest
+	}, errors);
+	if (errors.length !== start || errors.length || !mastery || activities !== void 0 && !activityIndex) return;
+	C.mastery = mastery;
+	C.activityIndex = activityIndex;
+	masterySignatures(C);
 }
 //#endregion
 //#region src/lib/curriculum.js
@@ -20267,6 +21054,25 @@ function loadCourse(dir) {
 		}
 	}
 	resolveQuestionBank(C, questionSource, errors);
+	const masteryFiles = {};
+	const walkMastery = (path, relative) => {
+		if (!existsSync(path)) return;
+		for (const entry of readdirSync(path, { withFileTypes: true })) {
+			if (entry.name.startsWith(".") || ["sources", "node_modules"].includes(entry.name)) continue;
+			const full = join(path, entry.name), key = relative ? `${relative}/${entry.name}` : entry.name;
+			if (entry.isDirectory()) walkMastery(full, key);
+			else masteryFiles[key] = full;
+		}
+	};
+	if (existsSync(join(dir, "mastery"))) walkMastery(dir, "");
+	resolveMastery(C, masteryFiles, (key) => {
+		try {
+			return parseFile(masteryFiles[key]);
+		} catch (e) {
+			errors.push(`${key}: ${e.message.split("\n")[0]}`);
+			return null;
+		}
+	}, errors);
 	if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
 	return {
 		course: C,
@@ -48860,6 +49666,123 @@ function prerequisiteEvidenceSignature(plan, subsectionId, subsections = [], ind
 	return createHash("sha256").update(JSON.stringify(evidence)).digest("hex");
 }
 //#endregion
+//#region tools/lib/author-mastery.mjs
+function readAuthorMastery(dir) {
+	if (!existsSync(join(dir, "mastery"))) return null;
+	const { course, errors } = loadCourse(dir);
+	if (errors.length) throw new Error(errors.join("\n"));
+	const entries = [];
+	for (const name of readdirSync(join(dir, "mastery")).sort()) {
+		const file = join(dir, "mastery", name), data = parseFile(file);
+		const collection = /^(targets|policies|activities)\./.exec(name)?.[1];
+		const key = {
+			targets: "roots",
+			policies: "policies",
+			activities: "activities"
+		}[collection];
+		const kind = {
+			targets: "target",
+			policies: "policy",
+			activities: "activity"
+		}[collection] || "manifest";
+		for (const item of key ? data[key] : [data]) {
+			const compiled = kind === "activity" ? course.activityIndex.activities[item.id] : kind === "target" ? course.mastery.roots[item.id] : null;
+			entries.push({
+				id: `mastery-${kind}${key ? `-${item.id}` : ""}`,
+				kind: `mastery-${kind}`,
+				file: relative(dir, file),
+				...kind === "activity" ? {
+					sub: item.lesson,
+					section: item.lesson.split("-")[0]
+				} : {},
+				content: item,
+				...compiled ? { compatibility: Object.fromEntries([
+					"contentSignature",
+					"evidenceSignature",
+					"rubricSignature",
+					"organizationSignature"
+				].filter((k) => compiled[k]).map((k) => [k, compiled[k]])) } : {}
+			});
+		}
+	}
+	return {
+		course,
+		entries
+	};
+}
+function masteryAuthorContext(mastery, lesson) {
+	if (!mastery) return null;
+	const activities = Object.values(mastery.course.activityIndex?.activities || {}).filter((a) => !lesson || a.lesson === lesson);
+	if (!activities.length) return null;
+	const roots = [...new Set(activities.flatMap((a) => a.tests.map((t) => t.root)))];
+	const content = (kind, id) => mastery.entries.find((e) => e.kind === `mastery-${kind}` && e.content.id === id).content;
+	return {
+		targets: roots.map((id) => content("target", id)),
+		activities: activities.map((a) => ({
+			...content("activity", a.id),
+			availability: a.availability
+		})),
+		policies: [...new Set(roots.map((id) => mastery.course.mastery.roots[id].policy))].map((id) => content("policy", id)),
+		distribution: "Only public package references are distributed. Private evaluator packages stay outside the course; checkVisibility is a requirement, not private bytes or verified evidence."
+	};
+}
+/** Explicit qualified facets keep a self/explanation task from substituting for
+an implementation requirement. These are coverage routes, never achievement. */
+function practicalFamilyEvidence(mastery, family, objectives) {
+	if (family.activities === void 0 && family.requiredFacets === void 0) return null;
+	const missing = [], tasks = [], mapped = [];
+	const ids = family.activities;
+	const facets = family.requiredFacets;
+	if (!Array.isArray(ids) || !ids.length || ids.some((id) => typeof id !== "string") || new Set(ids).size !== ids.length) missing.push("activities must list distinct activity IDs");
+	if (!Array.isArray(facets) || !facets.length) missing.push("requiredFacets must list qualified root/facet/anchor/kind requirements");
+	const C = mastery?.course;
+	const owns = (test) => {
+		const root = C?.mastery.roots[test.root], skill = C?.questionSkills[test.skill];
+		return root && objectives.has(root.scoreFor) && (skill?.families || [skill?.family]).includes(family.id);
+	};
+	for (const id of Array.isArray(ids) ? ids : []) {
+		const activity = C?.activityIndex?.activities[id];
+		if (!activity || activity.availability !== "available" || activity.kind === "question" || !activity.tests.some(owns)) {
+			missing.push(`activity ${id} is missing, unavailable, or not mapped practical evidence`);
+			continue;
+		}
+		mapped.push(activity);
+	}
+	const seen = /* @__PURE__ */ new Set();
+	for (const facet of Array.isArray(facets) ? facets : []) {
+		const key = JSON.stringify([
+			facet?.root,
+			facet?.facet,
+			facet?.anchor,
+			facet?.kind
+		]);
+		const anchor = (C?.mastery.roots[facet?.root])?.facets[facet?.facet]?.anchors[facet?.anchor];
+		if (!facet || typeof facet !== "object" || Array.isArray(facet) || typeof facet.root !== "string" || typeof facet.facet !== "string" || !Number.isInteger(facet.anchor) || Object.keys(facet).some((k) => ![
+			"root",
+			"facet",
+			"anchor",
+			"kind"
+		].includes(k)) || !anchor || ![
+			"external-lab",
+			"written-defense",
+			"audio",
+			"trusted-evaluation"
+		].includes(facet.kind) || seen.has(key)) {
+			missing.push("invalid or duplicate required practical facet");
+			continue;
+		}
+		seen.add(key);
+		const matches = mapped.filter((a) => a.kind === facet.kind && a.tests.some((t) => owns(t) && t.root === facet.root && t.facet === facet.facet && t.anchor === facet.anchor && anchor.criteria.every((c) => t.criteria.includes(c))) && (a.kind !== "external-lab" || a.artifact));
+		if (!matches.length) missing.push(`no practical evidence for ${facet.root}/${facet.facet}@${facet.anchor} (${facet.kind})`);
+		tasks.push(...matches.map((a) => `mastery-activity-${a.id}`));
+	}
+	return {
+		mapped,
+		tasks: [...new Set(tasks)],
+		missing
+	};
+}
+//#endregion
 //#region tools/lib/author-packets.mjs
 const fingerprint = (value) => createHash("sha256").update(value).digest("hex");
 const fileHash = (path) => fingerprint(readFileSync(path));
@@ -49014,12 +49937,14 @@ function planSignature(plan, sub, index = indexPlan(plan), subsections = []) {
 		teaching: index.lessons.get(id).teaching
 	} : { id });
 	const evidence = prerequisiteEvidenceSignature(plan, sub, subsections, index.teaching);
+	const mastery = plan.path ? masteryAuthorContext(index.authorMastery ??= readAuthorMastery(join(plan.path, "../..")), sub) : null;
 	const signature = {
 		lesson,
 		local,
 		dependencies,
 		families,
-		reader: plan.data.reader
+		reader: plan.data.reader,
+		...mastery ? { mastery } : {}
 	};
 	if (!lesson?.teaching) return fingerprint(JSON.stringify(signature));
 	return fingerprint(JSON.stringify({
@@ -49037,6 +49962,7 @@ function selectItem(unit, selector) {
 }
 function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase, mode = "single", role, needs = [], item, issue, sourceRefs = [], sources = [], warnings = [], subsections = [], assigned = [] }) {
 	const bank = readAuthorBank(join(plan.path, "../.."));
+	const practical = masteryAuthorContext(readAuthorMastery(join(plan.path, "../..")), subsection?.id);
 	const unit = subsection ? parseFile(subsection.file) || {} : {};
 	const lesson = index.lessons.get(subsection?.id);
 	const resolved = resolveAuthorQuiz(".", unit, bank);
@@ -49066,6 +49992,7 @@ function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase
 		role: effectiveRole,
 		needs: [.../* @__PURE__ */ new Set([
 			...needs,
+			...practical ? ["mastery"] : [],
 			...asList(selected ? null : lesson?.needs),
 			...asList(teachingContext.needs),
 			...shapeNeeds(selected ? item.startsWith("block:") ? { blocks: [selected] } : { quiz: [selected] } : resolved)
@@ -49082,6 +50009,7 @@ function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase
 		phase,
 		mode,
 		role: effectiveRole,
+		...practical ? { mastery: practical } : {},
 		rules: rules.modules.map((m) => m.path),
 		...plan.hash && !(phase === "review" && selected) ? { plan: { path: plan.path } } : {},
 		...subsection ? { target: subsection.file } : {},
@@ -49124,6 +50052,7 @@ function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase
 function planCoverage(plan, subsections, { verifySource } = {}) {
 	const dir = join(plan.path, "../..");
 	const bank = readAuthorBank(dir);
+	const mastery = readAuthorMastery(dir);
 	const objectives = asList(plan.data.objectives).filter(active);
 	const familyIndex = new Map(asList(plan.data.families).map((f) => [f.id, f]));
 	const found = new Map(subsections.map((s) => [s.id, resolveAuthorQuiz(dir, parseFile(s.file) || {}, bank)]));
@@ -49212,12 +50141,14 @@ function planCoverage(plan, subsections, { verifySource } = {}) {
 			"course.json"
 		].some((name) => existsSync(join(dir, name)))) for (const id of Object.keys(loadCourse(dir).course.concepts || {})) knownConcepts.add(id);
 		const mappedTypes = bank.types.map((record) => record.content).filter((type) => mappedTypeIds.has(type.id) && asList(type.families).map(named).includes(family.id) && type.assess !== false && knownConcepts.has(type.concept) && asList(type.objectives).map(named).some((id) => knownObjectives.has(id)));
-		if (!mappedTypes.length) missing.push("no mapped question type links this family");
+		const practical = practicalFamilyEvidence(mastery, family, new Set(objectives.filter((o) => asList(o.families).map(named).includes(family.id)).map((o) => o.id)));
+		if (!mappedTypes.length && !practical) missing.push("no mapped question type links this family");
+		if (practical) missing.push(...practical.missing);
 		const objectivesForFamily = /* @__PURE__ */ new Set([...objectives.filter((objective) => asList(objective.families).map(named).includes(family.id)).map((objective) => objective.id), ...mappedTypes.flatMap((type) => asList(type.objectives).map(named))]);
 		const conceptsForFamily = new Set(mappedTypes.map((type) => type.concept).filter(Boolean));
 		const familyTeaching = [];
 		const familyTeach = new Set(asList(family.teach).map(named).filter(Boolean));
-		const typeTeach = new Set(mappedTypes.flatMap((type) => asList(type.teach).map(named).filter(Boolean)));
+		const typeTeach = /* @__PURE__ */ new Set([...mappedTypes.flatMap((type) => asList(type.teach).map(named).filter(Boolean)), ...practical?.mapped.map((a) => a.lesson) || []]);
 		const compatibleTeach = new Set([...familyTeach].filter((id) => typeTeach.has(id)));
 		if (!familyTeach.size) missing.push("no lesson teaching route is declared on the family");
 		else if (!compatibleTeach.size) missing.push("family and mapped question types have no compatible teach route");
@@ -49245,7 +50176,7 @@ function planCoverage(plan, subsections, { verifySource } = {}) {
 		};
 		for (const [sub, unit] of found) for (const [i, item] of (unit.quiz || []).entries()) addTask(`${sub}/quiz:${i + 1}`, item);
 		for (const record of bank.items) addTask(record.content.id, record.content);
-		const uniqueTasks = [...new Set(tasks)];
+		const uniqueTasks = [.../* @__PURE__ */ new Set([...tasks, ...practical?.tasks || []])];
 		if (!uniqueTasks.length) missing.push("no active mapped assessment or practice item exists");
 		return {
 			id: family.id,
@@ -49253,6 +50184,10 @@ function planCoverage(plan, subsections, { verifySource } = {}) {
 			required: true,
 			sources: routes,
 			questionTypes: mappedTypes.map((type) => type.id),
+			...practical ? {
+				activities: practical.mapped.map((a) => a.id),
+				requiredFacets: family.requiredFacets
+			} : {},
 			teaching: familyTeaching,
 			tasks: uniqueTasks,
 			complete: missing.length === 0,
@@ -50670,11 +51605,29 @@ function savedRequirements(stateDir) {
 	if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !id.trim())) throw new Error(`${path}: expected a list of required family IDs`);
 	return ids;
 }
+const savedPractical = (stateDir) => {
+	const path = join(stateDir, "required-assessment.yaml");
+	return existsSync(path) ? parseFile(path)?.practical || {} : {};
+};
+const facetKey = (facet) => {
+	if (!facet || typeof facet.root !== "string" || typeof facet.facet !== "string" || !Number.isInteger(facet.anchor) || typeof facet.kind !== "string") throw new Error("required practical facet needs root/facet/integer anchor/kind");
+	return JSON.stringify([
+		facet.root,
+		facet.facet,
+		facet.anchor,
+		facet.kind
+	]);
+};
 function captureAssessmentRequirements(plan, stateDir) {
 	const ids = [.../* @__PURE__ */ new Set([...savedRequirements(stateDir), ...(plan.data.families || []).filter((f) => f.assessmentRequired === true).map((f) => f.id)])];
+	const practical = savedPractical(stateDir);
+	for (const family of plan.data.families || []) if (family.assessmentRequired && Array.isArray(family.requiredFacets)) practical[family.id] = [...new Map([...practical[family.id] || [], ...family.requiredFacets].map((f) => [facetKey(f), f])).values()];
 	if (ids.length) {
 		mkdirSync(stateDir, { recursive: true });
-		writeFileSync(join(stateDir, "required-assessment.yaml"), packetText({ families: ids }));
+		writeFileSync(join(stateDir, "required-assessment.yaml"), packetText({
+			families: ids,
+			...Object.keys(practical).length ? { practical } : {}
+		}));
 	}
 }
 function preserveAssessmentRequirements(report, stateDir) {
@@ -50685,6 +51638,14 @@ function preserveAssessmentRequirements(report, stateDir) {
 			missing: ["required family was removed or its assessmentRequired flag was cleared after writing began"]
 		});
 		report.assessmentReady = false;
+	}
+	for (const [id, facets] of Object.entries(savedPractical(stateDir))) {
+		const row = report.requiredFamilies.find((r) => r.id === id);
+		if (row && facets.some((f) => !(row.requiredFacets || []).some((current) => facetKey(f) === facetKey(current)))) {
+			row.missing.push("required practical facet was removed or changed after writing began");
+			row.complete = false;
+			report.assessmentReady = false;
+		}
 	}
 	return report;
 }
@@ -51059,6 +52020,15 @@ function reviewIndex(dir, state, { assign = true, persist = true } = {}) {
 			prior.file = relative(dir, file);
 		}
 	}
+	const mastery = readAuthorMastery(dir);
+	for (const entry of mastery?.entries || []) {
+		if (seen.has(entry.id)) throw new Error(`duplicate review ID ${entry.id}`);
+		seen.add(entry.id);
+		entries.push({
+			...entry,
+			hash: fingerprint(JSON.stringify([entry.content, entry.compatibility]))
+		});
+	}
 	for (const [file, document] of documents) if (document.dirty) writeFileSync(file, extname(file) === ".json" ? JSON.stringify(document.data, null, 2) + "\n" : packetText(document.data));
 	const evidence = {}, catalogPath = join(state, "sources/catalog.yaml");
 	if (existsSync(catalogPath)) for (const source of parseFile(catalogPath)?.sources || []) try {
@@ -51089,6 +52059,19 @@ function findItems(index, ids) {
 const references = (entry) => {
 	const c = entry.content;
 	return [
+		...entry.kind === "mastery-activity" ? [
+			...c.tests.map((t) => `mastery-target-${t.root}`),
+			...c.tests.map((t) => `type-${t.skill}`),
+			...list(c.after).map((id) => `mastery-activity-${id}`),
+			...[c.fallback, c.delay?.activity].filter(Boolean).map((id) => `mastery-activity-${id}`),
+			...list(c.question),
+			...list(c.prerequisites).map((p) => `mastery-target-${p.root}`)
+		] : entry.kind === "mastery-target" ? [
+			c.scoreFor,
+			`mastery-policy-${c.policy}`,
+			...list(c.skills).map((id) => `type-${id}`)
+		] : [],
+		...entry.kind === "family" ? list(c.activities).map((id) => `mastery-activity-${id}`) : [],
 		...list(c.objectives ?? c.objective),
 		...list(c.families ?? c.family),
 		...list(c.prerequisites),
@@ -51114,7 +52097,7 @@ function changedItems(before, after) {
 			"bank",
 			"question-type",
 			"assessment"
-		].includes(e.kind)) {
+		].includes(e.kind) && !e.kind.startsWith("mastery-")) {
 			const key = `${e.sub || e.file}/${e.kind}`;
 			const peers = groups.get(key) || [];
 			positions.set(e.id, peers.length);
@@ -51129,7 +52112,8 @@ function changedItems(before, after) {
 		change: "added"
 	}] : e.hash !== old.get(e.id).hash || e.sub !== old.get(e.id).sub || previousOrder.get(e.id) !== nextOrder.get(e.id) ? [{
 		id: e.id,
-		change: "changed"
+		change: "changed",
+		...e.compatibility ? { affectedVersions: Object.keys(e.compatibility).filter((k) => e.compatibility[k] !== old.get(e.id).compatibility?.[k]).map((k) => k.replace("Signature", "")) } : {}
 	}] : []);
 	for (const id of old.keys()) if (!current.has(id)) changes.push({
 		id,
@@ -51148,6 +52132,9 @@ function changedItems(before, after) {
 whenever one byte in its YAML file changes. */
 function affectedItems(index, ids, before = null) {
 	const selected = new Set(ids);
+	if (selected.has("mastery-manifest")) {
+		for (const e of index.entries) if (e.kind.startsWith("mastery-")) selected.add(e.id);
+	}
 	if (selected.has("author-plan")) for (const e of index.entries) selected.add(e.id);
 	const universe = [...before?.entries || [], ...index.entries];
 	if (universe.some((e) => e.kind === "assessment" && selected.has(e.id))) {
@@ -51188,7 +52175,7 @@ function affectedItems(index, ids, before = null) {
 		const e = byId.get(id);
 		if (!e) continue;
 		for (const ref of references(e)) if (byId.has(ref)) selected.add(ref);
-		const teaching = e.kind === "question-type" ? list(e.content.teach) : [];
+		const teaching = e.kind === "question-type" ? list(e.content.teach) : e.kind === "mastery-activity" ? [e.content.lesson] : [];
 		for (const other of index.entries) if (other.kind === "block" && teaching.includes(other.sub)) selected.add(other.id);
 		if (e.sub) {
 			for (const other of index.entries) if (other.sub === e.sub && other.kind === "block" && (e.kind === "placement" || Math.abs(other.position - e.position) <= 1)) selected.add(other.id);
@@ -51258,8 +52245,11 @@ function screenPackets(index, plan, { section, changed = false, review, maxBytes
 		const omitted = [], item = publicItem(e);
 		item.content = excerpt(item.content, omitted);
 		if (omitted.length) item.truncated = omitted;
-		const change = delta.find((d) => d.id === e.id)?.change;
-		if (change) item.change = change;
+		const change = delta.find((d) => d.id === e.id);
+		if (change) {
+			item.change = change.change;
+			if (change.affectedVersions?.length) item.affectedVersions = change.affectedVersions;
+		}
 		if (changed) item.issues = review.issues.filter((i) => i.targets.includes(e.id) || review.results?.some((r) => r.issue === i.id && r.affected?.includes(e.id))).map((i) => i.id);
 		bySection.get(key).push(item);
 	}
@@ -51356,8 +52346,10 @@ function recordReviewView(state, index, ids) {
 	save(path, views);
 }
 function fullItems(index, ids) {
-	const placementIds = findItems(index, ids).filter((e) => e.kind === "placement").flatMap((e) => list(e.content.quiz));
+	const seeds = findItems(index, ids);
+	const placementIds = seeds.filter((e) => e.kind === "placement").flatMap((e) => list(e.content.quiz));
 	const selected = findItems(index, [...ids, ...placementIds]), related = /* @__PURE__ */ new Set([...ids, ...placementIds]);
+	if (seeds.some((e) => e.kind.startsWith("mastery-"))) for (const e of [...affectedItems(index, ids), ...index.entries.filter((e) => e.kind === "mastery-manifest")]) related.add(e.id);
 	for (const e of selected) {
 		const skills = e.kind === "bank" ? e.content.skills || [e.content.typeId] : e.kind === "question-type" ? [e.content.id] : [];
 		for (const type of skills.filter(Boolean)) {
@@ -51486,14 +52478,14 @@ function acceptReview(state, index, report = null) {
 		};
 	};
 	if (!review) {
-		if (index.entries.some((e) => e.kind === "question-type")) {
+		if (index.entries.some((e) => e.kind === "question-type" || e.kind.startsWith("mastery-"))) {
 			const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
-			for (const e of index.entries) if ([
+			for (const e of index.entries) if (([
 				"bank",
 				"question-type",
 				"assessment",
 				"placement"
-			].includes(e.kind) && views[e.id]?.hash !== e.hash) throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
+			].includes(e.kind) || e.kind.startsWith("mastery-")) && views[e.id]?.hash !== e.hash) throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
 		}
 		save(join(state, "review.yaml"), {
 			status: "accepted",
@@ -51870,7 +52862,11 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
 			continue;
 		}
 		try {
-			const evidence = readUnit(catalog, ref);
+			const evidence = ref.source === "generated" && ref.provenance?.trim() ? {
+				reference: ref,
+				provenance: ref.provenance,
+				warning: "Generated route; no independent source excerpt."
+			} : readUnit(catalog, ref);
 			if (phase === "write" && !packet.corrections) {
 				const path = join(stateDir, "sources", "excerpts", `${fingerprint(JSON.stringify(evidence))}.yaml`);
 				mkdirSync(dirname(path), { recursive: true });
@@ -51975,7 +52971,7 @@ const commands = {
 			envelope: {
 				mode,
 				role: defaultRole("review"),
-				rules: selection("review").modules.map((m) => m.path)
+				rules: selection("review", indexed.entries.some((e) => e.kind.startsWith("mastery-") && (!option("--section") || !e.section || e.section === option("--section"))) ? ["mastery"] : []).modules.map((m) => m.path)
 			}
 		});
 		if (!changed) writeFileSync(join(stateDir, "screen-baseline.yaml"), packetText(indexed));
@@ -52133,7 +53129,11 @@ const commands = {
 					warnings.push("Source needs an exact span or explicit --expand.");
 					continue;
 				}
-				const evidence = readUnit(catalog, ref);
+				const evidence = ref.source === "generated" && ref.provenance?.trim() ? {
+					reference: ref,
+					provenance: ref.provenance,
+					warning: "Generated route; no independent source excerpt."
+				} : readUnit(catalog, ref);
 				if (evidence.warning?.includes("Source changed or disappeared")) fail("source evidence is stale; run author sources --refresh before expanding IDs");
 				sources.push(evidence);
 			}
@@ -52142,7 +53142,7 @@ const commands = {
 				"quiz",
 				"practice",
 				"bank"
-			].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : []);
+			].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : item.kind.startsWith("mastery-") ? ["mastery"] : []);
 			const packet = {
 				phase,
 				mode,

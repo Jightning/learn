@@ -271,7 +271,9 @@ function taskPacket(p, flow, phase, sub, plan, catalog) {
       continue;
     }
     try {
-      const evidence = readUnit(catalog, ref);
+      const evidence = ref.source === "generated" && ref.provenance?.trim()
+        ? { reference: ref, provenance: ref.provenance, warning: "Generated route; no independent source excerpt." }
+        : readUnit(catalog, ref);
       if (phase === "write" && !packet.corrections) {
         const path = join(stateDir, "sources", "excerpts", `${fingerprint(JSON.stringify(evidence))}.yaml`);
         mkdirSync(dirname(path), { recursive: true });
@@ -366,7 +368,7 @@ const commands = {
     writeFileSync(contextPath, packetText(reviewContext(indexed, plan)));
     const packets = screenPackets(indexed, plan, { section: option("--section"),
       changed, review: readReview(stateDir), contextPath, issuePath: join(stateDir, "corrections.yaml"),
-      envelope: { mode, role: defaultRole("review"), rules: selection("review").modules.map(m => m.path) } });
+      envelope: { mode, role: defaultRole("review"), rules: selection("review", indexed.entries.some(e => e.kind.startsWith("mastery-") && (!option("--section") || !e.section || e.section === option("--section"))) ? ["mastery"] : []).modules.map(m => m.path) } });
     if (!changed) writeFileSync(join(stateDir, "screen-baseline.yaml"), packetText(indexed));
     for (const packet of packets) {
       const review = readReview(stateDir), old = review?.status === "accepted" ? review.accepted : review?.baseline;
@@ -507,13 +509,15 @@ const commands = {
       const sources = [], warnings = [];
       for (const ref of new Map(refs.map(r => [JSON.stringify(r), r])).values()) {
         if (!ref.lines && !flag("--expand")) { warnings.push("Source needs an exact span or explicit --expand."); continue; }
-        const evidence = readUnit(catalog, ref);
+        const evidence = ref.source === "generated" && ref.provenance?.trim()
+          ? { reference: ref, provenance: ref.provenance, warning: "Generated route; no independent source excerpt." }
+          : readUnit(catalog, ref);
         if (evidence.warning?.includes("Source changed or disappeared")) fail("source evidence is stale; run author sources --refresh before expanding IDs");
         sources.push(evidence);
       }
       const phase = option("--phase", currentFlow().phase), role = option("--role", defaultRole(phase));
       const needs = selected.flatMap(item => item.kind === "block" ? [...shapeNeeds({ blocks: [item.content] })] :
-        ["quiz", "practice", "bank"].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : []);
+        ["quiz", "practice", "bank"].includes(item.kind) ? [...shapeNeeds({ quiz: [item.content] })] : item.kind === "concept" ? ["concepts"] : item.kind.startsWith("mastery-") ? ["mastery"] : []);
       const packet = { phase, mode, role, rules: selection(phase, needs).modules.map(m => m.path),
         ...(review?.status === "issues" ? { corrections: join(stateDir, "corrections.yaml") } : {}),
         reader: plan.data.reader || {}, items: selected, sources, warnings };

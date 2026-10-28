@@ -8,6 +8,7 @@ import { readAuthorBank, resolveAuthorQuiz, bankMatrix } from "./author-bank.mjs
 import { loadCourse, parseFile } from "./load.mjs";
 import { selectContext, shapeNeeds } from "./author-context.mjs";
 import { indexTeaching, teachingPacket, prerequisiteEvidenceSignature } from "./author-teaching.mjs";
+import { readAuthorMastery, masteryAuthorContext, practicalFamilyEvidence } from "./author-mastery.mjs";
 import { isOptional } from "../../src/lib/tiers.js";
 import { curriculumSignature, mergePlanCurriculum, readCurriculumCollections, validateCurriculumReferences } from "../../src/lib/curriculum.js";
 
@@ -137,7 +138,8 @@ export function planSignature(plan, sub, index = indexPlan(plan), subsections = 
     .map(id => index.teaching.owners.get(id)).filter(Boolean))]
     .map(id => index.lessons.get(id)?.teaching ? { id, teaching: index.lessons.get(id).teaching } : { id });
   const evidence = prerequisiteEvidenceSignature(plan, sub, subsections, index.teaching);
-  const signature = { lesson, local, dependencies, families, reader: plan.data.reader };
+  const mastery = plan.path ? masteryAuthorContext(index.authorMastery ??= readAuthorMastery(join(plan.path, "../..")), sub) : null;
+  const signature = { lesson, local, dependencies, families, reader: plan.data.reader, ...(mastery ? { mastery } : {}) };
   if (!lesson?.teaching) return fingerprint(JSON.stringify(signature));
   return fingerprint(JSON.stringify({ ...signature, owners, evidence }));
 }
@@ -154,6 +156,7 @@ export function selectItem(unit, selector) {
 export function buildPacket({ context, plan, index = indexPlan(plan), subsection, phase, mode = "single", role,
   needs = [], item, issue, sourceRefs = [], sources = [], warnings = [], subsections = [], assigned = [] }) {
   const bank = readAuthorBank(join(plan.path, "../.."));
+  const practical = masteryAuthorContext(readAuthorMastery(join(plan.path, "../..")), subsection?.id);
   const unit = subsection ? parseFile(subsection.file) || {} : {};
   const lesson = index.lessons.get(subsection?.id);
   const resolved = resolveAuthorQuiz(".", unit, bank);
@@ -175,7 +178,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
   const teachingContext = phase === "write" && lesson?.teaching
     ? teachingPacket({ plan, subsection, subsections, assigned, index: index.teaching }) : {};
   const rules = selectContext(context, { phase, role: effectiveRole,
-    needs: [...new Set([...needs, ...asList(selected ? null : lesson?.needs), ...asList(teachingContext.needs), ...shapeNeeds(selected
+    needs: [...new Set([...needs, ...(practical ? ["mastery"] : []), ...asList(selected ? null : lesson?.needs), ...asList(teachingContext.needs), ...shapeNeeds(selected
       ? item.startsWith("block:") ? { blocks: [selected] } : { quiz: [selected] } : resolved)])] });
   const refs = sourceRefs.length ? sourceRefs : selected
     ? asList(selected.sourceRefs)
@@ -188,6 +191,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
   const placedSkills = new Set(resolved.quiz.flatMap(q => q.skills || [q.typeId]).filter(Boolean));
   const packet = {
     phase, mode, role: effectiveRole,
+    ...(practical ? { mastery: practical } : {}),
     rules: rules.modules.map(m => m.path),
     ...(plan.hash && !(phase === "review" && selected) ? { plan: { path: plan.path } } : {}),
     ...(subsection ? { target: subsection.file } : {}),
@@ -226,6 +230,7 @@ export function buildPacket({ context, plan, index = indexPlan(plan), subsection
 export function planCoverage(plan, subsections, { verifySource } = {}) {
   const dir = join(plan.path, "../..");
   const bank = readAuthorBank(dir);
+  const mastery = readAuthorMastery(dir);
   const objectives = asList(plan.data.objectives).filter(active);
   const familyIndex = new Map(asList(plan.data.families).map(f => [f.id, f]));
   const found = new Map(subsections.map(s => [s.id, resolveAuthorQuiz(dir, parseFile(s.file) || {}, bank)]));
@@ -296,7 +301,9 @@ export function planCoverage(plan, subsections, { verifySource } = {}) {
     const mappedTypes = bank.types.map(record => record.content).filter(type => mappedTypeIds.has(type.id) &&
       asList(type.families).map(named).includes(family.id) && type.assess !== false && knownConcepts.has(type.concept) &&
       asList(type.objectives).map(named).some(id => knownObjectives.has(id)));
-    if (!mappedTypes.length) missing.push("no mapped question type links this family");
+    const practical = practicalFamilyEvidence(mastery, family, new Set(objectives.filter(o => asList(o.families).map(named).includes(family.id)).map(o => o.id)));
+    if (!mappedTypes.length && !practical) missing.push("no mapped question type links this family");
+    if (practical) missing.push(...practical.missing);
     const objectivesForFamily = new Set([
       ...objectives.filter(objective => asList(objective.families).map(named).includes(family.id)).map(objective => objective.id),
       ...mappedTypes.flatMap(type => asList(type.objectives).map(named))
@@ -304,7 +311,7 @@ export function planCoverage(plan, subsections, { verifySource } = {}) {
     const conceptsForFamily = new Set(mappedTypes.map(type => type.concept).filter(Boolean));
     const familyTeaching = [];
     const familyTeach = new Set(asList(family.teach).map(named).filter(Boolean));
-    const typeTeach = new Set(mappedTypes.flatMap(type => asList(type.teach).map(named).filter(Boolean)));
+    const typeTeach = new Set([...mappedTypes.flatMap(type => asList(type.teach).map(named).filter(Boolean)), ...(practical?.mapped.map(a => a.lesson) || [])]);
     const compatibleTeach = new Set([...familyTeach].filter(id => typeTeach.has(id)));
     if (!familyTeach.size) missing.push("no lesson teaching route is declared on the family");
     else if (!compatibleTeach.size) missing.push("family and mapped question types have no compatible teach route");
@@ -330,9 +337,10 @@ export function planCoverage(plan, subsections, { verifySource } = {}) {
     for (const [sub, unit] of found) for (const [i, item] of (unit.quiz || []).entries())
       addTask(`${sub}/quiz:${i + 1}`, item);
     for (const record of bank.items) addTask(record.content.id, record.content);
-    const uniqueTasks = [...new Set(tasks)];
+    const uniqueTasks = [...new Set([...tasks, ...(practical?.tasks || [])])];
     if (!uniqueTasks.length) missing.push("no active mapped assessment or practice item exists");
     return { id: family.id, disposition, required: true, sources: routes, questionTypes: mappedTypes.map(type => type.id),
+      ...(practical ? { activities: practical.mapped.map(a => a.id), requiredFacets: family.requiredFacets } : {}),
       teaching: familyTeaching, tasks: uniqueTasks, complete: missing.length === 0, missing };
   });
   const assessmentReady = familyRows.every(row => row.complete);

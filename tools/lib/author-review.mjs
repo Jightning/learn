@@ -5,6 +5,7 @@ import { join, dirname, relative, extname, basename } from "node:path";
 import { randomUUID } from "node:crypto";
 import * as YAML from "js-yaml";
 import { readAuthorBank, bankMatrix } from "./author-bank.mjs";
+import { readAuthorMastery } from "./author-mastery.mjs";
 import { digest } from "./digest.mjs";
 import { parseFile } from "./load.mjs";
 import { isOptional } from "../../src/lib/tiers.js";
@@ -105,6 +106,12 @@ export function reviewIndex(dir, state, { assign = true, persist = true } = {}) 
       prior.file = relative(dir, file);
     }
   }
+  const mastery = readAuthorMastery(dir);
+  for (const entry of mastery?.entries || []) {
+    if (seen.has(entry.id)) throw new Error(`duplicate review ID ${entry.id}`);
+    seen.add(entry.id);
+    entries.push({ ...entry, hash: fingerprint(JSON.stringify([entry.content, entry.compatibility])) });
+  }
   // Validate every identity before writing any file.
   for (const [file, document] of documents) if (document.dirty)
     writeFileSync(file, extname(file) === ".json" ? JSON.stringify(document.data, null, 2) + "\n" : packetText(document.data));
@@ -127,7 +134,14 @@ export function findItems(index, ids) {
 
 const references = entry => {
   const c = entry.content;
-  return [...list(c.objectives ?? c.objective), ...list(c.families ?? c.family),
+  const masteryRefs = entry.kind === "mastery-activity" ? [
+    ...c.tests.map(t => `mastery-target-${t.root}`),
+    ...c.tests.map(t => `type-${t.skill}`),
+    ...list(c.after).map(id => `mastery-activity-${id}`),
+    ...[c.fallback, c.delay?.activity].filter(Boolean).map(id => `mastery-activity-${id}`),
+    ...list(c.question), ...list(c.prerequisites).map(p => `mastery-target-${p.root}`)
+  ] : entry.kind === "mastery-target" ? [c.scoreFor, `mastery-policy-${c.policy}`, ...list(c.skills).map(id => `type-${id}`)] : [];
+  return [...masteryRefs, ...(entry.kind === "family" ? list(c.activities).map(id => `mastery-activity-${id}`) : []), ...list(c.objectives ?? c.objective), ...list(c.families ?? c.family),
     ...list(c.prerequisites), ...list(c.requires).map(id => `type-${id}`),
     ...list(c.skills).map(id => `type-${id}`), ...(c.typeId ? [`type-${c.typeId}`] : []), ...list(c.diagnose),
     ...(entry.kind === "family" ? list(c.questions).map(id => `type-${id}`) : []),
@@ -143,7 +157,7 @@ export function changedItems(before, after) {
   // every following item just because its positional number increased.
   const order = entries => {
     const groups = new Map(), positions = new Map();
-    for (const e of entries) if (old.has(e.id) && current.has(e.id) && !["bank", "question-type", "assessment"].includes(e.kind)) {
+    for (const e of entries) if (old.has(e.id) && current.has(e.id) && !["bank", "question-type", "assessment"].includes(e.kind) && !e.kind.startsWith("mastery-")) {
       const key = `${e.sub || e.file}/${e.kind}`;
       const peers = groups.get(key) || [];
       positions.set(e.id, peers.length); peers.push(e.id); groups.set(key, peers);
@@ -153,7 +167,8 @@ export function changedItems(before, after) {
   const previousOrder = order(before.entries), nextOrder = order(after.entries);
   const changes = after.entries.flatMap(e => !old.has(e.id) ? [{ id: e.id, change: "added" }] :
     e.hash !== old.get(e.id).hash || e.sub !== old.get(e.id).sub || previousOrder.get(e.id) !== nextOrder.get(e.id)
-      ? [{ id: e.id, change: "changed" }] : []);
+      ? [{ id: e.id, change: "changed", ...(e.compatibility ? { affectedVersions: Object.keys(e.compatibility)
+        .filter(k => e.compatibility[k] !== old.get(e.id).compatibility?.[k]).map(k => k.replace("Signature", "")) } : {}) }] : []);
   for (const id of old.keys()) if (!current.has(id)) changes.push({ id, change: "deleted" });
   if (fingerprint(JSON.stringify(before.evidence || {})) !== fingerprint(JSON.stringify(after.evidence || {}))) {
     const id = current.has("author-plan") ? "author-plan" : after.entries[0]?.id;
@@ -166,6 +181,7 @@ export function changedItems(before, after) {
     whenever one byte in its YAML file changes. */
 export function affectedItems(index, ids, before = null) {
   const selected = new Set(ids);
+  if (selected.has("mastery-manifest")) for (const e of index.entries) if (e.kind.startsWith("mastery-")) selected.add(e.id);
   if (selected.has("author-plan")) for (const e of index.entries) selected.add(e.id);
   const universe = [...(before?.entries || []), ...index.entries];
   if (universe.some(e => e.kind === "assessment" && selected.has(e.id)))
@@ -188,7 +204,7 @@ export function affectedItems(index, ids, before = null) {
     const e = byId.get(id);
     if (!e) continue;
     for (const ref of references(e)) if (byId.has(ref)) selected.add(ref);
-    const teaching = e.kind === "question-type" ? list(e.content.teach) : [];
+    const teaching = e.kind === "question-type" ? list(e.content.teach) : e.kind === "mastery-activity" ? [e.content.lesson] : [];
     for (const other of index.entries) if (other.kind === "block" && teaching.includes(other.sub)) selected.add(other.id);
     if (e.sub) for (const other of index.entries)
       if (other.sub === e.sub && other.kind === "block" && (e.kind === "placement" || Math.abs(other.position - e.position) <= 1)) selected.add(other.id);
@@ -245,8 +261,8 @@ export function screenPackets(index, plan, { section, changed = false, review, m
     const omitted = [], item = publicItem(e);
     item.content = excerpt(item.content, omitted);
     if (omitted.length) item.truncated = omitted;
-    const change = delta.find(d => d.id === e.id)?.change;
-    if (change) item.change = change;
+    const change = delta.find(d => d.id === e.id);
+    if (change) { item.change = change.change; if (change.affectedVersions?.length) item.affectedVersions = change.affectedVersions; }
     if (changed) item.issues = review.issues.filter(i => i.targets.includes(e.id) || review.results?.some(r => r.issue === i.id && r.affected?.includes(e.id))).map(i => i.id);
     bySection.get(key).push(item);
   }
@@ -302,6 +318,8 @@ export function fullItems(index, ids) {
   const seeds = findItems(index, ids);
   const placementIds = seeds.filter(e => e.kind === "placement").flatMap(e => list(e.content.quiz));
   const selected = findItems(index, [...ids, ...placementIds]), related = new Set([...ids, ...placementIds]);
+  if (seeds.some(e => e.kind.startsWith("mastery-")))
+    for (const e of [...affectedItems(index, ids), ...index.entries.filter(e => e.kind === "mastery-manifest")]) related.add(e.id);
   for (const e of selected) {
     const skills = e.kind === "bank" ? e.content.skills || [e.content.typeId] : e.kind === "question-type" ? [e.content.id] : [];
     for (const type of skills.filter(Boolean)) {
@@ -409,9 +427,9 @@ export function acceptReview(state, index, report = null) {
     return { inventoryExceptions, inventoryExceptionVersions };
   };
   if (!review) {
-    if (index.entries.some(e => e.kind === "question-type")) {
+    if (index.entries.some(e => e.kind === "question-type" || e.kind.startsWith("mastery-"))) {
       const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
-      for (const e of index.entries) if (["bank", "question-type", "assessment", "placement"].includes(e.kind) && views[e.id]?.hash !== e.hash)
+      for (const e of index.entries) if ((["bank", "question-type", "assessment", "placement"].includes(e.kind) || e.kind.startsWith("mastery-")) && views[e.id]?.hash !== e.hash)
         throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
     }
     save(join(state, "review.yaml"), { status: "accepted", accepted: index, baseline: index, issues: [], exceptions, exceptionVersions, ...inventory() });

@@ -3322,6 +3322,30 @@ CHOMPING_MODE.CLIP;
 CHOMPING_MODE.STRIP;
 CHOMPING_MODE.KEEP;
 //#endregion
+//#region src/lib/mastery-schema.js
+const MASTERY_CAPABILITIES = Object.freeze({
+	"mastery.targets": 1,
+	"mastery.policies": 1
+});
+//#endregion
+//#region src/lib/activity-schema.js
+const ACTIVITY_ADAPTERS = Object.freeze({
+	question: 1,
+	"external-submission": 1,
+	"written-defense": 1
+});
+Object.freeze({
+	...MASTERY_CAPABILITIES,
+	"mastery.activities": 1,
+	...Object.fromEntries(Object.entries(ACTIVITY_ADAPTERS).map(([id, version]) => [`adapter.${id}`, version]))
+});
+Object.freeze({
+	text: 32768,
+	artifacts: 8,
+	artifactBytes: 1e8,
+	criteria: 64
+});
+//#endregion
 //#region node_modules/marked/lib/marked.esm.js
 /**
 * marked v18.1.1 - a markdown parser

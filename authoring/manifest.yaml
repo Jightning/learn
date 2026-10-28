@@ -9,6 +9,11 @@ modules:
     file: core.md
     phases: [plan, write, review]
     roles: [planner, writer, reviewer, single]
+  mastery:
+    file: mastery.md
+    phases: []
+    needs: [mastery]
+    roles: [planner, writer, reviewer, single]
   question-bank-format:
     file: formats/question-bank.md
     phases: []
