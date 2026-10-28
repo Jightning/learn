@@ -100,6 +100,9 @@ export function apply(incoming) {
     const ts = Number(p.ts) || 0;
     const local = tsOf(s, p.k);
     const rev = p.rev || "";
+    // Reset cutoffs are monotonic even if an older device edits its preference
+    // later. S07 also transports immutable cutoffs for fresh-device recovery.
+    if (/^reset:[\w-]{1,64}$/.test(p.k) && Number(getItem(p.k)) > Number(p.v)) continue;
     if (!ts || ts < local || (ts === local && rev < (r[p.k] || "")) || (ts === local && rev === (r[p.k] || "") && (p.v == null ? getItem(p.k) == null : String(p.v) === getItem(p.k)))) continue;
     // Stable revisions break timestamp ties independently of arrival order.
     // Empty legacy revisions retain the account's accepted value.

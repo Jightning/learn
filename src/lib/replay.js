@@ -19,6 +19,10 @@
  * slow, so the result is snapshotted with a watermark and later replays start
  * from there.
  * ==========================================================================*/
+// Activity replay is asynchronous because committed inputs/signatures are hashed.
+// Keep legacy synchronous rebuild callers unchanged until the S10 learner path.
+export { rebuildActivityState as rebuildMastery } from "./mastery-state.js";
+
 import { migrateLearnerAliases } from "./learner-prefs.js";
 import { getItem, setItem, removeItem } from "./store.js";
 import { step as retentionStep, install as installRetention, configOf } from "./retention.js";

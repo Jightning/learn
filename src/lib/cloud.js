@@ -37,6 +37,7 @@ import { mine as myPrefs, apply as applyPrefs, isNotePref } from "./prefs.js";
 import { syncBatches } from "./sync-batches.js";
 import { migrateLearnerPrefs, preserveReplacedAnswers } from "./learner-prefs.js";
 import { forget } from "./state.js";
+import { masterySyncPrefs, isActivityRow, stageMasteryPage, finishMasterySync, isMasteryPref } from "./mastery-sync.js";
 
 const SECRET = "cloud:secret";
 const CURSOR = "cloud:cursor";      /* server-assigned seq, never a clock */
@@ -299,7 +300,7 @@ async function runSync({ manual = false } = {}) {
     let acknowledgments;
     try { acknowledgments = JSON.parse(getItem(ACKS)) || {}; } catch { acknowledgments = {}; }
     const prefVersions = new Map();
-    const sealedPrefs = (await Promise.all(myPrefs().map(async p => {
+    const sealedPrefs = (await Promise.all([...myPrefs(), ...masterySyncPrefs()].map(async p => {
       const version = await versionOfFiles({ value:p.v, stamp:p.ts, revision:p.rev });
       prefVersions.set(p.k, version);
       if (acknowledgments[p.k] === version) return null;
@@ -351,14 +352,16 @@ async function runSync({ manual = false } = {}) {
             (value.id !== r.id && !r.id.endsWith(":import:" + value.id))) throw new Error("invalid answer record in backup");
         return { ...value, sent:1 };
       }));
-      preserveReplacedAnswers(accountPrefs);
-      const changed = applyPrefs(accountPrefs);
+      stageMasteryPage(plain, accountPrefs);
+      const regularPrefs = accountPrefs.filter(p => !isMasteryPref(p.k));
+      preserveReplacedAnswers(regularPrefs);
+      const changed = applyPrefs(regularPrefs);
       settings += changed;
       if (changed) forget();
       notes ||= changed > 0 && accountPrefs.some(p => isNotePref(p.k));
       if (plain.length) {
-        merged += mergeRows(plain);
-        for (const r of plain) if (r.course) { invalidate(r.course); touched.add(r.course); }
+        merged += mergeRows(plain.filter(r => !isActivityRow(r)));
+        for (const r of plain.filter(r => !isActivityRow(r))) if (r.course) { invalidate(r.course); touched.add(r.course); }
       }
       const previous = cursor;
       cursor = Number(res.cursor) || cursor;
@@ -371,6 +374,11 @@ async function runSync({ manual = false } = {}) {
       if (!res.more && !res.prefsMore && pages >= batches.length) break;
     }
 
+    const mastery = await finishMasterySync(new Set(listing.filter(c => c.deleted).map(c => c.id)));
+    merged += mastery.merged;
+    for (const cid of mastery.courses) { invalidate(cid); touched.add(cid); }
+    settings += mastery.courses.length;
+    await flush();
     const uploaded = await pushCourses(listing);
     const taken = { ids: [...bundledCourseIds(), ...Object.keys(importedIndex())], codes: {} };
     for (const [cid, e] of Object.entries(bundledCourseIndex())) if (e.code) taken.codes[e.code] = cid;

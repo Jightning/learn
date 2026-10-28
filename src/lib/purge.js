@@ -28,6 +28,8 @@
  * rows, so clearing the derived state alone would just refold it back on the
  * next load.
  * ==========================================================================*/
+import { dropActivityState } from "./mastery-state.js";
+import { dropMasteryStage } from "./mastery-sync.js";
 import { drop as dropStudy } from "./state.js";
 import { reset as resetRetention } from "./retention.js";
 import { dropNotes } from "./notes.js";
@@ -54,6 +56,8 @@ export async function purge(cid, code) {
   // The server's immutable log can still deliver old rows after a re-import.
   setPref(`reset:${cid}`, String(Date.now()));
   dropStudy(cid, code);
+  dropActivityState(cid);
+  dropMasteryStage(cid);
   resetRetention(cid);
   dropNotes(cid);
   dropWhy(cid);

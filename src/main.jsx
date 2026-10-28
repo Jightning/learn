@@ -1,7 +1,7 @@
 import { render } from "preact";
 import App from "./app.jsx";
 import { init, flush, onError, durable } from "./lib/store.js";
-import { rebuild } from "./lib/replay.js";
+import { rebuild, rebuildMastery } from "./lib/replay.js";
 import { auto, setSyncCourseLoader } from "./lib/cloud.js";
 import { refresh, INDEX, get } from "./lib/library.js";
 import { restore } from "./lib/place.js";
@@ -75,7 +75,10 @@ setSyncCourseLoader(async () => {
   // The shelf must be correct even when none of its courses has been opened.
   for (const cid of Object.keys(INDEX)) {
     const course = await get(cid);
-    if (course) rebuild(cid, course);
+    if (course) {
+      rebuild(cid, course);
+      if (course.mastery) course.activityState = await rebuildMastery(cid, course, { now: Date.now() });
+    }
   }
 });
 

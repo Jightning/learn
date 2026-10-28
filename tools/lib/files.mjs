@@ -9,6 +9,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname, relative, sep } from "node:path";
 import * as YAML from "js-yaml";
+import { masteryDistributionIssues } from "../../src/lib/mastery-course.js";
 
 /** Author reasoning stays in source files, never in distributed course data. */
 export function withoutAuthorComments(value) {
@@ -65,6 +66,8 @@ function courseFiles(dir, fail) {
       files[rel] = `data:${type};base64,${readFileSync(full).toString("base64")}`;
     }
   })(dir);
+
+  for (const issue of masteryDistributionIssues(Object.keys(files))) fail(issue);
 
   if (assetBytes > 8e6) fail(`assets total ${(assetBytes / 1e6).toFixed(1)}MB`);
   return files;

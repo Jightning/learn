@@ -4,6 +4,7 @@ import { checkStimulusShape } from "./question-stimulus.js";
 import { validateTiming } from "./question-timing.js";
 import { checkResponse } from "./question-schema.js";
 import { compileSkills, validateItemEvidence, validateEvidenceRequirements } from "./skill-schema.js";
+import { allocateOutcomeWeights } from "./outcome-weights.js";
 
 const own = (map, id) => map && Object.hasOwn(map, id);
 const dict = () => Object.create(null);
@@ -205,14 +206,11 @@ export function resolveQuestionBank(C, source = {}, errors = []) {
       return [id, { id, weight: weight(o.weight ?? C.objectives?.[id]?.importance ?? 1, id), essential: o.essential !== false,
         floor: fraction(o.floor ?? 0.80, `${id} floor`), criteria: o.criteria || raw.criteria, types: candidates.filter(t => t.scoreFor === id).map(t => t.id) }];
     }));
-    const total = Object.values(outcomes).reduce((n, o) => n + o.weight, 0);
-    const typeWeights = dict();
-    for (const o of Object.values(outcomes)) {
-      const values = o.types.map(id => weight(own(weights, id) ? weights[id] : types[id].importance ?? 1, id));
-      const sum = values.reduce((a, b) => a + b, 0);
-      o.weight /= total;
-      o.types.forEach((id, i) => { typeWeights[id] = o.weight * values[i] / sum; });
-    }
+    const allocation = allocateOutcomeWeights(candidates.map(t => ({ id: t.id, scoreFor: t.scoreFor,
+      importance: weight(own(weights, t.id) ? weights[t.id] : t.importance ?? 1, t.id) })),
+    Object.fromEntries(Object.values(outcomes).map(o => [o.id, o.weight])));
+    const typeWeights = allocation.weights;
+    for (const o of Object.values(outcomes)) o.weight = allocation.outcomes[o.id];
     if (!candidates.length) fail(at, "no usable assessed types");
     for (const t of candidates) if (!Object.values(bank).some(q => q.skills.includes(t.id) && q.use !== "diagnostic" && !q.quarantined)) warnings.push(`questions/${at}: assessed type ${t.id} has no usable items`);
     const requirements = validateEvidenceRequirements(raw.requirements, candidates.map(t => t.id), errors, `questions/${at}`);

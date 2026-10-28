@@ -20,6 +20,7 @@
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, basename, extname, dirname } from "node:path";
 import * as YAML from "js-yaml";
+import { resolveMastery } from "../../src/lib/mastery-course.js";
 import { readQuestionCollections, resolveQuestionBank, bankSignature } from "../../src/lib/question-bank.js";
 import { curriculumMap, mergeCurriculumDefinitions, readCurriculumCollections, validateCourseCurriculumReferences } from "../../src/lib/curriculum.js";
 
@@ -221,6 +222,22 @@ export function loadCourse(dir) {
     }
   }
   resolveQuestionBank(C, questionSource, errors);
+  const masteryFiles = {};
+  const walkMastery = (path, relative) => {
+    if (!existsSync(path)) return;
+    for (const entry of readdirSync(path, { withFileTypes: true })) {
+      if (entry.name.startsWith(".") || ["sources", "node_modules"].includes(entry.name)) continue;
+      const full = join(path, entry.name), key = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walkMastery(full, key);
+      else masteryFiles[key] = full;
+    }
+  };
+  // Paths only; only mastery documents are read by the shared resolver.
+  if (existsSync(join(dir, "mastery"))) walkMastery(dir, "");
+  resolveMastery(C, masteryFiles, key => {
+    try { return parseFile(masteryFiles[key]); }
+    catch (e) { errors.push(`${key}: ${e.message.split("\n")[0]}`); return null; }
+  }, errors);
   if (canonicalPresent) validateCourseCurriculumReferences(C, errors);
   return { course: C, errors };
 }

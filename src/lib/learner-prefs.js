@@ -1,6 +1,6 @@
 /* Answers are independent keys: editing question A cannot overwrite B. The
  * study snapshot remains a local read model for scheduling and older builds. */
-import { getItem, keys } from './store.js';
+import { getItem, setItem, keys } from './store.js';
 import { setPref, dropPref, hasPref, apply, prefTimestamp, mine } from './prefs.js';
 
 export const learnerKey = (studyKey, kind, id = '') =>
@@ -90,4 +90,23 @@ export function preserveReplacedAnswers(incoming) {
       writeLearner(studyKey, 'history', `${questionId}:${old.attemptId || old.started || 'legacy'}`, {questionId,attempt:old});
     } catch { /* Legacy malformed snapshots have no recoverable answer. */ }
   }
+}
+
+/* These envelopes own their edit stamps. mastery-sync.js transports them
+ * independently of prefs.isPref, including embedded null tombstones. */
+export function writeActivityDraft(cid, identity, value, ts) {
+  const key = learnerKey(`mastery:${cid}`, 'activity-draft', identity);
+  const previous = readActivityDrafts(cid).find(p => p.k === key);
+  const record = { k: key, ts: Math.max(ts, (previous?.ts || 0) + 1),
+    rev: crypto.randomUUID(), value };
+  setItem(key, JSON.stringify(record));
+  return record;
+}
+
+export function readActivityDrafts(cid) {
+  const prefix = learnerKey(`mastery:${cid}`, 'activity-draft');
+  return keys().filter(k => k.startsWith(prefix)).sort().map(k => {
+    try { return JSON.parse(getItem(k)); }
+    catch { throw new Error('Unreadable activity draft; preserve storage and restore a valid backup'); }
+  });
 }

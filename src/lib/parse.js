@@ -16,6 +16,7 @@
  * ==========================================================================*/
 import { readQuestionCollections, resolveQuestionBank } from "./question-bank.js";
 import { questionStimuli } from "./questions.js";
+import { resolveMastery } from "./mastery-course.js";
 import * as YAML from "js-yaml";
 import { curriculumMap, mergeCurriculumDefinitions, mergePlanCurriculum, readCurriculumCollections, validateCourseCurriculumReferences, validateCurriculumReferences } from "./curriculum.js";
 
@@ -182,6 +183,7 @@ export function parseCourse(files) {
   if (!C.sections.length) errors.push("no sections found");
 
   resolveQuestionBank(C, readQuestionCollections(files, read, errors), errors);
+  resolveMastery(C, files, read, errors);
 
   /* Images travel as data URIs under their own path, so a course stays one
      self-contained map with nothing to fetch alongside it. Resolved here rather

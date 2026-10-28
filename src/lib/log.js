@@ -21,6 +21,7 @@
 import { logRows, appendRow, clearLog, mergeRows, dropRows, getItem } from "./store.js";
 import { migrateLegacyRows } from "./question-aliases.js";
 import { deviceId } from "./device.js";
+import { activityBackup, restoreActivityBackup } from "./mastery-state.js";
 
 let seq = 0;
 
@@ -37,7 +38,11 @@ export const all = () => logRows().slice();
 export const forCourse = (cid, course) => migrateLegacyRows(logRows().filter(r =>
   r.course === cid && r.ts > (Number(getItem(`reset:${cid}`)) || 0)), course?.legacyQuestionAliases);
 export const usage = () => ({ n: logRows().length });
-export const toJSON = () => JSON.stringify(logRows(), null, 1);
+export const toJSON = () => {
+  const mastery = activityBackup();
+  return JSON.stringify(mastery.definitions.length || mastery.drafts.length || mastery.resets.length
+    ? { kind: "learner-log", schemaVersion: 1, rows: logRows(), mastery } : logRows(), null, 1);
+};
 
 /**
  * Take an exported log back in. Rows are immutable and carry the id of the
@@ -51,7 +56,14 @@ export const toJSON = () => JSON.stringify(logRows(), null, 1);
 export function fromJSON(text) {
   let rows;
   try { rows = JSON.parse(text); } catch { throw new Error("that file is not valid JSON"); }
+  if (rows?.kind === "learner-log") {
+    if (rows.schemaVersion !== 1 || !Array.isArray(rows.rows) || rows.rows.some(r => !r || typeof r.id !== "string" || !Number.isFinite(r.ts)))
+      throw new Error("invalid learner log backup");
+    return restoreActivityBackup(rows.mastery, rows.rows).then(merged => ({ merged, skipped: 0 }));
+  }
   if (!Array.isArray(rows)) throw new Error("expected a list of answer rows");
+  if (rows.some(r => typeof r?.event === "string" && r.event.startsWith("activity-")))
+    throw new Error("Activity history requires its versioned learner-log backup and definitions");
   const good = rows.filter(r => r && typeof r.id === "string" && Number.isFinite(r.ts));
   if (!good.length) throw new Error("no answer rows in that file");
   return { merged: mergeRows(good.map(r => ({ ...r, sent: 0 }))), skipped: rows.length - good.length };

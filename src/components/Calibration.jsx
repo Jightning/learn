@@ -31,7 +31,7 @@ export default function Calibration({ ctx, onReset }) {
     e.currentTarget.value = "";
     if (!f) return;
     try {
-      const r = fromJSON(await f.text());
+      const r = await fromJSON(await f.text());
       /* Imported rows can predate any checkpoint, so every course refolds. */
       for (const id of new Set(all().map(x => x.course))) if (id) invalidate(id);
       setNote(r.merged ? `Merged ${r.merged} new answer(s). Reload to see them.`
