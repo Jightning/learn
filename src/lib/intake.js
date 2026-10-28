@@ -56,6 +56,7 @@ const source = p => clean(p).split("/").includes("sources");
 function build(entries) {
   const kept = entries.filter(e => !junk(clean(e.path)));
   for (const e of kept) if (hostile(clean(e.path))) throw new Error(`unsafe path: ${e.path}`);
+  if (!kept.length) throw new Error('no readable course files');
 
   const { prefix, id } = splitPrefix(kept.map(e => clean(e.path)));
   const files = {};
