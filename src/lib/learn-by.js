@@ -8,6 +8,9 @@ import { skillState, provisionalDemonstrations, effectiveEvents } from './eviden
 import { get as retentionGet } from './retention.js';
 import { retrievability } from './schedule.js';
 
+// S10 consumes the opt-in activity queue; legacy goal scheduling stays intact.
+export { masteryActionPlan } from './mastery-actions.js';
+
 const PREFIX = 'learnby:';
 const DAY = 864e5;
 const KIND_SECONDS = { single: 45, multi: 75, text:45, blanks:90, number: 75, formula: 120, self: 150 };

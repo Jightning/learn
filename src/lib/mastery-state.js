@@ -272,7 +272,9 @@ export async function rebuildActivityState(cid, C, { now, verifiedEvaluationIds 
   }
   const artifacts = active.filter(r => r.event === 'activity-submission' && r.ts <= now).flatMap(r =>
     (r.request.input.artifacts || []).map(a => ({ submissionId: r.id, ...a, availability: 'unavailable', bytesRestored: false })));
-  return { projection, historical, drafts, artifacts };
+  // Reuse this exact reset/void/compatibility partition for action planning;
+  // consumers must not reconstruct it independently from raw persisted rows.
+  return { projection, rows: current.filter(r => r.ts <= now), historical, drafts, artifacts };
 }
 
 export function dropActivityState(cid) {

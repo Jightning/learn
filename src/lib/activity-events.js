@@ -19,7 +19,7 @@ const fields = {
   "activity-submission": ["request", "compatibility", "assistance", "timing", "environment"],
   "activity-evaluation": ["submissionId", "result", "supersedes", "reason"],
   "activity-context-revision": ["submissionId", "assistance", "timing", "reason"],
-  "activity-feedback": ["evaluationId"],
+  "activity-feedback": ["evaluationId", "timing", "repair"],
   "activity-claim": ["root", "semanticVersion", "status", "sources", "uncertainty", "provenance", "supersedes", "reason"]
 };
 
@@ -146,6 +146,8 @@ export async function validateActivityEvents(rows, C, errors = []) {
       if (!note(row.reason)) fail("context correction reason required");
     } else if (row.event === "activity-feedback") {
       reference("evaluationId", "activity-evaluation", row);
+      if (row.timing !== undefined) timing(row.timing);
+      if (row.repair !== undefined && !["explanation", "representation", "review"].includes(row.repair)) fail("invalid repair method");
     } else if (row.event === "activity-claim") {
       const root = Object.hasOwn(C.mastery.roots, row.root) && C.mastery.roots[row.root];
       if (!root || row.semanticVersion !== root.semanticVersion || root.claimRequirement !== "historical-evidence") fail("claim requires matching historical requirement/root version");

@@ -41,6 +41,22 @@ beforeEach(async () => {
 });
 afterEach(() => { db.close(); setSyncCourseLoader(async () => {}); wipe(); });
 
+test('S09 feedback durations and repair methods cross encrypted sync without gaining authority', async () => {
+  const sub = await submit(0);
+  const e = await recordActivityEvent(cid, C, evaluationFields(C, sub, 20, 'fail'), { now: 20, sessionId: 'timing' });
+  const timing = { activeMs: 120000, setupMs: 0, wallMs: 300000, source: 'external-report', interrupted: false };
+  await recordActivityEvent(cid, C, { event: 'activity-feedback', evaluationId: e.id, repair: 'representation', timing }, { now: 30, sessionId: 'timing' });
+  const expected = await run();
+  assert.equal((await sync({ manual: true })).ok, true);
+  await fresh('b');
+  assert.equal((await sync({ manual: true })).ok, true);
+  assert.deepEqual(await run(), expected);
+  const feedback = logRows().find(r => r.event === 'activity-feedback');
+  assert.deepEqual(feedback.timing, timing);
+  assert.equal(feedback.repair, 'representation');
+  assert.equal(expected.projection.complete, false);
+});
+
 test('A → unopened B → A preserves immutable evidence, independent drafts, artifacts and provisional-only trust', async () => {
   const input = { text: 'Independent work', artifacts: [{ id: 'source', url: 'https://example.invalid/private.txt',
     sha256: 'a'.repeat(64), bytes: 12, mediaType: 'text/plain' }] };

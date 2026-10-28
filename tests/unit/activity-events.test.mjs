@@ -105,6 +105,8 @@ const invalid = [
   ["negative timing", f => f.submission.timing.activeMs = -1, /timing/],
   ["wall time contradiction", f => f.submission.timing.wallMs = 1, /wall time/],
   ["missing timing", f => delete f.submission.timing.activeMs, /timing/],
+  ["invalid feedback timing", f => f.feedback.timing = { activeMs: -1 }, /timing/],
+  ["invalid repair method", f => f.feedback.repair = "invented-test", /repair/],
   ["infinite time", f => f.submission.timing.activeMs = Infinity, /JSON/],
   ["invalid timestamp", f => f.submission.ts = -1, /time/],
   ["unknown event", f => f.submission.event = "attempt", /identity/],

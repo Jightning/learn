@@ -8,6 +8,7 @@ import { fromJSON, toJSON } from '../../src/lib/log.js';
 import { masterySignatures } from '../../src/lib/mastery-versions.js';
 import { masterySnapshot, snapshotIdentity, resolveMasterySnapshot } from '../../src/lib/mastery-snapshot.js';
 import { projectMastery } from '../../src/lib/mastery-projection.js';
+import { masteryActionPlan } from '../../src/lib/mastery-actions.js';
 import { mine } from '../../src/lib/prefs.js';
 
 const cid = 'folder', DAY = 864e5, now = 10 * DAY;
@@ -32,6 +33,34 @@ test('definition snapshots recompile without accepting imported indexes', async 
   assert.match(await snapshotIdentity(snapshot), /^[a-f0-9]{64}$/);
   snapshot.source.policies.policies[0].noncriticalFloor = 0;
   assert.throws(() => resolveMasterySnapshot(snapshot), /Invalid mastery definition/);
+});
+
+test('reported feedback time and repair method survive backup/restore and stay editable through new events', async () => {
+  const C = persistenceCourse();
+  const sub = await recordActivityEvent(cid, C, await submissionFields(C, 0), { now: 10, sessionId: 'timing' });
+  const e = await recordActivityEvent(cid, C, evaluationFields(C, sub, 11, 'fail'), { now: 11, sessionId: 'timing' });
+  const timing = { activeMs: 30000, setupMs: 0, wallMs: 90000, source: 'external-report', interrupted: true };
+  await recordActivityEvent(cid, C, { event: 'activity-feedback', evaluationId: e.id, repair: 'explanation', timing }, { now: 12, sessionId: 'timing' });
+  const backup = toJSON(), before = await run(C);
+  wipe(); await fromJSON(backup);
+  assert.deepEqual(await run(C), before);
+  assert.deepEqual(logRows().find(r => r.event === 'activity-feedback').timing, timing);
+  assert.equal(logRows().find(r => r.event === 'activity-feedback').repair, 'explanation');
+  assert.equal(before.projection.complete, false);
+  assert.equal(before.rows.length, 3);
+  assert.ok(before.rows.every(r => r.course === C.code && !Object.hasOwn(r, 'definitionId')));
+});
+
+test('planner consumes the rebuild partition without reviving voided or future attempts', async () => {
+  const C = persistenceCourse();
+  const first = await recordActivityEvent(cid, C, await submissionFields(C, 0), { now: 10, sessionId: 'first' });
+  await recordActivityEvent(cid, C, evaluationFields(C, first, 11, 'fail'), { now: 11, sessionId: 'first' });
+  appendRow({ id: 'void', event: 'attempt-void', course: cid, ts: 20, attemptId: first.request.attemptId });
+  await recordActivityEvent(cid, C, await submissionFields(C, 1), { now: now + 10, sessionId: 'future' });
+  const state = await run(C);
+  assert.deepEqual(state.rows, []);
+  const p = await masteryActionPlan(C, state.projection, state.rows, { now, wave: 1, availableSeconds: 900, exposure: new Set(['s1-1']) });
+  assert.ok(!p.actions.some(a => a.reasons.some(r => ['repair-needed', 'repair-limit', 'awaiting-review'].includes(r.code))));
 });
 
 test('live append and fresh export/restore replay agree; folder ownership differs from bound course code', async () => {
