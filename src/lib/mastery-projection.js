@@ -21,7 +21,8 @@ function facetView(state, policy) {
     delayed: state.delayed.map(x => ({ days: x.days, submissionId: x.submissionId, ts: x.ts })),
     missingDelayDays: policy.delayDays.slice(state.delayed.length),
     contradictions: complete ? [] : [...state.contradictions],
-    evidence: state.checks.map(x => x.submissionId) };
+    evidence: state.checks.map(x => x.submissionId),
+    observations: state.checks.map(({ activityId, submissionId, ts }) => ({ activityId, submissionId, ts })) };
 }
 function anchorComplete(root, level, states, policy) {
   return root.anchors[level].facets.every(facet => ready(states[keyOf(root.id, facet, Number(level))], policy));
@@ -153,6 +154,40 @@ function projectValidated(C, validated, now, verifiedEvaluationIds) {
     return [root.id, { required: root.claimRequirement === "historical-evidence", status: records.at(-1)?.status ?? "unsubstantiated",
       verified: false, records }];
   }));
-  return { roots, provisional, claims, complete: Object.values(roots).every(root => root.complete),
+  return { now, roots, provisional, claims, activityGates: activityGates(C, current, verifiedEvaluationIds),
+    complete: Object.values(roots).every(root => root.complete),
     historicalClaimsComplete: Object.values(claims).every(claim => !claim.required) };
+}
+
+// Sequence completion is an observed task result, distinct from independent
+// mastery. Guided work may unlock its next step without supplying an anchor.
+function activityGates(C, rows, verified) {
+  const submissions = new Map(), latest = new Map();
+  for (const row of rows) {
+    if (row.event === "activity-submission") submissions.set(row.id, row);
+    if (row.event === "activity-evaluation" && verified.has(row.id)) latest.set(row.submissionId, row);
+  }
+  const gates = {}, activityLatest = new Map();
+  for (const [id, row] of latest) {
+    const activity = C.activityIndex.activities[submissions.get(id).request.activityId];
+    const previous = activityLatest.get(activity.id);
+    if (!previous || previous[1].ts <= row.ts) activityLatest.set(activity.id, [id, row]);
+  }
+  for (const [activityId, [id, row]] of activityLatest) {
+    const activity = C.activityIndex.activities[activityId];
+    if (row.result.status !== "complete" || activity.availability !== "available") continue;
+    const passed = activity.tests.every(target => {
+      const policy = C.mastery.policies[C.mastery.roots[target.root].policy];
+      const outcomes = new Map(row.result.criteria.filter(c => c.root === target.root && c.facet === target.facet &&
+        c.skill === target.skill && c.anchor === target.anchor).map(c => [c.criterion, c.outcome]));
+      const required = C.mastery.roots[target.root].facets[target.facet].anchors[target.anchor].criteria;
+      const noncritical = required.filter(c => !policy.criteria[c].critical);
+      return required.every(c => ["pass", "fail"].includes(outcomes.get(c))) &&
+        required.filter(c => policy.criteria[c].critical).every(c => outcomes.get(c) === "pass") &&
+        (!noncritical.length || noncritical.filter(c => outcomes.get(c) === "pass").length / noncritical.length >= policy.noncriticalFloor);
+    });
+    if (passed && (!gates[activity.id] || gates[activity.id].ts < row.ts))
+      gates[activity.id] = { submissionId: id, evaluationId: row.id, ts: row.ts };
+  }
+  return gates;
 }

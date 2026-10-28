@@ -1,8 +1,10 @@
 import { POLICY, exposedItems, effectiveEvents, skillsOf, skillState, isJoint, hasSupport } from './evidence.js';
+import { frontierQuestionPool } from './mastery-frontier.js';
 
 /* Coverage is a constraint; scores rank only within the eligible action tier.
  * This baseline makes no claim to estimate learning gain. */
 export function selectScored(pool, rows, options = {}) {
+  pool = frontierQuestionPool(pool, options.frontier, { placement: options.placement });
   const { used = new Set(), types = {}, dueTypes = [], versions, goalPriorities, goalReasons,
     bank, graph, standard, diagnostics = [], inventory = {}, now = Date.now() } = options;
   const candidates = pool.filter(q => !used.has(q.id) && !q.quarantined && (!q.use || q.use === 'practice'));
@@ -61,7 +63,8 @@ export function selectScored(pool, rows, options = {}) {
         componentSuccess: s.componentPerformance.fraction, componentObservations: s.componentPerformance.observations, independentGroups: s.coverage.independent, goalPriority: goalPriorities?.[id] || 0 } };
   }).sort((a, b) => Number(b.scope)-Number(a.scope) || Number(b.preference)-Number(a.preference) || b.score-a.score || a.id.localeCompare(b.id));
   let selected = scores[0].item, diagnosticSource = null;
-  const eligibleDiagnostics = diagnostics.filter(q => !q.quarantined && !used.has(q.id) && !exposed.has(q.id));
+  const eligibleDiagnostics = frontierQuestionPool(diagnostics, options.frontier, { placement: options.placement })
+    .filter(q => !q.quarantined && !used.has(q.id) && !exposed.has(q.id));
   // One discriminating probe may precede breadth after an informative miss.
   // The source identity prevents that detour repeating across session resets.
   const informative = [...attempts].reverse().find(r => r.firstUnaided === false && !r.skipped && !hasSupport(r) && r.errorHypotheses?.length);
