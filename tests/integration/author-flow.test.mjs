@@ -189,6 +189,8 @@ for (const engine of ["tools", "plugin/scripts"]) test(`${engine}: manual whole-
     assert.match(run("status"), /stage: review/);
     assert.ok(readFileSync(join(ws, ".author/probe/map.txt"), "utf8").includes(src.path));
     assert.equal(call("reviewed", "--all", "--corrections").status, 1);
+    assert.match(call("reviewed", "--all").stdout, /current screen/);
+    run("screen");
     run("reviewed", "--all"); assert.match(run("status"), /stage: finish/);
     const settings = YAML.load(readFileSync(join(ws, ".author/probe/settings.yaml"), "utf8"));
     assert.equal(settings.handoff, "manual");

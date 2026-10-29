@@ -2,6 +2,11 @@
 
 Start with `author screen <course> --section s1` (or `--all`, the default) for a
 compact section review: deterministic original excerpts plus a closure map.
+Before first acceptance, screen or expand every indexed item, including
+prose, inline questions and planning metadata, at its current revision, location
+and source evidence, including after an initial correction pass. Unchanged views
+are reused; correction targets and affected context need fresh views.
+Views establish exposure, not correctness or independence.
 `--changed` limits it to relevant changed items and affected context. After a
 review is accepted, it compares against that accepted snapshot, so later edits
 can use the same changed review flow. Screening finds leads; it cannot settle

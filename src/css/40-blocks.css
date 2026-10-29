@@ -49,19 +49,19 @@ pre{
   padding:14px 16px;overflow-x:auto;
 }
 pre code{background:none;border:0;padding:0;font-size:inherit}
-/* Highlighting is signaling, not decoration: a comment, a keyword and a
-   literal are different kinds of thing (T13). The four spans have always been
-   emitted by blocks/index.js and never had a rule, so every `syntax:` a course
-   declared rendered as flat text.
+/* Custom course rules and standard language grammars share the same palette.
+   A comment, a keyword and a literal signal different kinds of thing (T13).
    Only ink tokens are used, so both themes hold AA with no separate dark rule
    (T1), and `wn` is excluded deliberately — it is the one accent with a fixed
    job, and a warning colour inside a code listing would mean nothing (T27).
    Colour is an aid here and never the sole carrier: the token is its own text
    (T26), so a listing reads identically in greyscale. */
-.tok-c{color:var(--ink-3);font-style:italic}
-.tok-k{color:var(--lo-ink);font-weight:600}
-.tok-s{color:var(--hi-ink)}
-.tok-n{color:var(--dc-ink)}
+.tok-c,.hljs-comment,.hljs-quote{color:var(--ink-3);font-style:italic}
+.tok-k,.hljs-keyword,.hljs-selector-tag,.hljs-tag,.hljs-name{color:var(--lo-ink);font-weight:600}
+.tok-s,.hljs-string,.hljs-regexp,.hljs-doctag,.hljs-template-tag{color:var(--hi-ink)}
+.tok-n,.hljs-number,.hljs-literal,.hljs-built_in,.hljs-type,.hljs-title,.hljs-attr,
+.hljs-attribute,.hljs-symbol,.hljs-bullet,.hljs-selector-class,.hljs-selector-id,
+.hljs-meta,.hljs-variable,.hljs-template-variable{color:var(--dc-ink)}
 .codewrap{position:relative;overflow:hidden}
 .codewrap .lang{position:absolute;right:var(--panel-padding);top:var(--panel-padding);
   padding:0 0 2px 6px;background:var(--surface);pointer-events:none;font-family:var(--mono);

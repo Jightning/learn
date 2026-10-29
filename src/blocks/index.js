@@ -14,6 +14,7 @@ import { sourceReference } from "../lib/source-label.js";
 import { Figures } from "../figures/index.js";
 import { displayTex } from "../lib/math.js";
 import { courseMarkdown } from "../lib/course-markdown.js";
+import { highlightCode } from "../lib/code-highlight.js";
 
 const reg = {};
 export const Blocks = {
@@ -313,7 +314,7 @@ R("code", { holds: "structure", apart: true, notes: "closed", defaultLabel: "Lis
             name: b => b.label || b.lang, render: b =>
   U.body(b) +
   `<div class="codewrap"><span class="lang">${esc(b.lang || "code")}</span>` +
-  `<pre><code>${CFG.syntax ? highlight(b.src, CFG.syntax) : esc(b.src)}</code></pre></div>` });
+  `<pre><code>${CFG.syntax ? highlight(b.src, CFG.syntax) : highlightCode(b.src, b.lang)}</code></pre></div>` });
 
 /* ---------- math ------------------------------------------------------------
  * {t:"math", tex:"y'' + 4y' + 4y = 0", label:"…", note:"…"}

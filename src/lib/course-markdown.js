@@ -1,6 +1,14 @@
 import { Marked } from "marked";
+import { highlightCode } from "./code-highlight.js";
 
-const parser = new Marked({ gfm: true, breaks: false });
+const parser = new Marked({ gfm: true, breaks: false, renderer: {
+  code({ text, lang }) {
+    const name = String(lang || "").trim().split(/\s+/)[0].toLowerCase();
+    const cls = /^[\w+-]+$/.test(name) ? ` class="language-${name}"` : "";
+    const code = text.replace(/\n$/, "");
+    return `<pre><code${cls}>${code ? highlightCode(code, name) + "\n" : ""}</code></pre>\n`;
+  }
+} });
 const STRUCTURAL = /<(?:p|div|ol|ul|li|table|pre|h[1-6]|blockquote)\b/i;
 
 /** Render authored text before math/references and final safeMarkup sanitization.

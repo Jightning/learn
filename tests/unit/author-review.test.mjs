@@ -66,6 +66,7 @@ test("correction deltas detect unreported edits and include affected question/co
   assert.ok(!JSON.stringify(screens).includes('"hash"'));
   assert.throws(() => acceptReview(state, now), /needs recheck/);
   recordReviewView(state, now, items.map(i => i.id));
+  recordReviewView(state, now, now.entries.map(e => e.id));
   acceptReview(state, now); assert.equal(readReview(state).status, "accepted");
 }));
 
@@ -230,4 +231,48 @@ test('limited inventory needs a concise reviewer reason current for the type and
   assert.throws(() => acceptReview(state, changed), /current reviewed inventoryExceptions/);
   acceptReview(state, changed, inventoryReport);
   assert.ok(readReview(state).inventoryExceptions.sum.reason);
+}));
+
+for (const [label, setup, report] of [["ordinary", fixture, null], ["bank", bankFixture, inventoryReport]]) {
+  test(`${label} first acceptance requires every current view and reuses unchanged acceptance`, () => setup(({ dir, state, put }) => {
+    put("practice/total.yaml", { items: [{ q: "Explain a sum", response: { kind: "self", model: "Combine terms." } }] });
+    const index = reviewIndex(dir, state), ids = index.entries.map(e => e.id);
+    assert.throws(() => acceptReview(state, index, report), /current screen/);
+    // Omitting any kind, including prose and planning metadata, must fail.
+    for (const entry of index.entries) {
+      rmSync(join(state, "review-views.yaml"), { force: true });
+      recordReviewView(state, index, ids.filter(id => id !== entry.id));
+      assert.throws(() => acceptReview(state, index, report), /current screen/, entry.kind);
+    }
+    recordReviewView(state, index, ids);
+    for (const field of ["hash", "sub", "position"]) {
+      const stale = structuredClone(index); stale.entries[0][field] = "changed";
+      assert.throws(() => acceptReview(state, stale, report), /current screen/, field);
+    }
+    assert.throws(() => acceptReview(state, { ...index, evidence: { source: "changed" } }, report), /current screen/);
+    acceptReview(state, index, report);
+    rmSync(join(state, "review-views.yaml"));
+    acceptReview(state, index, report);
+    assert.equal(readReview(state).status, "accepted");
+  }));
+}
+
+test("initial corrections cannot bypass unseen unrelated content and retain unchanged views", () => fixture(({ dir, state, put }) => {
+  put("sections/02-other/1-other.yaml", { title: "Other", blocks: [{ t: "p", h: "Independent content." }] });
+  const index = reviewIndex(dir, state), target = index.entries.find(e => e.kind === "block" && e.sub === "s1-1").id;
+  const unseen = index.entries.find(e => e.sub === "s2-1").id;
+  recordReviewView(state, index, index.entries.filter(e => e.id !== unseen).map(e => e.id));
+  const review = saveIssues(state, index, { items: [{ target, issue: "Check explanation", done: "Reason clear" }] });
+  saveCorrections(state, index, { results: [{ issue: review.issues[0].id, disposition: "already-satisfied", affected: [target] }] });
+  assert.throws(() => acceptReview(state, index), /needs recheck/);
+  recordReviewView(state, index, affectedItems(index, [target], index).map(e => e.id));
+  assert.throws(() => acceptReview(state, index), /current screen/);
+  recordReviewView(state, index, [unseen]);
+  acceptReview(state, index);
+  rmSync(join(state, "review-views.yaml"));
+  const followup = saveIssues(state, index, { items: [{ target, issue: "Check again", done: "Reason confirmed" }] });
+  saveCorrections(state, index, { results: [{ issue: followup.issues[0].id, disposition: "already-satisfied", affected: [target] }] });
+  recordReviewView(state, index, affectedItems(index, [target], index).map(e => e.id));
+  acceptReview(state, index); // Previously accepted unrelated material needs no new view.
+
 }));

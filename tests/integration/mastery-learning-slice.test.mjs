@@ -12,6 +12,9 @@ import { parseCourse } from '../../src/lib/parse.js';
 import { importCourse, removeCourse } from '../../src/lib/courses.js';
 import { activityInputHash, activityEventCompatibility } from '../../src/lib/activity-events.js';
 import { validateAdapterRequest, validateAdapterResult } from '../../src/lib/activity-adapters.js';
+import { compileActivities, ACTIVITY_ADAPTERS } from '../../src/lib/activity-schema.js';
+import { masterySnapshot } from '../../src/lib/mastery-snapshot.js';
+import { masterySignatures } from '../../src/lib/mastery-versions.js';
 import { recordActivityEvent, rebuildActivityState } from '../../src/lib/mastery-state.js';
 import { commitSubmission, importSubmissionResult, revealSubmissionFeedback, feedbackReady } from '../../src/lib/activity-submission.js';
 import { masteryActionPlan } from '../../src/lib/mastery-actions.js';
@@ -19,6 +22,9 @@ import { exposeLesson, setEnvironment, loadMasteryPath } from '../../src/lib/mas
 import { fromJSON, toJSON } from '../../src/lib/log.js';
 import { clearLog, keys, removeItem } from '../../src/lib/store.js';
 import { evaluationFields } from '../fixtures/mastery/history.mjs';
+import { freshDb, d1 } from '../helpers/d1shim.mjs';
+import { onRequestPost } from '../../functions/api/sync.js';
+import { configure, sync, setSyncCourseLoader } from '../../src/lib/cloud.js';
 
 const DAY = 864e5, cid = 'ledger-slice';
 const wipe = () => { clearLog(); for (const key of keys()) removeItem(key); };
@@ -147,6 +153,31 @@ test('complete teach/practice/lab/defense/repair/fresh/delay slice restores evid
   assert.equal(untrusted.projection.provisional.simple.complete, true);
   const restored = await loadMasteryPath(cid, C, now);
   assert.ok(restored.plan.actions.some(a => a.reasons.some(r => r.code === 'awaiting-review')));
+
+  // Round-trip this complete pilot through the real encrypted/API/SQLite boundary too.
+  const db = freshDb(new URL('../../tools/schema.sql', import.meta.url).pathname);
+  const globals = ['navigator', 'dispatchEvent', 'CustomEvent'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]);
+  t.after(() => {
+    db.close(); setSyncCourseLoader(async () => {});
+    for (const [key, descriptor] of globals) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else delete globalThis[key];
+    }
+  });
+  Object.defineProperty(globalThis, 'navigator', { value: { onLine: true }, configurable: true });
+  globalThis.dispatchEvent = () => {};
+  globalThis.CustomEvent = class {};
+  t.mock.method(globalThis, 'fetch', async (path, options) => {
+    assert.equal(path, '/api/sync', 'sync never fetches artifacts or evaluator packages');
+    return onRequestPost({ request: new Request('https://test/api/sync', { method: 'POST',
+      headers: { authorization: 'Bearer test' }, body: options.body }), env: { SYNC_SECRET: 'test', DB: d1(db) } });
+  });
+  await configure('test');
+  assert.equal((await sync({ manual: true })).ok, true);
+  wipe(); await configure('test');
+  assert.equal((await sync({ manual: true })).ok, true);
+  assert.deepEqual(await state(), live, 'all facets, repairs and delayed observations survive device transfer');
+  assert.deepEqual(await rebuildActivityState(cid, C, { now }), untrusted, 'sync imports no verifier authority');
 });
 
 test('packing/import preserve actual public ZIP reference and reject misplaced private assets', async () => {
@@ -185,4 +216,41 @@ test('future adapter envelopes need no definition rewrite but public labels neve
     assert.equal(validateAdapterResult(result, request, a, errors).trust, 'untrusted');
     assert.equal(validateAdapterResult({ ...result, trust: 'verified' }, request, a, errors), null);
   }
+});
+
+test('Gate G: adding adapter support preserves persisted pilot evidence without granting reviewer authority', async t => {
+  wipe(); t.after(wipe);
+  const C = course(), now = 10 * DAY;
+  const a = C.activityIndex.activities.ordinary, input = { text: '2' };
+  const sub = await recordActivityEvent(cid, C, { event: 'activity-submission', request: {
+    schemaVersion: 1, adapter: a.adapter, courseId: C.code, activityId: a.id,
+    attemptId: 'adapter-migration', nonce: 'adapter-migration', contentVersion: 1,
+    evidenceVersion: 1, rubricVersion: 1, input, submissionHash: await activityInputHash(input)
+  }, compatibility: await activityEventCompatibility(C, a.id), ...context }, { now, sessionId: 'adapter-migration' });
+  await recordActivityEvent(cid, C, evaluationFields(C, sub, now + 1), { now: now + 1, sessionId: sub.sessionId });
+  const before = await rebuildActivityState(cid, C, { now: now + 2 });
+  const backup = toJSON(), snapshot = masterySnapshot(C), unchanged = structuredClone(snapshot);
+  // Inject contract availability only, as a future reader would. No service or verifier is installed.
+  const upgraded = structuredClone(C), errors = [];
+  upgraded.activityIndex = compileActivities({ ...upgraded,
+    subsections: Object.fromEntries(upgraded.sections.flatMap(s => s.subs.map(u => [u.id, u])))
+  }, upgraded.mastery, snapshot.activities, errors,
+    { ...ACTIVITY_ADAPTERS, audio: 1, 'trusted-evaluation': 1 });
+  assert.deepEqual(errors, []);
+  assert.deepEqual(snapshot, unchanged, 'adapter installation never rewrites lesson definitions');
+  masterySignatures(upgraded);
+  for (const [id, activity] of Object.entries(C.activityIndex.activities)) {
+    for (const field of ['contentSignature', 'evidenceSignature', 'rubricSignature'])
+      assert.equal(upgraded.activityIndex.activities[id][field], activity[field], `${id}: ${field}`);
+  }
+  for (const id of ['future-audio', 'future-trusted']) {
+    assert.equal(C.activityIndex.activities[id].availability, 'unavailable');
+    assert.equal(upgraded.activityIndex.activities[id].availability, 'available');
+  }
+  wipe(); await fromJSON(backup);
+  const after = await rebuildActivityState(cid, upgraded, { now: now + 2 });
+  assert.deepEqual(after.rows, before.rows);
+  assert.deepEqual(after.projection, before.projection);
+  assert.deepEqual(after.historical, []);
+  assert.equal(after.projection.complete, false, 'contract availability does not verify imported reviews');
 });

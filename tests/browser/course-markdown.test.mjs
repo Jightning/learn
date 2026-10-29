@@ -17,6 +17,7 @@ for (const width of [1440, 390]) test(`Markdown renders safely across course fie
         { t: 'p', h: 'First **claim**.\n\nSecond *paragraph* with <m>x_1</m>.\n\n- Alpha\n- Beta' },
         { t: 'p', h: '[Unsafe](javascript:alert%281%29) <img src=x onerror="window.__markdownAttack=true">' },
         { t: 'p', h: '```js\nconst x = "<m>x_1</m> **literal**";\n```' },
+        { t: 'code', lang: 'python', src: 'def greet():\n    return "Hello" # comment' },
         { t: 'table', cap: '**Comparison**', head: ['**Input**'], rows: [['*Value*']] }
       ], quiz: [{ type: 'explain', q: '**Explain** the claim.', response: { kind: 'self', model: '**Because** it follows.' } }] })
     };
@@ -27,7 +28,19 @@ for (const width of [1440, 390]) test(`Markdown renders safely across course fie
     assert.equal(await page.locator('#s1-1 .bhtml strong').filter({ hasText: 'claim' }).count(), 1);
     assert.equal(await page.locator('#s1-1 .bhtml li').count(), 2);
     assert.ok(await page.locator('#s1-1 .katex').count());
-    assert.equal(await page.locator('#s1-1 pre code').textContent(), 'const x = "<m>x_1</m> **literal**";\n');
+    assert.equal(await page.locator('#s1-1 pre code').first().textContent(), 'const x = "<m>x_1</m> **literal**";\n');
+    assert.equal(await page.locator('#s1-1 pre code .hljs-keyword').first().textContent(), 'const');
+    assert.equal(await page.locator('#s1-1 .codewrap .hljs-keyword').first().textContent(), 'def');
+    assert.equal(await page.locator('#s1-1 .codewrap code').textContent(), 'def greet():\n    return "Hello" # comment');
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate(theme => document.documentElement.setAttribute('data-theme', theme), theme);
+      for (const selector of ['.hljs-keyword', '.hljs-string', '.hljs-comment']) {
+        const colors = await page.locator('#s1-1 .codewrap ' + selector).first().evaluate(el => ({
+          token: getComputedStyle(el).color, plain: getComputedStyle(el.closest('code')).color
+        }));
+        assert.notEqual(colors.token, colors.plain, `${selector} is colored in ${theme}`);
+      }
+    }
     assert.equal(await page.locator('#s1-1 th strong').textContent(), 'Input');
     assert.equal(await page.locator('#s1-1 td em').textContent(), 'Value');
     assert.equal(await page.locator('#s1-1 [onerror], #s1-1 a[href^="javascript:"]').count(), 0);

@@ -1,6 +1,6 @@
 /* Stable review identity and deterministic packets. Hashes stay in private
    state; models see original excerpts, IDs and human-readable change kinds. */
-import { existsSync, writeFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { join, dirname, relative, extname, basename } from "node:path";
 import { randomUUID } from "node:crypto";
 import * as YAML from "js-yaml";
@@ -307,6 +307,11 @@ export function reviewContext(index, plan) {
       ...(e.content.term ? { defines: e.content.term } : {}), references: references(e) })) };
 }
 
+function currentReviewView(view, entry, index) {
+  return view?.hash === entry.hash && view.sub === entry.sub && view.position === entry.position &&
+    view.evidence === fingerprint(JSON.stringify(index.evidence || {}));
+}
+
 export function recordReviewView(state, index, ids) {
   const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
   for (const e of findItems(index, ids)) views[e.id] = { hash: e.hash, sub: e.sub, position: e.position,
@@ -360,7 +365,7 @@ export function saveIssues(state, index, report) {
   }
   const old = readReview(state);
   if (old && old.status !== "accepted") throw new Error("finish the saved review before replacing its issue baseline");
-  const review = { status: "issues", baseline: index, issues, ...(old?.exceptions ? { exceptions: old.exceptions, exceptionVersions: old.exceptionVersions, inventoryExceptions: old.inventoryExceptions, inventoryExceptionVersions: old.inventoryExceptionVersions } : {}) };
+  const review = { status: "issues", baseline: index, issues, ...(old?.accepted ? { accepted: old.accepted } : {}), ...(old?.exceptions ? { exceptions: old.exceptions, exceptionVersions: old.exceptionVersions, inventoryExceptions: old.inventoryExceptions, inventoryExceptionVersions: old.inventoryExceptionVersions } : {}) };
   save(join(state, "review.yaml"), review);
   save(join(state, "corrections.yaml"), { items: issues });
   return review;
@@ -387,7 +392,12 @@ export function saveCorrections(state, index, report) {
   save(join(state, "review.yaml"), review);
   save(join(state, "change-report.yaml"), { changes: review.changes.map(change => ({ ...change,
     issues: review.issues.filter(i => i.targets.includes(change.id) || results.some(r => r.issue === i.id && r.affected.includes(change.id))).map(i => i.id) })), results });
-  rmSync(join(state, "review-views.yaml"), { force: true });
+  // Unchanged initial views remain useful; correction targets and their closure
+  // must be viewed again even when a result says already-satisfied.
+  const viewsPath = join(state, "review-views.yaml"), views = existsSync(viewsPath) ? parseFile(viewsPath) : {};
+  const seeds = [...review.changes.map(c => c.id), ...review.issues.flatMap(i => i.targets), ...results.flatMap(r => r.affected)];
+  for (const id of [...seeds, ...affectedItems(index, seeds, review.baseline).map(e => e.id)]) delete views[id];
+  save(viewsPath, views);
   return review;
 }
 
@@ -427,11 +437,9 @@ export function acceptReview(state, index, report = null) {
     return { inventoryExceptions, inventoryExceptionVersions };
   };
   if (!review) {
-    if (index.entries.some(e => e.kind === "question-type" || e.kind.startsWith("mastery-"))) {
-      const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
-      for (const e of index.entries) if ((["bank", "question-type", "assessment", "placement"].includes(e.kind) || e.kind.startsWith("mastery-")) && views[e.id]?.hash !== e.hash)
-        throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
-    }
+    const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
+    for (const e of index.entries) if (!currentReviewView(views[e.id], e, index))
+      throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
     save(join(state, "review.yaml"), { status: "accepted", accepted: index, baseline: index, issues: [], exceptions, exceptionVersions, ...inventory() });
     return;
   }
@@ -446,9 +454,11 @@ export function acceptReview(state, index, report = null) {
   }
   for (const e of affectedItems(index, seeds, base)) {
     const view = views[e.id];
-    if (!view || view.hash !== e.hash || view.sub !== e.sub || view.position !== e.position || view.evidence !== fingerprint(JSON.stringify(index.evidence || {})))
+    if (!currentReviewView(view, e, index))
       throw new Error(`review ID ${e.id} changed or needs recheck; run screen --changed or packet --ids before acceptance`);
   }
+  if (!review.accepted) for (const e of index.entries) if (!currentReviewView(views[e.id], e, index))
+    throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
   review.status = "accepted"; review.accepted = index; review.exceptions = exceptions; review.exceptionVersions = exceptionVersions; Object.assign(review, inventory());
   save(join(state, "review.yaml"), review);
 }

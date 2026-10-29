@@ -81,6 +81,14 @@ test('activity/rubric changes preserve stable IDs and require current changed-it
   assert.ok(ids.includes('mastery-policy-P3'));
   assert.ok(!get('mastery/activities.json').activities.some(a => a.authorId));
   assert.throws(() => acceptReview(state, before), /needs current screen/);
+  for (const entry of before.entries.filter(e => e.kind.startsWith('mastery-'))) {
+    rmSync(join(state, 'review-views.yaml'), { force: true });
+    recordReviewView(state, before, ids.filter(id => id !== entry.id));
+    assert.throws(() => acceptReview(state, before), /needs current screen/);
+    recordReviewView(state, before, ids);
+    const stale = structuredClone(before); stale.entries.find(e => e.id === entry.id).hash = 'stale';
+    assert.throws(() => acceptReview(state, stale), /needs current screen/);
+  }
   const issue = saveIssues(state, before, { items: [{ id: 'rubric-fix', target: lab, issue: 'Clarify reason', done: 'Rubric distinguishes explanation' }] });
   const policies = get('mastery/policies.json'); policies.policies[0].criteria[1].standard += ' Explain rounding order.'; put('mastery/policies.json', policies);
   const after = reviewIndex(dir, state);

@@ -52335,6 +52335,9 @@ function reviewContext(index, plan) {
 		}))
 	};
 }
+function currentReviewView(view, entry, index) {
+	return view?.hash === entry.hash && view.sub === entry.sub && view.position === entry.position && view.evidence === fingerprint(JSON.stringify(index.evidence || {}));
+}
 function recordReviewView(state, index, ids) {
 	const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
 	for (const e of findItems(index, ids)) views[e.id] = {
@@ -52399,6 +52402,7 @@ function saveIssues(state, index, report) {
 		status: "issues",
 		baseline: index,
 		issues,
+		...old?.accepted ? { accepted: old.accepted } : {},
 		...old?.exceptions ? {
 			exceptions: old.exceptions,
 			exceptionVersions: old.exceptionVersions,
@@ -52434,7 +52438,14 @@ function saveCorrections(state, index, report) {
 		})),
 		results
 	});
-	rmSync(join(state, "review-views.yaml"), { force: true });
+	const viewsPath = join(state, "review-views.yaml"), views = existsSync(viewsPath) ? parseFile(viewsPath) : {};
+	const seeds = [
+		...review.changes.map((c) => c.id),
+		...review.issues.flatMap((i) => i.targets),
+		...results.flatMap((r) => r.affected)
+	];
+	for (const id of [...seeds, ...affectedItems(index, seeds, review.baseline).map((e) => e.id)]) delete views[id];
+	save(viewsPath, views);
 	return review;
 }
 function acceptReview(state, index, report = null) {
@@ -52478,15 +52489,8 @@ function acceptReview(state, index, report = null) {
 		};
 	};
 	if (!review) {
-		if (index.entries.some((e) => e.kind === "question-type" || e.kind.startsWith("mastery-"))) {
-			const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
-			for (const e of index.entries) if (([
-				"bank",
-				"question-type",
-				"assessment",
-				"placement"
-			].includes(e.kind) || e.kind.startsWith("mastery-")) && views[e.id]?.hash !== e.hash) throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
-		}
+		const path = join(state, "review-views.yaml"), views = existsSync(path) ? parseFile(path) : {};
+		for (const e of index.entries) if (!currentReviewView(views[e.id], e, index)) throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
 		save(join(state, "review.yaml"), {
 			status: "accepted",
 			accepted: index,
@@ -52509,7 +52513,10 @@ function acceptReview(state, index, report = null) {
 	}
 	for (const e of affectedItems(index, seeds, base)) {
 		const view = views[e.id];
-		if (!view || view.hash !== e.hash || view.sub !== e.sub || view.position !== e.position || view.evidence !== fingerprint(JSON.stringify(index.evidence || {}))) throw new Error(`review ID ${e.id} changed or needs recheck; run screen --changed or packet --ids before acceptance`);
+		if (!currentReviewView(view, e, index)) throw new Error(`review ID ${e.id} changed or needs recheck; run screen --changed or packet --ids before acceptance`);
+	}
+	if (!review.accepted) {
+		for (const e of index.entries) if (!currentReviewView(views[e.id], e, index)) throw new Error(`review ID ${e.id} needs current screen or packet before acceptance`);
 	}
 	review.status = "accepted";
 	review.accepted = index;

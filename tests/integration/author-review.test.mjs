@@ -53,6 +53,7 @@ for (const bank of [false, true]) for (const engine of ["tools", "plugin/scripts
       }
       run("write"); run("done", "--all");
       const index = load(join(state, "items.yaml")), quiz = index.entries.find(e => e.kind === (bank ? "bank" : "quiz"));
+      assert.match(call("reviewed", "--all").stdout, /current screen/);
       run("screen", "--section", "s1");
       const screen = load(join(state, "packets/screen-s1-1.yaml"));
       assert.equal(screen.items.length, 3);
@@ -71,6 +72,13 @@ for (const bank of [false, true]) for (const engine of ["tools", "plugin/scripts
       }
       const approval = join(ws, "approval.yaml");
       if (bank) put(approval, { inventoryExceptions: { recall: { reason: "Narrow fixture covers two reviewed ordinary/reserved alternatives; transfer remains limited." } } });
+      run("screen");
+      const planFile = join(course, "materials/plan.yaml"), plan = load(planFile);
+      plan.reader = { goal: "Updated reader goal" }; put(planFile, plan);
+      run("done", "--all");
+      assert.match(call("reviewed", "--all", ...(bank ? ["--report", approval] : [])).stdout, /current screen/);
+      run("packet", "--ids", "author-plan", "--expand");
+      run("reviewed", "--all", ...(bank ? ["--report", approval] : []));
       const report = join(ws, "issues.yaml");
       put(report, { items: [{ target: quiz.id, issue: "Explain how quantities relate", done: "Relation explicit", sourceRefs: [ref] }] });
       run("issues", "--report", report);
