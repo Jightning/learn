@@ -24,12 +24,10 @@
  * the text lands within a few pixels of where it was before the tuck. */
 .shell.tucked:not(.solo) .wrap{
   max-width:var(--wrap-max);
-  margin-left:calc(50% - var(--measure) / 2 - var(--wrap-pad));
-  /* A gutter on the right as well, so the rail never sits flush against the
-     edge. Where the two margins leave less than the max-width, the box narrows
-     rather than overflowing, which is what keeps the column centred all the
-     way down to the breakpoint. */
-  margin-right:var(--wrap-pad);
+  margin-left:max(0px,calc(50% - var(--measure) / 2 - var(--wrap-pad)));
+  /* The wrapper's padding supplies both gutters. Let the right margin yield
+     before squeezing the reading column or wrapping its side notes. */
+  margin-right:auto;
 }
 /* The bar does *not* follow the column here, which is the one place it does
    not. Untucked, the crumb starts where the heading starts, because the two
@@ -99,7 +97,10 @@
    on the viewport centreline. The library is solo and keeps normal centring. */
 @media (min-width:81em){
   .shell:not(.tucked):not(.solo) .wrap{
-    margin-left:calc(50vw - var(--measure) / 2 - var(--wrap-pad) - var(--sidebar-width));
+    /* Viewport and sidebar lengths are outside the zoomed wrapper. Convert
+       them to its coordinates before centring; otherwise zoom magnifies the
+       left offset too. At large text sizes, use the available main track. */
+    margin-left:max(0px,calc((50vw - var(--sidebar-width)) / var(--zoom,1) - var(--measure) / 2 - var(--wrap-pad)));
     margin-right:auto;
   }
   .shell:not(.tucked):not(.solo) .topbar{
